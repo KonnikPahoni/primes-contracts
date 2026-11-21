@@ -1,0 +1,12 @@
+{
+  "name": "@ton-primes/common",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The three backend helpers @ton-primes/agent imports (request pacing, JSON fetch, upstream error types), copied from the main project. tsup bundles them into the published SDK.",
+  "exports": {
+    "./pace": "./src/pace.ts",
+    "./fetchJson": "./src/fetchJson.ts",
+    "./upstreamErrors": "./src/upstreamErrors.ts"
+  }
+}

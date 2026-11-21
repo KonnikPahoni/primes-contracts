@@ -42,7 +42,7 @@ export function isInvitable(a: Address): boolean {
 /**
  * D-211: the invite WORDS are operator-set on the ledger (`set_invite_text`, read back with
  * `getInviteText`); the link after them is the ledger's own. This is the text genesis deploys
- * with — the 25 Nov 2026 launch dedication. Change it on chain, not here, once deployed.
+ * with — the 2 Dec 2026 launch dedication. Change it on chain, not here, once deployed.
  */
 export const INVITE_TEXT_GENESIS = 'The Riemann hypothesis is proved! Celebrate on TON PRIMES: own a number forever.';
 /** `primes_ledger.tolk` `INVITE_TEXT_MAX_BYTES`: UTF-8 bytes, so a non-ASCII character costs 2+. */

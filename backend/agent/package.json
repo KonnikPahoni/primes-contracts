@@ -1,0 +1,75 @@
+{
+  "name": "@ton-primes/agent",
+  "version": "0.5.0",
+  "type": "module",
+  "description": "TypeScript SDK for TON PRIMES: every action a program-player can take, each gated by a live get-method read, with the key signing locally and never leaving the process.",
+  "license": "MIT",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "build": "tsup",
+    "prepublishOnly": "pnpm run typecheck && pnpm run test && pnpm run build"
+  },
+  "dependencies": {
+    "@ton/core": "^0.63.1",
+    "@ton/crypto": "^3.3.0",
+    "@ton/ton": "^15.2.1"
+  },
+  "devDependencies": {
+    "@ton-primes/common": "workspace:*",
+    "@ton-primes/shared": "workspace:*",
+    "@types/node": "^22.10.5",
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.11"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KonnikPahoni/primes-contracts.git",
+    "directory": "backend/agent"
+  },
+  "homepage": "https://primes.live",
+  "keywords": [
+    "ton",
+    "ton-blockchain",
+    "sdk",
+    "typescript",
+    "agent",
+    "ai-agent",
+    "nft",
+    "web3",
+    "mcp",
+    "number-theory"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  },
+  "sideEffects": false,
+  "bugs": {
+    "url": "https://github.com/KonnikPahoni/primes-contracts/issues"
+  }
+}

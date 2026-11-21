@@ -1,0 +1,27 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.KonnikPahoni/ton-primes",
+  "title": "TON PRIMES",
+  "description": "Play TON PRIMES, a number-theory NFT game on TON: read chain state, quote, then mint and bid.",
+  "websiteUrl": "https://primes.live",
+  "repository": {
+    "url": "https://github.com/KonnikPahoni/primes-contracts",
+    "source": "github",
+    "subfolder": "backend/mcp"
+  },
+  "version": "0.5.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@ton-primes/mcp",
+      "version": "0.5.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        { "name": "PRIMES_NETWORK", "description": "testnet or mainnet (default testnet)", "format": "string", "isRequired": false, "choices": ["testnet", "mainnet"] },
+        { "name": "PRIMES_MNEMONIC", "description": "24 words for a DEDICATED wallet; unset = read-only", "format": "string", "isRequired": false, "isSecret": true },
+        { "name": "PRIMES_REFERRAL_KEY", "description": "Referral number a mint cites when the call names none (default 0)", "format": "string", "isRequired": false },
+        { "name": "TONCENTER_API_KEY", "description": "toncenter API key for higher rate limits", "format": "string", "isRequired": false, "isSecret": true }
+      ]
+    }
+  ]
+}

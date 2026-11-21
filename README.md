@@ -17,6 +17,7 @@ the deploy scripts, and the published spec and audit pack.
 | `contracts/scripts/` | Testnet deploy/verification scripts (need a `.env` with a funded wallet; not needed for tests) |
 | `shared/` | Opcodes, TL-B schemas (`shared/schemas/*.tlb`), message builders, `params.json` |
 | `sim/` | The Python economic simulation that produces `shared/params.json` |
+| `backend/agent/`, `backend/mcp/` | Source of the [`@ton-primes/agent`](https://www.npmjs.com/package/@ton-primes/agent) SDK and the [`@ton-primes/mcp`](https://www.npmjs.com/package/@ton-primes/mcp) MCP server. Source only: they are not in this repo's npm workspaces, and their `workspace:*` dependencies and `pnpm` scripts are the main project's. Install from npm to use them. `backend/common/src/` holds the three helpers the SDK imports |
 | `CONCEPT.md` | The specification |
 | `docs/audit/` | The audit pack — start at [`docs/audit/index.md`](docs/audit/index.md) |
 
