@@ -1,6 +1,6 @@
 # Security and the bug bounty
 
-**Testnet round: 22–25 November 2026. Mainnet launch follows on 25 November 2026.**
+**Testnet round: 22 November – 2 December 2026. Mainnet launches on 2 December 2026.**
 
 ## The prize
 

@@ -18,7 +18,7 @@ and the maintainer, and timestamped, which is what decides D-170's "first valid 
 One prize, 1,000,000 PRIMES, for a bug that can drain the system — read live from the bounty
 vault's `SECU` entry on `/verify`; every other valid finding earns public credit. Please do
 not post a working exploit in public channels before it is fixed. The testnet round runs
-22–25 November 2026 against the set in `deployment-story.md`; mainnet follows on 25 November.
+22 November – 2 December 2026 against the set in `deployment-story.md`; mainnet follows on 2 December.
 
 ## The one-line scope
 

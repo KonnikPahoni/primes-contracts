@@ -5670,7 +5670,7 @@ share link needs somewhere to be posted and something to open into.
   replay on any browser that has proved that wallet.
 
 - **The Riemann launch dedication, and Schoenfeld's band** (`DECISIONS.md` D-210). The game
-  launches on 25 November 2026, five days after Levent Alpöge's proof of the Riemann
+  launches on 2 December 2026, twelve days after Levent Alpöge's proof of the Riemann
   hypothesis with Claude (20 November 2026, `alpo.ge/remark.pdf`), and is dedicated to it:
   one line on the launch curtain, the welcome rite's first line, `/`'s
   title and share text, and a note on `/verify` that the proof's GRH makes Miller's test
