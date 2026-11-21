@@ -1,0 +1,137 @@
+// ===========================================================================
+// TON PRIMES — the LP SINK. LOCKED DEPTH, AND NOTHING ELSE.
+// CONCEPT.md §3.4, §5, §6 point 3, §8; DECISIONS.md D-100 points 4 and 9
+// (amends D-46 point 4); invariant TR-6.
+// Contract: contracts/contracts/primes_lp_sink.tolk.
+// Opcodes: shared/opcodes.ts `LP_SINK`.
+//
+// DeDust PRIMES/TON LP receipts are transferred to this contract's own LP
+// jetton wallet and are never seen again. One bootstrap, one deposit handler,
+// two counters.
+//
+// THE PROPERTY THIS SCHEMA IS SHORT BECAUSE OF: there is NO OUTBOUND SECTION
+// below, and its absence is not an omission. The contract declares no outbound
+// message type at all — stronger than "no withdraw path", because there is no
+// send to audit. `LpSink.spec.ts` asserts the compiled code cell contains no
+// `SENDRAWMSG`. Anything that ever moves this LP is a different contract at a
+// different address holding none of this one's balance.
+//
+// TR-6, THE ONE-LINE AUDIT: `getLocked()` is monotone non-decreasing — one `+=`
+// in the whole contract, no `-=` anywhere — and equals the sink's LP jetton
+// wallet balance. Two numbers, one comparison.
+//
+// LOCKED DEPTH IS NEVER SUMMED INTO `T`. A COPY CONSTRAINT, NOT A COMMENT
+// (D-100 point 4), and it binds every surface that reads this schema. An LP
+// receipt is a claim on a pool whose TON/PRIMES composition moves with every
+// trade, so any figure derived from it is non-monotonic; `T` is the ratchet's
+// TON side and §5's theorem is that `p_f = T/S` only ever rises. THE FLOOR
+// (redemption ratio, monotone) and LIQUIDITY (locked forever here / committed
+// >= 30 d in custody / withdrawable in custody) are two guarantees on two
+// panels. No UI string, API field or doc line may present locked depth as
+// backing, as collateral, or as part of `T`. What it is: this much of the pair
+// can never be pulled.
+//
+// WHY A SINK AND NOT A TEP-74 BURN OF THE RECEIPT (D-100's "options not
+// taken"): a burn is equally permanent and NOT READABLE — turning a drop in the
+// LP jetton's supply into "depth locked forever" needs a baseline somebody
+// maintains and an argument that no other burner exists. A sink's locked depth
+// IS its wallet balance, at any block, with no trusted counter.
+//
+// §3.4: this contract declares ZERO TON liability — absent, not zero-valued —
+// so it appears in no reconciliation row and exposes no `getSolvency`. TON sent
+// here is likewise unrecoverable; it is rent, not a liability. `S` (§3.3) and
+// the five-way split (§4.1) are untouched: no opcode here is one the ledger, the
+// ratchet or the splitter recognises.
+//
+// LP locked here is OUT of the electorate (D-100 point 9; D-168 deleted the
+// miner): it is computed over `primes_treasury.tolk` custody positions, and this
+// contract holds none. A surface offering the "lock forever" button must say so.
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// Storage — five fields, one cell, no dictionary and there will not be one.
+// WHO deposited is deliberately not recorded: a per-depositor tally would be a
+// claim ledger for a claim that can never be made, and it would grow against
+// config 43's 65,536-cell account ceiling for no reader's benefit. The
+// depositor is on chain in the transfer that brought the tokens.
+// ---------------------------------------------------------------------------
+
+lp_sink_storage$_
+    // TR-6. Cumulative LP received, in the LP jetton's own units. Written by
+    // exactly one statement, which adds a non-negative amount.
+    locked:Coins
+    events:uint32
+    // the sink's OWN DeDust LP jetton wallet — circular-address bootstrap
+    // (the D21 family), set one-shot by the genesis script
+    lp_jetton_wallet_addr:MsgAddress
+    wallet_set:uint8
+    // the only sender a `set_wallet` is accepted from. NOT an owner: it names
+    // the wallet once and has no privilege afterwards, because no message here
+    // does anything else.
+    genesis_script_addr:MsgAddress
+  = LpSinkStorage;
+
+// ---------------------------------------------------------------------------
+// Inbound
+// ---------------------------------------------------------------------------
+
+// one-shot, genesis script only. Refused after the first (error 104), refused
+// from anyone else (error 100).
+set_wallet#97000001
+    query_id:uint64
+    lp_jetton_wallet_addr:MsgAddress
+  = InternalMsgBody;
+
+// from the sink's OWN LP jetton wallet, and only from it: LP arriving, forever.
+//   * before the bootstrap  -> error 1170 lp_sink_wallet_unset
+//   * from any other sender -> error 1171 lp_sink_wrong_wallet
+//
+// The sender check protects the NUMBER, not the money: a forged notification
+// can extract nothing from a contract that cannot send, but it could inflate a
+// figure a public panel presents as locked depth. Same reasoning as the
+// ratchet's burn tally, where behaviour is indifferent to a forgery and only
+// the count discriminates.
+//
+// `forward_payload` KEEPS ITS TEP-74 `(Either Cell ^Cell)` SHAPE AND IS NEVER
+// READ, and the difference from sink.tlb's ref-typed field matters: that sink
+// is notified by primes_jetton_wallet.tolk, which always writes a ref. This one
+// is notified by a DEDUST-ISSUED wallet carrying a payload a stranger composed,
+// and a short payload rides INLINE. Insisting on a ref would make such a
+// deposit fail to parse — a self-inflicted denial of service in the one
+// contract whose only job is to accept LP. The contract consumes the tail as an
+// opaque remainder and no branch reads it: there is exactly one thing it can do
+// with a deposit, so there is nothing for a payload to select.
+transfer_notification#7362d09c
+    query_id:uint64
+    amount:Coins
+    sender:MsgAddress
+    forward_payload:(Either Cell ^Cell)
+  = InternalMsgBody;
+
+// Any other opcode -> error 101 wrong_opcode. An EMPTY body is accepted: it is
+// how the contract is deployed and how anyone tops up its storage rent, and
+// that TON can no more leave than the LP can.
+
+// ---------------------------------------------------------------------------
+// Outbound
+//
+// NONE. This section is empty on purpose and must stay empty — see the header.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Get-methods
+//
+//   getLocked()        -> cumulative LP locked forever, in the LP jetton's own
+//                         units. Monotone non-decreasing; equals the sink's LP
+//                         jetton wallet balance (TR-6). NOT part of `T`.
+//   getEvents()        -> how many separate locks make it up
+//   getLpSinkConfig()  -> (lp_jetton_wallet_addr, wallet_set,
+//                          genesis_script_addr) — published so `getLocked()`'s
+//                         claim is checkable: a reader needs to know WHICH
+//                         wallet balance to compare against, and whether the
+//                         one-shot has fired.
+//
+// THERE IS DELIBERATELY NO `getSolvency`, for sink.tlb's reason: the declared
+// TON liability is ABSENT rather than zero-valued, and a zero row would invite
+// a future reader to add it to the §3.4 aggregate.
+// ---------------------------------------------------------------------------

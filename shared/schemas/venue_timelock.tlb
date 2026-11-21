@@ -1,0 +1,110 @@
+;; TON PRIMES — Venue timelock message schemas.
+;; Opcodes: /shared/opcodes.ts `VENUE_TIMELOCK`.
+;;
+;; This is the ENTIRE admin surface of the protocol (IMPLEMENTATION_PLAN.md
+;; §1 governance row, resolving concept Q1/Q3). It holds exactly one thing —
+;; the three DeDust venue addresses the ratchet's flush path targets — behind a
+;; 30-day public queue, a governance confirmation, and a permissionless execute.
+;; Nothing else in the system accepts any owner/admin-authenticated message.
+;; Economic parameters (tribute %, k(t) curve, flush triple, fees, ...) are
+;; compiled-in constants with no message path to change them at all — not even
+;; through this contract.
+;;
+;; D-194 — TWO KEYS. A re-pointed native vault receives every flush tranche
+;; (up to FLUSH_PCT of `pending` a day) and may ignore the swap's floor-guard
+;; limit, so a venue change is a path over `pending`. It therefore needs BOTH
+;; the proposer key (`queue`) AND a passed vote of the treasury's LP electorate
+;; (`confirm_venue`, sent by the treasury) before `execute` fires. A vote nobody
+;; casts fails (treasury: `yes > no`, no quorum) — but the proposer's own LP lock
+;; is a voter, so what protects the venue is the NOTICE: the confirming vote must
+;; close at or after the record's `eta` (808, audit H1 2026-11-19), so it opens
+;; only after every holder has had the whole delay to lock LP and vote no.
+;; §4.3.2's staking addresses are NOT here: they are ratchet deploy data
+;; (ratchet.tlb, D-194).
+
+queue#a0000001
+    query_id:uint64
+    dedust_native_vault:MsgAddress
+    dedust_pool:MsgAddress
+    primes_jetton_vault:MsgAddress
+    eta:uint64                    ;; unix time; contract enforces eta >= now + TIMELOCK_DELAY (30 days)
+  = InternalMsgBody;
+;; sender MUST equal the fixed, genesis-set proposer key. Opens a new record
+;; with a fresh `seq` (never reused) and `confirmed = 0`. Refused while an
+;; unfired record exists (`timelock_already_queued`, 803) — a pending change is
+;; withdrawn with `cancel`, visibly, never silently overwritten.
+
+cancel#a0000002
+    query_id:uint64
+  = InternalMsgBody;
+;; sender MUST equal the same fixed proposer key. Clears the queued change.
+
+confirm_venue#a0000006
+    query_id:uint64
+    seq:uint32
+    vote_opens:uint40             ;; the confirming proposal's `opens`
+    vote_closes:uint40            ;; the confirming proposal's `closes` (audit H1)
+  = InternalMsgBody;
+;; D-194. sender MUST equal the fixed governance address (the treasury), which
+;; sends it only on `execute` of a passed venue-confirm proposal. Sets
+;; `confirmed` on the queued, unfired record iff `seq` is that record's
+;; (`timelock_not_governance` 805, `timelock_confirm_stale` 806) AND the vote
+;; opened no earlier than the record was queued (`timelock_vote_predates_queue`
+;; 807) — `seq` is predictable, so without the time bind a vote could pass on a
+;; record that did not exist yet and the proposer fill it in afterwards. AND
+;; the vote closed no earlier than the record's `eta`
+;; (`timelock_vote_before_notice_end` 808, audit H1): `vote_closes >= eta` is
+;; `vote_opens >= eta − voteDuration`. The treasury counts only LP locked before
+;; a vote opens (1202), so a vote opened at `queue` time could be opposed by
+;; nobody who had not locked already; opened at the end of the notice, it can be
+;; opposed by anyone who locked during it.
+
+execute#a0000003
+    query_id:uint64
+  = InternalMsgBody;
+;; PERMISSIONLESS — anyone may execute a matured (now >= eta), CONFIRMED
+;; (`timelock_not_confirmed`, 804) queued change, exactly once. On success,
+;; sends `update_venue` to the ratchet:
+
+update_venue#b0000010
+    query_id:uint64
+    dedust_native_vault:MsgAddress
+    dedust_pool:MsgAddress
+    primes_jetton_vault:MsgAddress
+  = InternalMsgBody;
+;; identical body to ratchet.tlb's `update_venue`.
+
+;; ---- inbound: permissionless redelivery (D10, primes_venue_timelock.tolk header) ----
+;; The caller pays: >= 0.03 TON attached (103 below it), carried on to the
+;; ratchet (mode 64), so a repeat costs this contract nothing.
+
+retry_update_venue#a0000004
+    query_id:uint64
+  = InternalMsgBody;
+;; Re-sends the already-executed `update_venue` to the ratchet when the first
+;; send bounced, so a bounce never restarts the 30-day timelock. No sender
+;; check; requires a queued record that has fired (802). Re-decides nothing:
+;; the body is the stored record.
+
+;; ---- genesis-only bootstrap (D11, primes_venue_timelock.tolk header) ----
+
+set_ratchet#a0000005
+    query_id:uint64
+    ratchet_addr:MsgAddress
+  = InternalMsgBody;
+;; sender MUST equal the fixed genesis-script address; one-shot (`ratchetSet`
+;; flag), then permanently inert. Resolves the circular address dependency
+;; (timelock init would otherwise need the ratchet's address, whose init
+;; needs the timelock's) the same way D7's `set_ledger` does on the
+;; collection and jetton master.
+
+;; ---- get-methods (§9.1) ----
+;;
+;; getQueued -> (has_queued:uint8, fired:uint8, dedust_native_vault:MsgAddress,
+;;               dedust_pool:MsgAddress, primes_jetton_vault:MsgAddress,
+;;               eta:uint64, seq:uint32, confirmed:uint8)
+;;   THE PENDING CHANGE, IN FULL, and whether it can execute: `seq` is what a
+;;   treasury venue-confirm proposal must name, `confirmed` whether one passed.
+;;
+;; getKeys -> (proposer:MsgAddress, governance:MsgAddress)
+;;   D-194: who holds each of the two keys.

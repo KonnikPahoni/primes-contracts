@@ -1,0 +1,86 @@
+;; TON PRIMES — the MINTER CARD (contracts/contracts/primes_minter_card.tolk).
+;; DECISIONS.md D-191 point 1, GAUNTLET.md V26.4. Opcodes: shared/opcodes.ts
+;; `MINTER_CARD` (high byte 0x9B). One card per (ledger, wallet): the address is
+;; derived from the card code and the init data below in its EMPTY state, and that
+;; derivation is each side's only authority over the other.
+
+minter_state$_
+    primes_minted:uint32     ;; §4.7.1 prime rank's input (lifetime)
+    window:uint8             ;; §5.1 PRIME_UPLIFT mints left; a prime RESETS it
+    newcomer_window:uint8    ;; §4.5 raised-ceiling mints left
+    recruits:uint32          ;; §4.7 lifetime recruits
+    newcomer_opened:Bool     ;; G80: set once by the recruit edge
+  = MinterState;
+
+;; Storage — FIELD ORDER IS PART OF THE ADDRESS. Init data: all zero, seen = 0.
+card_storage$_
+    ledger:MsgAddress
+    owner:MsgAddress
+    state:MinterState
+    seen:Bool                ;; the §4.5 sybil guard: an accepted event touched this card
+    era_seq:uint8            ;; the ledger's ceremony counter `era_recruits` was taken under
+    era_recruits:uint32      ;; D-36 era tally
+    in_flight:uint32         ;; mints sent since last fresh, not yet refunded; 0 once
+                             ;; an accepted recruit/prime is known. seen resets only at 0.
+    edge_sent_at:uint32      ;; the unresolved recruit edge's send time; 0 when none.
+                             ;; For EDGE_HOLD (300 s) after it, a gift from any payer
+                             ;; but the owner throws 104; the edge's refund or bounce
+                             ;; clears it.
+  = CardStorage;
+
+;; ---- inbound from ANY wallet (the payer): ledger.tlb's `mint#b0000002` ----
+;; Refused below MINT_PRICE (103) before the standing is touched. Otherwise the card
+;; spends one unit of each live window, opens the newcomer window on a recruit edge
+;; (a gift, payer != owner, to a card not yet seen), sets `seen` and forwards:
+
+card_mint#9b000001
+    owner:MsgAddress
+    payer:MsgAddress
+    state:MinterState        ;; the standing BEFORE this mint — what k is priced off
+    fresh:Bool               ;; `seen` was 0: with payer != owner, the recruit edge
+    mint:^Cell               ;; the payer's mint#b0000002 body, verbatim
+  = InternalMsgBody;
+;; Card -> ledger, RichBounce, carry-all. A ledger throw bounces it and the card gives
+;; the units back (and `seen`, once every mint since it was fresh has come back) before
+;; refunding the payer.
+
+card_mint_refunded#9b000005
+    query_id:uint64
+    payer:MsgAddress
+    state:MinterState
+    fresh:Bool
+  = InternalMsgBody;
+;; Ledger -> card on a lost race, carry-all: same give-back, then the TON to `payer`.
+
+card_add_recruit#9b000002
+    query_id:uint64
+    era_seq:uint8
+  = InternalMsgBody;
+;; Ledger -> the PAYER's card on a recruit edge (StateInit attached, 0.02 TON):
+;; recruits += 1; era_recruits restarts at 0 if era_seq moved, then += 1; seen = 1.
+
+card_recruit_counted#9b000003
+    query_id:uint64
+    owner:MsgAddress
+    era_seq:uint8
+    era_recruits:uint32
+  = InternalMsgBody;
+;; Card -> ledger, carry-all. The ledger's running max takes it on a STRICT `>` and
+;; only when `era_seq` is its own: a reply that lands after its era's ceremony is
+;; dropped (the trophy is already awarded).
+
+card_prime_minted#9b000004
+    query_id:uint64
+  = InternalMsgBody;
+;; Ledger -> the beneficiary's card on every prime sale (StateInit attached, 0.005
+;; TON, kept as the card's reserve): primes_minted += 1, window = PRIME_WINDOW, seen = 1.
+
+;; ---- get-methods (a never-deployed card is zero standing) ----
+;; get_minter_state()    -> (primes_minted, tier, tier_uplift, window)
+;; get_recruit_rank()    -> (recruits, tier, tier_uplift, next_tier_at)
+;; get_newcomer_window() -> (left, NEWCOMER_WINDOW, NEWCOMER_UPLIFT, opened)
+;; get_uplift_line()     -> (prime_rank, prime_window, newcomer, recruit_rank, summed)
+;;                          -- the ledger's get_kmax_for(n, summed) finishes it
+;; get_era_recruits()    -> (era_seq, era_recruits) -- this era's only if era_seq
+;;                          equals the ledger's get_era_leader() third value
+;; get_card_owner()      -> (ledger, owner, seen)

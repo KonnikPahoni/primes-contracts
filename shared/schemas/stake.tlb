@@ -1,0 +1,295 @@
+;; TON PRIMES — the STAKE MASTER and its POSITION CHILDREN. CONCEPT.md §5.3;
+;; DECISIONS.md D-168. Opcodes: /shared/opcodes.ts `STAKE`. Contracts:
+;; contracts/contracts/primes_stake.tolk (the master: the stream, the accumulator,
+;; the totals) and contracts/contracts/primes_stake_position.tolk (one child per
+;; staking wallet, holding that wallet's positions). Parameters: shared/params.json
+;; `staking`. The contracts serialise these bytes; where this file and a contract
+;; disagree, the contract wins and this file is the bug.
+;;
+;; WHAT IT IS. A wallet locks PRIMES for a term (30 d / 3 m / 6 m / 1 y,
+;; `staking.tier_term_seconds`) and earns PRIMES while the term runs, pro rata to
+;; `amount × tier_weight` (`staking.tier_weights` = 5/6/7/8). The rewards are the
+;; governed treasury's PRIMES, sent once per epoch by its permissionless
+;; `distribute()` (treasury.tlb) and STREAMED over the following epoch. Earning
+;; stops at `matures_at`; principal returns only at or after it (ST-3). A SUPPLY
+;; LOCK, not a rebate: nothing here touches `k`, `S`, `T`, the split or any TON.
+;;
+;; WHY TWO CONTRACTS. Config 43's 65,536-cell account ceiling: a positions
+;; dictionary on the master dies around 20,000 positions, so each wallet's
+;; positions live on its own child — the treasury/LP-child split, same reason.
+;;
+;; Trust edges:
+;;   - transfer_notification: sender MUST equal the master's own jetton wallet
+;;     (1102). A budget additionally needs `sender` = the treasury AND the SBGT tag.
+;;   - settle: sender MUST equal positionAddress(owner) (1101). Re-deriving the
+;;     child's address IS the authentication.
+;;   - stake_credit / stake_settled / restore_stake: sender MUST equal the child's
+;;     `stake_addr` (100).
+;;   - claim / relock / withdraw: sender MUST equal the child's `owner` (1104).
+;;   - expire: ANY sender. It moves no PRIMES and names no destination.
+;;   - set_wallet: sender MUST equal the genesis script; one-shot.
+;;
+;; NO ADMIN, NO OWNER FIELD, NO TON LIABILITY. PRIMES leave the master by three
+;; routes and no fourth: a position's reward to its owner, a matured position's
+;; principal to its owner, a refund of an unrecognised deposit to its sender.
+;;
+;; Timestamps are uint40 throughout, as on the treasury.
+
+;; ---- master storage ----
+
+;; 128+128+40+124+128+40+124+124 = 836 bits.
+;;
+;; THE STREAM (§5.3), run first on every state-touching message:
+;;   end = min(now, stream_end); dt = end − last_accrual_time
+;;   amt = min(stream_rate · dt, stream_remaining)          (total_weight > 0)
+;;   reward_per_weight_acc += amt · ACC_SCALE / total_weight
+;;   stream_remaining −= amt; unclaimed_total += amt
+;; With no weight nothing moves and the budget rolls into the next epoch (Q16).
+stream$_
+    total_weight:uint128           ;; Σ amount · tier_weight over EARNING positions
+    reward_per_weight_acc:uint128  ;; ACC_SCALE = 2^64 (`staking.acc_scale`)
+    last_accrual_time:uint40
+    stream_remaining:Coins         ;; received as budget, not yet streamed
+    stream_rate:uint128            ;; nano-PRIMES / second, remaining / interval
+    stream_end:uint40
+    locked_total:Coins             ;; Σ principal in custody
+    unclaimed_total:Coins          ;; streamed to positions, not yet paid (banked incl.)
+  = Stream;
+
+;; Cumulative, for §9.1 and for an indexer to reconcile against.
+totals$_
+    budgets_in:Coins
+    claimed_total:Coins
+    live_positions:uint32
+    stake_events:uint32
+    budget_events:uint32
+  = Totals;
+
+;; D21-family bootstrap. `treasury_addr` is here (set once by `set_wallet`) and
+;; not deploy data because the treasury's own deploy data names THIS contract as
+;; `distribute()`'s recipient — one side of the pair has to be set after both
+;; addresses exist.
+stake_wallets$_
+    jetton_wallet_addr:MsgAddress
+    treasury_addr:MsgAddress
+    wallet_set:uint8
+    genesis_script_addr:MsgAddress
+  = StakeWallets;
+
+stake_config$_
+    jetton_master_addr:MsgAddress
+    clock_divisor:uint16           ;; D-139 test clock; 1 is mainnet. Part of every
+                                   ;; child's address.
+    position_code:^Cell            ;; primes_stake_position.tolk. Fixed at deploy.
+    w:^StakeWallets
+  = StakeConfig;
+
+stake_storage$_
+    stream:^Stream
+    totals:^Totals
+    cfg:^StakeConfig
+  = StakeStorage;
+
+;; ---- child storage ----
+;;
+;; THE FIELD ORDER IS PART OF THE ADDRESS. The master's `PositionInit` builds the
+;; empty state of exactly these fields (positions empty, zeros) and hashes it with
+;; `position_code`; Staking.spec.ts asserts the master's and the wrapper's
+;; derivations agree.
+
+;; 124+8+40+40+256+40+8+124+8 = 648 bits.
+stake_position$_
+    amount:Coins
+    tier:uint8                     ;; 0..3
+    locked_at:uint40               ;; restamped by a relock
+    matures_at:uint40              ;; locked_at + term(tier) / clock_divisor
+    reward_debt:uint256            ;; weight · acc / ACC_SCALE at the last settle.
+                                   ;; uint256, not Coins: the accumulator's whole
+                                   ;; history under this weight is not bounded by
+                                   ;; any PRIMES balance.
+    last_settle_time:uint40        ;; when reward_debt was pinned — the proration
+                                   ;; window's start
+    expired:uint8                  ;; 1 once a settle at/after maturity took the
+                                   ;; weight out of total_weight
+    banked:Coins                   ;; settled by `expire`, not yet sent
+    in_flight:uint8                ;; set before a settle, cleared ONLY by the reply
+  = StakePosition;
+
+stake_position_storage$_
+    owner:MsgAddress
+    stake_addr:MsgAddress
+    positions:(HashmapE 32 StakePosition)
+    next_id:uint32                 ;; monotonic, ids never reused
+    position_count:uint32
+    staked_total:Coins             ;; Σ principal over this wallet's live positions
+    clock_divisor:uint16           ;; inherited from the master. LAST.
+  = StakePositionStorage;
+
+;; ---- forward payloads, on the TEP-74 transfer INTO the master ----
+
+;; "STKL" — a stake. Anything else (absent tag, tier > 3) from a non-treasury
+;; sender is REFUNDED to that sender (D-168: a stake with no tier has no term).
+stake_action_lock#53544b4c
+    tier:uint8
+  = StakeForwardPayload;
+
+;; "SBGT" — a budget, written by the treasury's `distribute()`. Streamed only when
+;; the notification's `sender` is the treasury; any other PRIMES from the treasury
+;; is refunded.
+stake_action_budget#53424754
+  = StakeForwardPayload;
+
+;; ---- inbound, to the master ----
+
+set_wallet#91000001
+    query_id:uint64
+    jetton_wallet_addr:MsgAddress
+    treasury_addr:MsgAddress
+  = InternalMsgBody;
+;; One-shot, genesis script only (100 wrong_sender, 104 already_processed).
+
+transfer_notification#7362d09c
+    query_id:uint64
+    amount:Coins
+    sender:MsgAddress
+    forward_payload:(Either Cell ^Cell)   ;; StakeForwardPayload
+  = InternalMsgBody;
+;; A BUDGET (sender = treasury, SBGT): accrue, then stream_remaining += amount,
+;;   stream_rate = stream_remaining / interval, stream_end = now + interval
+;;   (interval = `staking.epoch_seconds` / clock_divisor). No gas floor.
+;; A STAKE (STKL + tier <= 3, sender != treasury): needs forward TON >=
+;;   STAKE_MIN_FORWARD = 0.15 TON (103 otherwise); accrue, weight in, then
+;;   `stake_credit` to the child (deploying it).
+;; ANYTHING ELSE: refunded to `sender` (same 0.15 TON floor). Nothing recorded.
+;; Throws 1100 (stake_wallet_unset), 1102 (stake_wrong_wallet), 1103 (stake_overflow).
+
+;; Settle one position. From the owner's OWN child only.
+;;   mode 0 CLAIM    — pay paid + banked; the position keeps earning (unless the
+;;                     settle expired it).
+;;   mode 1 RELOCK   — pay paid + banked, re-weight under `new_tier`, expired = 0;
+;;                     the child restarts the term. The child already refused a
+;;                     downgrade before maturity.
+;;   mode 2 WITHDRAW — principal + paid + banked in ONE transfer; the child
+;;                     asserted `now >= matures_at`.
+;;   mode 3 EXPIRE   — no transfer: `paid` is added to `banked` on the child and
+;;                     stays in unclaimed_total.
+;; THE ONE SETTLE RULE: full = weight · acc / ACC_SCALE − reward_debt; if
+;; now >= matures_at and not expired, paid = full · (matures_at − last_settle_time)
+;; / (now − last_settle_time) (0 if last_settle_time >= matures_at), the excess
+;; returns to stream_remaining and the weight leaves total_weight; else paid = full.
+;; Value floor: 0.15 TON (a transfer + the reply), 0.05 TON for mode 3.
+;; 32+64+267+32+124+8+40+256+40+8+124+8+8 = 1011 bits.
+settle#91000002
+    query_id:uint64
+    owner:MsgAddress
+    position_id:uint32
+    amount:Coins
+    tier:uint8
+    matures_at:uint40
+    reward_debt:uint256
+    last_settle_time:uint40
+    expired:uint8
+    banked:Coins
+    mode:uint8
+    new_tier:uint8                 ;; mode 1 only
+  = InternalMsgBody;
+;; Throws 1100, 1101 (stake_not_position), 103, 102 (malformed mode / new_tier), 1103.
+
+;; ---- master -> child ----
+
+;; A new position. Deploys the child on a first stake. `reward_debt` is pinned
+;; AFTER the stake's own accrue; locked_at = last_settle_time = now,
+;; matures_at = now + term(tier) on the child.
+stake_credit#91000010
+    query_id:uint64
+    amount:Coins
+    tier:uint8
+    reward_debt:uint256
+  = InternalMsgBody;
+
+;; The reply half of `settle`, sent BEFORE the PRIMES. mode 2 deletes the
+;; position; otherwise it writes the fields, restamps the term on mode 1, and
+;; clears `in_flight`. If this bounces the flag stays set: the position is stuck,
+;; never paid twice.
+stake_settled#91000011
+    query_id:uint64
+    position_id:uint32
+    mode:uint8
+    new_tier:uint8
+    reward_debt:uint256
+    expired:uint8
+    banked:Coins
+    settled_at:uint40              ;; the master's `now` the debt was pinned at
+  = InternalMsgBody;
+
+;; BOUNCE RECOVERY: a withdraw transfer bounced. The position comes back MATURED
+;; (locked_at = matures_at = now), EXPIRED, reward_debt 0, with the reward
+;; BANKED separately from the principal. Idempotent against a second bounce.
+restore_stake#91000012
+    query_id:uint64
+    position_id:uint32
+    amount:Coins
+    tier:uint8
+    banked:Coins
+  = InternalMsgBody;
+
+;; ---- inbound, to the child ----
+
+claim#91000021       query_id:uint64 position_id:uint32            = InternalMsgBody;
+relock#91000022      query_id:uint64 position_id:uint32 tier:uint8 = InternalMsgBody;
+withdraw#91000023    query_id:uint64 position_id:uint32            = InternalMsgBody;
+expire#91000024      query_id:uint64 position_id:uint32            = InternalMsgBody;
+;; claim / relock / withdraw: owner only (1104), forward >= 0.20 TON
+;;   (POSITION_MIN_FORWARD = 0.05 child + 0.15 master; 103).
+;; expire: ANYONE, forward >= 0.10 TON (EXPIRE_MIN_FORWARD); an already-expired
+;;   position RETURNS rather than throwing (a keeper may double-send).
+;; Common refusals: 1105 (stake_position_missing), 1108 (stake_in_flight),
+;;   1106 (stake_term_running: withdraw/expire before matures_at),
+;;   1107 (stake_relock_downgrade: new tier < tier while the term runs),
+;;   102 (tier > 3).
+;; A settle the master refuses bounces back here and clears `in_flight`.
+
+;; ---- outbound: TEP-74 transfer, from the master's own jetton wallet ----
+;;
+;; transfer#0f8a7ea5, standard body, destination = response_destination = the
+;; recipient (so no `excesses` ever comes home to the master). query_id is
+;; `(tag << 56) | id`: tag 1 REWARD, 2 WITHDRAW (| position_id), 3 REFUND. A
+;; WITHDRAW transfer carries a bounce note as its forward_payload (with
+;; forward_ton_amount = 0, so the recipient never reads it):
+stake_withdraw_note$_
+    position_id:uint32
+    tier:uint8
+    principal:Coins
+  = StakeWithdrawNote;
+;; On bounce: REWARD → stream_remaining += amount, claimed_total −= amount (ST-2
+;; stays exact); WITHDRAW → principal back into locked_total, reward back into
+;; unclaimed_total, `restore_stake` to the child; REFUND → the PRIMES stay as an
+;; unrecorded surplus over ST-1's right-hand side.
+
+;; ---- get-methods (§9.1) ----
+;;
+;; master:
+;;   getStakeSolvency() -> (locked_total, stream_remaining, unclaimed_total)
+;;       ST-1: the master's jetton wallet `get_wallet_data` balance >= their sum.
+;;   getStakeStream() -> (stream_rate, stream_remaining, stream_end,
+;;                        last_accrual_time, reward_per_weight_acc, total_weight,
+;;                        acc_scale)
+;;   getAccNow() -> reward_per_weight_acc as the next message would see it
+;;   getStakeTotals() -> (budgets_in, claimed_total, locked_total, live_positions,
+;;                        stake_events, budget_events)
+;;       ST-2: budgets_in == claimed_total + unclaimed_total + stream_remaining.
+;;   getTierTerms() -> 4 terms, divided by clock_divisor
+;;   getTierWeights() -> (5, 6, 7, 8)
+;;   getStakePositionAddress(owner) -> address
+;;   getStakeMinForward() -> STAKE_MIN_FORWARD (0.15 TON)
+;;   getStakeConfig() -> (jetton_master_addr, jetton_wallet_addr, treasury_addr,
+;;                        wallet_set, clock_divisor, interval)
+;; child:
+;;   getPositions() -> (position_count, next_id, staked_total)
+;;   getPosition(id) -> (amount, tier, locked_at, matures_at, reward_debt,
+;;                       last_settle_time, expired, banked, in_flight); all zeros
+;;                       for a missing id
+;;   getClaimable(id, acc) -> what a claim pays now, fed getAccNow()
+;;   getPositionOwner() -> (owner, stake_addr)
+;;   getTierTerms() -> 4 terms as enforced (divided)
+;;   getPositionMinForward() -> (owner_min_forward 0.20, expire_min_forward 0.10)

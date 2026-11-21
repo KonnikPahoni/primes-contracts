@@ -1,0 +1,291 @@
+;; TON PRIMES — NFT collection + item message schemas (TEP-62 base + extensions).
+;; Opcodes: /shared/opcodes.ts `COLLECTION`, `ITEM`, `TEP62`.
+;; Generated message/get-method tables: /docs/audit/wire-format.md.
+
+;; ================= Collection =================
+;;
+;; Storage note (D-188 point 6, D-212): the deploy-fixed `Aux` cell ends with
+;; `registrar_addr:MsgAddress`, the one sender of `naming_paid` besides the items
+;; (a trophy's paid re-engraving). Genesis computes the registrar's address first,
+;; so no bootstrap message is needed. The root's fourth ref is `NamingBook`:
+;;
+;; naming_book$_ name_fee:Coins rename_fee:Coins   ;; deploy data, no setter (D-212)
+;;               named:uint32 renamed:uint32 to_floor:Coins = NamingBook;
+;;
+;; Published by `get_naming() -> (name_fee, rename_fee, named, renamed, to_floor)`.
+
+;; ---- inbound: mint, from the ledger only ----
+
+mint_item#c0000001
+    query_id:uint64
+    n:uint256               ;; also the item's TEP-62 index
+    owner:MsgAddress
+    is_prime:uint8          ;; 0/1; uint8 on the wire in all three structs (ledger, collection, item)
+    factorization:^Cell      ;; canonical factor list, (prime,exponent) pairs — empty ref for primes
+    rarity_flags:uint16      ;; bitmask: twin/palindromic/Mersenne/Sophie-Germain/perfect-power (concept §3.1)
+    mint_value:Coins         ;; the item's own deploy value; the rest of the message value is the held split
+    head:uint64              ;; the LEDGER's head after this mint — see below
+    held_split:(Maybe ^HeldSplit) ;; D-117: the held split (ledger.tlb); absent on Unity
+    prime_init:(Maybe ^PrimeInit) ;; D-188 point 4: present on a PRIME mint only
+  = InternalMsgBody;
+
+;; D-188 point 4 — what the ledger held for an unsold prime, handed to its new
+;; item at sale: the §3.2 dividend bookmark the head walk stamped (0 for a prime
+;; sold ahead of the head, whose stamp the first `credit_dividend` carries) and
+;; the §6 point 2 forfeit counter. The collection passes it to `populate` unread.
+prime_init$_ div_entry:Coins forfeited:Coins = PrimeInit;
+;; V28 (amends D-117): the collection forwards the WHOLE value (`mint_value` plus
+;; the held split) with the deploy, and `populate` carries this message whole. The
+;; item keeps `mint_value` and returns the rest to the ledger as
+;; `mint_confirmed#b000007a` (below and ledger.tlb), so the split is paid only by an
+;; item that exists. A refused `populate` bounces to the collection, which relays
+;; this cell to the ledger as `mint_item_refused#b0000084` for `retry_item`.
+;; `head` is the collection's TEP-62 `next_item_index`, and it is carried rather
+;; than derived because the collection cannot DERIVE it: D-20 walks the head past
+;; every prime it crosses (opening each as a Dutch lot) and no `mint_item` is ever
+;; sent for those, so counting mints undercounts the head by pi(n). The ledger is
+;; the only contract that knows the number, so it says so — on a message it was
+;; already sending, which is why this costs the mint path no hop.
+;;
+;; D-106 removed the `patron:(Maybe ^PatronData)` ref that used to follow it,
+;; together with the whole ownerless-item lifecycle (claim, reclaim, purses,
+;; claim locks, `gifted_by`). A gifted number is owned by its beneficiary from
+;; block one; see CONCEPT §4.5.
+;; sender MUST equal the ledger's fixed address. Collection computes the
+;; item's deterministic address (standard TEP-62 state-init derivation from
+;; collection address + n) and deploys it with this data as initial storage,
+;; forwarding `mint_value` (the item-deploy share of gas & ops, engineering-
+;; spec §4) as the deploy's attached value.
+
+;; ---- standard TEP-62: transfer, get_static_data, report_static_data ----
+;; Reused verbatim (opcodes 0x5fcc3d14 / 0x2fcb26a2 / 0x8b771735), INCLUDING the
+;; full transfer tail -- response_destination, custom_payload, forward_amount,
+;; forward_payload -- and the ownership_assigned#05138d91 / excesses#d53276db
+;; replies. The item once parsed a trimmed two-field transfer, which threw on any
+;; wallet's standard body and made the collection unlistable on marketplaces
+;; (GetGems: "this NFT can't be listed for sale"). Not redefined here; see TEP-62. `transfer` is the only path that changes
+;; `owner` in item storage — critical because `owed`'s claimant check reads
+;; this field (owed-ledger decision, engineering-spec §3).
+
+;; ================= Item =================
+
+;; ---- item storage: the mint date (CONCEPT §9.8 / §9.1) ----
+;;
+;; `ItemMutable` carries `minted_day:uint24` — DAYS SINCE THE UNIX EPOCH, written
+;; once by the `Populate` handler from `blockchain.now() / 86400` and never
+;; rewritten (the `populated == 0` assert is what makes it write-once). Published
+;; by `getMintedDay()`.
+;;
+;; It is on chain because the artwork prints it: §9.1's rule is that every number
+;; the UI shows maps to a public get-method, and a mint date read only out of an
+;; indexer would be the one figure on the tile a reader could not check.
+;;
+;; After it, `tribute_total:Coins` — every `credit_tribute` amount ever received,
+;; never decremented (a claim zeroes `owed`, not this). 0 in the
+;; address-determining default. Published by `getTributeTotal()`: the "paid to
+;; date" leg of the prime's bond panel (CONCEPT §3.2.1).
+;;
+;; After that, `referral_paid_total:Coins` (D-177, GAUNTLET G89) — every
+;; `forward_to_owner#c1000002` value this item has relayed as a §4.1 referral key,
+;; counted as received, before the relay. Never decremented; 0 in the
+;; address-determining default. Published by `getReferralPaid()`: the referral
+;; board's per-key figure (CONCEPT §9.11).
+;;
+;; After that, `div_entry:Coins` and `forfeited_total:Coins` (D-188 point 4) — the
+;; flat dividend's bookmark `entry[p]` and §6 point 2's forfeit counter, set from
+;; `populate.prime_init` and, for the bookmark, re-stamped by every
+;; `credit_dividend`. Published by `getDivEntry()`, `getClaimableDividend(div_acc)`
+;; and `getForfeited()`. 0 in the address-determining default. They live on the
+;; item, beside `owed`, because a row per prime on the ledger fills config 43's
+;; 65,536-cell account cap.
+;;
+;; DAYS, not a Unix timestamp, and stamped by the ITEM rather than carried on
+;; `mint_item`: the image only ever renders a date, uint24 covers ~45,000 years,
+;; the item's storage cell is the one already split for the 1023-bit budget, and
+;; `mint_item` is itself within a cell of that ceiling (see its `head` field).
+;; The item's `Populate` is one hop from the mint in the same message chain, so
+;; the day it stamps is the day of the mint.
+;;
+;; The address-determining default is 0 for every n: this field must not enter
+;; init data, or `ItemAddress(n)` would stop being a function of `n` alone.
+;;
+;; LAST, `naming:(Maybe ^ItemNaming)` (D-188 point 6, D-212) — the number's name.
+;; Absent (0 bit) in the address-determining default and on every fresh mint, prime
+;; or composite; written by `item_name` below. No namer is stored: the pen is the
+;; CURRENT OWNER's, so it follows a transfer. Published by `getNamer()` (the owner)
+;; and `getAnnotation()`.
+
+item_naming$_
+    count:uint16          ;; namings ever written; the first cost name_fee, the rest rename_fee
+    text:^Cell            ;; the latest; ONE cell with no refs
+  = ItemNaming;
+
+;; ---- inbound: populate, from the collection only ----
+
+populate#c0000002
+    mint:^MintItem       ;; the ledger's `mint_item#c0000001` body, byte for byte (V28)
+  = InternalMsgBody;
+;; The collection's deploy of `mint_item` into the item. Sender MUST equal
+;; `collection_addr` (100); one-shot (`populated`, 104). The item stamps its mint
+;; day here (above), keeps `mint_value`, and — when `held_split` is present —
+;; sends `mint_confirmed` (below) with the rest of the value. A throw here, in
+;; compute or in that send, bounces `populate` whole to the collection.
+
+;; ---- D-212 (§4.7.1): the owner names a number, for TON ----
+;;
+;; anyone -> collection. PERMISSIONLESS; value >= name_fee + NAME_RELAY_GAS (0.06
+;; TON), else 103 and the message bounces home. The collection derives item(n) and
+;; relays `item_name`, BOUNCEABLE, carrying the rest: an `n` with no item bounces,
+;; and the bounce arm refunds the sender from the bounced body.
+name_number#c0000009
+    query_id:uint64
+    n:uint256
+    text:^Cell
+  = InternalMsgBody;
+
+;; collection -> item(n). Sender MUST equal `collection_addr` (100). Then, with NO
+;; throw: populated, payer == owner, `text` ONE cell with no refs, and value >=
+;; fee + NAMING_PAID_GAS (0.03) + ITEM_NAME_GAS (0.02), where fee = name_fee while
+;; count = 0 and rename_fee after. Any miss REFUNDS the whole value to `payer`. A
+;; pass writes count += 1, text, sends `naming_paid` with fee + 0.03 and the change
+;; home, with the item's prior balance reserved.
+item_name#c1000008
+    query_id:uint64
+    payer:MsgAddress
+    text:^Cell
+    name_fee:Coins
+    rename_fee:Coins
+  = InternalMsgBody;
+
+;; item(n) or the registrar -> collection. Sender MUST be item(n), derived, or
+;; `registrar_addr` (100). Forwarded whole to the ledger as
+;; `royalty_to_ratchet#b0000079` (T += amount, S untouched); `count` = 1 counts
+;; toward `named`, anything else toward `renamed`.
+naming_paid#c000000a
+    query_id:uint64
+    n:uint256
+    amount:Coins
+    count:uint16
+  = InternalMsgBody;
+;;
+;; RETIRED by D-212, not recycled: relay_annotation#c0000008, item_annotate#c1000007.
+
+;; ---- inbound: referral relay, from the ledger only ----
+
+forward_to_owner#c1000002
+    query_id:uint64
+  = InternalMsgBody;
+;; §4.1's 10% referral line for a mint that named this number as its key. The
+;; VALUE is the payload: the item adds it to `referral_paid_total` and relays it
+;; to the current `owner`. Sender MUST equal `ledger_addr` (100).
+
+;; ---- inbound: flat-dividend credit, from the ledger only (D-188 point 4) ----
+
+credit_dividend#b0000036
+    query_id:uint64
+    p:uint256
+    div_acc:Coins            ;; the ledger's div_acc when the claim ran
+    base:(Maybe Coins)       ;; the walk's parked stamp, for a prime sold ahead of the head
+  = InternalMsgBody;
+;; Sender MUST equal `ledger_addr` (100). `base`, when present, replaces
+;; `div_entry` first. Then, if `div_acc > div_entry`: owed += div_acc − div_entry,
+;; div_entry = div_acc, and `dividend_credited#b000000e` goes back to the ledger
+;; with the rest of the value. Otherwise a no-op (the value stays as rent).
+
+;; ---- outbound: item -> ledger ----
+
+dividend_credited#b000000e
+    query_id:uint64
+    p:uint256
+    amount:Coins
+  = InternalMsgBody;
+
+;; V28 (amends D-117; replaces V32's `prime_deployed#b0000081`): sent from
+;; `populate` whenever a held split rode in, with value `in_value - mint_value +
+;; the deploy's forward fee`. Authenticated by the ledger as item(n). Sent by the
+;; item itself, so it lands after any credit the item bounced first (V32).
+mint_confirmed#b000007a
+    query_id:uint64
+    n:Coins              ;; < 2^82 (executeMint's MR bound); Coins keeps the root < 1023 bits
+    is_prime:uint1       ;; clears the ledger's in-flight prime row (V32)
+    held_split:HeldSplit ;; INLINE, see ledger.tlb
+  = InternalMsgBody;
+
+;; ---- outbound: collection -> ledger, a refused populate (V28) ----
+
+mint_item_refused#b0000084
+    mint:^MintItem       ;; from the bounced `populate`
+  = InternalMsgBody;
+
+;; ---- inbound: tribute credit, from the ledger only ----
+;; Same wire opcode as the ledger's outbound `credit_tribute` (0xb0000030) —
+;; see /shared/schemas/ledger.tlb. Reproduced here as the item's receive side:
+
+credit_tribute#b0000030
+    query_id:uint64
+    credit_id:uint64
+    amount:Coins
+    p:uint256            ;; GAUNTLET V17.1 — mirrors the ledger's field exactly
+  = InternalMsgBody;
+;; The item does NOT read `p` — it already knows which number it is. The field
+;; is carried so the LEDGER can recover the routing target from its own bounced
+;; body. Both schemas move together or the wire desynchronises.
+;; sender MUST equal the ledger's fixed address (the item's only other trusted
+;; edge besides the collection that deployed it). Item does: owed += amount,
+;; tribute_total += amount.
+;; `owed` is a single Coins-width scalar in item storage — never a
+;; dictionary — which is the entire point of the owed-ledger decision
+;; (engineering-spec §3): this message can NEVER cause the item's own state
+;; size to grow unboundedly, because there is exactly one `owed` field per
+;; item, forever, regardless of how many times it is credited.
+
+;; ---- inbound: tribute claim, from the current owner only ----
+
+claim_tribute#c1000001
+    query_id:uint64
+  = InternalMsgBody;
+;; sender MUST equal `owner` in item storage (standard TEP-62 ownership
+;; check, same pattern as `transfer`). If owed == 0, cheap-fail (refund gas,
+;; no-op) rather than sending a zero-value message to the ledger. Otherwise:
+;; item captures `amount := owed`, sets `owed := 0` (zero BEFORE forwarding —
+;; see engineering-spec §5 bounce row for why), then forwards
+;; `claim_tribute` (0xb0000004) to the ledger with `amount` and `owner`.
+
+;; ---- outbound: item -> ledger, claim relay ----
+;; Same wire opcode/body as ledger.tlb's `claim_tribute` (0xb0000004); the item
+;; is the sender the ledger checks against ItemAddress(p).
+
+;; ---- genesis-only bootstrap (D7, primes_collection.tolk header) ----
+
+set_ledger#c0000003
+    query_id:uint64
+    ledger_addr:MsgAddress
+  = InternalMsgBody;
+;; sender MUST equal the fixed genesis-script address; one-shot (`ledgerSet`
+;; flag). The collection deploys with `ledger_addr` unset — the ledger's own
+;; init needs the collection's address, so the genesis script locks the
+;; ledger in afterward; no message can ever change it again.
+;; (Wire-named `set_bank` before the WS3 rename; opcode unchanged.)
+
+;; `prove_ownership#b0000063` / `ownership_proof#b0000064`, the constellation
+;; build's input round trip, are RETIRED by D-202. Not reused.
+
+;; ---- inbound: permissionless rent top-up (D-62/GAUNTLET.md D9.1) ----
+;;
+;; A composite item is endowed exactly once at deploy (`ITEM_DEPLOY_VALUE`)
+;; and never topped up by any other message — never cited as a tribute
+;; factor, so it never receives `credit_tribute`'s gas either. Measured rent
+;; against that one-time endowment gives a multi-year but finite runway,
+;; after which TON freezes the contract for good. The owner does not want
+;; any item to reach that cliff (D-62).
+
+top_up#c1000006
+    query_id:uint64
+  = InternalMsgBody;
+;; Permissionless: anyone (a wallet, a script, a future webapp button) may
+;; send TON here. The item does nothing with the body — TVM already credits
+;; an incoming message's value to the contract's balance before any handler
+;; runs, which is the entire mechanism. What this opcode adds over an
+;; unrecognized empty-body send (already silently accepted, see the item's
+;; own fallback arm) is a name: a documented, discoverable "keep this number
+;; alive" affordance rather than an accident of the fallback.

@@ -1,0 +1,191 @@
+;; TON PRIMES — voucher claim message schemas. CONCEPT §9.5, EARN_PLAN.md §3 (E2).
+;; Opcodes: /shared/opcodes.ts `VOUCHER`. Contract: contracts/primes_voucher.tolk.
+;; Budget: /shared/params.json genesis.era_bounty_schedule.remaining_vault_split
+;;         .tracks.quests.primes — held and enforced by the VAULT, not here.
+
+;; ================= What needs a voucher, and what must not =================
+;;
+;; §9.4 splits quest tracks by what a contract can check. Recruit quests and prime
+;; quests are CONTRACT FACTS and are verified in
+;; the claim transaction — they never come through this contract, because routing
+;; a provable thing through a signature is a downgrade from proof to assertion
+;; and §2 principle 5 exists to prevent exactly that.
+;;
+;; What is left is the genuinely unverifiable: a bot connect, a Telegram story
+;; that produced counted starts, a game score. §9.5 pays those without putting an
+;; operator in the payment path — the backend signs, the player redeems.
+;;
+;; Every payout is PRIMES from the bounty vault's genesis-fixed `quests` bucket.
+;; §3.3/§5 pre-count the whole vault into `S`, so a bounty payout moves tokens
+;; the floor price has already accounted for: `p_f` cannot move, and no new
+;; emission path exists. This contract holds no PRIMES and cannot mint any.
+
+;; ---- genesis-only bootstrap ----
+
+set_vault#9a000003
+    query_id:uint64
+    vault_addr:MsgAddress
+  = InternalMsgBody;
+;; The bounty vault this contract forwards `pay_program_bounty#90000002` to.
+;; Sender MUST equal the genesis-script address (100); one-shot (104).
+
+;; ---- inbound: redeem, from the claimant's own wallet ----
+;; A claim attaches >= 0.15 TON (103 below it — a replay too, since the mark
+;; now lives on the receipt), carried through the receipt and on to the vault
+;; (mode 64) to fund its jetton hop. Measured (PrimesVoucher.spec.ts, V26.3):
+;; 0.1385 TON reaches the vault on a first claim (receipt deploy + its 0.01
+;; storage reserve), 0.1485 on a later one; the vault needs 0.1 + ~0.0005.
+
+claim_voucher#9a000001
+    query_id:uint64
+    cumulative_total:Coins   ;; TOTAL earned to date, not an increment
+    valid_until:uint32       ;; unix seconds; the backend's own expiry
+    signature:bits512        ;; Ed25519 over the payload below
+  = InternalMsgBody;
+;; Permissionless to send, but the signed payload covers the SENDER's address, so
+;; it can only ever pay whoever sent it: a voucher is not bearer paper, cannot be
+;; redirected, and a leaked one is useless to anybody but its subject. The
+;; claimant pays their own gas; the operator never pays for a player's claim.
+;;
+;; THE REPLAY RULE. The sender's claim RECEIPT (below, D-191 point 2) pays
+;; `cumulative_total - receipt.paid` and stores `cumulative_total`. So replaying pays ZERO — by arithmetic, which
+;; is a stronger statement than a replay flag because there is no nonce to get
+;; wrong — and two vouchers arriving out of order settle to the higher one with
+;; the lower becoming a no-op. The backend never has to track which of its own
+;; vouchers were redeemed. A replay returns rather than throwing: it is a no-op,
+;; not an error, so there is deliberately no `already_claimed` error code.
+;;
+;; Refusals: 710 after a burn's claim deadline, 711 past `valid_until`, 712 bad
+;; signature, 716 `cumulative_total` above the instance's `max_per_wallet` (audit
+;; 2026-11-19 R2-M2; thrown before the receipt is messaged, so no mark moves). If the VAULT refuses (this program not allow-listed, or the bucket
+;; exhausted) the outbound message bounces and the voucher sends the receipt a
+;; `receipt_restore`, so a refused payout cannot silently consume a wallet's balance.
+
+;; ---- write-once init (a ref off the root, which is at the 1023-bit limit) ----
+;;   voucher_init$_ program_tag:uint32 genesis_script_addr:MsgAddress
+;;                  max_per_wallet:Coins = VoucherInit;
+;; `max_per_wallet` (R2-M2): the most this instance ever pays ONE wallet. Deploy data with
+;; no setter. The receipt pays `total - paid` and stores the total, so bounding the signed
+;; total bounds a wallet's lifetime payout. Genesis sets it from params.json through
+;; `VOUCHER_MAX_PER_WALLET` (shared/voucher.ts): QSTS `quest_rewards.reward_nanoprimes`,
+;; PQST `quest_rewards.prime_quests.reward_primes`, SECU the whole `security_bounty` track.
+
+;; ---- the per-claimant CLAIM RECEIPT (primes_claim_receipt.tolk, D-191 point 2) ----
+;; BOUND: the voucher holds no per-claimant map. Each claimant's high-water mark
+;; lives on a child whose address is derived from (voucher, claimant):
+;;   receipt_storage$_ voucher_addr:MsgAddress claimant:MsgAddress paid:Coins
+;; with `paid = 0` in the init data. Both sides authenticate by that address.
+;;
+;; claimant -> voucher (claim_voucher; signature, deadlines checked there)
+;;          -> receipt (receipt_advance; deploy-if-absent)
+;;          -> voucher (receipt_delta; only if the total rose — else the receipt
+;;             refunds the claimant and the claim ends quietly)
+;;          -> vault   (pay_program_bounty)
+
+receipt_advance#9a000004
+    query_id:uint64
+    cumulative_total:Coins
+  = InternalMsgBody;
+;; voucher -> receipt. Sender MUST be the receipt's voucher (100).
+
+receipt_delta#9a000005
+    query_id:uint64
+    claimant:MsgAddress
+    delta:Coins
+  = InternalMsgBody;
+;; receipt -> voucher. The voucher re-derives the receipt address from `claimant`
+;; and refuses any other sender (100); `paid_total`/`claim_count` move here.
+
+receipt_restore#9a000006
+    query_id:uint64
+    amount:Coins
+  = InternalMsgBody;
+;; voucher -> receipt, from the voucher's bounce arm when the vault refused.
+;; Sender MUST be the voucher (100). SUBTRACTS `amount` (floored at 0) rather
+;; than resetting to an old value, so two claims in flight settle to exactly the
+;; deltas the vault accepted.
+
+;; The signed payload for a claim. Hashed as a cell, not as informally packed
+;; bytes, so the backend signer and the contract cannot drift: the signer builds
+;; the same cell with @ton/core (`voucherClaimPayload` in shared/voucher.ts, re-exported
+;; by wrappers/PrimesVoucher.ts and used by backend/attribution's signer).
+;;
+;; `wallet` is in the HASH and not in the message body — that is the whole of
+;; non-transferability. `valid_until` is in the hash so the backend can put a
+;; short life on a voucher without this contract needing a revocation list.
+voucher_claim_payload
+    tag:uint32           ;; CLAIM_TAG = 0x434c414d "CLAM"
+    program_tag:uint32   ;; the instance's own tag (G78 / D-171): QSTS, PQST or SECU
+    global_id:int32      ;; the network, config param 19 (audit M2): -239
+                         ;; mainnet, -3 testnet. The address below is the same on both
+                         ;; when a v4r2 genesis wallet deploys, so it cannot do this alone
+    voucher:MsgAddress   ;; the verifying instance's own address (audit 2026-11-19 M2):
+                         ;; one key reused across deployments cannot carry a voucher over
+    wallet:MsgAddress    ;; must equal the redeeming sender
+    cumulative_total:Coins
+    valid_until:uint32
+  = VoucherClaimPayload;
+
+;; ---- inbound: end the program ----
+
+burn_signer#9a000002
+    query_id:uint64
+    claim_deadline:uint32
+    signature:bits512
+  = InternalMsgBody;
+;; Permissionless to SEND; authenticated by a signature from the SIGNING KEY
+;; ITSELF, not by an owner address — the contract has no owner field. Whoever
+;; holds the key may retire it and nobody else can, and holding the key is
+;; already strictly more power than retiring it, so the burn adds no authority
+;; that did not already exist. §8's "no admin withdraw path" is untouched: no
+;; message in this contract moves TON anywhere but gas, and none names a
+;; destination for PRIMES other than the sender.
+;;
+;; `claim_deadline >= now + BURN_MIN_GRACE` (90 days) is ASSERTED (714). That is
+;; the whole of "ends the program without stranding anyone's earned balance": a
+;; burn always leaves every holder of a signed voucher a full quarter to redeem.
+;; One-shot and irreversible (713), so the deadline cannot be walked forward
+;; repeatedly to fake a live program.
+;;
+;; Signatures stay VALID after a burn, deliberately. The key is destroyed
+;; off-chain so no new voucher can appear; refusing the old ones would be exactly
+;; the stranding this is supposed to prevent. The end of the program is the
+;; DEADLINE, not the flag.
+
+voucher_burn_payload
+    tag:uint32           ;; BURN_TAG = 0x4255524e "BURN"
+    program_tag:uint32   ;; binds a burn to one instance (QSTS and PQST shared a key until R2-M2)
+    global_id:int32      ;; the network (M2), as in the claim payload
+    voucher:MsgAddress   ;; binds it to one deployment (M2): an old burn ends nothing new
+    claim_deadline:uint32
+  = VoucherBurnPayload;
+;; Different shape AND different leading 32 bits from the claim payload, so a
+;; burn authorisation can never be replayed as a payout authorisation.
+
+;; ---- outbound: to the bounty vault ----
+;; Same opcode and same shape as primes_bounty_vault.tolk's own struct; see
+;; /shared/schemas/bounty_vault.tlb. `program_tag` is the instance's init-data tag,
+;; PROGRAM_TAG_QUESTS ("QSTS") or D-170's PROGRAM_TAG_SECURITY ("SECU"), which the
+;; vault asserts against its allow-list entry — so the vault,
+;; not this contract, is what bounds the program's lifetime spend.
+
+;; ---- get-methods ----
+;; get_receipt_address(wallet) -> the wallet's claim receipt. ON THE RECEIPT:
+;; get_paid()            -> cumulative nano-PRIMES the voucher has PAID its claimant
+;;   (an undeployed receipt = 0); get_receipt_owner() -> (voucher, claimant).
+;;   Deliberately NOT a "claimable" figure: only the backend knows what a wallet
+;;   has earned, and §9.1 forbids this contract asserting a number it cannot
+;;   verify. The UI subtracts this from the backend's total and labels the two
+;;   differently (proved vs counted).
+;; get_program_payouts   -> (paid_total, claim_count). Same shape as the vault's
+;;   `get_vault_payouts`, so the two are directly reconcilable: this contract's
+;;   total must equal the vault's allow-list spend on this tag.
+;; get_max_per_wallet    -> max_per_wallet (R2-M2), nano-PRIMES. Its own getter so
+;;   get_signer_state's positional shape is unchanged.
+;; get_signer_state      -> (signer_pubkey, burned_at, claim_deadline, min_grace,
+;;   program_tag). The public key is exposed so a holder can verify a voucher
+;;   OFF-CHAIN before spending gas on it, and so "the key that signs is the key
+;;   baked in at deploy" is checkable by inspection rather than trusted.
+;; is_program_closed     -> 1 iff a claim sent now would be refused for being out
+;;   of time. `/earn`'s claims panel must state this before the user pays gas.
+;; get_vault_addr        -> the vault this program draws on.

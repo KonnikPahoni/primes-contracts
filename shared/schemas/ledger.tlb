@@ -1,0 +1,712 @@
+;; TON PRIMES — Splitter + Ledger message schemas.
+;; Opcodes: /shared/opcodes.ts `LEDGER`. Generated tables of every message and
+;; get-method: /docs/audit/wire-format.md and /docs/audit/contract-surface.md.
+;;
+;; RENAMED from bank.tlb by UPGRADE_PLAN_V5.md §4 B1 / CONCEPT v5 §3.4, which
+;; retires the word "bank" and decomposes the monolith. `flush` and
+;; `update_venue` moved OUT of this file to ratchet.tlb along with `pending` and
+;; the DeDust leg; `pool_inject` and `set_sinks` are new here.
+;;
+;; Trust edges (ledger-only-trust-edge model, IMPLEMENTATION_PLAN.md §2.1):
+;;   - mint: permissionless, any sender.
+;;   - claim_tribute: sender MUST equal the deterministic item address for the
+;;     claimed prime p (computed from collection code/data, standard TEP-62
+;;     address derivation) — verified in-message, not via a stored allow-list.
+;;   - mint_won_lot: sender MUST equal the market's fixed,
+;;     genesis-configured address (a won ascending lot, D-90).
+;;   - set_peers/set_sinks: sender MUST equal the genesis script; one-shot each.
+;;   - retry_credit: permissionless, but only replays an entry already present
+;;     in `unrouted_credits` (see engineering-spec §3.3) — cannot fabricate credit.
+
+;; ---- inbound: the mint (concept §4.1) ----
+;;
+;; ONE message. Opcodes #b0000001 and #b0000003 are RETIRED and stay unassigned —
+;; do not reuse (primes_ledger.tolk D8).
+
+;; factor: one already-minted prime factor, referenced by its NFT index (=
+;; the prime number itself) with its exponent in n's factorization.
+factor$_
+    prime_number:uint256
+    exponent:uint8
+    s:uint128            ;; §3.2: minter-submitted ⌊√p⌋, verified s² ≤ p < (s+1)²
+                          ;; on-chain (two multiplies, no on-chain sqrt); the
+                          ;; divisor tribute line is weighted e·s
+  = Factor;
+
+;; D-191 point 1: SENT TO THE BENEFICIARY'S MINTER CARD (minter_card.tlb), which
+;; forwards it verbatim inside `card_mint#9b000001`. The ledger accepts a mint from a
+;; card whose address it derives from `owner`, and from nothing else.
+mint#b0000002
+    query_id:uint64
+    n:uint256
+    kind:uint1                    ;; 0 = composite (needs factors), 1 = prime (needs no witness — MR runs on n)
+    factors:(HashmapE 8 Factor)   ;; present iff kind = 0; keyed by insertion index (no separate
+                                   ;; count field — the dict itself is the count, primes_ledger.tolk
+                                   ;; `Mint`)
+    referral_key:uint32           ;; 0 = none/unset
+                                   ;; D-191 point 1 DELETED `beneficiary`: the card the
+                                   ;; body is sent to IS the beneficiary's (a §4.5 gift is
+                                   ;; sent to the recipient's card), and the payer is its
+                                   ;; sender. A gift to a FRESH card is §4.7's recruit edge.
+    invite_count:uint3            ;; §4.1's SEVENTH LINE (D-202): 0..3 invite transfers this
+                                   ;; mint funds at INVITE_TRANSFER_VALUE (0.1 TON) each. > 3
+                                   ;; throws invite_count_over_max (221) — the field is uint3
+                                   ;; so 4..7 are representable and that check is what makes
+                                   ;; them unreachable. A named slot off workchain 0 throws
+                                   ;; invite_bad_workchain (236, audit R2-L1).
+    invites:(Maybe ^InviteList)    ;; the minter's recipients; null on an uninvited mint
+  = InternalMsgBody;
+;; ROOT-CELL BUDGET. D-106 removed the `patron` Maybe-ref and D-191 the `beneficiary`
+;; address, so this is 388 bits of
+;; fixed fields against 1023 and TWO of TVM's four refs used (`factors`,
+;; `invites`), two spare. `invites` is a Maybe-ref and not a bare `^Cell` so a
+;; mint that funds no invites pays one bit rather than a whole cell.
+;; (A won auction lot mints through `mint_won_lot`, never this op.)
+;; msg value carries P = 1 TON plus a fee margin for a direct mint — the ledger
+;; asserts against the value that survives the forward fee, so exactly 1 TON
+;; reverts. If `n` != current head when the message
+;; lands, this is the losing side of a race: the mint fails cheaply and the
+;; attached value is refunded in full minus gas — never burned, never kept.
+
+;; ---- the invite list (§4.1's invite line; D-101 as D-202 rewrote it) ----
+;;
+;; Up to three addresses THE MINTER chose, carried by the minter's own transaction.
+;; One ref off the mint body, so an uninvited mint pays a single bit for it. There is
+;; no signature (D-202 deleted the operator's invite signer with the generators).
+;;
+;; Each slot in `1..invite_count` that has an address receives ONE plain transfer from
+;; the ledger, in the mint's own transaction:
+;;
+;;   value  = INVITE_TRANSFER_VALUE (0.1 TON; params.json invites.transfer_value_ton),
+;;            send mode REGULAR, so its forward fee comes out of the 0.1
+;;   bounce = false, so an undeployed Telegram wallet still receives it
+;;   body   = text_comment$00000000 "<words> primes.live/?ref=<n>_tg"
+;;            where <words> is the operator-set `Config.inviteText` (D-211, see
+;;            set_invite_text below) and <n> is the decimal of the number being
+;;            minted. The link is the ledger's own. Nothing in it is minter-written.
+;;
+;; A SLOT WITH NO ADDRESS IS NOT AN ERROR. The list may be shorter than
+;; `invite_count` and may have holes; every slot in `1..invite_count` that has no
+;; address is simply not sent, and its 0.1 TON stays in the residual β and backs the
+;; floor — the same "an unresolvable line backs the floor" rule an unset referral key
+;; already obeys (§4.1). THE SEVENTH LINE IS DEDUCTED FROM THE TRANSFERS ACTUALLY
+;; SENT, not from `invite_count`. A key outside 1..invite_count is never read.
+invite_list$_
+    addresses:(HashmapE 3 MsgAddress) ;; slot (1..3) -> the invited address
+  = InviteList;
+
+;; D-168 retired set_stake_sink#b0000045 and set_stake_uplift#b0000044 with the
+;; ledger's stake leg. `getUpliftLine` is a 6-tuple of four legs:
+;;   (prime_rank, prime_window, newcomer, recruit_rank, summed, clamped)
+
+;; ---- inbound: one-shot genesis seed, from the genesis script only ----
+
+genesis_seed#b0000040
+    query_id:uint64
+    seed_t:Coins
+    seed_s:Coins
+    seed_head:uint256
+  = InternalMsgBody;
+;; CONCEPT §6 point 3. D-20 DELETES the `unsold_mask:uint8` field the old K-lot
+;; design carried here. The head opens at `seed_head` — the first COMPOSITE
+;; (n = 4) under D-20's semantics, since the head is defined over composites
+;; (and Unity) only — and the walk from 2 to `seed_head` marks every prime it
+;; crosses as unsold automatically; "was walked and found prime" and "starts
+;; life forfeiting" are now the same fact, so there is nothing left for a
+;; separate mask to declare. One-shot: a second genesis_seed throws
+;; already_processed (104).
+;;
+;; D-26 (§5): `seed_t` is now recorded in its OWN ledger storage field as well as
+;; being added to `T`, and is read back by `getSeedT`. §5's identity is
+;; `T = seeded + swapped + pending` — three terms, not two. The `seeded` term is
+;; founder capital that backs `S` from the DeDust LP and never passes through the
+;; ratchet's `pending`, so a two-term reading reports a permanent false solvency
+;; gap of exactly `seed_t`. The wire format of this message is unchanged.
+
+;; ---- inbound: a market clearing, from the market only ----
+
+clearing_cleared#b0000009
+    query_id:uint64
+    prime:uint256
+    amount:Coins
+  = InternalMsgBody;
+;; D-20 DELETES the `lane:uint1` field the old K-lot design carried here. Under
+;; that design one bit told the ledger "this is a genesis clearing, also clear
+;; the forfeit-mask bit"; under D-20 a prime sale (and its forfeit-entry clear)
+;; is reported by the SEPARATE `settle_prime_clearing` message below, so this
+;; message carries only the PREMIUM above MINT_PRICE, on every lane alike,
+;; uniformly:
+;;
+;;   `amount` is added to T and forwarded to the ratchet as `pending`. S is NOT
+;;   touched, so every clearing is a pure floor step — backing with no
+;;   emission. This is what closes §11.17.
+;;
+;; Nothing is minted, emitted or credited to anybody on this path. The sender
+;; must be the market address recorded by set_peers (100 otherwise), and the
+;; message must really carry `amount` plus the ratchet hop gas (103 otherwise) —
+;; crediting T against a message that did not carry the TON is the one way this
+;; handler could inflate the floor past its backing.
+
+;; ---- inbound: item(n)'s receipt for a populated mint (D-117, V28) ----
+
+mint_confirmed#b000007a
+    query_id:uint64
+    n:Coins                 ;; < 2^82; Coins, not uint256, so the root fits 1023 bits
+    is_prime:uint1          ;; V32: a prime leaves `deployingPrimes`
+    held_split:HeldSplit    ;; INLINE: root bits pay no forward fee, a ref cell does
+  = InternalMsgBody;
+
+mint_item_refused#b0000084
+    mint:^MintItem          ;; the ORIGINAL `mint_item` body
+  = InternalMsgBody;
+;; V28. From the collection only (100): item(n) refused `populate`, so nothing was
+;; paid and the held split is in this message's value. Parked under `n` for
+;; `retry_item`, through the same code as a `mint_item` the collection bounced.
+
+_ referral:(Maybe uint32) count:uint4 lines:(count * HeldSplitLine) = HeldSplit;
+_ forfeit:uint1 p:Coins share:Coins = HeldSplitLine;
+;; DECISIONS.md D-117. The split lines a mint owes third parties -- the divisor
+;; tribute (credited or forfeited), the referral relay, the 5% treasury line --
+;; ride on `mint_item` as value with this cell naming each; the collection carries
+;; both to the item inside `populate`, and the item sends them back here once it
+;; is populated (V28) — only then are they paid. Sender-derived: item(n). A
+;; refused mint carries the same TON home instead (a bounced `mint_item`, or a
+;; refused `populate` relayed as `mint_item_refused`): the ledger parks the original
+;; body under `n` in its `unroutedItems` lane, declares the held split in
+;; `unrouted_held`, and pays nothing.
+
+retry_item#b000007b
+    query_id:uint64
+    n:uint256
+  = InternalMsgBody;
+;; D-117, permissionless. Re-sends the parked `mint_item` for `n` (same owner, same
+;; held split, head refreshed) with the held split's TON plus ITEM_DEPLOY_VALUE, which the
+;; caller attaches (>= ITEM_DEPLOY_VALUE + 0.01 TON). Unknown n is a cheap no-op.
+
+;; ---- inbound: a secondary royalty's ratchet half, from the two royalty-bearing
+;;      collections only (D-128) ----
+
+royalty_to_ratchet#b0000079
+    query_id:uint64
+    amount:Coins
+  = InternalMsgBody;
+;; DECISIONS.md D-128. A marketplace forwards a TEP-66 secondary royalty to the
+;; COLLECTION (whose `royalty_params()` now publishes the collection's own
+;; address, not the operator's), the collection splits it, and this message
+;; carries the ratchet's half:
+;;
+;;   T += amount            -- backing, forwarded to the ratchet as `pending`
+;;   S                      -- UNTOUCHED
+;;
+;; i.e. `clearing_cleared`'s two effects exactly, which is what makes a royalty a
+;; PURE FLOOR STEP: backing with no emission. It deliberately is NOT
+;; `donate_floor`, which also mints PRIMES to its sender and raises `S` — on this
+;; path that would emit supply to a collection contract.
+;;
+;; The sender must be `ConfigA.collection_addr` (100 otherwise), and the message must really carry `amount` plus the ratchet
+;; hop gas (103 otherwise) — the same guard `clearing_cleared` carries, for the
+;; same reason: crediting `T` against a message that did not bring the TON is the
+;; one way this handler could inflate the floor past its backing.
+
+;; ---- inbound: the permissionless floor donation (D-91 point 4) ----
+
+donate_floor#b000000c
+    query_id:uint64
+    amount:Coins
+  = InternalMsgBody;
+;; D-91 point 4, amended by D-100 point 1. `amount` TON in, and TWO storage
+;; effects in one transaction:
+;;
+;;   T += amount            -- backing, forwarded to the ratchet as `pending`
+;;   S += emitted           -- emitted = min(amount * L, amount * S / T),
+;;                             with `amount * L` used while T = 0.
+;;                             L = 10,000 PRIMES/TON, params.json
+;;                             genesis.genesis_lp_ratio_primes_per_ton (D-29)
+;;
+;; and `emitted` nano-PRIMES are minted to THE SENDER, who pairs them with TON
+;; on DeDust and burns the LP receipt themselves. D-91 point 6 names the gap
+;; this leaves open: that pair-and-burn is not atomic, because no verified
+;; DeDust deposit wire format exists in this repo yet.
+;;
+;; `seed_t` IS NOT TOUCHED, and its absence here is D-100 point 1's headline
+;; correction. D-91 point 4 specified two contradictory halves -- a `seed_t`
+;; credit "so the identity still closes" AND `clearing_cleared`'s shape, which
+;; forwards the money to the ratchet as `pending` -- and the contract shipped
+;; both, raising `T = seed_t + swapped + pending`'s right-hand side by 2*amount
+;; against `amount` on the left. A donation is `pending`; `seed_t` is once more
+;; only what D-26 defined, the one-shot `genesis_seed` credit that never passes
+;; through the ratchet.
+;;
+;; THE RATE IS CLAMPED TO THE FLOOR, and 217 is gone with the clamp. §5 requires
+;; `p_f = T/S` never to fall; at the flat rate `L` it rises only while
+;; `S*amount >= T*amount*L`, i.e. while `p_f <= 1/L = 1e-4`, and above that the
+;; old code threw 217 (`ledger_donation_would_dilute`). D-91's own closing note
+;; pre-approved `min(L, S/T)` as the one-line alternative and D-100 point 1
+;; takes it: `amount * S / T` is not an invented rate, it is THE floor, and it
+;; is rounded DOWN so the post-donation floor is >= the pre-donation floor for
+;; every input. Dilution is therefore unreachable by construction, there is
+;; nothing left to throw, and error 217 is RETIRED -- see shared/opcodes.ts; it
+;; must not be reused.
+;;
+;; PERMISSIONLESS BY DESIGN: no sender check. A stranger who calls it is
+;; donating backing to every holder. It takes money in and never out, so §8's
+;; no-admin-withdraw rule has nothing to gate here.
+;;
+;; Unlike `genesis_seed` this is INCREMENTAL -- no virgin-ledger assert, so the
+;; operator can send 1 TON, verify the floor moved, then send the rest (D-100
+;; point 3 caps that at 150 TON post-genesis as an operator commitment, not a
+;; contract rule).
+;;
+;; One throw, 103, on two conditions. The message did not really carry `amount`
+;; plus both hops' gas (`RATCHET_HOP_GAS` + the 0.02 TON jetton-mint budget) --
+;; crediting `T` against money that did not arrive is the one way this handler
+;; could break the §5 ratchet theorem. Or the clamped emission rounded to zero,
+;; which is a donation too small to buy one nano-PRIMES at the current floor:
+;; refused rather than silently taking the TON for nothing.
+
+;; ---- inbound: an off-head prime sale, from the market only ----
+
+settle_prime_clearing#b0000024
+    query_id:uint64
+    n:uint256
+    beneficiary:MsgAddress
+    referral_key:uint32
+  = InternalMsgBody;
+;; D-20 — primes never occupy the head (it is defined over composites and Unity
+;; only) and so can never be "settled" by the head reaching them. This is a
+;; DIRECT, off-head mint: it runs the ordinary §4.1 five-way split on the
+;; nominal MINT_PRICE and, in the same transaction, deletes `n`'s rows from
+;; `unsold_primes` and `forfeited` and hands both values to the new item in
+;; `mint_item.prime_init` (D-188 point 4) — the one place forfeiture stops.
+;; The premium above MINT_PRICE is NOT carried here; the market sends it
+;; separately as an ordinary `clearing_cleared`, exactly as it already does for
+;; the ascending lane (D-7). Sender must be the market address
+;; recorded by set_peers (100 otherwise); requires peers set, launched, and
+;; `value >= MINT_PRICE` (103 otherwise).
+
+;; ---- inbound: a won ascending lot's mint, from the market only (D-90) ----
+
+mint_won_lot#b0000020
+    query_id:uint64
+    n:uint256
+    beneficiary:MsgAddress
+    referral_key:uint32
+    kind:uint1
+    factors:(HashmapE 8 Factor)   ;; proof verified when the lot opened; carried through
+                                   ;; unchanged so the mint path recomputes the same split deterministically
+                                   ;; (G70 deleted `res_premium`: always 0 since D-90)
+  = InternalMsgBody;
+;; sender MUST equal the market's fixed address. Value attached = the 1 TON
+;; mint price out of the winning bid, plus gas.
+
+;; D-88 point 2 DELETES `settle_special_composite#b0000073` with SS3's 1-day
+;; composite decay lane, its only sender. A special composite is now bought
+;; ahead of the head on the ordinary ascending lane and settles through
+;; `mint_won_lot` like any other won composite, or mints at the head
+;; for MINT_PRICE once its turn comes. Opcode left UNASSIGNED.
+;; sender MUST equal the market's fixed address, same as `mint_won_lot`.
+;; Mints at k = k_min always (concept §4.4 point 3) — the ledger does not
+;; re-derive k(t) for this path.
+;;
+;; D-45 DELETES THE PRE-D-45 `n == head` REQUIREMENT. A composite auctioned via
+;; `mark_off_head` (`primes_market.tolk`'s `open_lot`) is off the sequential
+;; line PERMANENTLY from the moment that message lands — the head skips it on
+;; its own the next time an ordinary mint's advance-head walk reaches it,
+;; entirely independently of this message. So this settlement is now an
+;; off-head event and may land before the head reaches `n`, long after, or
+;; (harmlessly) exactly when; `advance_head` is false on this path, same as it
+;; already is on `settle_prime_clearing` below.
+
+;; ---- outbound: ledger -> NFT item, tribute credit (owed-ledger decision) ----
+
+credit_tribute#b0000030
+    query_id:uint64
+    credit_id:uint64     ;; unique per (mint, factor) — used only for bounce/retry bookkeeping
+    amount:Coins          ;; this factor's weighted tribute share for this mint
+    p:uint256             ;; GAUNTLET V17.1 — the prime this credit is for
+  = InternalMsgBody;
+;; `p` exists so a BOUNCE is recoverable. The destination is already a pure
+;; function of it (`itemAddress(p)`), and the item itself never reads it. Before
+;; it rode the wire, a bounced credit was filed under `p = 0` and re-sent to
+;; `itemAddress(0)` forever, stranding the TON in `unroutedHeld` while
+;; `getLiabilityBreakdown` still declared it owed — a solvency figure overstating
+;; what could actually be paid out, which is the failure §3.4 exists to prevent.
+;; sent once per distinct prime factor of a minted composite (or the sole
+;; factor for a prime-power self-mint edge case), up to omega(n) <= 8 times
+;; per mint. Carries NO TON value beyond forward-fee gas — this is a
+;; bookkeeping credit, not a tribute payout (that stays pull-based, on
+;; claim). See engineering-spec §3 for why this does not reintroduce the
+;; dust economics that killed push-based tribute in CONCEPT.md §3.2.1.
+
+;; ---- outbound: ledger -> bounty vault, primorial-era ceremony (concept §7) ----
+
+;; #b0000031 is RETIRED — the pre-DENOMINATION_PLAN body, without (t, s). Do not
+;; reuse; a stale sender must be rejected by the vault, not mis-parsed.
+pay_era_bounty#b0000032
+    query_id:uint64
+    era_boundary:uint256   ;; the primorial number reached (6, 30, 210, ...)
+    beneficiary:MsgAddress
+    t:Coins                ;; T AFTER this mint's effects — nanotons
+    s:Coins                ;; S AFTER this mint's effects — nano-PRIMES
+  = InternalMsgBody;
+
+;; SPECIAL_NUMBERS_PLAN.md Phase 2 — outbound, ledger -> bounty vault, on any
+;; mint settling a special-number category match. See bounty_vault.tlb for
+;; the matching inbound definition and the D22-mirrored trust shape.
+pay_special_number_rebate#b0000072
+    query_id:uint64
+    n:uint256               ;; the special number just settled
+    kind:uint8              ;; special-number category (bounty_vault.tlb has the same layout)
+    points:uint16
+    beneficiary:MsgAddress
+    t:Coins
+    s:Coins
+  = InternalMsgBody;
+;; DENOMINATION_PLAN P4: the vault's era schedule is TON-denominated, and the vault
+;; cannot call a get-method, so the ceremony is priced at the floor THIS mint just
+;; set rather than at whatever the vault last heard. Same `(T, S)` snapshot pair as
+;; `pool_inject` below, and taken at the same point for the same reason. The vault
+;; caps the result at its genesis-fixed nominal amount, so a wrong snapshot can
+;; under-pay but never drain — see shared/schemas/bounty_vault.tlb.
+
+;; ---- outbound: ledger -> registrar, the era trophy (D-36, §4.7/§7) ----
+
+award_era_trophy#b000006b
+    query_id:uint64
+    primorial:uint256      ;; the era boundary reached (6, 30, 210, ...)
+    winner:MsgAddress      ;; the era's single highest recruiter
+    recruits:uint32        ;; the winning era-scoped activation count, for the record
+  = InternalMsgBody;
+;; Fired in the SAME transaction as `pay_era_bounty` and BESIDE it, never out of
+;; it: the era bounty still pays 100% to the primorial's MINTER, and this awards
+;; permanent naming rights over that same primorial to the era's top RECRUITER.
+;; Two people, two rewards, no arithmetic shared.
+;;
+;; Sent only when the era had at least one ACTIVATION (§4.6's φ₁ edge). With no
+;; activations the message is not sent and the primorial is left unnamed —
+;; nobody is invented to receive it.
+;;
+;; Gated on `sinks_set` (the registrar), NOT on `peers_set` (the bounty vault):
+;; the two ceremony legs are independent, and a deployment with no vault still
+;; awards the trophy. NoBounce, and a failure never unwinds the mint.
+;;
+;; The winner is decided HERE, on the ledger, because §4.6's activation edge
+;; runs here. It is maintained as a RUNNING MAX (`get_era_leader`) rather than
+;; scanned at ceremony time — an unbounded scan inside a mint is how a mint
+;; becomes un-mintable at some head nobody predicted. TIE-BREAK: the running max
+;; updates on a STRICT improvement only, so equal counts leave the incumbent in
+;; place and the trophy goes to the wallet that reached the winning count FIRST.
+;;
+;; The era-scoped counter is reset for everyone in the same transaction.
+
+;; ---- outbound: ledger -> ratchet, the pool backing (§3.4 B1) ----
+
+pool_inject#b0000050
+    query_id:uint64
+    amount:Coins          ;; the NOMINAL pool backing this message delivers
+    t_snapshot:Coins      ;; T after this mint's effects — nanotons
+    s_snapshot:Coins      ;; S after this mint's effects — nano-PRIMES
+  = InternalMsgBody;
+;; Message VALUE is deliberately `amount + RATCHET_HOP_GAS`, never exactly
+;; `amount`: the ratchet credits `pending` by the nominal `amount` field only and
+;; keeps the surplus as its own gas buffer, so its solvency delta stays
+;; non-negative by construction. A contract sent exactly its nominal price
+;; rejects the message once its own compute phase is charged.
+;;
+;; `t_snapshot`/`s_snapshot` are how the ratchet learns the floor. TVM has no
+;; synchronous cross-contract read, so §4.3.1's guard prices against a PUSHED
+;; cache maintained here, never a pull. T and S remain authoritative on the
+;; ledger; the ratchet's copies are read-only mirrors, exposed by its
+;; `getFloorCache` so their staleness is visible rather than assumed away.
+;;
+;; Sent once per mint (the ONE hop the decomposition adds to the common path).
+
+;; ---- outbound: ledger -> registrar (§3.4 B1) ----
+;;
+;; `record_mint#b0000061` is RETIRED by D-202: its only reader was the registrar's
+;; build clock. The ledger's one message to the registrar is `award_era_trophy`.
+
+;; ---- inbound: from the REGISTRAR only ----
+;;
+;; D-102 DELETES THE ONLY MESSAGE THAT EVER RAN REGISTRAR -> LEDGER.
+;; `set_boost#b0000066` carried §3.2.2's x3/2 tribute multiplier: the registrar
+;; decided membership, this contract stored an expiry HEAD in `boostUntil[p]` and
+;; resliced the divisor line by it inside the mint. The multiplier is gone, so the
+;; dictionary, the reslice pass, the handler and this message go with it, and the
+;; ledger has NO inbound from the registrar at all any more. The opcode is RETIRED
+;; and stays unassigned.
+;;
+;; The multiplier's crowding was MEASURED and it passed (-2.25% worst case against
+;; a -10% threshold) and it is being deleted anyway, because a mechanic whose whole
+;; content is "the same fixed 10% divides differently" cost a boost dictionary on
+;; the mint's hot path and bought a reslice no player can feel (CONCEPT §3.2.2's
+;; retirement paragraph).
+;;
+;; TWO GAS EFFECTS LAND ON `ledger.mint.composite_*` IN THE SAME CHANGE AND PULL
+;; IN OPPOSITE DIRECTIONS, and the re-baselining comment must attribute them
+;; SEPARATELY or the numbers become unreadable: deleting the boost read makes the
+;; composite mint FASTER, and the invite line makes it SLOWER. Same rule the
+;; D-99/D-100 comment in `contracts/gas-baseline.json` states for that pair.
+
+;; ---- inbound: one-shot genesis bootstrap, from the genesis script only ----
+;; Each writes addresses the ledger's own init data cannot carry (the
+;; circular-address problem, D7/D11/D12). Sender MUST equal
+;; `genesisScriptAddr` (100); a second send throws already_processed (104).
+
+set_peers#b0000041
+    query_id:uint64
+    market_addr:MsgAddress
+    bounty_vault_addr:MsgAddress
+  = InternalMsgBody;
+;; D12, P2.A7: the market (auction + prime lots) and the bounty vault.
+
+set_sinks#b0000042
+    query_id:uint64
+    ratchet_addr:MsgAddress
+    registrar_addr:MsgAddress
+  = InternalMsgBody;
+;; §3.4 B1: the ratchet (pool backing) and the registrar (award_era_trophy).
+
+;; `set_invite_config#b0000046` is RETIRED by D-202 with the invite signer.
+
+;; ---- inbound: §4.1's invite words, from FeeDests.operatorAddr only (D-211) ----
+;; `text` is bytes only: no refs, a whole number of bytes, at most
+;; INVITE_TEXT_MAX_BYTES (86), else invite_text_bad (237); any other sender is
+;; wrong_sender (100). Moves no value. Read back with get_invite_text.
+set_invite_text#b0000085
+    query_id:uint64
+    text:^Cell
+  = InternalMsgBody;
+
+ignite#b000000a
+    query_id:uint64
+    owner:MsgAddress         ;; the founder; receives Unity (n = 1)
+  = InternalMsgBody;
+;; CONCEPT §6 point 0: the launch. Genesis script only (100), once (104), and
+;; only after set_sinks and genesis_seed (233) on a backed floor, T > 0 (218).
+;; Sends ONE `launch_open#e0000034` (NoBounce) to the market.
+
+;; ---- inbound: permissionless repair and retry lanes ----
+;; No sender check on any of these: each can only re-send what the ledger
+;; already recorded, to where it recorded it. The caller pays the hop
+;; (`sync_launch` carries the caller's value on, mode 64).
+
+sync_launch#b000000b
+    query_id:uint64
+  = InternalMsgBody;
+;; Re-sends ignite's `launch_open` if it was lost. Requires launched (212) and
+;; set_peers (233); value >= LAUNCH_HOP_GAS (103). Idempotent: the receiver is
+;; one-shot.
+
+sync_head#b0000023
+    query_id:uint64
+  = InternalMsgBody;
+;; Pushes the ledger's real head to the market's lagging `headHint` cache.
+;; Requires set_peers (101); value >= HEAD_SYNC_GAS (103). Changes no ledger
+;; state; the send carries all remaining value.
+
+;; `open_build#b0000074` / `open_build_relay#b000007d` are RETIRED by D-202.
+
+advance_head#b000007c
+    query_id:uint64
+  = InternalMsgBody;
+;; D-189, PERMISSIONLESS. Continues a head-advance walk a mint stopped at
+;; WALK_GAS_STOP (walkPending = 1), one gas-bounded stretch per call. value >=
+;; ADVANCE_HEAD_VALUE (103). A no-op when nothing is pending; the unburnt value
+;; returns to the sender either way.
+
+;; D-196, PERMISSIONLESS and caller-funded. value >= IMPORT_LOT_BLOCK_VALUE
+;; (0.05 TON, 103). Imports the frontier block (`getLotBlockState`) from its lot
+;; block (lot_block.tlb): refused 234 until the block starts below
+;; `head + LOT_BLOCK_WINDOW_BLOCKS * 256`; while an import is in flight it re-sends
+;; the request to the same block, whose words are idempotent. The
+;; request carries the lot block's state init, so an untouched block answers
+;; empty. The head-advance walk stops at the frontier (walkPending = 1) until the
+;; import lands; `advance_head` then walks on. The value is not returned.
+import_lot_block#b000007e
+    query_id:uint64
+  = InternalMsgBody;
+
+;; D-196, lot block -> ledger: the import's answer. Sender re-derived from `block`;
+;; `claimed` ORs into the off-head bitmap, `sold_prime` into the prime bitmap.
+lot_block_words#b000007f
+    query_id:uint64
+    block:uint64
+    claimed:uint256
+    sold_prime:uint256
+  = InternalMsgBody;
+
+;; D-198, PERMISSIONLESS and caller-funded. value >= FLUSH_UNSOLD_VALUE (0.15 TON, 103);
+;; the hop carries a fixed 0.06. A refused hop restores the rows and rewinds the cursor.
+;; Moves block `unsold_flushed`'s unsold rows -- each prime's §3.2 bookmark and §6
+;; point 2 forfeit counter, exact -- to that block's lot block (`lot_block_bookmarks`,
+;; lot_block.tlb), up to FLUSH_MAX_ROWS per call, and advances the cursor only once the
+;; block has no row left. Refused 234 while the head is still in
+;; the block. The head-advance walk stops LOT_BLOCK_WINDOW_BLOCKS past the cursor, so
+;; the ledger's unsold rows are bounded whatever the backlog. `get_unsold_flush`
+;; answers (unsold_flushed, due_now).
+flush_unsold#b0000082
+    query_id:uint64
+  = InternalMsgBody;
+
+;; D-198, lot block -> ledger: a flushed prime's bookmark, released at its sale
+;; (`lot_block_release`). Sender re-derived from n's block (100). Forwarded at once to
+;; item(n) as `credit_dividend` with `base` (LOW-3); parked in `sold_ahead_entry` only
+;; if the item refuses it, for the keeper's `claim_dividend`.
+lot_block_bookmark#b0000083
+    query_id:uint64
+    n:uint256
+    entry:Coins
+  = InternalMsgBody;
+
+;; D-196, lot block -> ledger: a claim on an already-claimed n. Relayed to the
+;; market as `mark_rejected` with the real head.
+lot_block_refused#b0000080
+    query_id:uint64
+    n:uint256
+  = InternalMsgBody;
+
+retry_credit#b0000005
+    query_id:uint64
+    credit_id:uint64
+  = InternalMsgBody;
+;; Re-sends a bounced `credit_tribute#b0000030` parked under `credit_id` in the
+;; unrouted lane. value >= CREDIT_TRIBUTE_VALUE + CALLER_COMPUTE_GAS (0.018 TON, 103). Unknown id is a cheap
+;; no-op (already retried or expired).
+
+retry_mint#b000000d
+    query_id:uint64
+    to:MsgAddress
+  = InternalMsgBody;
+;; D-52: re-sends a bounced JettonMint to `to`; the key is recomputed from `to`,
+;; so the PRIMES can only go to the wallet the bounce recorded.
+;; value >= DONATE_MINT_GAS + CLAIM_DIVIDEND_MIN_VALUE (103). Unknown `to` is a
+;; cheap no-op.
+
+sweep_ops#b0000007
+    query_id:uint64
+  = InternalMsgBody;
+;; D-117, CONCEPT §4.1/§8. NO AMOUNT FIELD: what leaves is
+;; `balance - declared liability - OPS_RESERVE`, and it goes to the ratchet pool
+;; (raising T and pending together, emission-free), never to a wallet. Nothing
+;; above the reserve is a no-op, not a throw. Counted by get_fee_totals'
+;; `ops_swept`.
+
+;; ---- inbound: owner-pulled payouts ----
+
+claim_tribute#b0000004
+    query_id:uint64
+    p:uint256
+    amount:Coins
+    owner:MsgAddress
+  = InternalMsgBody;
+;; §3.2: the relay leg of collection_item.tlb's `claim_tribute#c1000001`. Sent
+;; ONLY by the item for `p`, which has already zeroed its `owed`; sender MUST
+;; equal ItemAddress(p) (100) and the balance must cover `amount` (216). Pays
+;; `amount` to `owner`. A bounce restores the item's `owed`.
+
+claim_dividend#b0000008
+    query_id:uint64
+    p:uint256
+  = InternalMsgBody;
+;; §3.2's flat per-prime dividend for prime `p`. No sender check. D-188 point 4:
+;; the bookmark `entry[p]` is on p's ITEM, so this sends
+;; `credit_dividend#b0000036` (collection_item.tlb) carrying the current
+;; `div_acc` and the claimant's remaining value; the item credits
+;; `div_acc − entry[p]` to `owed`, re-stamps, and answers `dividend_credited`
+;; (below), which moves that amount from `div_outstanding` to `tribute_owed`.
+;; value >= CLAIM_DIVIDEND_MIN_VALUE (103); `p` must be a marked prime the head
+;; has crossed (201) that is not an unsold lot (219). A prime sold ahead of the
+;; head has its walk-time stamp parked in `sold_ahead_entry` until this first
+;; runs; it rides as `credit_dividend.base`, and a bounce puts it back.
+
+dividend_credited#b000000e
+    query_id:uint64
+    p:uint256
+    amount:Coins
+  = InternalMsgBody;
+;; From item(p) only (100): the amount its `credit_dividend` moved into `owed`.
+;; div_outstanding -= amount; tribute_owed += amount. Nothing is sent.
+
+;; 0xb0000081 (`prime_deployed`, V32) is RETIRED by V28: `mint_confirmed` comes from
+;; item(n) itself and carries `is_prime`, so it deletes p from `deployingPrimes` (the
+;; set of prime `mint_item`s not yet populated or refused). While p is in that set a
+;; bounced `credit_tribute` for it re-parks in the retry lane instead of forfeiting
+;; (D-196's "no item" means "no item AND none coming"). Do not reuse the opcode.
+
+credit_dividend#b0000036
+    query_id:uint64
+    p:uint256
+    div_acc:Coins
+    base:(Maybe Coins)
+  = InternalMsgBody;
+;; Outbound, ledger -> item(p). See collection_item.tlb.
+
+;; ---- get-methods ----
+;; get_boost(p) and get_constellation_params are DELETED with the x3/2 multiplier
+;;   (D-102). `shared/params.json` `constellations.multiplier_num/_den` and
+;;   `active_from_mint_index` are already gone, so leaving either would be a
+;;   contract number traceable to nothing — SimCrossCheck.spec.ts fails on exactly
+;;   that until both the get-methods and the assertion against them are removed.
+;; get_invite_spend             -> (slots_funded:uint64, transfers_sent:uint64,
+;;                                  slots_to_pool:uint64, line_paid:Coins)
+;;   §9.1 / §4.1's invite line. CUMULATIVE and never decremented. `slots_funded` is
+;;   the summed `invite_count` over every mint, `transfers_sent` the number of
+;;   invite transfers actually made, `slots_to_pool` their difference — so
+;;   §4.1's "unspent -> β" rule is CHECKED in public rather than asserted, and
+;;   `line_paid` must equal `transfers_sent × INVITE_TRANSFER_VALUE` exactly.
+;; get_invite_terms             -> (max_count:int, transfer_value:Coins)
+;;   D-202: the line's two owner-set terms, 3 and 0.1 TON.
+;; get_invite_comment(n)        -> ^Cell
+;;   D-202: the exact body an invite transfer for the mint of `n` carries.
+;; get_invite_text              -> ^Cell
+;;   D-211: the live operator-set words alone, as set_invite_text last wrote them.
+;; get_seed_t                   -> seeded:Coins
+;;   D-26 (§5): the `seeded` term of `T = seeded + swapped + pending`. Written
+;;   once by `genesis_seed` and never again. `swapped` and `pending` are on the
+;;   ratchet, so closing the identity is three get-calls across two contracts.
+;;   D-100 point 1 makes "and never again" true: `donate_floor` used to add to
+;;   this as well as forwarding the same TON to the ratchet, which double-counted
+;;   every donation in the identity's right-hand side.
+;; get_operator_totals          -> (operator_paid:Coins, treasury_paid:Coins,
+;;                                  ops_swept:Coins, premium_treasury_paid:Coins)
+;;   D-100 point 6 made it a triple (was a pair); D-114 added the fourth.
+;;   CUMULATIVE and never decremented.
+;;   `operator_paid` is the operator's remainder of every §6 point 2 forfeit and
+;;   nothing else — zero on a mint whose cited factors all have owners;
+;;   `treasury_paid` is §4.1's 5% line (D-152) plus the governed treasury
+;;   contract's `forfeit_split_bps` share of those forfeits; `ops_swept` is what
+;;   `sweep_ops` has actually returned to the ratchet pool, lifetime (D-117); `premium_treasury_paid` is D-114's
+;;   `premium_treasury_bps` share of every auction clearing's premium. One
+;;   counter over the first two was honest only while both landed in the same
+;;   wallet, which D-100 ends.
+;; get_fee_dests                -> (treasury:MsgAddress, operator:MsgAddress,
+;;                                  forfeit_treasury_bps:uint16)
+;;   D-100 point 6 / §9.1: WHERE the fee lines go and HOW a forfeit divides —
+;;   without it the forfeit split (58/42 since D-166) would be a number the UI states and the chain
+;;   does not. Both addresses are fixed in the ledger's DEPLOY-TIME init data
+;;   (`ConfigA.fee_dests`, a ref because ConfigA's three inline addresses are
+;;   801 bits and a fourth overflows 1023, and `Config` is at its four-ref
+;;   ceiling); no message on this contract can change either, so one read is
+;;   good for the life of the deployment. The operator's forfeit share is
+;;   `10000 - forfeit_treasury_bps`, the same subtraction the send site does.
+;; get_era_leader               -> (leader:MsgAddress, recruits:uint32, era_seq:uint8)
+;;   D-36 (§4.7, §7): the ERA-SCOPED recruit leaderboard's running max — the
+;;   wallet that would take this era's trophy if the ceremony fired now, and its
+;;   era recruit count. `addr_none` with count 0 means nobody recruited this era
+;;   and the era's primorial will be left unnamed.
+;;   Tie-break: strictly-greater comparison, so the EARLIEST wallet to reach the
+;;   leading count keeps the lead against every later wallet that ties it.
+;;   D-191 point 1: `era_seq` counts ceremonies. A wallet's own era tally is on its
+;;   minter card (`get_era_recruits()` there) and counts toward THIS era only when
+;;   the card's seq equals this one.
+;; get_minter_card_address(wallet) -> MsgAddress
+;;   D-191 point 1: where a wallet's standing lives. The per-wallet getters that
+;;   were here (get_minter_state, get_recruit_rank, get_newcomer_window,
+;;   get_era_recruits, get_uplift_line) are the card's own — minter_card.tlb.
+;; get_kmax_for(n, uplift_sum)  -> (kmax_effective, clamped:bool)
+;;   §5: k_max(n) plus a card's `get_uplift_line()` sum, clamped once at K_CEIL,
+;;   exactly as the mint path computes it; `clamped` says K_CEIL is biting.
+
+;; quote_floor#b0000047 is RETIRED by D-212 with the burn sink that asked it.
+;; Not recycled.

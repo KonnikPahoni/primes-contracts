@@ -1,0 +1,176 @@
+;; TON PRIMES — Bounty vault message schemas (concept §3.3).
+;; Opcodes: /shared/opcodes.ts `BOUNTY_VAULT`.
+;; Era bounties and special-number rebates are paid on the ledger's word;
+;; program bounties (quests) come from contracts allow-listed by address at
+;; genesis — the allow-list is a genesis-time constant, not a post-deploy
+;; admin knob.
+
+;; ---- genesis-only bootstrap ----
+
+set_wallet#90000003
+    query_id:uint64
+    jetton_wallet_addr:MsgAddress
+  = InternalMsgBody;
+;; The vault's own PRIMES jetton wallet. Sender MUST equal the genesis-script
+;; address (100); one-shot (104). Same shape as stake.tlb's `set_wallet`.
+
+;; ---- inbound, from the ledger only ----
+
+;; #b0000031 is RETIRED — the pre-DENOMINATION_PLAN body, without (t, s). Do not
+;; reuse; a stale sender must be rejected, not mis-parsed.
+pay_era_bounty#b0000032
+    query_id:uint64
+    era_boundary:uint256
+    beneficiary:MsgAddress
+    t:Coins                 ;; ledger's POST-MINT T (nanoTON), DENOMINATION_PLAN P4
+    s:Coins                 ;; ledger's POST-MINT S (nano-PRIMES)
+  = InternalMsgBody;
+
+;; D-99 §1.5. `kind` is 0 = REBATE_COMPOSITE_PER_POINT or 1 = REBATE_PRIME_FAMILY;
+;; `points` is D(n) on kind 0 and ignored on kind 1. The vault's own genesis-fixed
+;; rebateSchedule decides the TON value — the ledger decides eligibility and size
+;; in points only, same D22 trust shape as pay_era_bounty. `n` is the idempotency key.
+pay_special_number_rebate#b0000072
+    query_id:uint64
+    n:uint256
+    kind:uint8
+    points:uint16
+    beneficiary:MsgAddress
+    t:Coins
+    s:Coins
+  = InternalMsgBody;
+;; sender MUST equal the ledger's fixed address (CONCEPT.md §3.4). Vault checks `era_boundary`
+;; against its own genesis-fixed era-bounty schedule (params.json
+;; genesis.era_bounty_schedule) and that this boundary has not already paid
+;; (one-shot per boundary, dict keyed by era_boundary, cardinality <= number
+;; of primorials ever reached — grows far slower than n, no ceiling concern:
+;; even after 5,000 years of continuous mints the primorial sequence has
+;; produced only a few dozen boundaries).
+;;
+;; THE SCHEDULE IS TON-DENOMINATED (DENOMINATION_PLAN P4, contract note D22).
+;; Each entry is `(bounty_ton, max_primes)`; the vault pays
+;;   amount = min(bounty_ton * s / t, max_primes)
+;; i.e. the PRIMES that `bounty_ton` buys at the floor `p_f = T/S` this mint just
+;; set. A fixed nominal PRIMES bounty would inflate with the floor (~45x over
+;; year one at baseline demand); a TON-denominated one holds its designed value
+;; and drains the vault more slowly as the floor rises.
+;;
+;; `t`/`s` come from the ledger because the vault cannot call a get-method, and
+;; they are BOUNDED rather than trusted: `max_primes` is genesis-fixed and
+;; address-determining, so a wrong snapshot can only under-pay, never drain.
+;; Paid by TEP-74 `transfer` from the vault's own pre-funded jetton wallet, not
+;; by `mint` — see the vault contract's D20.
+
+;; ---- inbound, from an allow-listed v1.1 program contract ----
+
+pay_program_bounty#90000002
+    query_id:uint64
+    program_tag:uint32     ;; identifies which allow-listed program (e.g. quests);
+                            ;; must match the sender's entry, and rides in the
+                            ;; payout's query_id so a bounce finds the track (V26.1)
+    beneficiary:MsgAddress
+    amount:Coins
+  = InternalMsgBody;
+;; sender MUST be present in the genesis-fixed allow-list dict (address ->
+;; per-program remaining budget). Vault decrements that program's remaining
+;; budget and sends a TEP-74 transfer for `amount`. Genesis allow-lists the
+;; three vouchers, one entry per distinct program_tag. The allow-list itself cannot be
+;; edited post-genesis by anything in v1 (no message type exists to do so);
+;; adding a v1.1 program requires the same class of action as any other
+;; protocol upgrade — a fresh contract deploy plus (if ever needed) a
+;; venue-timelock-style, separately-decided governance path, explicitly out
+;; of v1's scope.
+
+;; `accrue_discovery#90000005`, `claim_discovery#90000006`, `credit_discovery#93000005`
+;; and the vault's `floor_quote` arm are RETIRED by D-202 with the constellation
+;; discovery bounty. Its PRIMES stay in the vault for §9.6's riddles.
+
+
+;; D-53/B12.1, D-188. `pay_era_bounty`/`pay_special_number_rebate` mark the
+;; flag paid and send the TEP-74 transfer with query_id =
+;; `2^62 | kind<<61 | key` (kind 0 = era boundary, 1 = special n). A payout
+;; that LANDS leaves no journal row. A genuine bounce is caught by the vault's
+;; own `onBouncedMessage`, which clears the flag and writes the row from the
+;; returned transfer (beneficiary, amount); a payout the balance guard defers
+;; writes its row without sending.
+;;
+;; V26.1: `pay_program_bounty` is NEVER journalled. It sends with query_id =
+;; `2^63 | 2^62 | program_tag`, and a bounce re-credits the tagged allow-list
+;; track directly. There is no row of its for this message to replay (702). This message replays that row — same
+;; beneficiary, same amount, decided once, never re-decided here — and deletes
+;; it, so a second call fails closed with 702. The caller funds the hop:
+;; >= 0.15 TON attached (`RETRY_PAYOUT_VALUE`, 103 below it).
+retry_bounty_payout#90000004
+    query_id:uint64
+  = InternalMsgBody;
+
+;; TEP-74's excess return, ACCEPTED AND KEPT. Not redefined here (the standard
+;; jetton opcodes are reused verbatim, see jetton.tlb) — listed because this
+;; contract RECEIVES it, which is a fact about its inbound surface and was for a
+;; long time an untrue one.
+;;
+;; `payOut` names this vault as `response_destination` on every pushed route
+;; (H11: `TRANSFER_GAS` comes out of the vault's own balance, so the change is
+;; the vault's), and the recipient's jetton wallet answers each payout with
+;; `excesses#d53276db`. Until 2026-09-17 the vault had no handler and the reply
+;; aborted with exit 101 every time. Nothing was lost — the wallet sends it
+;; non-bounceable, so the credit phase had already landed the TON — but the whole
+;; MINT TRACE reads FAILED in an explorer when any transaction in it aborts
+;; (testnet trace 8c354845...d724a). Permissionless by design: nothing moves.
+excesses#d53276db
+    query_id:uint64
+  = InternalMsgBody;
+
+;; The bounce-repair journal: 0 = paid_eras, 1 = special.paid_specials. Keyed
+;; by the vault's own `journal_key` counter. A row exists only for an era or
+;; special payout that was deferred or bounced (D-188 point 3); program payouts
+;; are repaired onto their book and never journalled
+;; (V26.1).
+retry_entry$_
+    kind:uint1
+    key:uint256
+    beneficiary:MsgAddress
+    amount:Coins
+  = RetryEntry;
+
+;; ---- get-methods (§9.1) ----
+;;
+;; get_vault_config -> (ledger, jetton_master, jetton_wallet, wallet_set:int)
+;;
+;;
+;; get_era_schedule(era_boundary:uint256) -> (scheduled:int, bounty_ton:Coins,
+;;                                             max_primes:Coins, paid:int)
+;;   §7 / §9.1 — the era ceremony's fixed VALUE and its nominal cap, so a reader
+;;   can recompute the payout as `bounty_ton * S / T` from this call plus the
+;;   ledger's `getRatchetState`, rather than being shown a printed constant.
+;;
+;; get_vault_payouts -> (paid_total:Coins, payout_count:uint32)
+;;   §3.3 / §11.21 — the payout half of the circulating-supply report. A bounty
+;;   payout moves tokens into circulation without touching `S`; a burn removes
+;;   them without touching `S`; the two are reported as two dashboard numbers and
+;;   never netted, because they are funded from opposite ends of the same
+;;   accounting and netting them hides which one is doing the work.
+;;   Counted at SEND, exactly like `paid_eras` is set at send, so the two agree
+;;   with each other and a bounced transfer overstates both by the same amount —
+;;   the pre-existing documented limitation of the bounce handler, not a new one.
+;;   The vault's REMAINING balance is not here: it lives on the vault's own jetton
+;;   wallet (get_wallet_data), and `vault size − paid ≈ balance` is the check that
+;;   costs a reader nothing to run.
+;;
+;; get_vault_funded -> Coins
+;;   V26.7 — the PRIMES genesis declared into the vault (address-determining
+;;   deploy data, `genesis.bounty_vault_size_primes`). An era bounty or special
+;;   rebate that `funded − paid_total` cannot cover is refused before any send:
+;;   no flag, no journal row, no bounce. It reads unpaid and is forfeit.
+;;
+;; get_deferred_payouts -> (deferred_count:uint32, journal_key:uint64)
+;;   H12 / DECISIONS.md D-129. A payout this contract OWES and has not delivered:
+;;   either the balance guard deferred it (the vault could not afford the 0.1 TON
+;;   jetton hop out of its own balance, so the row was journalled and nothing was
+;;   sent) or its transfer bounced and the row was rolled back. Deliberately NOT a
+;;   third field on get_vault_payouts: that pair is the §3.3 supply report, and a
+;;   deferred payout is a liability, not supply.
+;;   `journal_key` is the NEXT journal key the vault will issue. It bounds the
+;;   key space so anyone can walk it: read get_retry_entry on 0 .. journal_key-1
+;;   and fire retry_bounty_payout on a retryable row; a consumed or unwritten key
+;;   fails closed with 702, so the scan cannot double-pay.

@@ -1,0 +1,30 @@
+{
+  "name": "@ton-primes/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Message opcodes, TL-B schemas, ABI wrappers, params.json (sim output), contract-address env config, OpenAPI spec.",
+  "exports": {
+    "./opcodes": "./opcodes.ts",
+    "./contracts": "./contracts.ts",
+    "./params.json": "./params.json",
+    "./primality": "./primality.ts",
+    "./numberMeta": "./numberMeta.ts",
+    "./readSurface": "./readSurface.ts",
+    "./eras": "./eras.ts",
+    "./voucher": "./voucher.ts",
+    "./invites": "./invites.ts",
+    "./factors": "./factors.ts",
+    "./messages": "./messages.ts",
+    "./minterCard": "./minterCard.ts",
+    "./lotBlock": "./lotBlock.ts",
+    "./values": "./values.ts",
+    "./dedustQuote": "./dedustQuote.ts",
+    "./unstake": "./unstake.ts",
+    "./score": "./score.ts",
+    "./wire": "./wire.ts"
+  },
+  "dependencies": {
+    "@ton/core": "^0.63.1"
+  }
+}

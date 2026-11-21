@@ -1,0 +1,919 @@
+openapi: 3.0.3
+info:
+  title: TON PRIMES read-index API
+  version: 0.1.0
+  description: >
+    The read index (`backend/read-index`) — DECISIONS.md **D-24**, LAUNCH_FIX_PLAN.md
+    **W7.1**. This is the app's **primary read path**: rank boards, open lots, unclaimed
+    offers, per-wallet claims and history, and the mint feed, all answered from indexed
+    state rather than by reconstructing each screen from live get-methods on every load.
+
+    ## The honesty contract, which is the whole point
+
+    CONCEPT.md §9.1's original rule — *every number the UI shows maps to a public
+    get-method* — was written against serving the app out of a cache. D-24 widens the app
+    to read from an index anyway, and §9.1 is **amended, not waived**: *every number the UI
+    shows maps to a public get-method **and states when it was last read from chain***.
+
+    Concretely, in this document:
+
+    1. **Every served value is an object, never a scalar.** It carries `provenance`
+       (`blockSeqno`, `readAt`, `ageSeconds`, and the get-method that produced or settles
+       it) or, for a value you supplied in the request, `origin` and a `note` explaining
+       that it is not a chain reading. There is no shape in this API that emits a bare
+       number, and the service refuses (500) to serialise one.
+    2. **Staleness is a bounded quantity, so the client draws it as a shape** — a decaying
+       ring, a dimming, a freshness dot — per CLAUDE.md's frontend rule. Not a
+       "last updated" string.
+    3. **Money-critical values are NOT this service's to be authoritative for.** Mint price,
+       floor `p_f`, `T`/`S`, a standing lot price, and anything a user is
+       about to sign against must be read live from `backend/read-proxy`. Values this index
+       caches but is not authoritative for carry `provenance.liveOnly: true` AND have their
+       path hoisted into the response's top-level `liveOnly` array. `GET /index/status`
+       publishes the standing list of reads this index does not serve at all.
+    4. **A degraded index is visible on the app's face.** Every response carries an `index`
+       block with `degraded` and the reasons.
+
+    ## Failure modes
+
+    - **503** — the index has never confirmed a chain reading, so it has no seqno to stamp
+      and, by (1), nothing is servable. This is also the correct state of an unconfigured
+      process: `docker compose up` with an empty `.env` brings the service up, answers
+      `/health`, and 503s every data route with the reasons listed. It is never a body of
+      zeroes.
+    - **429** — per-IP inbound rate limit on the unbounded-cardinality routes
+      (`/lots/{n}`, `/wallets/{address}/*`). See `ops/rate-limit-budget.md`.
+    - **500 with an "un-provenanced value" message** — the service refused to publish a
+      value it could not date. Loud on purpose; it is the failure D-24 exists to force.
+
+servers:
+  - url: http://localhost:4004
+    description: Local / docker-compose default
+  - url: https://primes.live/index
+    description: Deployed
+
+tags:
+  - name: status
+    description: Liveness, degraded state, and the live-only manifest.
+  - name: boards
+    description: >
+      Rank boards. DESIGN.md S3 and the `RankStrip`'s two boards, unblocked by D-24.
+      There is no wallet enumeration on chain, so a board ranks every wallet the index has
+      SEEN act and read a rank get-method for — that caveat travels on every row.
+  - name: lots
+    description: >
+      The unified acquisition lane (D-30/D-31/D-33). A composite is acquired by opening an
+      ascending lot (opening IS a paid first bid); every prime is acquired on the descending
+      Dutch lane. `getLot(n)` is authoritative for a lot's live price.
+  - name: offers
+    description: Unclaimed divisor-line tribute per prime, replayed from the event log (D-24).
+  - name: wallets
+    description: Per-wallet claim lists and history. The `/me` rail's re-index need (D-28).
+  - name: feed
+  - name: crawler
+    description: Sitemaps for search engines (SEO_PLAN 4.2), routed at the site root by nginx.
+
+paths:
+  /health:
+    get:
+      tags: [status]
+      summary: Liveness. Answers even with nothing configured.
+      responses:
+        "200":
+          description: Service is up. `degraded` is true whenever the index is behind.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, service, network, degraded]
+                properties:
+                  ok: { type: boolean }
+                  service: { type: string, enum: [read-index] }
+                  network: { type: string }
+                  degraded: { type: boolean }
+
+  /index/status:
+    get:
+      tags: [status]
+      summary: The degraded story in full, plus the standing live-only manifest.
+      description: >
+        `liveOnlyContract.reads` is the list of money-critical reads this index does not
+        serve at all (D-24 criterion 3). A client must obtain each of them from the
+        read-proxy's live get-method path before signing anything against it.
+      responses:
+        "200":
+          description: Status and the live-only contract.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [index, liveOnlyContract]
+                properties:
+                  index: { $ref: "#/components/schemas/IndexStatus" }
+                  liveOnlyContract:
+                    type: object
+                    properties:
+                      note: { type: string }
+                      via: { type: string }
+                      reads:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            what: { type: string }
+                            getMethod: { type: string }
+                            contract: { type: string }
+
+  /boards/recruiters:
+    get:
+      tags: [boards]
+      summary: Top-N recruiters by LIFETIME recruit count (`getRecruitRank`).
+      description: >
+        The value is `getRecruitRank(owner)`'s `recruits` — **lifetime, never reset**. It is
+        NOT the era-scoped count; see `/boards/era`. The ledger's own comment warns that
+        conflating them shows the wrong contest.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Around"
+      responses:
+        "200": { $ref: "#/components/responses/Board" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /boards/prime-finders:
+    get:
+      tags: [boards]
+      summary: Top-N prime finders by prime rank (`getMinterState`, on each wallet's minter card).
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Around"
+      responses:
+        "200": { $ref: "#/components/responses/Board" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /boards/era:
+    get:
+      tags: [boards]
+      summary: Era standings — the D-36 trophy contest.
+      description: >
+        `leader` is `getEraLeader()`: the wallet that would take this era's naming rights if
+        the ceremony fired now. A null address with 0 recruits means **no wallet has
+        activated this era and the era's primorial will be left unnamed** — not that nobody
+        is winning yet. `standings` rows are `getEraRecruits(owner)`, which is **era-scoped
+        and reset for every wallet at each primorial ceremony**.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Around"
+      responses:
+        "200":
+          description: Era leader and standings.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          leader:
+                            type: object
+                            description: Absent when the sweeper has no `getEraLeader` reading yet.
+                            properties:
+                              address: { $ref: "#/components/schemas/Reading" }
+                              recruits: { $ref: "#/components/schemas/Reading" }
+                              note: { $ref: "#/components/schemas/Echo" }
+                          standings:
+                            type: array
+                            items: { $ref: "#/components/schemas/BoardRow" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /boards/referrals:
+    get:
+      tags: [boards]
+      summary: Numbers ranked by the TON their referral key has paid (D-177, CONCEPT §9.11).
+      description: >
+        Each figure is `getReferralPaid()` on that key's own item (G89): the §4.1 referral
+        line it has relayed, as the item received it, never decremented. The keys ranked are
+        every number an indexed mint cited as `referral_key`; a key no mint cited has paid
+        nothing. `holder` is `get_nft_data`'s CURRENT owner, a label: each payout went to
+        whoever held the key at that mint. `keys` appends the caller's own keys outside the
+        top-N at their true rank; a key with nothing paid is absent.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - name: keys
+          in: query
+          required: false
+          schema: { type: string }
+          description: Up to 32 positive decimal numbers, comma-separated. Anything else is a 400.
+      responses:
+        "200":
+          description: The ranked keys.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      rows:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key: { $ref: "#/components/schemas/Echo" }
+                            paid: { $ref: "#/components/schemas/Reading" }
+                            holder: { $ref: "#/components/schemas/Reading" }
+                            rank: { $ref: "#/components/schemas/Echo" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /boards/mints:
+    get:
+      tags: [boards]
+      summary: >
+        The Top Minter Leaderboard (`DECISIONS.md` D-79 facet 1) — mint count by sender,
+        windowed to the CURRENT era.
+      description: >
+        Replayed from `mints` (event-poller's table), grouped by `owner` (the mint's
+        recipient — the same column `/wallets/{address}/history` treats as "who minted").
+        Deliberately NOT lifetime: distinct from `/boards/recruiters` (lifetime recruit
+        count) and from `/boards/era` (D-36's recruit-activation contest, a different
+        counter on the same clock). `eraIndex` and the window are derived from the highest
+        minted number this index has observed (`shared/eras.ts`'s `eraPosition`), not from
+        `getHead()` directly — an off-head auction settlement (D-45/D-90) can occasionally
+        place that number one era ahead of where the sequential head actually stands.
+
+
+        `around` is **D-124's band**: given a wallet, the route answers the contiguous run
+        of rows centred on it (four above, five below at the default limit) with the board's
+        own leader prepended when rank 1 falls outside that run — so a reader outside the
+        top ten sees the rows they can actually pass instead of ten strangers. The leader is
+        kept because the client draws every bar against the maximum of what was served; a
+        band alone would rescale the column to a local maximum. A wallet with no mint in
+        this era has no seat on this board, and the top-N is served instead — never a
+        fabricated rank. Every row carries its true `rank` either way.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - name: around
+          in: query
+          required: false
+          schema: { type: string, maxLength: 128 }
+          description: >
+            Wallet to centre the board on (D-124). Omit for the top-N. Over 128 characters
+            is a 400.
+      responses:
+        "200":
+          description: The current era's index and the ranked mint counts.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          eraIndex: { $ref: "#/components/schemas/Echo" }
+                          rows:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                address: { $ref: "#/components/schemas/Echo" }
+                                mints: { $ref: "#/components/schemas/Reading" }
+                                rank:
+                                  allOf:
+                                    - $ref: "#/components/schemas/Reading"
+                                  description: >
+                                    The row's TRUE position on the whole board, not its index
+                                    in what was served — a band at 8..17 reports 8..17.
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /lots/open:
+    get:
+      tags: [lots]
+      summary: Open lots with their standing high bid, highest first.
+      description: >
+        `chain` is present only where the sweeper holds a `getLot(n)` reading; it is absent,
+        not zeroed, otherwise. `chain.standingPriceNanoton`, `chain.minPaymentNanoton`,
+        `chain.highBidNanoton` and `history.purseNanoton` are all **live-only**: a bidder
+        signs against `getLot(n)`, never against this list. Note also that a prime lot opened
+        before its turn has a FLAT standing price (`decayStart == 0`) and must not be drawn
+        as decaying.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200": { $ref: "#/components/responses/LotList" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /lots/{n}:
+    get:
+      tags: [lots]
+      summary: One lot. Rate-limited — the path is unbounded.
+      parameters:
+        - name: n
+          in: path
+          required: true
+          schema: { type: string, pattern: "^[0-9]+$" }
+      responses:
+        "200":
+          description: One lot row.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          lot: { $ref: "#/components/schemas/LotRow" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /market/cheapest:
+    get:
+      tags: [lots]
+      summary: >
+        The pointer (GAUNTLET.md K3) — the lowest `standingPriceNanoton` among every
+        currently-open lot the sweeper holds a live `getLot(n)` reading for.
+      description: >
+        One query, no ranking, no desirability score. An absent `lot` (not a zeroed one)
+        means no open lot has a chain reading yet, not that lots are free — the same
+        "absent, not zeroed" convention `/boards/era`'s `leader` field already uses.
+        `standingPriceNanoton` is **live-only**: quote it at render, and re-read
+        `getLot(n)` directly before a bid or a buy signs against it, the same rule
+        `/lots/open`'s own `chain` block keeps for the identical field.
+      responses:
+        "200":
+          description: The cheapest open lot's number and standing price, or none yet.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          lot:
+                            type: object
+                            description: Absent when no open lot has a chain reading yet.
+                            properties:
+                              number: { $ref: "#/components/schemas/Echo" }
+                              standingPriceNanoton: { $ref: "#/components/schemas/Reading" }
+                              mode: { $ref: "#/components/schemas/Reading" }
+                              closesAt: { $ref: "#/components/schemas/Reading" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /offers/unclaimed:
+    get:
+      tags: [offers]
+      summary: Unclaimed divisor-line tribute, per prime.
+      description: >
+        Per-prime unclaimed divisor-line tribute (`unclaimedTributeNanoton`), largest first — replayed
+        from `tribute_credits` minus `claims`, because no get-method enumerates them. Every
+        row's amount is
+        **live-only**: `item.get_owed(p)` is authoritative and must be read before a claim is
+        signed.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Rows, largest amount first.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Envelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          rows:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                prime: { $ref: "#/components/schemas/Echo" }
+                                unclaimedTributeNanoton: { $ref: "#/components/schemas/Reading" }
+                                creditEvents: { $ref: "#/components/schemas/Reading" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /wallets/{address}/numbers:
+    get:
+      tags: [wallets]
+      summary: Every number this wallet currently owns.
+      description: >
+        GAUNTLET.md L2 (`/whois`/`/flex`) — backed by `number_owners` (event-poller's
+        read-only table: mints seeded then corrected by TEP-62 transfers), so this is
+        current ownership, not `mints.owner`, which stays the original minter forever.
+        Advisory, not authoritative for payment; the collection's own NFT index is.
+      parameters:
+        - $ref: "#/components/parameters/Address"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200": { $ref: "#/components/responses/WalletRows" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /wallets/{address}/claims:
+    get:
+      tags: [wallets]
+      summary: The claims one wallet holds — numbers won and waiting for the head.
+      description: >
+        A claim won on the ascending lane **never expires** (D-28/D-30); `minted` says
+        whether the head has reached it yet. It may be released for 90% with 10% to
+        treasury (D-32), which is a live-price action and must be priced from chain.
+      parameters:
+        - $ref: "#/components/parameters/Address"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200": { $ref: "#/components/responses/WalletRows" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /wallets/{address}/history:
+    get:
+      tags: [wallets]
+      summary: The ledger tape — every move this wallet signed, newest first.
+      description: >
+        A row is something THIS wallet signed: a gift it received or a stake the keeper
+        expired is not on it. `kind` is one of: `mint` (a head mint it paid for and owns),
+        `gift` (a §4.5 gift it sent — it paid, another wallet owns the number), `won` /
+        `bought` (an ascending lot it won / a Dutch lot it bought, minted at close; the
+        winning bid is folded into this row, not listed again), `bid` (`outcome` standing or
+        outbid), `lot_open` (opening a Dutch lot), `claim` (tribute), `lp_deposit`,
+        `lp_relock`, `lp_withdraw`, `lp_sink` (treasury LP custody), `stake`, `stake_claim`,
+        `stake_relock`, `stake_withdraw` (§5.3 staking), `flush`, `distribute` (the
+        permissionless cranks), `vote` (`support`, `proposalSeq`), `propose`, and the DeDust
+        pool's own events `swap_buy`, `swap_sell`, `lp_mint`, `lp_burn`.
+
+
+        Each amount rides in the unit it moved in and is never converted: `amountNanoton`
+        (TON), `primesAmountRaw` (nano-PRIMES), `lpAmountRaw` (raw LP jetton units). A
+        `mint`/`gift` row's TON is `MINT_PRICE`; a `won`/`bought` row's is the lot's high
+        bid. A stake row's PRIMES is the position's principal — a claim's payout is computed
+        on the stake master and logged nowhere, so a `stake_claim` has none. `tier` and
+        `positionId` name an LP or stake position (null on a deposit or a new stake, whose
+        id the child allocates). `at` is the transaction's chain time. The address may be
+        raw or user-friendly; every `/wallets/{address}/*` route normalises it to the raw
+        form the index stores.
+      parameters:
+        - $ref: "#/components/parameters/Address"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200": { $ref: "#/components/responses/WalletRows" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /wallets/{address}/contest:
+    get:
+      tags: [wallets]
+      summary: One wallet's own settled trophy-auction outcomes — won, outbid, sniped — and its personal bests.
+      description: >
+        `bests` (`DESIGN.md` U153) carries two maxima over the same wallet's mint-time
+        history — `largestPrime` (prime `mints`) and `widestFactorization`/`widestOmega` (the
+        composite with the most submitted factor entries, ω; ties keep the smaller number).
+        Derived, computed at read time; `null` means no such mint yet.
+
+
+        A tally, not a feed: won/outbid come from this wallet's own `trophy_bids` rows,
+        sniped from `trophy_lots` where this wallet opened a Dutch-lane lot it did not buy
+        (opening inserts no bid row, so that loss cannot be read from `trophy_bids` at all).
+        Excludes still-open ("standing") positions — `/lots/{n}` is where a live bid is
+        read. Never served for any address but the caller's own connected wallet's lookup;
+        no public route groups the same way (`DESIGN.md` G27b, `GAUNTLET.md` K4 — the same
+        rows rendered publicly would turn a participation record into a scoreboard of
+        failure).
+      parameters:
+        - $ref: "#/components/parameters/Address"
+      responses:
+        "200": { $ref: "#/components/responses/WalletRows" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /feed/mints:
+    get:
+      tags: [feed]
+      summary: The mint feed, newest number first.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200": { $ref: "#/components/responses/WalletRows" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /feed/floor:
+    get:
+      tags: [feed]
+      summary: The floor p_f = T / S after every mint, oldest first — the ratchet's history.
+      description: >
+        One row per observed `pool_inject#b0000050`, carrying the authoritative `(T, S)`
+        snapshot after that mint's effects (event-poller migration 002). This is the floor
+        staircase's series, and it covers mints that move no head — a prime bought at its
+        Dutch lot, an off-head settlement (D-45/D-90), the genesis seed — which a series
+        sampled from `/ledger/head` cannot see.
+
+
+        **Not `liveOnly`, deliberately.** `T`, `S` and the standing floor are
+        money-critical and read-proxy's alone. What this serves is history: no get-method
+        on any contract returns a past floor, so the index is authoritative for it the way
+        it is for `mints`. `n` is null where no mint precedes the inject.
+
+
+        **`span` picks the slice.** `recent` (the default) is the newest `limit` steps,
+        each labelled with the mint that produced it. `all` spreads the same `limit` rows
+        evenly over the whole history, from the genesis seed to the newest mint, so a
+        picture can make the ratchet's claim about all of it; every row is still a real
+        inject with the `(T, S)` the ledger stamped on it — the sample drops steps, it
+        never averages or interpolates them — and each one still names the mint that
+        produced it, so a client can key a control off the label in either span. An
+        unrecognised `span` is a 400, not a silent fall back to `recent`.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - name: span
+          in: query
+          required: false
+          schema: { type: string, enum: [recent, all], default: recent }
+          description: >
+            `recent` = the newest `limit` steps; `all` = `limit` steps spread evenly over
+            the whole history.
+      responses:
+        "200": { $ref: "#/components/responses/WalletRows" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /treasury/ledger:
+    get:
+      tags: [feed]
+      summary: Every message observed on the governed treasury, newest first.
+      description: >
+        CONCEPT.md §5.5 / `DECISIONS.md` D-100. The treasury's *standing* balances are
+        `getTreasuryBalances()` on read-proxy; this is the history behind them. The
+        contract stores no history, so no get-method returns it and the event log is
+        authoritative for it — the same footing as `/feed/floor`, and marked the same way.
+
+
+        Rows come from `treasury_events` (event-poller migrations 011 and 018), always
+        filtered to the configured `PRIMES_TREASURY_ADDRESS` — `transfer_notification` is
+        TEP-74's own opcode and the identical body arrives at the LP sink and at any other
+        tracked account with a jetton wallet, so a row means "the treasury did this" only
+        under that filter. `treasury` echoes the address filtered on; empty means this
+        index has no treasury configured, so an empty `rows` is that and not "nothing has
+        happened".
+
+
+        **No row carries an asset label, and that is deliberate.** Three shapes say their
+        asset plainly — `treasury_ton_inflow` is TON, `treasury_withdraw_lp` is LP, and
+        `treasury_propose` carries its own `asset` (0 TON, 1 PRIMES, 2 LP). Two cannot be
+        labelled by this service: a `treasury_jetton_inflow` is PRIMES or LP according to
+        which of the treasury's two jetton wallets forwarded it (`jettonWallet`, against
+        `getTreasuryConfig()`), and a `treasury_execute` names only a proposal `seq` whose
+        asset lives in the contract's dictionary (`/treasury/proposals` on read-proxy). The
+        caller holds both of those and this index holds neither, so the keys are published
+        and nothing is guessed at.
+
+
+        `op_name` is the chain's own vocabulary: `treasury_ton_inflow` (a bare-body value
+        send — §4.1's 58% unsold-prime forfeit share, or D-114's half of an auction
+        premium; the two are indistinguishable in this stream because both arrive from the
+        ledger with an empty body), `treasury_jetton_inflow`, `treasury_relock_vote`,
+        `treasury_withdraw_lp`, `treasury_vote`, `treasury_propose`, `treasury_execute`,
+        `treasury_expire_vote`, `treasury_distribute` (D-168; `sender` is the caller).
+        Every row also carries `mode` and `newTier` (null except on a relock).
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200": { $ref: "#/components/responses/WalletRows" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /stake/ledger:
+    get:
+      tags: [feed]
+      summary: Every message observed on the stake master, newest first.
+      description: >
+        CONCEPT.md §5.3 / `DECISIONS.md` D-168. `/treasury/ledger`'s twin — the same
+        `treasury_events` scan and the same row shape, filtered to the configured
+        `PRIMES_STAKE_ADDRESS`, which `stake` echoes (empty = none configured). The
+        standing figures are the stake master's get-methods on read-proxy (`/stake`,
+        `/stake/{address}`); this is the history behind them.
+
+
+        Row shapes: a STAKE is `treasury_jetton_inflow` with `tag` 0x53544b4c ("STKL"),
+        `tier` and `sender` = the staker; a BUDGET is `treasury_jetton_inflow` with `tag`
+        0x53424754 ("SBGT") from the treasury's `distribute()`; any other inflow (null
+        `tag`) was refunded. A SETTLE is `stake_settle` with `owner`, `positionId`,
+        `amount` (principal), `tier`, `mode` (0 claim, 1 relock, 2 withdraw, 3 expire) and
+        `newTier` (relock only). No settle row carries the PRIMES paid — no observed
+        message does.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200": { $ref: "#/components/responses/WalletRows" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "503": { $ref: "#/components/responses/NoChainTip" }
+
+  /sitemap-numbers.xml:
+    get:
+      tags: [crawler]
+      summary: The sitemap index of every minted number's page. Served at the site root.
+      description: >
+        SEO_PLAN 4.2. Always a `<sitemapindex>` naming `sitemap-numbers-<k>.xml` pages of at
+        most 50,000 URLs each, so the URL `robots.txt` names never changes shape. nginx routes
+        it from `https://primes.live/sitemap-numbers.xml` (robots.txt disallows `/idx/`). Not
+        enveloped: a protocol document, not a reading of chain state.
+      responses:
+        "200":
+          description: A sitemap index; at least one page, even before the first mint.
+          content:
+            application/xml:
+              schema: { type: string }
+
+  /sitemap-numbers-{page}.xml:
+    get:
+      tags: [crawler]
+      summary: One page of minted numbers' `https://primes.live/n/<n>` URLs, ascending. Rate-limited.
+      description: >
+        SEO_PLAN 4.2. Every row of `mints` (head-lane and won-lot mints alike; an auctioned
+        number mints off-head), with `<lastmod>` the mint's own chain timestamp. Page 1 always
+        answers, empty before the first mint; a page past the last mint is a 404.
+      parameters:
+        - name: page
+          in: path
+          required: true
+          schema: { type: string, pattern: "^[1-9][0-9]{0,8}$" }
+      responses:
+        "200":
+          description: A `<urlset>` of up to 50,000 URLs.
+          content:
+            application/xml:
+              schema: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404":
+          description: A page past the last minted number.
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+components:
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Row cap. Rejected with 400 outside 1..500, never silently clamped.
+      schema: { type: integer, minimum: 1, maximum: 500 }
+    Around:
+      name: around
+      in: query
+      required: false
+      schema: { type: string, maxLength: 128 }
+      description: >
+        G74 / D-124 / D-149 — the BAND. A wallet (raw or user-friendly) to centre the board on:
+        the rows four above and five below it (at limit 10), the board's leader pinned first
+        when the band does not already start at rank 1, every row with its true `rank`. A
+        wallet with no seat, or none given, gets the top-N. Over 128 characters is a 400.
+    Address:
+      name: address
+      in: path
+      required: true
+      schema: { type: string }
+
+  schemas:
+    Provenance:
+      type: object
+      required: [source, blockSeqno, readAt, ageSeconds, liveOnly]
+      description: >
+        **Required on every served value.** `blockSeqno` and `readAt` are not optional
+        anywhere in this API — that is D-24 criterion 1, and it is enforced by the response
+        type, not by convention.
+      properties:
+        source:
+          type: string
+          enum: [chain-get-method, event-log]
+          description: >
+            `chain-get-method` — the index called that method on that contract at that
+            seqno. `event-log` — replayed from an observed message body; `blockSeqno` /
+            `readAt` are then the index's last confirmed view of chain (an indexed message
+            has an `lt` but no masterchain seqno, and inventing one would be the exact bug
+            §9.1 exists to prevent), while `eventLt` / `eventTs` state when the message was
+            observed.
+        blockSeqno: { type: integer }
+        readAt: { type: string, format: date-time }
+        ageSeconds: { type: number }
+        getMethod: { type: string }
+        contractAddress: { type: string }
+        derivedFrom: { type: string }
+        authoritativeGetMethod:
+          type: string
+          description: For an `event-log` value, the get-method that settles the same fact.
+        eventLt: { type: string }
+        eventTs: { type: string, format: date-time }
+        liveOnly:
+          type: boolean
+          description: >
+            True means the index is NOT authoritative for this value and the client must
+            re-read it live before acting. Its path is also in the response's `liveOnly`.
+
+    Reading:
+      type: object
+      required: [value, provenance]
+      properties:
+        value: {}
+        provenance: { $ref: "#/components/schemas/Provenance" }
+
+    Echo:
+      type: object
+      required: [value, origin, note]
+      description: >
+        The one exception, and deliberately a **different schema** rather than a third
+        `source` value: a value you supplied in the request, or a deployment constant. It
+        carries no seqno because it has none, and it can therefore never be mistaken for a
+        chain reading.
+      properties:
+        value: { oneOf: [{ type: string }, { type: number }, { type: boolean }] }
+        origin: { type: string, enum: [request-echo, config] }
+        note: { type: string }
+
+    IndexStatus:
+      type: object
+      required: [degraded, reasons, chainTip, sweep, staleAfterSeconds]
+      properties:
+        degraded: { type: boolean }
+        reasons:
+          type: array
+          items: { type: string }
+          description: One string per condition that tripped. Empty iff not degraded.
+        chainTip:
+          nullable: true
+          type: object
+          properties:
+            seqno: { type: integer }
+            observedAt: { type: string, format: date-time }
+            ageSeconds: { type: number }
+        sweep:
+          type: object
+          properties:
+            generation: { type: integer }
+            catchUpComplete:
+              type: boolean
+              description: >
+                False from process start until every queued target has been re-read once.
+                A restarted index is serving pre-restart readings and says so.
+            lastCycleAt: { type: string, nullable: true, format: date-time }
+            consecutiveFailures: { type: integer }
+            queueDepth: { type: integer }
+            pending: { type: integer }
+        oldestReadingAgeSeconds:
+          type: number
+          nullable: true
+          description: Age of the oldest reading contributing to THIS response.
+        staleAfterSeconds: { type: number }
+
+    Envelope:
+      type: object
+      required: [index, liveOnly, data]
+      properties:
+        index: { $ref: "#/components/schemas/IndexStatus" }
+        liveOnly:
+          type: array
+          items: { type: string }
+          description: Dotted paths within `data` that must be re-read live before signing.
+        data: { type: object }
+
+    BoardRow:
+      type: object
+      properties:
+        address: { $ref: "#/components/schemas/Echo" }
+        value: { $ref: "#/components/schemas/Reading" }
+        detail:
+          allOf: [{ $ref: "#/components/schemas/Reading" }]
+          description: The full decoded get-method tuple for this wallet.
+        rank:
+          allOf: [{ $ref: "#/components/schemas/Echo" }]
+          description: >
+            G74: the row's TRUE position on the whole board (1 + wallets with a higher
+            reading, ties by address), not its index in the response.
+
+    LotRow:
+      type: object
+      properties:
+        number: { $ref: "#/components/schemas/Echo" }
+        chain:
+          type: object
+          description: Absent when the sweeper holds no `getLot(n)` reading. Never zeroed.
+          properties:
+            mode:
+              allOf: [{ $ref: "#/components/schemas/Reading" }]
+              description: "`0` MODE_ASCENDING (composite), `2` MODE_DUTCH_BUYNOW (prime)."
+            p0Nanoton: { $ref: "#/components/schemas/Reading" }
+            standingPriceNanoton: { $ref: "#/components/schemas/Reading" }
+            minPaymentNanoton: { $ref: "#/components/schemas/Reading" }
+            highBidNanoton: { $ref: "#/components/schemas/Reading" }
+            highBidder: { $ref: "#/components/schemas/Reading" }
+            closesAt: { $ref: "#/components/schemas/Reading" }
+            closed: { $ref: "#/components/schemas/Reading" }
+            floorNanoton:
+              allOf: [{ $ref: "#/components/schemas/Reading" }]
+              description: >-
+                `getLotFloor(n)` — where THIS lot comes to rest. Since `DECISIONS.md` D-88
+                point 1 a prime's descending lane terminates at `max(NPV(n)/2, P0(n)/3, MINT_PRICE)`
+                (D-99 §1.2), so the global
+                `getPrimeDutchTerms().floorNanoton` is only the LOWER BOUND on this and is
+                the answer only for a prime the finite NPV table misses. `value` is `null`
+                when the sweeper's stored reading predates this field.
+        history:
+          type: object
+          properties:
+            purseNanoton: { $ref: "#/components/schemas/Reading" }
+            highBidder: { $ref: "#/components/schemas/Reading" }
+            bidCount: { $ref: "#/components/schemas/Reading" }
+            distinctBidders:
+              allOf: [{ $ref: "#/components/schemas/Reading" }]
+              description: >-
+                GAUNTLET.md N4 (D-65): how many DISTINCT wallets bid, not just how many bids
+                landed — the number a single wash-trading actor cannot inflate by bidding
+                against themselves. Present on every lot, open or closed.
+            openedAt: { $ref: "#/components/schemas/Reading" }
+
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+
+  responses:
+    Board:
+      description: One board.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/Envelope"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      rows:
+                        type: array
+                        items: { $ref: "#/components/schemas/BoardRow" }
+    LotList:
+      description: Open lots.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/Envelope"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      rows:
+                        type: array
+                        items: { $ref: "#/components/schemas/LotRow" }
+    WalletRows:
+      description: An enveloped row list; every leaf is a Reading or an Echo.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Envelope" }
+    BadRequest:
+      description: A rejected question. Never answered as an empty measurement.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: Per-IP inbound limit on an unbounded-cardinality route.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NoChainTip:
+      description: >
+        The index has never confirmed a chain reading, so it has no seqno to stamp and
+        nothing is servable. Also the correct answer from an unconfigured process.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+              degraded: { type: boolean }
+              reasons:
+                type: array
+                items: { type: string }

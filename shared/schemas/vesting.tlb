@@ -1,0 +1,175 @@
+;; TON PRIMES — the TREASURY VESTING LOCK. CONCEPT.md §2 point 4, §3.3, §6 point 3;
+;; DECISIONS.md D-166 (amends D-100 point 6, which amended D-91, D-77 point 2 and
+;; D-46 points 1 and 3).
+;;
+;; D-166: the operator's instance is DELETED. The operator holds no genesis PRIMES
+;; and buys at the head like any player; this contract survives for the treasury's
+;; 1,000,000 PRIMES alone. The history below is how the contract came to exist.
+;; Opcodes: /shared/opcodes.ts `VESTING`. Contract: contracts/contracts/primes_vesting.tolk.
+;;
+;; D-46 gave the operator a one-time, disclosed genesis PRIMES allocation
+;; (`T0_nominal * L`) and minted it straight to their own wallet, fully liquid.
+;; D-77 kept the allocation and its exact size and removed the liquidity: the
+;; same mint lands here. D-91 re-cuts the schedule to FOUR equal tranches — 25%
+;; at genesis, then 25% every 90 days, the last at day 270 (9 months).
+;;
+;; WHY FOUR, AND WHY 25% AT GENESIS. D-91 changes what the allocation is FOR.
+;; Under D-46 point 3 / D-77 point 2 it was the PRIMES side of the DeDust pool
+;; `flush()` trades against, and the genesis tranche existed so that leg was not
+;; dark for the first quarter. D-91 mints the pool's PRIMES side separately, at
+;; the ledger's permissionless floor-donation op, leaving this allocation an
+;; OPERATIONS RUNWAY and nothing else — and a runway paid out over two years does
+;; not fund a launch. The cost, stated rather than discovered: 25% at t = 0 is
+;; 250,000 PRIMES, ~2.27% of S0, liquid at block one to the treasury contract
+;; (`shared/params.json` `genesis.vesting.treasury` is the authority on both
+;; figures).
+;;
+;; NO ADMIN SURFACE. No owner field, no cancel, no pause, no re-schedule, no
+;; beneficiary change. The only address any outbound message can name is
+;; `beneficiary`, fixed at deploy — which is what makes the absence of a withdraw
+;; path greppable rather than asserted, the same standard §8 sets everywhere
+;; else. The cost, stated rather than discovered: a lost beneficiary key strands
+;; the unreleased remainder forever.
+;;
+;; TOUCHES NO ECONOMIC STATE. Nothing here mints, burns or moves TON beyond its
+;; own message gas. `S` counted this allocation at genesis and does not move
+;; (§3.3); `T` never saw it. `p_f = T/S` is identical with and without this
+;; contract. Zero TON liability, so it is absent from the §3.4 solvency check.
+;;
+;; Trust edges:
+;;   - set_wallet: sender MUST equal the genesis script; one-shot. Also stamps
+;;     `start_time`, so the clock dates from custody, not from deploy data.
+;;   - release: PERMISSIONLESS (the venue timelock's `execute` precedent). Who
+;;     calls it does not matter — it can only ever pay `beneficiary`.
+
+;; ---- storage ----
+
+storage$_
+    total_amount:Coins      ;; the full allocation, declared at DEPLOY (T0_nominal * L).
+                            ;; §9.1: `total_amount - released_amount ~ balance` on
+                            ;; this contract's own jetton wallet is a one-get-call
+                            ;; check that trusts none of its arithmetic — the same
+                            ;; shape the bounty vault uses (§3.3).
+    released_amount:Coins   ;; what has been PUSHED OUT, not what has matured
+    start_time:uint64       ;; 0 until set_wallet. Every schedule read checks it first.
+    cfg:^VestingConfig
+  = Storage;
+
+vesting_config$_
+    beneficiary:MsgAddress       ;; THE ONLY DESTINATION ANY MESSAGE HERE CAN NAME
+    jetton_master_addr:MsgAddress
+    genesis_script_addr:MsgAddress
+    b:^VestingConfigB
+  = VestingConfig;
+
+vesting_config_b$_
+    jetton_wallet_addr:MsgAddress
+    wallet_set:uint8
+  = VestingConfigB;
+
+;; ---- the schedule (compiled-in constants, not storage) ----
+;;
+;;   VEST_TRANCHES = 4
+;;   VEST_INTERVAL = 7776000  (90 days)
+;;
+;; Unlock i matures at `start_time + i * VEST_INTERVAL`, i in [0, 3]. The
+;; entitlement at `unlocked` unlocks is a TARGET, `total_amount * unlocked /
+;; VEST_TRANCHES`, and a release transfers the difference against
+;; `released_amount` — never a fixed per-tranche amount. Integer division
+;; truncates the intermediate targets and the final one is exact
+;; (`total_amount * 4 / 4`), so the last tranche absorbs every remainder and the
+;; contract always empties. D-100 point 6's 1,000,000 * 10^9 happens to divide
+;; by 4 exactly, so nothing truncates at THIS allocation; the target form stays
+;; because a fixed `total / VEST_TRANCHES` send would be correct today and
+;; silently strand dust the first time either number changed.
+;;
+;; These are a DISCLOSURE SCHEDULE, not economic parameters. Nothing in the
+;; ratchet, the split or the sim reads them; `shared/params.json`
+;; `genesis.vesting.treasury` records them for the deploy script and the UI — ONE
+;; instance, 1,000,000 PRIMES to the treasury contract, since D-166 deleted the
+;; operator's.
+
+;; ---- inbound: one-shot wallet bootstrap, from the genesis script only ----
+
+set_wallet#95000001
+    query_id:uint64
+    jetton_wallet_addr:MsgAddress
+  = InternalMsgBody;
+;; Same circular-address family as primes_bounty_vault.tolk D21 and
+;; primes_stake.tolk's own set_wallet: a TEP-74 wallet is addressed by its owner,
+;; so this contract cannot embed its own wallet in its own address-determining
+;; init data.
+;;
+;; It ALSO stamps `start_time = now()`. The clock therefore starts when the
+;; tokens are actually in custody rather than at a deploy timestamp that may
+;; precede funding, and no timestamp has to survive testnet clock skew in deploy
+;; data. Delaying this message only delays the beneficiary's money, and
+;; `getVesting` reports the stamp either way.
+;;
+;; Throws 100 (wrong_sender), 104 (already_processed).
+
+;; ---- inbound: release, PERMISSIONLESS ----
+
+release#95000002
+    query_id:uint64
+  = InternalMsgBody;
+;; Transfers every matured-but-unreleased tranche to `beneficiary` in ONE
+;; message. `unlocked` is derived from the clock rather than counted up per call,
+;; so a caller who ignores the contract for a year catches up in a single
+;; release — there is no queue to drain and no way to fall behind irrecoverably.
+;;
+;; Permissionless for the venue timelock's reason (see venue_timelock.tlb's
+;; `execute`): the beneficiary cannot withhold execution of an already-public,
+;; already-matured schedule. It is harmless because no field here names a
+;; recipient — the destination is `beneficiary` and nothing can change it.
+;;
+;; Throws 1140 (vest_wallet_unset), 1141 (vest_nothing_due — covers both "the
+;; clock has not started" and "nothing new has matured"), 103 if the caller
+;; underfunds the send — which since D-100 point 6 costs 0.15 TON, not 0.1: the
+;; 0.1 transfer hop plus a 0.05 `forward_ton_amount` (see the outbound section).
+
+;; ---- outbound: TEP-74 transfer, to the lock's own jetton wallet ----
+;;
+;; transfer#0f8a7ea5, standard TEP-74 body. Sent on `release` ONLY, with
+;; destination = response_destination = `beneficiary`.
+;;
+;; `forward_ton_amount` = 0.05 TON, ALWAYS, and `forward_payload` empty.
+;; D-100 point 6 made the allocation payable to `primes_treasury.tolk` (all of it
+;; since D-166) — a
+;; CONTRACT with no key — and a jetton wallet emits its `transfer_notification`
+;; only when the forwarded amount is POSITIVE. At 0 the tranche landed in the
+;; treasury's own PRIMES wallet and never reached the treasury CONTRACT:
+;; `primesBalance` stayed 0, so `distribute()` (D-168) would have nothing to pay,
+;; and nothing re-reads the wallet, so the loss was permanent. The forward is UNCONDITIONAL — this contract cannot tell a
+;; wallet beneficiary from a contract one, and a deploy-time flag claiming which
+;; it is would be the configurable surface this file exists to prove the absence
+;; of. The payload is empty because the treasury branches on the SENDER (its own
+;; PRIMES wallet) and reads no tag on that edge.
+;;
+;; The CALLER funds it: `release` is permissionless, so the 103 floor is the
+;; whole hop, 0.15 TON.
+;;
+;; On bounce the PRIMES never left the wallet, so `released_amount` rolls back by
+;; the bounced `amount` (field 2, well inside what RichBounce preserves) and the
+;; tranche becomes releasable again — primes_stake.tolk's D-53/B11.1 pattern. No
+;; duplicate-bounce guard is needed: each release sends exactly one message.
+
+;; ---- get-methods (§9.1) ----
+;;
+;;   getVesting() -> (beneficiary, start_time, total_amount, released_amount,
+;;                    unlocked, tranches, next_unlock_at)
+;;       `unlocked`/`tranches` is the bounded pair a UI draws as four segments lit
+;;       in sequence — the frontend rule's "a bounded quantity gets a shape, not a
+;;       digit" — with `next_unlock_at` driving the countdown arc on the next
+;;       unlit one. `next_unlock_at` is 0 BOTH before the clock starts and after
+;;       the schedule completes; separate the two by `start_time`.
+;;       `released_amount` is what has been pushed out, NOT what has matured: a
+;;       matured tranche nobody has claimed is the gap between it and the target,
+;;       and drawing them as one number would claim a transfer that never
+;;       happened.
+;;   getVestingSchedule() -> (tranches, interval_seconds, releasable_now)
+;;       `releasable_now` is exactly what a `release` would transfer at this
+;;       instant (0 when nothing has matured), so a UI shows the button's effect
+;;       from chain state instead of recomputing the schedule client-side.
+;;   getVestingConfig() -> (beneficiary, jetton_master_addr, jetton_wallet_addr,
+;;                          wallet_set)

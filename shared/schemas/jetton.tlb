@@ -1,0 +1,95 @@
+;; TON PRIMES — PRIMES jetton (TEP-74) message schemas.
+;; Standard wallet/master opcodes (transfer, internal_transfer,
+;; transfer_notification, excesses, burn, burn_notification) are reused
+;; verbatim per TEP-74 and are NOT redefined here. Only the mint-authority
+;; extension (mint restricted to the ledger, IMPLEMENTATION_PLAN.md §2.1) and
+;; the genesis-only sealing messages are new.
+;; Opcodes: /shared/opcodes.ts `JETTON`, `TEP74`.
+
+mint#d0000001
+    query_id:uint64
+    to:MsgAddress
+    amount:Coins
+    forward_ton_amount:Coins   ;; forwarded to the recipient's wallet deploy, standard TEP-74 pattern
+  = InternalMsgBody;
+;; sender MUST equal the ledger's fixed address, and ONLY after
+;; `seal_authority` has NOT yet been sent for the mint-authority flag — see
+;; storage layout, engineering-spec §2.4. This is the rebate-emission path
+;; (concept §5): every PRIMES token minted post-genesis is a mint rebate,
+;; nothing else.
+
+;; ---- genesis-only, before the ledger exists / before authority seals ----
+
+mint_genesis#d0000002
+    query_id:uint64
+    to:MsgAddress
+    amount:Coins
+  = InternalMsgBody;
+;; sender MUST equal the fixed genesis-script address, and ONLY while
+;; `genesis_sealed = false`. Used exactly twice in the deploy pipeline
+;; (concept §6): the LP leg and the bounty vault mint. Both genesis mints are
+;; pre-counted into `S` per concept §3.3/§5 — the ledger's `S` counter is
+;; seeded with the sum of these two amounts at deploy, not accumulated
+;; retroactively.
+
+seal_authority#d0000003
+    query_id:uint64
+  = InternalMsgBody;
+;; sender MUST equal the fixed genesis-script address. One-shot,
+;; irreversible: sets `genesis_sealed = true`, permanently disabling
+;; `mint_genesis` and switching `mint`'s allowed sender to the ledger. After
+;; this call the genesis-script address has no further authority over the
+;; jetton master — it is not a lingering owner key, it is a used-up
+;; bootstrap credential (see engineering-spec §6, the timelock-scope sweep).
+;; Refused (`jetton_ledger_unset` 402) until `set_ledger` has landed: the
+;; master deploys with a placeholder `ledgerAddr`, and sealing over it would
+;; leave `mint` open to the placeholder's key.
+
+set_ledger#d0000004
+    query_id:uint64
+    ledger_addr:MsgAddress
+  = InternalMsgBody;
+;; sender MUST equal the fixed genesis-script address; one-shot (`ledgerSet`
+;; flag). Resolves the circular address dependency (D7,
+;; primes_collection.tolk header): the master deploys with `ledger_addr`
+;; unset, the genesis script locks it in once the ledger's address is known,
+;; and no message can ever change it again.
+;; (Wire-named `set_bank` before the WS3 rename; opcode unchanged.)
+
+;; --- TEP-74 excesses: the master is on the RECEIVING end of one ------------
+;; Not redefined (see the header: the standard opcodes are reused verbatim), but
+;; recorded because `mint`/`mint_genesis` name THE MASTER as the new wallet's
+;; `response_destination` — it funds the 0.012 TON wallet deploy out of the value
+;; the ledger attached, so the change is its own and must come home or the mint
+;; path bleeds gas into every wallet it deploys.
+;;
+;; Until 2026-09-17 the master had no handler for the reply and aborted with exit
+;; 101 on EVERY mint. Nothing was at risk (the wallet sends it non-bounceable, so
+;; the credit phase had landed the TON before the compute phase threw), but the
+;; whole mint trace reads FAILED in an explorer when any transaction in it aborts
+;; — testnet trace 8c354845...d724a, a 1 TON mint with every economic leg at exit
+;; 0. Accepted permissionlessly: nothing moves, so there is nothing to gate.
+
+;; --- TEP-89: on-chain jetton wallet discovery -------------------------------
+;; The pair a CONTRACT uses to learn a jetton wallet address. `get_wallet_address`
+;; answers the same question, but a get-method is only callable off chain, so a
+;; DEX vault deploying against this master has no other way to ask. Measured
+;; 2026-09-16: without these, DeDust's jetton vault bounced on `throw 101` and
+;; never reached `is_ready`, leaving PRIMES unlistable on either network.
+
+provide_wallet_address#2c76b973
+    query_id:uint64
+    owner_address:MsgAddress
+    include_address:Bool
+  = InternalMsgBody;
+;; Permissionless — it returns public, derivable information (the same value
+;; `get_wallet_address` returns to any reader, and the same one `mint` computes).
+
+take_wallet_address#d1735400
+    query_id:uint64
+    wallet_address:MsgAddress
+    owner_address:(Maybe ^MsgAddress)
+  = InternalMsgBody;
+;; `owner_address` is a MAYBE REF, not inline, and is present only when the
+;; request set `include_address`. Sent non-bounceable with mode 64 (carry the
+;; request's remaining value), as TEP-89 requires.

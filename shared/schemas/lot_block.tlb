@@ -1,0 +1,49 @@
+;; TON PRIMES — the LOT BLOCK (contracts/contracts/primes_lot_block.tolk).
+;; DECISIONS.md D-196, GAUNTLET.md V30. Opcodes: shared/opcodes.ts `LOT_BLOCK`
+;; (high byte 0x9C). One lot block per (ledger, 256-number block) beyond the ledger's
+;; import frontier: the address is derived from the lot block code and the init data
+;; below in its EMPTY state, and that derivation is each side's only authority over
+;; the other. Only the ledger writes one; every ledger send carries the state init.
+
+;; Storage — FIELD ORDER IS PART OF THE ADDRESS. Init data: claimed = sold_prime = 0.
+;; A block is the ledger's own bitmap chunk: n is in block (n - 2) >> 8, at bit
+;; (n - 2) & 255, so an imported word lands on its chunk as it is.
+lot_block_storage$_
+    ledger:MsgAddress
+    block:uint64             ;; (n - 2) >> 8 for every n recorded here
+    claimed:uint256          ;; n's bit: a lot opened on n (either kind); never cleared
+    sold_prime:uint256       ;; n's bit: prime n sold ahead of the head
+    bookmarks:(HashmapE 8 UnsoldBookmark) ;; D-198: unsold primes' rows, keyed by bit; empty at init
+  = LotBlockStorage;
+
+;; D-198: one unsold prime's §3.2 bookmark and §6 point 2 forfeit counter.
+;; `entry` = 2^120 - 1 once released at the sale.
+unsold_bookmark$_ entry:Coins forfeited:Coins = UnsoldBookmark;
+
+;; ---- inbound, from the ledger only (100 otherwise) ----
+
+;; A lot opened on n. If the bit is already set: `lot_block_refused` to the ledger
+;; with all remaining value; otherwise the bit is set and the value stays (it rides
+;; back to the ledger at import). 201 when (n - 2) >> 8 != block.
+lot_block_claim#9c000001 query_id:uint64 n:uint256 = InternalMsgBody;
+
+;; Prime n was sold ahead of the head. 201 when (n - 2) >> 8 != block.
+lot_block_sold_prime#9c000002 query_id:uint64 n:uint256 = InternalMsgBody;
+
+;; The head's window reached this block. Replies `lot_block_words` (ledger.tlb)
+;; with mode 128: the whole balance. The words stay, so a re-sent import gets
+;; the same answer (an answer the ledger failed to process is not lost).
+lot_block_import#9c000003 query_id:uint64 = InternalMsgBody;
+
+;; D-198: a passed block's unsold rows (`flush_unsold`, ledger.tlb), merged in.
+;; query_id = the block, so a bounce can restore the rows on the ledger.
+lot_block_bookmarks#9c000004 query_id:uint64 rows:(HashmapE 8 UnsoldBookmark) = InternalMsgBody;
+
+;; D-198: prime n sold. Replies `lot_block_bookmark` (ledger.tlb) with all remaining
+;; value and marks the row released; a second release, or none flushed, is a no-op.
+;; 201 when (n - 2) >> 8 != block.
+lot_block_release#9c000005 query_id:uint64 n:uint256 = InternalMsgBody;
+
+;; ---- outbound, to the ledger: see ledger.tlb ----
+;; lot_block_words#b000007f query_id:uint64 block:uint64 claimed:uint256 sold_prime:uint256
+;; lot_block_refused#b0000080 query_id:uint64 n:uint256

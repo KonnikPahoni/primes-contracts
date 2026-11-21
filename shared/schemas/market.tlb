@@ -1,0 +1,402 @@
+;; TON PRIMES — THE MARKET message schemas.
+;; Opcodes: /shared/opcodes.ts `MARKET`.
+;; Layout:  /docs/audit/unified-market-layout.md (SETTLED 2026-08-16).
+;; Decisions: DECISIONS.md D-30/D-31/D-33 FIRST (they supersede D-6 entirely and
+;;            amend D-3/D-4a/D-11/D-12/D-15/D-21), then D-3..D-8, D-11,
+;;            D-15 (amended), D-16, D-18, D-20, D-22.
+;; Spec:      CONCEPT.md §4.4's 2026-08-19 superseding preamble, which is
+;;            normative where the rest of §4.4 disagrees with it.
+;;
+;; REPLACES reservation.tlb, trophy_auction.tlb and auction.tlb. Those three
+;; described three contracts answering one question — "who gets which number" —
+;; with three storage layouts, three bootstraps and three sets of get-methods.
+;; D-3 collapses them into one mechanism; this file is its wire format.
+;;
+;; ---- Architecture, AS OF D-90: ONE CONTRACT ----
+;; The market used to be a thin ROUTER over range-partitioned escrow SHARDs:
+;; auction LOTS in the router, reservation RECORDS and escrow on the shards.
+;; D-90 deletes the shards and the records with them. A won lot MINTS AT CLOSE —
+;; both kinds — so nothing is escrowed, nothing waits, and there is no per-shard
+;; solvency total to keep. §3.4's `balance ~= declared liability` now has two
+;; pools to check instead of three, neither of them here.
+;;
+;; ---- WIRE CHANGE: n is uint64 (D-18) ----
+;; Every `n` in the market's own messages is uint64, not uint256. D-11 made the
+;; 14-digit cap deliberate: the deleted shard key was `n - shard_id*10000` with
+;; `shard_id:uint32`, so n <= 10000*2^32 - 1 ~= 4.29e13, four orders of magnitude
+;; inside uint64. D-90 keeps the cap as a declared constant now that the sharding
+;; that produced it is gone. The ledger, collection and item keep
+;; uint256 — THE HEAD IS NOT CAPPED, only the market is — so `head_update` still
+;; carries a uint256 head and the market SATURATES it into its own hint.
+;;
+;; The narrowing is what makes the counters block fit in one cell, and it is also
+;; what makes Miller-Rabin overflow-safe on this contract: at n < 2^46 the
+;; `modpow` intermediate is under 2^92, where a uint256 argument of 78 digits
+;; squares to ~2^518 and throws exit 4.
+;;
+;; ---- WHAT IS GONE ----
+;; `trophy_reserve` (0xe0000010) and `set_trophy_auction` (0xe0000041) are
+;; DELETED, not moved: the first created a won reservation on the old book (D-90
+;; deleted reservations — a won lot mints at close); the second resolved the
+;; book<->auction address circle, which the P2.A7 merge removed, taking error 508
+;; with it.
+
+;; ============================================================
+;; Shared types
+;; ============================================================
+
+;; IDENTICAL to ledger.tlb's Factor, and deliberately NOT narrowed by D-18. `s`
+;; is §3.2's floor(sqrt(p)), minter-submitted and verified at OPEN time so a bad
+;; `s` cannot win a lot whose settlement would always throw 201.
+;;
+;; D-18 narrows the market's own `n`, never a Factor: this exact map is forwarded
+;; verbatim to `primes_ledger.tolk` inside `mint_won_lot`, and the
+;; ledger's parser reads uint256/uint8/uint128. A narrowed Factor here would
+;; leave that parser short and the settlement would die with exit 9. Both
+;; contracts that declare `FactorEntry` (`primes_market.tolk`,
+;; `primes_ledger.tolk`) carry these widths.
+factor$_ prime_number:uint256 exponent:uint8 s:uint128 = Factor;
+
+;; ============================================================
+;; THE LOT LANES (high byte 0xF2) — all permissionless
+;;
+;; D-20 DELETED MODE_DUTCH_CLOCK (1); D-88 point 2 deletes SS3's
+;; MODE_DUTCH_BUYNOW_SPECIAL (3) and MODE_DUTCH_BUYNOW_SPECIAL_COMPOSITE (4).
+;; Two modes remain, and D-88 makes the split TEMPORAL rather than a property
+;; of the number:
+;;
+;;   mode                  when                    pre-bid curve      on first bid
+;;   MODE_ASCENDING    0   BEFORE the turn,        flat at P0(n)      opens the
+;;                         ANY number (D-88 pt 3)                     7-day clock
+;;   MODE_DUTCH_BUYNOW 2   AFTER the turn,         descending P0(p)   SETTLES
+;;                         PRIMES only (D-20)      -> resting price   IMMEDIATELY
+;;
+;; A composite never reaches mode 2: at its turn it is minted sequentially for
+;; MINT_PRICE, which is the core loop. A prime never reaches the head at all,
+;; which is why mode 2 exists for it and for nothing else.
+;;
+;; D-88 point 3: `decay_start` on a mode-2 lot now ALWAYS equals `opened_at` —
+;; the lot can only be opened once the turn has passed, so there is no
+;; "opened early, flat at P0" state and no `start_prime_decay` to leave it.
+;;
+;; `decay_seconds` is DERIVED FROM MODE (7 days, the only window left) and is
+;; neither on the wire nor in storage. `floor` IS stored, per lot, as
+;; `price_floor` — D-88 point 1 makes it `max(NPV(n)/2, P0(n)/3, MINT_PRICE)` (D-99 §1.2
+;; replaced the tier lift with the P0/3 term), so it varies with `n` and cannot be
+;; derived from the mode alone. It is write-once from `n` at open: no message
+;; carries it and no handler updates it, which is the half of the old MKT-1
+;; that was ever structural. The other half — "floor(MODE_DUTCH_BUYNOW) = 1 TON
+;; exactly" — is DELETED with §12's "no lane terminates above 1 TON".
+;; ============================================================
+
+;; Opens an ASCENDING lot AND places the opener's own bid, which must be >= P0(n).
+;; YOU CANNOT OPEN A LOT YOU ARE UNWILLING TO BUY — which deletes the no-bid,
+;; expiry, reserve-not-met and refund-the-opener states outright.
+;;
+;; Carries the full mint payload (factors, beneficiary, referral) because the
+;; close mints the number to the winner (D-90), and CONCEPT §4.4 point 1 requires
+;; the proof verified at open time. Verifying at close instead would let a bidder
+;; win a lot that can never mint; verifying twice would charge the winner for the
+;; opener's mistake.
+;;
+;; No worth gate (D-30 deleted `D_MIN`) and no distance gate (D-45 deleted
+;; `MIN_AUCTION_DISTANCE`): any n <= AUCTIONABLE_MAX ahead of the head that is
+;; not a primorial may be opened. This send also fires `mark_off_head` to the
+;; LEDGER in the same transaction, which takes `n` off the sequential line
+;; permanently, so the head can never reach a number an auction has claimed.
+;; `n > head_hint` is checked here only as a cheap, non-authoritative pre-filter
+;; (refused with `mkt_at_or_behind_head`, 1007); the ledger's own check is
+;; authoritative, and its refusal (`mark_rejected`) unwinds THIS lot and refunds
+;; the opener in full — see that message below.
+;;
+;; The msg value must carry P0(n) — `get_lot_price(n)` publishes it — PLUS a fee
+;; margin. Opening IS the first bid and it is booked whole, so the margin rides
+;; into the opener's own bid rather than becoming untracked balance.
+;;
+;; EVERY NUMBER AHEAD OF THE HEAD (D-88 point 3), which reverses D-22's
+;; "composites only". `kind` selects the PROOF the open must carry — 0 a
+;; factorization, 1 nothing (the contract runs Miller-Rabin itself) — and, since
+;; D-90, only which settle message the close sends. A won lot of either kind
+;; mints in its own close transaction.
+open_lot#f2000001
+    query_id:uint64
+    n:uint64
+    kind:uint1                       ;; D-88 pt 3: 0 composite, 1 prime — both
+    factors:(HashmapE 8 Factor)      ;; non-empty iff kind = 0; empty for a prime,
+                                     ;; which the contract proves by Miller-Rabin
+    beneficiary:MsgAddress            ;; addr_none = the opener is the beneficiary
+    referral_key:uint32
+  = InternalMsgBody;
+;; msg value IS the opening bid, booked whole — a caller's fee margin rides into
+;; their own bid rather than becoming untracked balance on the contract.
+
+;; D-4/D-4a/D-88. Opens the DESCENDING lot for a prime WHOSE TURN HAS PASSED.
+;;
+;; NO BID AND NO VALUE beyond gas: a Dutch lot has no opening bid to place, and
+;; requiring one would put the opener in front of the clock they just started. No
+;; payload either — the number is prime by Miller-Rabin here, so `kind` is known
+;; and there is nothing to factor; the BUYER supplies beneficiary and referral key
+;; with their purchase.
+;;
+;; D-88 POINT 3 REINSTATES THE OPENING GATE D-31 LIFTED: `n < head_hint`, and it
+;; throws `mkt_decay_not_due` (1024) otherwise. Ahead of the head a prime is
+;; bought on the ASCENDING lane (`open_lot` with kind = 1) at this same P0(p), so
+;; the two lanes are exhaustive and disjoint — one route per number per moment —
+;; and there is no pre-turn descending state left to start a clock for.
+;;
+;; PERMISSIONLESS with no on-chain sender: nothing sends this when the head
+;; passes a prime, so the keeper (`backend/keeper`, `runPrimeLane`) is what
+;; actually gets a passed prime listed.
+open_head_lot#f2000002
+    query_id:uint64
+    n:uint64
+  = InternalMsgBody;
+
+;; D-88 point 2 DELETES `open_head_lot_composite#f2000006` and
+;; `buy_special_composite#f2000007` — SS3's 1-day descending lane for a curated
+;; composite the head had already passed. Specialness is price, not mechanism: a
+;; special composite is bought ahead of the head on the ordinary ascending lane
+;; at its tier's price_max, and mints at the head for MINT_PRICE once its turn
+;; comes, like every other composite.
+;;
+;; D-88 point 3 DELETES `start_prime_decay#f2000005`. It started the clock on a
+;; prime lot opened before its turn; no such lot can exist now, so a descending
+;; lot's clock always starts at open.
+;;
+;; All three opcodes are left UNASSIGNED, not reused: a stale sender must hit
+;; `wrong_opcode` rather than a live handler.
+
+;; ONE message, TWO meanings, resolved by the lot's mode (D-20 deletes the
+;; MODE_DUTCH_CLOCK pre-bid case with the mode itself):
+;;
+;;   MODE_ASCENDING     a raise; must clear high + max(0.015 TON,
+;;                      bps[D/10]*high/10000) — D-33's score ladder. The
+;;                      previous high bidder is refunded IN THE SAME TRANSACTION,
+;;                      never as a claimable balance.
+;;   MODE_DUTCH_BUYNOW  THE PURCHASE. Must clear the standing descending price +
+;;                      RES_GAS, and it SETTLES IN THIS TRANSACTION.
+;;
+;; MODE_DUTCH_BUYNOW MUST NOT OPEN A CLOCK, and that is a safety property rather
+;; than a preference (D-20/D-88). A bid that opened a 7-day clock would
+;; stall the head for that clock ON TOP OF the decay — re-creating exactly the
+;; parked head §12 calls its highest-severity risk.
+;;
+;; `beneficiary` and `referral_key` are used ONLY on the BUYNOW lane, whose lot
+;; carries no payload of its own; the ASCENDING lane ignores them and uses the
+;; payload the lot was opened with.
+bid#f2000003
+    query_id:uint64
+    n:uint64
+    beneficiary:MsgAddress            ;; addr_none = the bidder is the beneficiary
+    referral_key:uint32
+  = InternalMsgBody;
+;; msg value IS the bid. `get_lot(n)` publishes `min_payment`, the exact figure
+;; the handler measures it against (callers still add a fee margin on top — the
+;; contract rejects the exact nominal on a busy block).
+
+;; PERMISSIONLESS, and it has ONE legal termination: the clock has run out
+;; (MODE_ASCENDING only — a Dutch-buynow lot never opens a clock, D-20/D-88).
+;; D-45 deleted the early close "the head has reached n": the head skips an
+;; auctioned number forever, so it never reaches one.
+;;
+;; D-20/D-88: a MODE_DUTCH_BUYNOW lot has NO termination through this message
+;; and NO termination anywhere else either, except a purchase — it descends to
+;; its resting price and PARKS there until a `bid` buys it, for as long as that
+;; takes (`mkt_close_too_early`, 1005, on every close attempt here). Primes
+;; never occupy the head, so there is nothing for the head to "reach". D-50's
+;; `sweep_expired_head_lot`, which used to delete such a lot after two decay
+;; windows, is DELETED by D-88 point 1 — parking until bought is the rule.
+close#f2000004
+    query_id:uint64
+    n:uint64
+  = InternalMsgBody;
+
+;; ---- the per-block marks: tombstone and parked bit (D-188 point 5, D-200) ----
+;; `counters.marks:(HashmapE 64 BlockMarks)` after `held_bids`, keyed by `n >> 8`,
+;; one leaf per 256-number block behind `headHint`:
+;;
+;;   block_marks$_ sold:uint256 parked:uint256 = BlockMarks;   // 512 bits, one cell
+;;
+;; `sold`: every close behind `headHint` sets `n`'s bit and nothing clears it, so
+;; `open_lot` / `open_head_lot` refuse a sold number (1002) for ever. The lot ROW
+;; is deleted once the close settles: on `settle_confirmed`, or after the mint
+;; leg's bounce has refunded the winner. `get_lot(n)` on a settled sale answers
+;; `found = 1, closed = 1` and zeroes every other field; the price and winner are
+;; in the closing transaction.
+;;
+;; `parked` (D-200): a descending lot whose decay window is over, folded out of
+;; `lots` by `park_lots`. The lot is still OPEN — `bid` buys it at its resting
+;; price, rebuilt from `n` by the same `restingPriceOf` that wrote the row, and
+;; `open_head_lot` refuses it (1001). `get_lot(n)` answers as the row did, with
+;; `opened_at = 0`. A purchase clears the bit and sets `sold`.
+
+;; D-200, PERMISSIONLESS. Looks at the first PARK_SCAN_MAX (16) rows of `lots` at or
+;; above `from` and folds each resting descending row (mode 2, open, decay window
+;; over) into its `parked` bit. Asserts no value: the compute is bought from the
+;; attached value and the change rides back to the sender (empty-body transfer,
+;; op 0). `get_park_scan(from)` answers (rows a call would fold, next `from` or -1).
+park_lots#f2000013
+    query_id:uint64
+    from:uint64
+  = InternalMsgBody;
+
+;; PERMISSIONLESS. Re-sends ONE bounced premium forward, named by n, so it is O(1)
+;; by construction. The amount re-sent is what ACTUALLY came back on the bounce,
+;; never a recomputed figure, so a retry can never reach into the standing bids of
+;; lots that have not closed.
+retry_premium_forward#f2000012
+    query_id:uint64
+    n:uint64
+  = InternalMsgBody;
+
+;; D-88 DELETES `sweep_expired_head_lot#f2000008`, D-50's sweep half, and
+;; dissolves D-50 with it. Two independent reasons: (1) point 1 has an unbought
+;; descending lot PARK at its resting price until bought, so deleting it after
+;; two decay windows is the opposite rule; (2) point 3 makes opening a pre-turn
+;; lot a PAID first bid at P0(n) off the D-99 score ladder, so the permanent-dict-entry-
+;; for-gas vector D-50 existed to bound is priced out by the mechanism and needs
+;; no deposit, no per-opener cap and no new parameter. Opcode left UNASSIGNED.
+
+;; D-20 DELETES `bootstrap_genesis` (0xf2000041) and `GenesisLotSeed` entirely.
+;; There is no genesis-specific lot-seeding step and no admin surface left on
+;; this contract at all: every prime opens through the same permissionless
+;; `open_head_lot` above, once eligible.
+
+;; ============================================================
+;; THE ESCROWED-CLAIM LANE (high byte 0xE0) — DELETED ENTIRELY (D-90)
+;;
+;; A won lot MINTS AT CLOSE, whichever kind it is, so there is no claim to
+;; settle later, no escrow to custody and no release right to exercise.
+;; `primes_market_shard.tolk` is deleted with the lane. Every opcode below is
+;; RETIRED and NOT REUSED — a stale sender must hit `wrong_opcode`:
+;;
+;;   settle#e0000003                  release#e0000004
+;;   shard_reserve#e0000011           shard_settle#e0000013
+;;   shard_unsettle#e0000015          shard_settle_confirmed#e0000016
+;;   shard_release#e0000017           shard_settle_ack#e0000021
+;;   shard_reserved_notify#e0000022   shard_release_done#e0000024
+;;
+;; (0xe0000001 `reserve`, 0xe0000002 `cancel`, 0xe0000012, 0xe0000014 and
+;; 0xe0000023 were already unassigned.)
+;;
+;; WHAT REPLACES THE WHOLE FAMILY is one message the market already sent:
+;; `mint_won_lot#b0000020` (below), now sent by the lot-close path
+;; straight to the ledger. Its FIELDS ARE UNCHANGED, so the ledger's parser and
+;; handler are untouched by D-90 — only the sender moved.
+;; ============================================================
+
+;; ---- ledger -> market ----
+
+;; The head is NOT capped and this message is not narrowed: the ledger owns the
+;; head and the market owns its own bound. The market stores
+;; min(head, AUCTIONABLE_MAX). `head_hint` is documented as a LAGGING HINT that is
+;; never authoritative, so saturating is safe: past the cap the market refuses
+;; every n anyway, and a saturated hint refuses them for the right reason.
+head_update#e0000031 query_id:uint64 head:uint256 = InternalMsgBody;
+
+;; P2.A7/A8: uint256, NOT D-18's uint64, on every message below that crosses
+;; into `primes_ledger.tolk`. The ledger's `n` is genuinely UNCAPPED — the direct
+;; mint lane has no AUCTIONABLE_MAX and the head walks past it eventually — so a
+;; narrowed field leaves the ledger's parser 192 bits short and the message dies
+;; with exit 9 (cell underflow), which is exactly how this was found. D-18
+;; narrows fields the MARKET OWNS; never a field a peer parses.
+;;
+;; D-45: this now answers an OPEN-time `mark_off_head` (see below), not a
+;; close-time one. D-196: on a DESCENDING lot (no bid held) the router deletes the
+;; lot and sets its sold bit — the ledger refused because the prime is owned. The ledger found `n <= head` on a number that was never
+;; marked before — a direct mint claimed it in the race window between this
+;; contract's lagging `head_hint` check and the ledger's authoritative one. The
+;; router unwinds the lot THIS transaction's `open_lot` just created and
+;; refunds its current high bidder the bid less REJECT_GAS (0.1 TON, the failed
+;; open's worst-case gas, which the market's float must not pay -- D-196 made a
+;; claimed far number re-openable for ever), and raises `head_hint` to
+;; `head` so the same stale gap cannot be reopened.
+mark_rejected#e0000032 query_id:uint64 n:uint256 head:uint256 = InternalMsgBody;
+settle_confirmed#e0000033 query_id:uint64 n:uint256 = InternalMsgBody;
+
+;; CONCEPT §6 point 0. The ledger's `ignite` fans this out to every peer that must
+;; not accept player money before the game is live; until it arrives, every
+;; money-taking entry point on the market refuses with `mkt_not_launched` (1022).
+;;
+;; ONE message (P2.A7 collapsed the old three-contract fan-out into it). IDEMPOTENT: the ledger's permissionless `sync_launch`
+;; re-sends it, so a repeat is a no-op rather than a throw.
+launch_open#e0000034 query_id:uint64 = InternalMsgBody;
+
+;; ---- market -> ledger ----
+
+;; P2.A7/A8 again: uint256, for the reason stated above the ledger -> market
+;; block. Parsed by `primes_ledger.tolk`.
+;;
+;; D-45: sent from `open_lot`, not from a won lot's close (see that message's
+;; comment above). Sets `n`'s bit in the ledger's off-sequence bitmap
+;; PERMANENTLY — like the prime bitmap, it is never cleared again.
+;;
+;; D-196: sent for EITHER kind, and from `open_head_lot` too (caller-funded,
+;; OPEN_RESERVE_GAS). The ledger is the one record of which numbers a lot has
+;; ever claimed, and refuses (`mark_rejected`):
+;;   - `n <= head` unless `n` is an UNSOLD prime (its descending lot, or an
+;;     ascending prime lot the head overtook);
+;;   - `n > head` when `n` is already claimed — a second lot on it;
+;;   - `n > head` while `n`'s block is being imported (retry).
+;; Beyond the ledger's import frontier the bit is set on that block's lot block
+;; (lot_block.tlb), which refuses through the ledger the same way.
+;;
+;; `mark_unreserved#b0000022` is DELETED with this decision: it cleared the bit
+;; this message sets, and D-45 never clears it again, so there is nothing left
+;; for an "unreserve" message to do. Unassigned, not reused.
+mark_off_head#b0000021 query_id:uint64 n:uint256 = InternalMsgBody;
+
+;; Sent AT LOT CLOSE, straight from the market (D-90): it mints the won lot's
+;; number to the winner. An off-head event (D-45): `n` was taken off the
+;; sequential line at `open_lot`, so the head steps past it on its own and this
+;; message never requires `n == head`.
+mint_won_lot#b0000020
+    query_id:uint64
+    n:uint256
+    beneficiary:MsgAddress
+    referral_key:uint32
+    kind:uint1
+    factors:(HashmapE 8 Factor)
+  = InternalMsgBody;
+
+;; D-20 DELETES the `lane` bit. On EVERY lot close on EVERY lane, uniformly:
+;; the entire amount here is the PREMIUM ABOVE MINT_PRICE, credited to the
+;; ratchet as `pending`, with NO TREASURY CUT. A prime sale's nominal MINT_PRICE
+;; and its unsold-forfeit clear are reported separately, by
+;; `settle_prime_clearing` below — this message never carries either.
+;;
+;; Three properties follow and they are the acceptance criteria:
+;;   1. the split stays closed at 100% — the premium is not in the split at all;
+;;   2. the ratchet arithmetic is unchanged — a premium is a pure T increment
+;;      against ZERO emission, so it is strictly floor-accretive. A 40 TON prime
+;;      is a larger floor step than 39 patient composite mints;
+;;   3. principle 6 is not violated — splitting the full clearing price would pay
+;;      a referrer 4 TON on a recruit's single mint, a windfall unrelated to spend.
+;;
+;; The ledger-side handler adds `amount` to T, leaves S untouched and forwards the
+;; value to the ratchet as `pending` — exactly §5.1's "k = 0 money, T rises, S is
+;; untouched, p_f = T/S rises by the full amount". The ratchet's own `pool_inject`
+;; is NOT reachable from the market and must not be: every injection in this
+;; system routes through the ledger by construction.
+clearing_cleared#b0000009 query_id:uint64 prime:uint256 amount:Coins = InternalMsgBody;
+
+;; ---- market -> ledger, ONLY on a MODE_DUTCH_BUYNOW close ----
+;; D-20 deleted the direct `mint_item` send (0xc0000001) this replaces: the market
+;; mints no item for any lane — the LEDGER does, for every mint, primes included.
+;; A prime sale is reported here, directly (primes never occupy the head). The
+;; ledger's handler runs the ordinary §4.1 five-way split on the
+;; nominal MINT_PRICE and clears `n`'s `unsoldPrimes` entry in the same
+;; transaction. The premium above MINT_PRICE is NOT carried here; the market
+;; sends it separately as an ordinary `clearing_cleared`, exactly as it already
+;; does for the ascending lane (D-7).
+;;
+;; `n` is uint256 and that is CORRECT, not an oversight — this is a market ->
+;; ledger message like the five above it, and `primes_ledger.tolk` parses it with
+;; an uncapped uint256 `n`. D-18's uint64 applies to the fields the market owns
+;; and bounds by AUCTIONABLE_MAX, never to a field a peer parses.
+settle_prime_clearing#b0000024
+    query_id:uint64
+    n:uint256
+    beneficiary:MsgAddress
+    referral_key:uint32
+  = InternalMsgBody;

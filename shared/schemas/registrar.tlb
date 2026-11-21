@@ -1,0 +1,184 @@
+;; TON PRIMES — Registrar message schemas.
+;; Opcodes: /shared/opcodes.ts `REGISTRAR`. Contract: contracts/primes_registrar.tolk.
+;;
+;; CONCEPT v5 §3.4's fourth contract: the era trophies and their engravings. A
+;; number's name lives on its item (D-188 point 6, D-212) and the prime rank on
+;; the ledger, which also bounds every map this contract keeps. **It holds
+;; no protocol TON at all** — that is why it is separate, and why its declared
+;; liability is structurally zero.
+;;
+;; Its only outbound messages are a paid re-engraving's fee to the collection
+;; (`naming_paid`, D-212) and the payer's change.
+;; DECISIONS.md D-202 deleted the built number line (§3.2.2) and everything it
+;; sent and received: `record_mint`, the ownership-proof round trip, the build
+;; verbs and the generator and constellation links.
+;;
+;; Trust edges:
+;;   - award_era_trophy: sender MUST equal the ledger's address.
+;;   - set_ledger / set_collection: sender MUST equal the genesis script; one-shot.
+
+;; ---- inbound: one-shot ledger bootstrap, from the genesis script only ----
+
+set_ledger#b0000060
+    query_id:uint64
+    ledger_addr:MsgAddress
+  = InternalMsgBody;
+
+;; ---- inbound: one-shot collection bootstrap, from the genesis script only ----
+
+set_collection#b0000067
+    query_id:uint64
+    collection_addr:MsgAddress   ;; the MAIN collection a re-engraving's fee is sent through (D-212)
+  = InternalMsgBody;
+;; D-202 dropped `bounty_vault_addr` and `item_code` from this body (it was
+;; `set_item_code`) with the builds that read them. Same opcode.
+;;
+;; `record_mint#b0000061` is RETIRED by D-202: its one effect was the build clock.
+
+;; ---- inbound: the era trophy, from the ledger only (D-36, §4.7/§7) ----
+
+award_era_trophy#b000006b
+    query_id:uint64
+    primorial:uint256      ;; must be one of §7's eight primorials, else throw 914
+    winner:MsgAddress      ;; the era's single highest recruiter
+    recruits:uint32        ;; the winning era-scoped activation count, for the record
+  = InternalMsgBody;
+;; Writes `trophies[primorial] = { holder: winner, count: 0, text: empty }`.
+;; Written once and never overwritten. `trophies` is BOUNDED AT EIGHT ROWS: every
+;; write asserts `is_primorial`, and §7 has eight primorials (D-188 point 6).
+;;
+;; The winner is computed on the LEDGER, where §4.6's activation edge runs. This
+;; contract has no recruit state and does not recompute it; the sender check is
+;; the whole authentication.
+
+trophy_record$_
+    holder:MsgAddress         ;; D-14: transferable, by `transfer_trophy` only
+    count:uint16              ;; engravings ever written: the first free, the rest burned for
+    text:^Cell                ;; the latest; ONE cell with no refs (D-188 point 2)
+  = TrophyRecord;
+
+;; ---- inbound: transferring a trophy, from its CURRENT HOLDER only (D-14) ----
+
+transfer_trophy#b0000070
+    query_id:uint64
+    primorial:uint256      ;; must be one of §7's eight primorials, else throw 914
+    new_holder:MsgAddress  ;; MsgAddressInt; addr_none cannot parse
+  = InternalMsgBody;
+;; D-14 (§4.7, §11.13 closed 2026-08-16): the era trophy is TRANSFERABLE, so a
+;; trophy can be bought on the secondary market from whoever won it. What cannot
+;; be bought is the ISSUANCE.
+;;
+;; SCOPE — TROPHIES ONLY. A number's own name lives on its item and its pen is
+;; the item's owner (D-212), so the NFT transfer moves it; this opcode moves the
+;; trophy and REFUSES any non-primorial with 914 rather than silently ignoring it.
+;;
+;; AUTHORITY. Sender must equal `trophies[primorial].holder`, else 915
+;; (`reg_not_namer`). An UNISSUED trophy has no holder and so nobody may move it.
+;; There is no admin arm and no operator override, and the LEDGER has none
+;; either: it issues a trophy and has no say in where it goes afterwards.
+;;
+;; ZERO LIABILITY IS PRESERVED. This is one row rewritten in place (the engraving
+;; travels with the trophy). No TON is attached beyond gas, none is held, none is
+;; escrowed, and there is no fee — the registrar holds no protocol TON at all
+;; (§3.4) and that is the property that justifies it being a separate contract. A
+;; trophy sale is settled between the parties off this contract.
+
+;; ---- RETIRED CONSTRUCTORS, numbers NOT recycled ----
+;;
+;; D-102 replaced the predicate registry with the built number line, and D-202
+;; deleted the built number line:
+;;
+;;   register_set#b0000062     the four set predicates and the set-hash index
+;;   challenge#b0000065        dissolve-a-stale-set, reward 0
+;;   set_boost#b0000066        the x3/2 tribute multiplier, registrar -> ledger
+;;   abandon#b0000068          superseded by `expire_build`
+;;   refresh_boost#b0000069    boost repair
+;;   claim_discovery#b000006a  moved to the vault (D-107), deleted (D-202)
+;;   credit_bond#b000006f      the registration bond
+;;   record_mint#b0000061, prove_ownership#b0000063, ownership_proof#b0000064,
+;;   set_constellation_collection#b0000071, prove_input#b0000075,
+;;   close_build#b0000076, expire_build#b0000077, set_generators_collection#b0000078,
+;;   open_build_relay#b000007d, constellation_built#94000001   (D-202)
+;;
+;; A stale decoder must not be able to relabel a live message, so none of these
+;; values is ever reused.
+
+;; ---- deliberately absent ----
+;; The recruit-rank ladder. D-106 keeps it, but it lives on the LEDGER
+;; (`get_recruit_rank`), because the mint path reads it synchronously to resolve
+;; k_max and TVM has no cross-contract read. The registrar's `patronRanks` mirror
+;; was dark for its whole life — nothing ever wrote it — and D-106 deleted it
+;; rather than wiring a second copy of a number the ledger already owns.
+
+;; ---- get-methods ----
+;;
+;; get_peers                     -> (collection:MsgAddress, collection_set:uint8)
+;;
+;; DELETED by D-188 point 6, with the maps they read:
+;;   get_namer(n)            -> a prime: item(n).get_namer(); a trophy: get_trophy(n)
+;;   get_prime_rank(owner)   -> the ledger's get_minter_state(owner), first value
+;;   get_total_primes_named  -> the ledger's get_primes_count (every minted prime is named)
+;; DELETED by D-202 with the built line: get_build, get_head_hint, get_totals,
+;;   get_con_collection_link, get_generators_link.
+;;
+;; get_solvency -> (balance:Coins, liability:Coins, delta:int)
+;;   Liability is structurally 0; the balance is this contract's own storage
+;;   rent. The method is still shaped identically to the other three, because the
+;;   point of Phase D's D7 block is that a reader checks the SAME invariant on
+;;   every contract without having to know which one is which.
+
+;; ===========================================================================
+;; §4.7.1 — the era trophy's engraving (D-179, D-212)
+;;
+;; Trust edges:
+;;   - annotate: PERMISSIONLESS in shape; only the trophy's holder passes. The
+;;     FIRST engraving is free; every later one must carry rename_fee (deploy
+;;     data, `get_trophy_rename_fee`) + REG_RENAME_GAS (0.05 TON), and the fee
+;;     goes to the floor as `naming_paid` through the collection. EVERY refusal
+;;     refunds the whole value rather than throwing.
+;; ===========================================================================
+
+;; ---- storage (D-188 point 6: nothing here grows with the number line) ----
+;;
+;; storage$_ trophies:(HashmapE 256 ^TrophyRecord)   ;; ≤ 8 rows, one per primorial
+;;           cfg:^RegistrarConfig linked:uint8 collection_set:uint8
+;; registrar_config$_ ledger_addr:MsgAddress genesis_script_addr:MsgAddress
+;;                    collection_addr:MsgAddress rename_fee:Coins
+;; (D-212 removed `sink:^SinkState`; D-202 `aux` and the build state under it;
+;;  D-188 the root's `names` / `prime_ranks` maps; D-106 `patron_ranks`.)
+
+annotate#b000006d
+    query_id:uint64
+    n:uint256
+    text:^Cell                ;; ONE cell, no refs, else refunded
+  = InternalMsgBody;
+
+;; ---- outbound: a paid re-engraving's fee, to the MAIN collection (D-212) ----
+naming_paid#c000000a
+    query_id:uint64
+    n:uint256                 ;; the primorial
+    amount:Coins              ;; = rename_fee
+    count:uint16              ;; the engraving's ordinal (>= 2)
+  = InternalMsgBody;
+;;
+;; RETIRED by D-212, not recycled: set_sink#b000006c, sink_annotate#b000006e,
+;; relay_annotation#c0000008 (and errors 911, 916, 918).
+
+;; ---- get-methods (§4.7.1) ----
+;;
+;; get_trophy_annotation(n) -> (count:uint16, text:^Cell)
+;;                           An ERA TROPHY's engraving; count 0 and an empty cell
+;;                           when nothing is engraved or n is not a primorial. A
+;;                           number's own name is item(n).get_annotation().
+;; get_trophy_rename_fee  -> Coins   (D-212; equals the collection's rename_fee)
+;;
+;; ---- get-methods (D-14, the era trophy) ----
+;;
+;; get_trophy(n)          -> (holder:MsgAddress, transferable:int)
+;;                           `holder` is addr_none when n carries no trophy — the
+;;                           era has not closed, or n is not a primorial at all.
+;;                           `transferable` is 1 iff n is one of §7's eight
+;;                           primorials, i.e. iff transfer_trophy would accept it,
+;;                           and 0 for every other number INCLUDING a named prime,
+;;                           so a client needs no local copy of the primorial
+;;                           ladder to tell a trophy from a prime.

@@ -1,0 +1,444 @@
+{
+  "_source": "sim/scripts/landmark_primes.py",
+  "_decision": "D-99",
+  "_spec": "PRICING_MODEL_PLAN.md \u00a73.2",
+  "_note": "POSITION bit 31, 30 points. `verified` says how each entry was established: `scan` = descending/ascending deterministic Miller-Rabin from the landmark, `sieve` = counted off an actual sieve, `primality` = OEIS A006988's published value confirmed prime but not re-counted (see the script's docstring).",
+  "count": 43,
+  "entries": [
+    {
+      "n": 5,
+      "reasons": [
+        {
+          "family": "era_below",
+          "of": 6,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 7,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 10,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 11,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 10,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 29,
+      "reasons": [
+        {
+          "family": "era_below",
+          "of": 30,
+          "verified": "scan"
+        },
+        {
+          "family": "nth_prime",
+          "of": 10,
+          "verified": "sieve"
+        }
+      ]
+    },
+    {
+      "n": 97,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 100,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 101,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 100,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 199,
+      "reasons": [
+        {
+          "family": "era_below",
+          "of": 210,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 541,
+      "reasons": [
+        {
+          "family": "nth_prime",
+          "of": 100,
+          "verified": "sieve"
+        }
+      ]
+    },
+    {
+      "n": 997,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 1000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 1009,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 1000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 2309,
+      "reasons": [
+        {
+          "family": "era_below",
+          "of": 2310,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 7919,
+      "reasons": [
+        {
+          "family": "nth_prime",
+          "of": 1000,
+          "verified": "sieve"
+        }
+      ]
+    },
+    {
+      "n": 9973,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 10000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 10007,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 10000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 30029,
+      "reasons": [
+        {
+          "family": "era_below",
+          "of": 30030,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 99991,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 100000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 100003,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 100000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 104729,
+      "reasons": [
+        {
+          "family": "nth_prime",
+          "of": 10000,
+          "verified": "sieve"
+        }
+      ]
+    },
+    {
+      "n": 510481,
+      "reasons": [
+        {
+          "family": "era_below",
+          "of": 510510,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 999983,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 1000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 1000003,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 1000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 1299709,
+      "reasons": [
+        {
+          "family": "nth_prime",
+          "of": 100000,
+          "verified": "sieve"
+        }
+      ]
+    },
+    {
+      "n": 9699667,
+      "reasons": [
+        {
+          "family": "era_below",
+          "of": 9699690,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 9999991,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 10000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 10000019,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 10000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 15485863,
+      "reasons": [
+        {
+          "family": "nth_prime",
+          "of": 1000000,
+          "verified": "sieve"
+        }
+      ]
+    },
+    {
+      "n": 99999989,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 100000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 100000007,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 100000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 179424673,
+      "reasons": [
+        {
+          "family": "nth_prime",
+          "of": 10000000,
+          "verified": "primality"
+        }
+      ]
+    },
+    {
+      "n": 223092827,
+      "reasons": [
+        {
+          "family": "era_below",
+          "of": 223092870,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 999999937,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 1000000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 1000000007,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 1000000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 2038074743,
+      "reasons": [
+        {
+          "family": "nth_prime",
+          "of": 100000000,
+          "verified": "primality"
+        }
+      ]
+    },
+    {
+      "n": 9999999967,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 10000000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 10000000019,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 10000000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 99999999977,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 100000000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 100000000003,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 100000000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 999999999989,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 1000000000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 1000000000039,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 1000000000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 9999999999971,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 10000000000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 10000000000037,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 10000000000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 99999999999973,
+      "reasons": [
+        {
+          "family": "decade_below",
+          "of": 100000000000000,
+          "verified": "scan"
+        }
+      ]
+    },
+    {
+      "n": 100000000000031,
+      "reasons": [
+        {
+          "family": "decade_above",
+          "of": 100000000000000,
+          "verified": "scan"
+        }
+      ]
+    }
+  ]
+}

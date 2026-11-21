@@ -1,0 +1,141 @@
+#!/usr/bin/env node
+// Regenerates docs/audit/money-arithmetic.md — every subtraction on a money
+// quantity, with the mechanism that keeps it from going negative.
+//
+// WHY SUBTRACTION AND NOT "ARITHMETIC" (GAUNTLET.md D3)
+//
+// D3 asks about overflow AND underflow on every path that touches money. The two
+// are not equally dangerous here, and it is worth saying why rather than
+// treating them as one topic.
+//
+// OVERFLOW is a non-event on TVM for these quantities. Integers are 257-bit
+// signed (~5.8e76) and every money figure in this protocol is bounded far below
+// that: `coins` serializes as at most 120 bits (~1.3e36), and the largest
+// intermediate any money path computes is the rebate's
+// `k * injection * S / T / K_SCALE`, whose numerator is bounded by
+// 0.95e9 * 1e9 * S. `MoneyArithmetic.spec.ts` computes that headroom explicitly
+// rather than asserting it is fine.
+//
+// UNDERFLOW is the real one. TVM integers are SIGNED, so `a - b` with `b > a`
+// does not wrap — it produces a negative number, which then either serializes as
+// `coins` and throws at save time, or (worse) survives in a comparison and
+// silently inverts a guard. Either way the interesting question is what stops
+// `b > a`, and that is a property of the surrounding code, not of the type.
+//
+// THREE MECHANISMS, and the distinction is the point of the table:
+//
+//   local        an assert or a ternary in the SAME function bounds the
+//                subtrahend. Self-evident on reading.
+//   record       the amount comes from the very record being deleted, and was
+//                added to the aggregate when that record was created. Safe iff
+//                the aggregate is maintained in step — which is what
+//                FuzzInvariants' I10 exists to prove. (This named C8's ESCROW
+//                reconciliation until 2026-09-21. D-90 deleted the escrow and
+//                primes_market_shard.tolk with it; the citation outlived it by a
+//                month because the 2026-09-04 correction was applied to the
+//                GENERATED doc and this generator overwrote it on the next run.)
+//   invariant    safe ONLY because a cross-contract invariant holds. The ledger's
+//                `tributeOwed -= msg.amount` is the case: the amount arrives from
+//                an authenticated item claiming its own `owed`, and nothing local
+//                bounds it. `tributeOwed == Σ_p item.owed` (I10) is the guard,
+//                and it lives in a different file.
+//
+// A site in the third class is not a bug — but it is a site whose safety depends
+// on a test rather than on a read, and an auditor is entitled to be told which.
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { emitPage, isCheckMode } from './lib/audit-page.mjs';
+import { join, basename } from 'node:path';
+
+const CONTRACTS_DIR = join(process.cwd(), 'contracts', 'contracts');
+const OUT = join(process.cwd(), 'docs', 'audit', 'money-arithmetic.md');
+
+/**
+ * Names that hold TON or PRIMES. A subtraction on any of these can go negative
+ * and matters when it does; `i -= 1` in a loop counter cannot and does not.
+ */
+const MONEY = [
+    'pending', 'swapped', 'inFlightFlush', 'T', 'S',
+    'totalSupply', 'totalLocked', 'balance',
+    'tributeOwed', 'divOutstanding', 'unroutedHeld', 'divAcc',
+    'paidTotal', 'remaining', 'owed', 'paid', 'locked',
+    // D-168: the stake master's and the treasury's PRIMES books.
+    'lockedTotal', 'unclaimedTotal', 'claimedTotal', 'streamRemaining', 'stakedTotal',
+    'primesBalance', 'tstonBalance', 'distributedTotal',
+];
+const isMoney = (lhs) => {
+    const leaf = lhs.split('.').pop();
+    return MONEY.includes(leaf);
+};
+
+/** The `fun NAME(` most recently opened before `idx`. */
+function fnAt(src, idx) {
+    const funs = [...src.slice(0, idx).matchAll(/\bfun\s+([A-Za-z0-9_]+)\s*\(/g)];
+    return funs.length ? funs[funs.length - 1][1] : '(top level)';
+}
+
+const rows = [];
+for (const file of readdirSync(CONTRACTS_DIR).filter((f) => f.endsWith('.tolk')).sort()) {
+    const src = readFileSync(join(CONTRACTS_DIR, file), 'utf8');
+    const lines = src.split('\n');
+    lines.forEach((raw, i) => {
+        const line = raw.replace(/\/\/.*$/, '');
+        // `x -= y;`
+        const dec = line.match(/([A-Za-z_][A-Za-z0-9_.]*)\s*-=\s*([^;]+);/);
+        // `x = a > b ? a - b : 0` — the self-guarding form
+        const tern = line.match(/([A-Za-z_][A-Za-z0-9_.]*)\s*=\s*[^;]*\?\s*[^;]*-[^;]*:\s*0/);
+        const m = dec ?? tern;
+        if (!m) return;
+        if (!isMoney(m[1])) return;
+        rows.push({
+            file: basename(file),
+            line: i + 1,
+            fn: fnAt(src, lines.slice(0, i).join('\n').length),
+            expr: line.trim(),
+            selfGuarding: Boolean(tern),
+        });
+    });
+}
+
+const esc = (s) => s.replace(/\|/g, '\\|');
+const md = `# Money arithmetic — every subtraction that could go negative
+
+<!-- GENERATED by tools/money-arithmetic.mjs. Do not edit by hand. -->
+
+GAUNTLET.md D3. TVM integers are **signed** 257-bit, so \`a - b\` with \`b > a\` does
+not wrap — it produces a negative, which either throws when serialized as
+\`coins\` or survives to invert a later comparison. So the question at every money
+subtraction is what bounds the subtrahend.
+
+Overflow is the lesser half and is handled separately: every money figure here is
+bounded far below 257 bits (\`coins\` serializes as at most 120 bits, ~1.3e36), and
+\`MoneyArithmetic.spec.ts\` computes the headroom of the widest intermediate — the
+rebate's \`k · injection · S / T / K_SCALE\` — rather than asserting it is fine.
+
+**${rows.length} money subtractions.** \`MoneyArithmetic.spec.ts\` enumerates them with
+the mechanism that bounds each, so a new one fails the build rather than being
+assumed safe.
+
+| contract | line | function | expression | self-guarding |
+|---|---|---|---|---|
+${rows.map((r) => `| \`${r.file}\` | ${r.line} | \`${r.fn}\` | \`${esc(r.expr)}\` | ${r.selfGuarding ? 'yes (ternary)' : 'no'} |`).join('\n')}
+
+## The three mechanisms
+
+- **local** — an assert or ternary in the same function bounds the subtrahend.
+  Self-evident on reading.
+- **record** — the amount comes from the record being deleted, and was added to
+  the aggregate when that record was created. Safe *iff* the aggregate is
+  maintained in step, which is what \`FuzzInvariants\`' I10 proves. (It also named
+  C8's escrow reconciliation until 2026-09-21; D-90 deleted the escrow.)
+- **invariant** — safe only because a cross-contract invariant holds. Not a bug,
+  but a site whose safety rests on a test rather than on a read, and an auditor
+  is entitled to be told which ones those are.
+`;
+
+const inSync = emitPage(OUT, md, 'money-arithmetic.mjs');
+console.log(`${rows.length} money subtractions ${isCheckMode() ? '' : ` -> ${OUT}`}`);
+for (const r of rows) console.log(`  ${r.file}:${r.line} ${r.fn} :: ${r.expr}`);
+
+// GAUNTLET.md B35 — the exit code is the gate's answer; the summaries above
+// print either way, so a drift run still tells the reader WHAT it measured.
+if (!inSync) process.exit(1);

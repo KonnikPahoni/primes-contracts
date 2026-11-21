@@ -1,0 +1,641 @@
+;; TON PRIMES — Ratchet message schemas.
+;; Opcodes: /shared/opcodes.ts `RATCHET`. Contract: contracts/primes_ratchet.tolk.
+;;
+;; Split out of bank.tlb (now ledger.tlb) by UPGRADE_PLAN_V5.md §4 B1 /
+;; CONCEPT v5 §3.4, which puts `pending`, `flush()`, the DeDust leg and the burn
+;; on their own contract so that "there is no admin withdraw path" is verifiable
+;; by reading ONE contract's outbound set.
+;;
+;; That outbound set, in full:
+;;   1. dedust_swap#ea06185d, destination = the venue address, changeable only
+;;      by the venue timelock;
+;;   2. burn#595f07bc (TEP-74), destination = whichever jetton wallet sent the
+;;      transfer_notification, amount = exactly what it notified (§4.3's
+;;      proceeds leg — bought PRIMES are burned, never held; `S` is untouched,
+;;      §3.3);
+;;   3. deposit#47d54391, destination = the Tonstakers pool (§4.3.2's staked
+;;      reserve, D-151), amount = the message value, which the contract sizes
+;;      itself from `reserve_target` — no message below lets a sender name it;
+;;   4. burn#595f07bc again, destination = this contract's OWN tsTON wallet,
+;;      carrying §4.3.2's withdrawal payload — the redeemed TON returns here and
+;;      can return nowhere else, because the pool pays the burner;
+;;   5. nothing else.
+;; No withdraw, no sweep, no owner field, and no message any sender can send
+;; that moves TON to an address of the sender's choosing. `flush` is
+;; permissionless precisely because it cannot be aimed, and the three staking
+;; triggers keep that property in a stronger form: they carry no size field at
+;; all.
+;;
+;; Trust edges:
+;;   - pool_inject: sender MUST equal the ledger's address (set once, by
+;;     set_ledger, from the genesis script).
+;;   - flush: permissionless, any sender.
+;;   - update_venue: sender MUST equal the venue timelock's fixed address. This
+;;     is the entire admin surface of this contract, and it can change the swap
+;;     DESTINATION but never the amount, the recipient of the proceeds, the
+;;     floor guard, or §4.3.2's staking addresses (D-194: deploy data). The
+;;     timelock sends it only after 30 days AND a passed LP vote, because a
+;;     re-pointed vault receives every flush tranche.
+;;   - set_ledger: sender MUST equal the genesis script; one-shot.
+;;   - transfer_notification: deliberately UNCHECKED sender — the only reply is
+;;     a burn aimed back at that same sender for the notified amount, riding
+;;     the notification's own attached gas, so a forged notification can only
+;;     burn the forger's own tokens and moves no protocol TON. Since §4.3.2 this
+;;     message arrives from TWO wallets and the handler branches on which stored
+;;     address the sender matches — see the tsTON block below.
+;;   - stake / unstake / harvest: permissionless, any sender, and unlike `flush`
+;;     with no size field to lower (§4.3.2, §11.14).
+;;   - set_tston_wallet: sender MUST equal the genesis script; one-shot.
+;;   - ownership_assigned / distributed_asset: UNAUTHENTICATABLE by construction —
+;;     the payout-bill collection's address is salted at deploy, so there is no
+;;     address to check against. §4.3.2's block below is the argument for why a
+;;     forged one is a donation rather than an attack; it is the load-bearing
+;;     paragraph of that section.
+
+;; ---- inbound: TEP-74 proceeds notification -> outbound burn (§4.3) ----
+
+transfer_notification#7362d09c
+    query_id:uint64
+    amount:Coins
+    sender:MsgAddress
+    forward_payload:(Either Cell ^Cell)
+  = InternalMsgBody;
+
+burn#595f07bc
+    query_id:uint64
+    amount:Coins
+    response_destination:MsgAddress   ;; the ratchet itself: excesses feed its gas buffer
+    custom_payload:(Maybe ^Cell)      ;; none$0 on THIS leg; §4.3.2's tsTON burn fills it
+  = InternalMsgBody;
+;; One constructor, two destinations. Aimed at the PRIMES wallet it is §4.3's
+;; proceeds burn; aimed at the tsTON wallet, with the payload present, it is
+;; §4.3.2's withdrawal request. Nothing else distinguishes them on the wire.
+;;
+;; CLOSED by P2 of D-151, 2026-09-21. Both sides now carry the field:
+;; primes_ratchet.tolk's `JettonBurn` writes `customPayload: cell?` (null on the
+;; PRIMES leg, the two withdrawal bits on the tsTON one) and
+;; primes_jetton_wallet.tolk's `Burn` parses and ignores it. Until then neither
+;; side wrote or read it -- the same defect GAUNTLET V4 fixed on `Transfer` and
+;; `transfer_notification` in that file (see its header at :62-74), missed on
+;; `Burn` because nothing external burns PRIMES. The pair was self-consistent, so
+;; the PRIMES burn worked and nothing showed it. §4.3.2 is what made it bite: the
+;; tsTON wallet is somebody else's contract, its `load_dict()` underflows on the
+;; missing Maybe bit, and the burn dies in the ACTION phase.
+
+;; ---- inbound: the pool backing, from the ledger only ----
+;; See pool_inject in ledger.tlb for the full field semantics; the layout is
+;; identical and is repeated here only so this file stands alone.
+
+pool_inject#b0000050
+    query_id:uint64
+    amount:Coins          ;; NOMINAL backing; `pending` is credited by THIS, not by msg value
+    t_snapshot:Coins      ;; T after the sending mint — nanotons
+    s_snapshot:Coins      ;; S after the sending mint — nano-PRIMES
+  = InternalMsgBody;
+
+;; ---- inbound: permissionless flush trigger (concept §4.3) ----
+
+flush#b0000006
+    query_id:uint64
+    amount:Coins          ;; a CEILING the caller may lower, never raise. 0 = "size it yourself"
+  = InternalMsgBody;
+;; No value required beyond covering the triggering message's own forward fee;
+;; swap gas is paid by the ratchet from its own accumulated hop-margin surplus,
+;; which is exactly the `delta` its get_solvency reports.
+;;
+;; Guards, all pre-existing and unchanged: FLUSH_COOLDOWN since the last
+;; attempt (error 207), and the auto size `min(pending, max(pending * FLUSH_PCT,
+;; FLUSH_MIN))` (error 208).
+;;
+;; `amount` (2026-09-19) is VENUE-DEPTH SIZING. The auto size is computed from
+;; `pending` and knows nothing about the pool; `min_out = amount * S / T` is
+;; priced off the pool. Nothing connected the two, so a tranche bigger than the
+;; venue could absorb bounced against a guard that was working as designed --
+;; the swap's AVERAGE execution price ran above `p_f` while the SPOT price sat
+;; below it. The contract cannot read DeDust's reserves (no synchronous
+;; cross-contract call on TVM, and `get_reserves` is a get-method), so the
+;; caller computes the fillable size with `shared/dedustQuote.ts`'s
+;; `maxInAtFloor` -- a_max = T*R_p/(S*(1+G)) - R_t/(1-f) -- and sends it here.
+;;
+;; The handler takes `min(amount, autoSize)`: one-directional, so a caller may
+;; only ask for LESS than the contract would have sent. That is what makes a
+;; permissionless size safe -- `min_out` is LINEAR in `amount`, so the guard is
+;; a per-unit price and no choice of `amount` buys a nanoton above `p_f`. The
+;; cooldown is charged pro rata (`cooldown * amount / autoSize`) so a dust-sized
+;; call cannot spend the day's throughput allowance and lock out a real flush.
+
+;; ---- inbound: venue address update, from the venue timelock only ----
+
+update_venue#b0000010
+    query_id:uint64
+    dedust_native_vault:MsgAddress
+    dedust_pool:MsgAddress
+    primes_jetton_vault:MsgAddress
+  = InternalMsgBody;
+;; D-194: the staking block below is NOT on this message. It is ratchet deploy
+;; data (the `staking` ref of the stored venue) and `update_venue` copies it
+;; forward unchanged: `stake()` sends `pending - reserve` to `tonstakers_pool` in
+;; one message, so an address that could be re-pointed would be a withdraw path.
+;;
+;; Audit R2-M1 (2026-11-19): `update_venue` is NEVER refused for a flush in flight.
+;; The stored venue instead keeps that trip's two reply addresses until the next
+;; flush is sent, so the OLD vault's refund or fill still settles it:
+
+flush_trip#_
+    dedust_native_vault:MsgAddress   ;; pays the refusal (payout#474f86cf)
+    primes_jetton_vault:MsgAddress   ;; pays the fill (the jetton-level sender)
+  = FlushTrip;
+
+;; The stored venue (ratchet data, not a message). `open_trip` is null except
+;; between an `update_venue` that landed mid-flight and the next flush.
+venue#_
+    dedust_native_vault:MsgAddress
+    dedust_pool:MsgAddress
+    primes_jetton_vault:MsgAddress
+    staking:^VenueStaking
+    open_trip:(Maybe ^FlushTrip)
+  = Venue;
+
+;; §4.3.2's venue, as a REF CHAIN rather than four more inline fields. SEVEN
+;; venue addresses is 1,869 bits and a cell holds 1,023, so the split is
+;; arithmetic and not taste: three inline, three here, one more ref for the
+;; treasury.
+
+venue_staking#_
+    tonstakers_pool:MsgAddress       ;; deposit#47d54391's destination
+    dedust_tston_vault:MsgAddress    ;; leg 2's TEP-74 transfer destination (the JETTON vault)
+    dedust_tston_pool:MsgAddress     ;; leg 2's SwapStep.pool_addr
+    treasury:^VenueTreasury
+  = VenueStaking;
+
+venue_treasury#_
+    treasury_addr:MsgAddress         ;; the LP-governed treasury; harvest()'s ONLY destination
+    dedust_tston_native_vault:MsgAddress ;; leg 2's payout#474f86cf sender: the tsTON pool's
+                                     ;; own factory's native vault, NOT the re-pointable
+                                     ;; venue's (2026-11-08 audit)
+  = VenueTreasury;
+;; `dedust_tston_vault` is NOT in D-151's field list and is added by P2, because
+;; a jetton-side DeDust swap needs both addresses and they are different
+;; contracts: the tsTON goes to the VAULT for that jetton (as the TEP-74
+;; transfer's `destination`) while the POOL is named inside the swap payload's
+;; `SwapStep.pool_addr`. The native leg above hides this because `dedust_swap`
+;; carries both too -- `Venue.dedustNativeVault` as the message destination and
+;; `Venue.dedustPool` inside the body. Same shape, one asset over.
+;;
+;; Retargeted from the ledger to here by §3.4: the venue belongs with the leg
+;; that uses it. Sender MUST equal the venue timelock's fixed, immutable address
+;; — see engineering-spec §6 for why this is not itself an admin escape hatch,
+;; and §11.1/§11.3 (still open) for immutable-vs-timelock.
+
+;; ---- inbound: one-shot ledger bootstrap, from the genesis script only ----
+
+set_ledger#b0000051
+    query_id:uint64
+    ledger_addr:MsgAddress
+  = InternalMsgBody;
+;; Circular address dependency, same as the ledger's set_peers/set_sinks. Until
+;; it lands, pool_inject throws 101; a second set_ledger throws 104.
+
+;; ---- inbound: one-shot burn-counter bootstrap, from the genesis script only ----
+
+set_jetton_wallet#b0000052
+    query_id:uint64
+    jetton_wallet_addr:MsgAddress
+  = InternalMsgBody;
+;; §3.3 / §9.1 / §11.21. This contract's own PRIMES wallet is addressed by its
+;; owner, so it cannot live in this contract's address-determining data — the
+;; same circular dependency set_ledger has, and the same one-shot resolution the
+;; bounty vault uses for its own wallet (bounty_vault.tlb, D21).
+;;
+;; What it is FOR: the burn itself deliberately has no sender check (see
+;; transfer_notification below), because burning is the only thing this contract
+;; ever does with jettons and a forged notification can therefore do no harm. A
+;; *counter* is different — an unchecked one could be inflated by anyone, and it
+;; is published on the dashboard as measured. So the burn stays unchecked and the
+;; TALLY is checked: only a notification from this address increments it. Until
+;; this lands, `getBurnStats` returns counting = 0 and the total is a floor, not
+;; a measurement; a second set_jetton_wallet throws 104.
+
+;; ---- outbound: the swap, to the DeDust native vault ----
+
+;; GAUNTLET V2 (2026-09-09): this is DeDust v2's OWN published schema
+;; (docs.dedust.io/reference/tlb-schemes, fetched 2026-09-09), not this repo's
+;; invention. The pre-V2 version of this file documented `dedust_swap#ea06185d
+;; query_id:uint64 min_out:Coins` and nothing else — no `pool_addr`, no
+;; `swap_params` — because the code it described never sent them either,
+;; carried over from primes_bank.tolk D6 as "the real wire format could not be
+;; verified." It is checkably wrong, not merely unverified: a vault cannot
+;; resolve which pool to swap through with no `pool_addr` field at all.
+swap_kind_given_in$0 = SwapKind;         ;; the only kind DeDust implements
+swap_kind_given_out$1 = SwapKind;        ;; not live on DeDust's side; never sent here
+
+swap_step_params#_
+    kind:SwapKind
+    limit:Coins                          ;; nano-PRIMES — §4.3.1's FLOOR GUARD
+    next:(Maybe ^SwapStep)               ;; always none$0 here — single-hop only
+  = SwapStepParams;
+
+swap_step#_
+    pool_addr:MsgAddressInt              ;; `Venue.dedustPool` — stored, previously unread by flush()
+    params:SwapStepParams
+  = SwapStep;
+
+swap_params#_
+    deadline:uint32                      ;; blockchain.now() + DEDUST_SWAP_DEADLINE_WINDOW (600s)
+    recipient_addr:MsgAddressInt         ;; this contract's own address — the fill lands back here
+    referral_addr:MsgAddress             ;; addr_none — no referral fee on this leg
+    fulfill_payload:(Maybe ^Cell)        ;; always none$0
+    reject_payload:(Maybe ^Cell)         ;; always none$0
+  = SwapParams;
+
+dedust_swap#ea06185d
+    query_id:uint64
+    amount:Coins                         ;; the TON side of the swap; equals the message value
+    step:SwapStep                        ;; inline, not a ref — matches DeDust's `_:SwapStep`
+    swap_params:^SwapParams
+  = InternalMsgBody;
+;; B3, and the whole of §4.3.1's claim, is `limit` (nested inside `SwapStepParams`
+;; above, not a top-level field). Pre-v5 it was the literal 1 ("accept any fill at
+;; any price"). It is now
+;;
+;;     limit = amount * S / T * (1 + FLOOR_GUARD)
+;;
+;; UNITS: `amount` is nanotons, `T` is nanotons, `S` is nano-PRIMES, so `T / S`
+;; is the floor price p_f in nanotons per nano-PRIMES and `amount * S / T` is
+;; nano-PRIMES — which is what this field is denominated in. The two nano-scales
+;; cancel; there is no 1e9 factor to insert, and inserting one misprices by a
+;; billion. The multiply is done BEFORE the divide and both operands are
+;; asserted below 2^120 (product < 2^240, clear of TVM's 2^256), because the
+;; naive `(amount / T) * S` truncates to zero for every realistic flush and would
+;; silently reproduce the bug this field exists to fix.
+;;
+;; FLOOR_GUARD is a Phase A output and is currently 0 — the NEUTRAL element of
+;; the formula, i.e. §3 step 7's stated measurement baseline `amount * S / T`,
+;; not a guess.
+;;
+;; NOT ROUND-TRIP PROVEN against a live or schema-faithful counterparty — see
+;; GAUNTLET.md V2's closing note and `WireFormatDeDustSwap.spec.ts`, which
+;; parses the real outbound cell field-by-field against this schema instead.
+;;
+;; The message is sent with BounceMode.RichBounce. When the venue cannot fill at
+;; or above min_out the TON comes back and `pending` is restored unchanged — but
+;; by TWO different routes, and this file used to name only one of them. The
+;; guard adds no parallel path either way, which is why a would-be-above-floor
+;; flush and a sandwiched one are indistinguishable at contract level, and why
+;; get_flush_status below is not optional.
+
+;; ---- inbound: the refund, from the DeDust native vault ----
+;;
+;; A REFUSED SWAP DOES NOT BOUNCE. DeDust checks `limit` in the POOL, one hop
+;; past the vault; the pool commits its refund and then throws (exit 304,
+;; SLIPPAGE_EXCEEDED, aborted FALSE), so the vault's own transaction succeeds —
+;; and a TON bounce travels exactly one hop, leaving the `dedust_swap` above
+;; nothing to bounce from. Verified against mainnet 2026-09-16 (trace
+;; 0vgUx3EUXuoH3l9kfjvHfxkO8khDq5qw1iTE58hdV5M=, and 6,000 consecutive
+;; native-vault transactions with zero bounced inbound messages). GAUNTLET.md
+;; R18 carries the evidence and what assuming otherwise cost.
+;;
+;; `payload` is the sender's own `reject_payload` handed back verbatim: the pool
+;; copies it into pay_out_from_pool#ad4eb6f5 and the vault copies it into this
+;; message. The ratchet sends `reject_payload = none`, so it is always none here
+;; and is consumed as an opaque remainder rather than parsed.
+;;
+;; The bounce handler is KEPT alongside this one and is not redundant: it covers
+;; the VAULT refusing outright (too little gas, unrecognised op), which fails one
+;; hop closer and therefore really does bounce.
+dedust_payout#474f86cf
+    query_id:uint64                      ;; echoed from dedust_swap, unchanged
+    payload:(Maybe ^Cell)                ;; our reject_payload, verbatim
+  = InternalMsgBody;
+
+;; ======== §4.3.2: the staked reserve, and the Tonstakers wire (D-151) ========
+;;
+;; PROVENANCE: every upstream constructor below is read from
+;; github.com/ton-blockchain/liquid-staking-contract @ `main`, fetched
+;; 2026-09-20, with the file and line cited on each one. The protocol's GitBook
+;; documents behaviour but publishes NO opcodes, so the source tree is the only
+;; authority there is — an opcode here has been checked against the code and
+;; against nothing else, because nothing else states it.
+;;
+;; It lives in this file, not in a `tonstakers.tlb`, for the same reason the
+;; DeDust block above does: an external layout belongs in the schema of the
+;; contract that talks to it.
+;;
+;; CAVEAT, and it is the half that dates fastest. The pool's ECONOMIC behaviour —
+;; the deposit fee, round length, whether deposits are open at all — is
+;; governor-settable storage and can change under us with no redeploy and no
+;; notice. The WIRE values below (opcodes, field order, bit order) are baked into
+;; the deployed code and cannot. So: read a FIGURE quoted in these comments (the
+;; 1 TON DEPOSIT_FEE) as storage as it stood on the fetch date; read an OPCODE as
+;; fixed for the life of that deployment.
+
+;; ---- inbound: the three permissionless staking triggers (§4.3.2) ----
+
+stake#b0000053
+    query_id:uint64
+  = InternalMsgBody;
+
+unstake#b0000054
+    query_id:uint64
+  = InternalMsgBody;
+
+harvest#b0000055
+    query_id:uint64
+  = InternalMsgBody;
+;; NONE OF THE THREE CARRIES AN AMOUNT, and that absence is the point: §11.14's
+;; constraint made structural rather than asserted. Each leg's size is computed
+;; by the contract from `reserve_target` against the current balances, so a
+;; caller can TRIGGER the rule and cannot AIM it — there is no destination field
+;; and no size field to supply. `flush` above is permissionless because its one
+;; number may only be lowered; these are permissionless because they have no
+;; number at all.
+;;
+;; UNVERIFIED in this file: nothing below carries the Tonstakers POOL address —
+;; no message here proposes or updates it. This schema records the wire only.
+
+;; ---- inbound: the stranded-exit recovery arm (D-155) ----
+
+recover_exit#b0000057
+    query_id:uint64
+  = InternalMsgBody;
+;; NO AMOUNT EITHER, and for a stronger reason than the three above: this one
+;; cannot move value at all. Its whole effect is to run the contract's internal
+;; `abort_exit` -- `exit_cost_basis` goes from `exiting` back to `staked_cost`
+;; (both terms of `T`, so `T` is unchanged), the tsTON claim returns to
+;; `tston_held`, and `pending` is not written. There is nothing to aim and
+;; nothing to gain, which is what lets it be permissionless.
+;; A STRANDED STAKE (a deposit whose mint notification has not landed by
+;; now - stake_started_at >= recover_after; get_staking_gates' fourth value)
+;; is written off instead: its cost NOT YET MATCHED by arrived tsTON
+;; (in_flight_stake - stake_credited, get_staking_gates' sixth value) leaves
+;; `staked_cost` as `realized_loss` and accumulates in `written_off`, so
+;; stake/unstake (230) are not locked for ever. Checked before the exit. The
+;; next authenticated fill restores `written_off` from the value of the tsTON
+;; already held at the rate it teaches. A recovered leg 1/2 exit's late reply
+;; is recognised and not counted again.
+;;
+;; WHY IT EXISTS. Every transition of the exit machine is driven by an INBOUND
+;; REPLY, and until D-155 `exit_leg` returned to idle only when one arrived. A
+;; reply that is lost, malformed, under-gassed in a way that does not bounce, or
+;; sent by an address a sender gate rejects, left the machine outstanding
+;; forever -- and `flush#b0000006` refuses while an exit is open (230), so a lost
+;; reply bricked the ratchet's own core loop, not merely the staking arms. Proved
+;; live on testnet 2026-09-21 with a leg 2 payout from the wrong vault address.
+;;
+;; THE WINDOW IS 72 HOURS and its floor is set by leg 3: the pessimistic bill
+;; pays at ROUND END, ~36 h (`staked_reserve.leg3_latency_days` = 1.5), so
+;; anything at or under that would abort a leg that is merely waiting its turn.
+;; 2x the round means the arm can only fire on a reply that has stopped coming.
+;; Divided by the same D-139 `clock_divisor` as the flush cooldown and the
+;; harvest interval; get_exit_leg publishes the DIVIDED figure, so a reader
+;; checks the window this deploy actually enforces. Refuses 232
+;; (ratchet_exit_not_stranded) before it.
+
+;; ---- inbound: one-shot tsTON-wallet bootstrap, from the genesis script only ----
+
+set_tston_wallet#b0000056
+    query_id:uint64
+    tston_wallet:MsgAddress
+  = InternalMsgBody;
+;; Exactly the shape of set_jetton_wallet#b0000052 above, for exactly the same
+;; reason: this contract's tsTON wallet is addressed by its OWNER, so it cannot
+;; live in this contract's own address-determining data. One-shot, refused on the
+;; same flag a second time, and inert afterwards — a used-up bootstrap
+;; credential, not an admin key. See that constructor's note for the full
+;; circular-dependency argument; it is not repeated here.
+
+;; ---- outbound: the deposit, to the Tonstakers pool ----
+;; contracts/interaction.tlb:52; op at contracts/op-codes.func:41.
+
+deposit#47d54391
+    query_id:uint64
+  = InternalMsgBody;
+;; The staked amount is the MESSAGE VALUE — the body has no amount field. The
+;; pool subtracts a flat DEPOSIT_FEE = 1 TON from the value and credits the
+;; remainder (contracts/pool.func:79, :288-290), then
+;; `throw_unless(error::deposit_amount_too_low, deposit_amount > 0)`. A deposit
+;; of 1 TON or less therefore THROWS rather than doing nothing, so `stake` must
+;; size its tranche clear of the fee, and the fee is a real cost of the leg, not
+;; a rounding artefact: it is spent TON that never reaches `tston_held`.
+
+;; ---- outbound: the withdrawal, as a TEP-74 burn of our own tsTON ----
+;;
+;; We do NOT send the pool's `withdraw` below. We send burn#595f07bc (declared at
+;; the top of this file) to our own tsTON wallet, with the two withdrawal flags
+;; riding in `custom_payload` as TWO BARE BITS in this order —
+;; wrappers/JettonWallet.ts:17-19:
+
+tston_withdraw_payload#_
+    wait_till_round_end:Bool             ;; bit 0
+    fill_or_kill:Bool                    ;; bit 1
+  = TstonWithdrawPayload;
+
+;; The jetton minter then inlines those two bits into the message it sends the
+;; pool, which is why the order above is load-bearing and why the pool-side
+;; layout is recorded here too — contracts/interaction.tlb:54:
+
+withdraw#319b0cdc
+    query_id:uint64
+    jetton_amount:Coins
+    from_address:MsgAddress
+    response_address:MsgAddress
+    wait_till_round_end:Bool             ;; our payload's bit 0, verbatim
+    fill_or_kill:Bool                    ;; our payload's bit 1, verbatim
+  = InternalMsgBody;
+;; Reading the two together is the only way to see that swapping our two bits
+;; swaps the pool's two flags: a transposed payload asks for the opposite
+;; withdrawal (kill an unfillable one instead of waiting out the round, or wait
+;; where we meant to be filled now) and every message on the way still parses.
+;;
+;; THE TRAP, and it fails silently. `custom_payload` is optional in TEP-74 and
+;; mandatory here. The pool reads the two flags with `load_bool` inside its own
+;; try/catch; an absent or short payload underflows, the catch fires, and the
+;; pool RE-MINTS the jettons back to us. A burn with no payload is a ROUND TRIP,
+;; not a withdrawal — no throw we can see, no bounce, the tsTON back in the
+;; wallet and no TON coming. Any check that reads "the burn succeeded" as "the
+;; withdrawal started" is wrong in exactly that case.
+
+;; ---- inbound: the filled withdrawal, from the pool ----
+;; contracts/interaction.tlb:55; op at contracts/op-codes.func:43.
+
+withdrawal#0a77535c
+    query_id:uint64
+  = InternalMsgBody;
+;; Non-bounceable, sent CARRY_ALL_BALANCE. THE BODY CARRIES NO AMOUNT: the filled
+;; TON is the message value, and it arrives mixed with whatever is left of the
+;; gas we attached to our own burn. So this message can never tell us what rate
+;; we exited at — the received value is a payout plus change, and the two are not
+;; separable at arrival. That is precisely why the tsTON rate is learned from a
+;; DEPOSIT's transfer_notification, where TON sent and jettons minted are both
+;; known exactly, and never from a withdrawal.
+
+;; ---- inbound: the payout bill, when the withdrawal cannot be filled ----
+;; contracts/payout_nft/nft-item.func:193-197; op at payout_nft/op-codes.func:3.
+
+ownership_assigned#05138d91
+    query_id:uint64
+    prev_owner:MsgAddress                ;; addr_none — two zero bits
+    forward_payload:(Either Cell ^Cell)  ;; empty
+  = InternalMsgBody;
+;; Arrives when the round could not fill our withdrawal and `fill_or_kill` was 0:
+;; the pool mints a payout BILL NFT to us instead of paying. Non-bounceable,
+;; CARRY_ALL_BALANCE | IGNORE_ERRORS.
+
+;; ---- inbound: the bill paying out at round end ----
+;; contracts/payout_nft/nft-collection.func:262-268; op at payout_nft/op-codes.func:15.
+
+distributed_asset#db3b8abd
+    query_id:uint64
+  = InternalMsgBody;
+;; Non-bounceable, CARRY_ALL_REMAINING_MESSAGE_VALUE, our TON share = the message
+;; value. Again no amount field: the money IS the message.
+;;
+;; WHY NEITHER OF THE LAST TWO IS AUTHENTICATED, AND WHY THAT IS SAFE. The payout
+;; bill collection's address is SALTED with `random()` at deploy
+;; (contracts/address_calculations.func:67-68). It is therefore not derivable
+;; from the pool's address, cannot be precomputed at genesis, and cannot be
+;; whitelisted afterwards without a message to set it — which would be a new
+;; admin surface on a contract whose whole claim is that it has none. The ratchet
+;; consequently CANNOT check the sender of either message, and does not pretend
+;; to. What it does instead is make a forgery arithmetically a donation:
+;;   - ownership_assigned takes NO accounting action whatsoever. Nothing is
+;;     credited, nothing is unlocked, nothing is counted. The outstanding exit is
+;;     tracked by the `exiting` that our own `unstake` credited, not by the
+;;     arrival of an NFT anyone can send us. A forged one changes no number.
+;;   - distributed_asset credits `pending` and draws `exiting` down by the same
+;;     value. BOTH ARE TERMS OF `T`, they move in the directions a real payout
+;;     moves them, and the TON backing the credit is really in this contract's
+;;     balance because it is the message value itself. A forged one is therefore
+;;     a stranger paying into the pool on a bill's behalf: it mints no PRIMES,
+;;     aims no TON, cannot be replayed for value the sender did not attach, and
+;;     cannot push `pending` above the balance that backs it. The attack costs
+;;     the attacker the exact amount it gives the ratchet.
+;; This is the same argument as the unchecked transfer_notification at the top of
+;; the file — the reply is harmless to the protocol and expensive to the forger,
+;; so authentication would buy nothing worth an address dependency for.
+
+;; ---- inbound: the SECOND jetton wallet (tsTON), same two ops as the first ----
+;;
+;; excesses#d53276db and transfer_notification#7362d09c now reach this contract
+;; from TWO wallets — the PRIMES wallet of set_jetton_wallet#b0000052 and the
+;; tsTON wallet of set_tston_wallet#b0000056. The layouts are unchanged (the
+;; notification is declared at the top of this file); what changes is that the
+;; notification handler MUST branch on which stored address the sender matches:
+;;   - tsTON wallet, exact match -> §4.3.2's deposit fill. Credit `tston_held`,
+;;     update the learned rate from (TON sent, jettons minted) ONLY when the
+;;     TEP-74 `from` is addr_none (the pool's optimistic mint). Any other tsTON
+;;     that is not an exit leg's answer — a NON-OPTIMISTIC fill, which arrives
+;;     as a transfer from the salted payout collection, or a stranger's
+;;     transfer — is valued at the last learned rate and credited against the
+;;     open stake (`stake_credited`) and then any write-off (audit H2). NEVER burn it:
+;;     burning tsTON WITHOUT the withdrawal payload is the round trip described
+;;     above, and burning it WITH one is a withdrawal nobody asked for.
+;;   - anything else -> the pre-existing unchecked burn-back, unchanged, which
+;;     burns only the sender's own tokens; the counted tally still moves only for
+;;     the PRIMES wallet.
+;; A handler that forgets the branch burns the reserve as fast as it is staked,
+;; so the branch is the whole of the safety here.
+
+excesses#d53276db
+    query_id:uint64
+  = InternalMsgBody;
+;; Accepted and ignored, from EITHER wallet, the way a bare top-up is. It is
+;; named here because this contract writes its own address into
+;; `response_destination` on both burn legs and must therefore have an arm for
+;; the reply — the catch-all `else => assert (in.body.isEmpty()) throw 101` would
+;; otherwise abort it and paint the trace red while the money looks right
+;; (MISTAKES.md 2026-09-17).
+
+;; ---- get-methods (§9.1's honesty constraint: every UI number maps to one) ----
+;;
+;; get_pending          -> Coins
+;; get_swapped          -> Coins            ;; §5's `T = swapped + pending` identity
+;; get_in_flight_flush  -> Coins
+;; get_last_min_out     -> Coins            ;; the guard price the last attempt demanded
+;; get_floor_cache      -> (Coins, Coins)   ;; the pushed (T, S) mirror, staleness visible
+;; get_venue            -> (MsgAddress, MsgAddress, MsgAddress)
+;; get_ledger           -> (MsgAddress, uint8)
+;; get_last_flush_ts    -> uint64
+;;
+;; get_burn_stats -> (burned_primes:Coins, burn_events:uint32, counting:uint8)
+;;   §3.3 / §11.21 — the burn half of the circulating-supply report, which must be
+;;   shown as its own number next to the vault's payout total rather than netted
+;;   into it. Counts what THIS contract ordered burned (the §4.3 flush leg), so it
+;;   is not the same quantity as `S − total_supply`: that difference also carries
+;;   the vault's unspent tokens and any bounced rebate mint, and the dashboard
+;;   shows it separately and labelled as derived.
+;;   `counting` is 0 until set_jetton_wallet lands. At 0 the total is a FLOOR, not
+;;   a measurement — returned rather than inferred so that "nothing burned yet"
+;;   and "not counting yet" cannot be confused, the same distinction
+;;   get_flush_status draws between `never` and an undeployed method.
+;;
+;; get_burn_wallet -> (MsgAddress, uint8)
+;;   The wallet whose notifications are counted, checkable from outside against
+;;   the jetton master's get_wallet_address(ratchet).
+;;
+;; get_flush_status -> (last_attempt_time:uint64, outcome:uint8,
+;;                      amount:Coins, cooldown_remaining:uint32)
+;;   outcome: 0 = never, 1 = filled, 2 = bounced.
+;;   §12 makes this NON-OPTIONAL: without it "a dead venue hides behind months
+;;   of legitimate-looking non-execution", and "the venue is gone" is
+;;   indistinguishable from "the market is above the floor".
+;;   `filled` is set optimistically at send time and demoted to `bounced` by the
+;;   bounce handler — TVM offers no fill callback on this leg, so "did not
+;;   bounce" is the only positive fill signal that exists. A reader who wants
+;;   certainty checks get_in_flight_flush: non-zero means the round trip is
+;;   still open and `filled` is provisional.
+;;
+;; get_staking -> (staked_cost:Coins, tston_held:Coins, exiting:Coins,
+;;                 last_rate_num:uint64, last_rate_den:uint64,
+;;                 reserve_target:Coins, last_harvest_time:uint32,
+;;                 realized_loss:Coins)
+;;   (wrapper: `getStaking()`.) §4.3.2's surface, and the reason it is one call
+;;   rather than eight: §9.1 requires every number the dashboard shows about the
+;;   staked reserve to be recomputable from chain state, and the dashboard shows
+;;   all of these. `last_rate_num`/`last_rate_den` are published as the pair they
+;;   were learned as — the deposit that taught them — so a reader can check the
+;;   ratio rather than a rounded quotient we chose. `realized_loss` is reported
+;;   next to `staked_cost` and never netted into it, the same separation
+;;   get_burn_stats draws between what was burned and what was derived.
+;;
+;; get_flush_reply_venue -> (MsgAddress, MsgAddress, int)
+;;   (wrapper: `getFlushReplyVenue()`.) Audit R2-M1: the native vault and PRIMES
+;;   jetton vault that settle the OPEN flush, and `pinned` = 1 while an
+;;   `update_venue` landed mid-flight and those are the OLD venue's. At 0 the
+;;   pair is get_venue's own.
+;;
+;; get_staking_venue -> (MsgAddress, MsgAddress, MsgAddress)
+;;   (wrapper: `getStakingVenue()`.) `tonstakers_pool`, `dedust_tston_vault`,
+;;   `dedust_tston_pool`. A SEPARATE call from get_venue on purpose: that 3-tuple
+;;   is read by the backend, the agent SDK and four test suites, and widening a
+;;   published shape breaks every one of them where a second method breaks none.
+;;
+;; get_harvest_dest -> MsgAddress
+;;   The governed treasury. Published on its own line because it is the only
+;;   address here that RECEIVES protocol value rather than trading with it, which
+;;   is what a reader checking §8 is looking for.
+;;
+;; get_tston_wallet -> (MsgAddress, uint8)
+;;   The tsTON wallet whose notifications are the staking path, and whether the
+;;   genesis script has wired it. Same shape and reason as get_burn_wallet:
+;;   checkable from outside against the Tonstakers master's own
+;;   get_wallet_address(ratchet). At 0 the three arms refuse by name (231).
+;;
+;; get_exit_leg -> (uint8, Coins, uint32, uint32)
+;;   The exit state machine's leg (0 idle, 1 fill-or-kill burn, 2 the guarded
+;;   DeDust swap, 3 the round-end bill) and the nano-tsTON inside it. Non-zero
+;;   means `flush`, `stake` and `unstake` all refuse (230) -- see get_solvency's
+;;   note on why an open round trip is fail-closed here.
+;;   D-155 appends `exit_started_at` (0 while idle) and `recover_after`, the
+;;   recovery window THIS DEPLOY enforces after `clock_divisor`. Together they
+;;   answer "is this stranded, and when may anyone fix it":
+;;   recover_exit#b0000057 is legal once now - exit_started_at >= recover_after.
+;;   Appended rather than inserted, so the existing two-field readers are
+;;   untouched.
+;;
+;; get_solvency -> (balance:Coins, liability:Coins, delta:int)
+;;   §3.4's load-bearing property in ONE call. Liability here is `pending` and
+;;   only `pending`: `in_flight_flush` has physically left this contract's
+;;   balance and either fills or returns through the bounce handler, so counting
+;;   it would make `delta` transiently negative for the whole round trip and turn
+;;   Phase D's D7 reconciliation block into a daily false alarm.

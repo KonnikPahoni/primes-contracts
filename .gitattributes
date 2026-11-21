@@ -1,0 +1,15 @@
+# A fresh clone on Windows checked every file out with CRLF, and the repo's
+# stylesheet/source-reading tests compare against literal "\n" — `tappable.test.ts` and
+# `RotationPanel.test.tsx` were red on arrival in a clean HEAD worktree while green in the
+# developer's own tree (steward run #2). Line endings are not a per-machine preference
+# here; they are an assertion the tests make. Normalise on checkout, everywhere.
+* text=auto eol=lf
+
+# Binary, so git must not touch them.
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.gz binary
+*.woff binary
+*.woff2 binary
