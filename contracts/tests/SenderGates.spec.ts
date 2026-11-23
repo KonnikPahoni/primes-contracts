@@ -80,7 +80,7 @@ const PERMISSIONLESS: Record<string, string> = {
     // Open because there is nothing to gate: the arm moves no money, reads no
     // caller-controlled field and writes no state. The value is credited by the
     // credit phase before the arm runs, so the worst an impostor achieves is
-    // DONATING TON to a contract that spends it on gas. A sender check would buy
+    // DONATING GRAM to a contract that spends it on gas. A sender check would buy
     // nothing and would have to name the recipient's wallet — an address neither
     // contract knows in advance.
     //
@@ -91,7 +91,7 @@ const PERMISSIONLESS: Record<string, string> = {
     'primes_bounty_vault.tolk::Excesses': 'TEP-74 excess return to an address the vault itself named (H11); moves nothing, writes nothing',
     // GAUNTLET.md B27 and B28. Same shape as the three above, and open for the same
     // reason: the value is credited before the arm runs, the arm moves nothing and
-    // writes nothing, and the worst an impostor achieves is donating TON to a contract
+    // writes nothing, and the worst an impostor achieves is donating GRAM to a contract
     // with no withdraw path. Gating them would buy nothing and could fail a reply the
     // contract itself asked for by naming its own address as `response_destination`.
     'primes_treasury.tolk::Excesses': 'TEP-74 excess return on a governance payout the treasury itself named (B27); moves nothing, writes nothing',
@@ -102,8 +102,8 @@ const PERMISSIONLESS: Record<string, string> = {
     'primes_minter_card.tolk::Mint': '§4 — anyone may mint the head, or gift one (§4.5); that is the game',
     'primes_market.tolk::OpenLot': '§4.4 / D-30 — opening IS the first bid, permissionless',
     // D-212: anyone may ASK to name a number; item(n) checks the sender is its owner and
-    // refunds every refusal, so the open door moves no TON but the caller's own.
-    'primes_collection.tolk::NameNumber': '§4.7.1 / D-212 — the owner names a number for TON; the item is the gate (owner + fee), and every refusal refunds',
+    // refunds every refusal, so the open door moves no GRAM but the caller's own.
+    'primes_collection.tolk::NameNumber': '§4.7.1 / D-212 — the owner names a number for GRAM; the item is the gate (owner + fee), and every refusal refunds',
     'primes_market.tolk::OpenHeadLot': '§4.4 — permissionless, unpriced lot open',
     'primes_market.tolk::BidLot': '§4.4 — a bid is the purchase; anyone may bid',
 
@@ -142,9 +142,9 @@ const PERMISSIONLESS: Record<string, string> = {
     'primes_ratchet.tolk::Excesses': 'TEP-74 excess return from a wallet this contract itself named in `response_destination`; moves nothing, writes nothing',
     'primes_ledger.tolk::SweepOps': '§4.1 — permissionless; pays a fixed formula to a fixed address (C9)',
     'primes_ledger.tolk::SyncHead': '§4.4 — pushes the market\'s lagging head hint',
-    'primes_ledger.tolk::AdvanceHead': '§4.4, D-189 — finishes a gas-bounded head walk; moves no TON, returns the caller its own unburnt value',
-    'primes_ledger.tolk::ImportLotBlock': "D-196 — pulls the frontier block's auction marks in once the head's window reaches it; refuses early (225), names no address, moves no TON out",
-    'primes_ledger.tolk::FlushUnsold': "D-198 — moves the oldest passed block's unsold rows to its own lot block (an address derived from the block, never named by the caller); refuses while the head is in the block (225), moves no TON but the caller's",
+    'primes_ledger.tolk::AdvanceHead': '§4.4, D-189 — finishes a gas-bounded head walk; moves no GRAM, returns the caller its own unburnt value',
+    'primes_ledger.tolk::ImportLotBlock': "D-196 — pulls the frontier block's auction marks in once the head's window reaches it; refuses early (225), names no address, moves no GRAM out",
+    'primes_ledger.tolk::FlushUnsold': "D-198 — moves the oldest passed block's unsold rows to its own lot block (an address derived from the block, never named by the caller); refuses while the head is in the block (225), moves no GRAM but the caller's",
     'primes_ledger.tolk::SyncLaunch': '§6 point 0 — re-sends LaunchOpen, idempotent',
     'primes_ledger.tolk::ClaimDividend': '§3.2 — pays the PRIME OWNER, not the caller',
     // Open in the strongest sense: it takes money IN and gives PRIMES back at a
@@ -154,7 +154,7 @@ const PERMISSIONLESS: Record<string, string> = {
     // strongest sense: it writes nothing, moves no money but the asker's own
     // gas back to the asker, and the echoed order is opaque here. The sink's
     // answering arm (`floor_quote`) is the one that is gated — on this ledger.
-    'primes_ledger.tolk::DonateFloor': 'D-91 point 4 — TON in, PRIMES to the sender; raises p_f for everyone',
+    'primes_ledger.tolk::DonateFloor': 'D-91 point 4 — GRAM in, PRIMES to the sender; raises p_f for everyone',
     'primes_ledger.tolk::RetryCredit': 'retry lane — re-sends a bounced credit to its rightful item',
     // D-52, and open in the same strong sense as `DonateFloor` above: the caller
     // names `to`, but `to` is ALSO the dictionary key, so a stranger can only replay
@@ -169,7 +169,7 @@ const PERMISSIONLESS: Record<string, string> = {
     // CHANGES NO RULE. A matured term cannot vote whether or not it has been
     // expired, because `position_vote` checks the position's own clock — so
     // this arm only makes two published aggregates agree with a timestamp that
-    // has already passed. It moves no LP, no PRIMES and no TON, it names no
+    // has already passed. It moves no LP, no PRIMES and no GRAM, it names no
     // destination, it cannot be aimed, and a second send returns rather than
     // decrementing twice.
     //
@@ -180,7 +180,7 @@ const PERMISSIONLESS: Record<string, string> = {
     // exists to prevent — `Flush`'s argument, with a smaller pot.
     'primes_lp_position.tolk::Expire': 'D-147 — retires a matured term’s vote weight from two published aggregates; moves nothing, changes no rule, idempotent',
     'primes_market.tolk::RetryPremiumForward': 'retry lane — re-sends stuck premium to the ratchet',
-    'primes_market.tolk::ParkLots': 'D-200 — folds resting descending rows into their parked bit; moves no TON but the caller’s own change, and the lot stays open at the same resting price',
+    'primes_market.tolk::ParkLots': 'D-200 — folds resting descending rows into their parked bit; moves no GRAM but the caller’s own change, and the lot stays open at the same resting price',
 
     // Timelocks. D-90 deletes `primes_market.tolk::Settle` — it was a relay to
     // the shard, and there is no shard and nothing to settle later. `Execute` is
@@ -274,7 +274,7 @@ describe('TON PRIMES — D1: every message arm is authorised or deliberately ope
         expect(rows.filter((r) => !r.authorised).length).toBeGreaterThan(0);
     });
 
-    it('no arm that moves protocol TON to a caller-named address is open', () => {
+    it('no arm that moves protocol GRAM to a caller-named address is open', () => {
         // D1 crossed with C9. The withdraw surface says where money can go; this
         // says who may ask. The dangerous combination is an OPEN arm that also
         // pays an address the message names — that is a withdraw path with extra

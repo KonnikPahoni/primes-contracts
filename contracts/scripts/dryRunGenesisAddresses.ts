@@ -1,7 +1,7 @@
 /**
  * TON PRIMES — genesis address dry run (GAUNTLET.md R17).
  *
- * A DeDust v2 pool for the PRIMES/TON pair needs the PRIMES jetton master's address to be
+ * A DeDust v2 pool for the PRIMES/GRAM pair needs the PRIMES jetton master's address to be
  * created, but the master is not deployed until step 3 of `deployAndWire`/`runGenesis` —
  * and that same run needs the pool's address at step 25b (`lpSink.set_wallet`,
  * `treasury.set_wallets`, D-100 point 4). Circular on any network where the pool cannot be
@@ -19,7 +19,7 @@
  * Usage:
  *   1. `npx blueprint build --all` (so build/*.compiled.json exist)
  *   2. `npx tsx scripts/dryRunGenesisAddresses.ts`
- *   3. Create the DeDust PRIMES/TON pool for the printed master address through the
+ *   3. Create the DeDust PRIMES/GRAM pool for the printed master address through the
  *      DeDust factory.
  *   4. Only then run genesis for real (`deployGenesis.ts`, blueprint or `--skew-safe`),
  *      pointing `PRIMES_DEDUST_POOL_ADDR` at the pool just created.
@@ -90,7 +90,7 @@ async function main() {
     console.log(`  testnet: ${masterAddress.toString({ testOnly: true })}`);
     console.log('');
     console.log(
-        'Create the DeDust PRIMES/TON pool against the address above BEFORE running genesis ' +
+        'Create the DeDust PRIMES/GRAM pool against the address above BEFORE running genesis ' +
             '(scripts/createDedustPool.ts).'
     );
 }

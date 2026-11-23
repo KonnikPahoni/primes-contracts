@@ -8,8 +8,8 @@ D-20 treats a prime as a head mint**, and D-20 deleted that. Under D-20:
     mints, primes 2 and 3 open in the market and **4** is the next number the
     head can build. A prime is never in the head's path and never stalls it.
   * every prime, from 2 onward, is bought from a `MODE_DUTCH_BUYNOW` lot whose
-    price decays from `P0(p)` to **exactly `MINT_PRICE` = 1 TON** over
-    `PRIME_DUTCH_SECONDS`, then rests on 1 TON forever. Buy-now, no expiry.
+    price decays from `P0(p)` to **exactly `MINT_PRICE` = 1 GRAM** over
+    `PRIME_DUTCH_SECONDS`, then rests on 1 GRAM forever. Buy-now, no expiry.
   * EVERY composite is auctioned on the **ascending** lane (D-30 dropped the
     `D(n) >= D_MIN` gate; there is no fee lane left), whose
     close **extends** on a late bid (D-8): a bid inside the final `N` minutes
@@ -18,7 +18,7 @@ D-20 treats a prime as a head mint**, and D-20 deleted that. Under D-20:
     produce an ascending lot that has no settlement event. This module models
     exactly that: `evaluate_lane` sends every prime to `dutch_outcome` and
     every composite to `ascending_outcome`, and there is no path between them.
-  * **D-7 premium routing:** the nominal 1 TON runs through the ordinary §4.1
+  * **D-7 premium routing:** the nominal 1 GRAM runs through the ordinary §4.1
     five-way split; 100% of the premium above it is credited to the ratchet as
     `pending`, with **no treasury cut**. `RES_GAS` is carved before the premium.
   * an **unsold** prime's tribute forfeits to the **treasury** (D-20 point 4),
@@ -90,8 +90,8 @@ the sweep does not agree with itself.**
   P6 · DUTCH MECHANICS — first arrival at or below the standing price takes it.
       Buyers arrive Poisson(LAMBDA_DUTCH per day) over an observation horizon.
       A buyer takes the lot the moment the standing price is at or below their
-      value. Price decays linearly from P0(p) to 1 TON over
-      PRIME_DUTCH_SECONDS and rests at 1 TON. "Unsold" means unsold **within
+      value. Price decays linearly from P0(p) to 1 GRAM over
+      PRIME_DUTCH_SECONDS and rests at 1 GRAM. "Unsold" means unsold **within
       the observation horizon**, which is a reporting window and not a claim
       that it is unsold forever — the lot has no expiry.
 
@@ -288,7 +288,7 @@ def plain_composite_value_ton(*, composite_accept_target: float = 0.90,
         P(u >= 1 - typical_composite_k * beta) = composite_accept_target
 
     That inversion **is** the statement "what is a plain composite worth to an
-    arriving buyer", stated in TON. So the anchor is `E[u]`, read off the same
+    arriving buyer", stated in GRAM. So the anchor is `E[u]`, read off the same
     calibration, and it inherits the sensitivity sweep `run_phase1.py` already
     publishes over `composite_accept_target` instead of needing a new one.
 
@@ -311,7 +311,7 @@ def plain_composite_value_ton(*, composite_accept_target: float = 0.90,
         "_source": (
             "engine.PrimeHeadParams / Engine.__init__'s private-valuation "
             "calibration. NOT a new assumption: this is the existing hand-set "
-            "one, read out in TON instead of left implicit."
+            "one, read out in GRAM instead of left implicit."
         ),
     }
 
@@ -540,7 +540,7 @@ class ObjectivePremises:
     #: public surface (§9.1). It is not derived and is not dressed as derived.
     participation_threshold: float = 0.50
     #: Constraint 2's operative cap under D-30: the largest MEAN `P0(n)` over
-    #: the composite line the price map may produce, in TON. `None` means
+    #: the composite line the price map may produce, in GRAM. `None` means
     #: unconstrained: the search that used to resolve it against the incumbent's
     #: own mean is deleted with the weight vector (D-99).
     #:
@@ -631,7 +631,7 @@ def evaluate_lane(census: dict, prime_npv: dict,
     auction lane, per unit of head progress. Head progress is measured in
     **composites**, because D-20 defines the head over composites and Unity: one
     unit of head progress is one composite built. Premium per lot is
-    `clearing - MINT_PRICE - RES_GAS`, floored at zero (D-7: the nominal 1 TON
+    `clearing - MINT_PRICE - RES_GAS`, floored at zero (D-7: the nominal 1 GRAM
     goes through the ordinary five-way split and `RES_GAS` is carved before the
     premium; there is no treasury cut on premium).
 
@@ -964,7 +964,7 @@ def unsold_prime_forfeit(*, npv_by_prime: dict, census: dict,
     """What §12's revenue risk is now accepted against.
 
     Two quantities, and they are different: the share of prime lots still
-    resting on their 1 TON floor at the end of the observation window, and the
+    resting on their 1 GRAM floor at the end of the observation window, and the
     **tribute those lots forfeit to the treasury while they sit** (D-20 point 4).
 
     Tribute accrual while unsold is priced off the prime's own `NPV(p)` — the

@@ -388,7 +388,7 @@ describe('TON PRIMES — venue timelock', () => {
         expect(retry.transactions).toHaveTransaction({ from: timelock.address, to: ratchet.address, success: true });
     });
 
-    it('retry_update_venue is caller-funded: under 0.03 TON throws 103, a funded repeat costs the timelock nothing', async () => {
+    it('retry_update_venue is caller-funded: under 0.03 GRAM throws 103, a funded repeat costs the timelock nothing', async () => {
         const eta = blockchain.now! + TIMELOCK_DELAY + 10;
         await timelock.sendQueue(proposer.getSender(), {
             dedustNativeVault: newVault.address,

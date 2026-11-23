@@ -2,12 +2,12 @@
  * The mint price and the fee margin — one definition, shared by the webapp, the
  * contract wrappers and any headless client (`AGENTS_PLAN.md` A1, D-131.3).
  *
- * `MINT_VALUE_NANOTON` is CONCEPT.md §4's flat all-in 1 TON, read from `params.json`
- * (CLAUDE.md rule 3) and converted EXACTLY: TON has 9 decimals, so a parameter with more
+ * `MINT_VALUE_NANOTON` is CONCEPT.md §4's flat all-in 1 GRAM, read from `params.json`
+ * (CLAUDE.md rule 3) and converted EXACTLY: GRAM has 9 decimals, so a parameter with more
  * precision cannot be sent on chain and is a parameter error, not something to round.
  *
  * `FEE_MARGIN_NANOTON`: the ledger asserts `in.valueCoins >= MINT_PRICE`, where
- * `in.valueCoins` is what arrives AFTER TON deducts the message's own forward fee —
+ * `in.valueCoins` is what arrives AFTER GRAM deducts the message's own forward fee —
  * sending exactly the nominal amount undershoots that check and the message reverts
  * (throw 103, confirmed live on testnet). Headroom is not refunded on a successful mint,
  * so this stays a small fixed margin.
@@ -42,21 +42,21 @@ export function isqrt(v: bigint): bigint {
   return x0;
 }
 
-/** `params.mint.mint_price_ton` — CONCEPT.md §4's flat all-in mint price, in TON. */
+/** `params.mint.mint_price_ton` — CONCEPT.md §4's flat all-in mint price, in GRAM. */
 export const MINT_PRICE_TON: number = params.mint.mint_price_ton;
 
 export function paramTonToNanoton(ton: number, key: string): bigint {
   const scaled = ton * Number(NANOTON_PER_TON);
   const rounded = Math.round(scaled);
   if (!Number.isFinite(scaled) || Math.abs(scaled - rounded) > 1e-6) {
-    throw new Error(`${key} = ${ton} TON is not representable in nanoton (9 decimals)`);
+    throw new Error(`${key} = ${ton} GRAM is not representable in nanoton (9 decimals)`);
   }
   return BigInt(rounded);
 }
 
 export const MINT_PRICE_NANOTON: bigint = paramTonToNanoton(MINT_PRICE_TON, "params.mint.mint_price_ton");
 export const MINT_VALUE_NANOTON = MINT_PRICE_NANOTON;
-export const FEE_MARGIN_NANOTON = 10000000n; // 0.01 TON
+export const FEE_MARGIN_NANOTON = 10000000n; // 0.01 GRAM
 
 /**
  * GAUNTLET X3 — what a storage top-up is worth, and why it is this figure and not a
@@ -77,4 +77,4 @@ export const FEE_MARGIN_NANOTON = 10000000n; // 0.01 TON
  *
  * Mirrors `primes_ledger.tolk`'s `ITEM_DEPLOY_VALUE`, pinned by `SimCrossCheck.spec.ts`'s constant sweep.
  */
-export const ITEM_DEPLOY_VALUE_NANOTON = 25000000n; // 0.025 TON
+export const ITEM_DEPLOY_VALUE_NANOTON = 25000000n; // 0.025 GRAM

@@ -26,7 +26,7 @@
 export type SwapSide = "buy" | "sell";
 
 export interface PoolState {
-  /** nanoTON in the pool (`get_reserves`). */
+  /** nanoGRAM in the pool (`get_reserves`). */
   reserveTonNanoton: bigint;
   /** nano-PRIMES in the pool (`get_reserves`). */
   reservePrimesNano: bigint;
@@ -48,7 +48,7 @@ export interface Quote {
   feeRaw: bigint;
   /** 0..1. The share of the price move that is the curve, not the fee. */
   priceImpact: number;
-  /** TON per PRIMES before the swap, and what this swap actually pays. */
+  /** GRAM per PRIMES before the swap, and what this swap actually pays. */
   midPriceTon: number;
   execPriceTon: number;
 }
@@ -85,7 +85,7 @@ export function quoteSwap(
   if (minOutRaw <= 0n) return null;
 
   const midPriceTon = Number(ton) / Number(primes);
-  // Always TON per PRIMES, whichever way the trade runs — the form compares it with the
+  // Always GRAM per PRIMES, whichever way the trade runs — the form compares it with the
   // spot above it and with `p_f`, and a price that flips its units between the two
   // directions would make that comparison a coin toss.
   const execPriceTon =
@@ -114,16 +114,16 @@ export function quoteSwap(
 // exactly as designed — the swap's AVERAGE execution price ran above `p_f`
 // even while the SPOT price sat well below it.
 //
-// Measured, testnet, 2026-09-19: pool 1.2826 TON / 479,142 PRIMES, spot 2.677
-// TON/1M PRIMES against a floor of 5.6875 — market a clear 2.1x below the
-// floor — and a 19.733 TON tranche demanded 3,469,538 PRIMES from a pool whose
+// Measured, testnet, 2026-09-19: pool 1.2826 GRAM / 479,142 PRIMES, spot 2.677
+// GRAM/1M PRIMES against a floor of 5.6875 — market a clear 2.1x below the
+// floor — and a 19.733 GRAM tranche demanded 3,469,538 PRIMES from a pool whose
 // ENTIRE PRIMES reserve was 479,142. Refused, correctly, and indistinguishable
 // on the dashboard from "the market is above the floor".
 //
 // No fixed ratio fixes this. 1/10, 1/20 and 1/50 of that same `pending` all
-// still bounce, 1/100 clears the curve but is then raised back to 5 TON by
+// still bounce, 1/100 clears the curve but is then raised back to 5 GRAM by
 // `FLUSH_MIN`, and whatever ratio is chosen breaks again as `pending` grows
-// (the sim has it reaching 210,833 TON). The tranche has to be sized against
+// (the sim has it reaching 210,833 GRAM). The tranche has to be sized against
 // the VENUE, which is what these two functions are for.
 //
 // `fillsAtFloor` is the predicate — the pool's arithmetic and the contract's,
@@ -257,7 +257,7 @@ export function maxInAtFloor(
  * because `a_max` is a function of the SPOT price and the spot moves with every trade. The
  * caller says how far below `p_f` the market is assumed to sit — `marketOverFloorBps`, where
  * 10,000 is exactly at the floor — and gets the reserves that make the tranche fill AT THAT
- * DISTANCE. There is no single "deep enough": a pool that serves a 5 TON flush at half the
+ * DISTANCE. There is no single "deep enough": a pool that serves a 5 GRAM flush at half the
  * floor is nowhere near serving one at 90% of it.
  *
  * Substituting `R_t = d·p_f·R_p` into
@@ -280,7 +280,7 @@ export function maxInAtFloor(
  * reach, not at the one they open it at.
  *
  * Returns the reserves as a PAIR, because both halves are the operator's own capital and
- * the TON side is the one that is usually binding.
+ * the GRAM side is the one that is usually binding.
  */
 export function minReservesForTranche(
   trancheNanoton: bigint,
@@ -311,7 +311,7 @@ export function minReservesForTranche(
   let rp = (numer + denom - 1n) / denom;
   if (rp <= 0n) return null;
 
-  // `R_t = d·p_f·R_p`, FLOORED — a smaller TON side is a cheaper market, so both roundings
+  // `R_t = d·p_f·R_p`, FLOORED — a smaller GRAM side is a cheaper market, so both roundings
   // push the answer to the side that fills.
   const rtOf = (primes: bigint) => (marketOverFloorBps * tCacheNanoton * primes) / (BPS * sCacheNanoPrimes);
 

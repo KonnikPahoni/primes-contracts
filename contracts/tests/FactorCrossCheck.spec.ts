@@ -1,6 +1,6 @@
 // TON PRIMES — §3.2's factor dictionary, pinned to ONE definition.
 //
-// A composite mints for 1 TON only if the minter submits its factorization, and
+// A composite mints for 1 GRAM only if the minter submits its factorization, and
 // `primes_ledger.tolk` parses that as `map<uint8, FactorEntry>` with
 // `{ primeNumber: uint256, exponent: uint8, s: uint128 }`, checking the submitted
 // `s = ⌊√p⌋` with two multiplies (`s² ≤ p < (s+1)²`, error 201) so it never has to
@@ -12,7 +12,7 @@
 // PrimesLedger.ts" — which is exactly the arrangement `InviteCrossCheck.spec.ts`
 // exists to forbid on the invite line, and for a sharper reason here: every
 // `pnpm test:contracts` proof about a factorization ran against the WRAPPER's
-// bytes while every real 1 TON mint spends through the WEBAPP's. A drifted field
+// bytes while every real 1 GRAM mint spends through the WEBAPP's. A drifted field
 // width ships green and reverts a player's mint.
 //
 // Both now import `shared/factors.ts`, and this file makes that binding
@@ -188,7 +188,7 @@ describe('TON PRIMES — the shared encoder mints on chain', () => {
     });
 
     it('a composite minted with shared/factors.ts bytes is ACCEPTED', async () => {
-        // 4 = 2², the first composite, at the head for 1 TON. The dictionary in
+        // 4 = 2², the first composite, at the head for 1 GRAM. The dictionary in
         // this body is built by the exact function the webapp calls.
         const r = await s.ledger.sendMint(s.alice.getSender(), {
             n: 4n,

@@ -45,7 +45,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 # --------------------------------------------------------------------------- #
-# Network prices. Not our choice -- TON basechain config.
+# Network prices. Not our choice -- GRAM basechain config.
 # --------------------------------------------------------------------------- #
 
 #: config 21, basechain. `gas_price` is scaled by 2**16. Read live from
@@ -55,8 +55,8 @@ FLAT_GAS_PRICE_NANOTON = 6667                 # per transaction, config 21
 NANOTON = 1e-9
 
 #: config 18, basechain. Both scaled by 2**16, charged per second.
-CELL_PRICE_PS_NANOTON = 500 / 65536  # ~= 0.007629 nanoTON / cell / second
-BIT_PRICE_PS_NANOTON = 1 / 65536     # ~= 1.526e-5 nanoTON / bit / second
+CELL_PRICE_PS_NANOTON = 500 / 65536  # ~= 0.007629 nanoGRAM / cell / second
+BIT_PRICE_PS_NANOTON = 1 / 65536     # ~= 1.526e-5 nanoGRAM / bit / second
 
 #: Cells charged rent per `owed` entry. One entry per *prime*, not per mint --
 #: SS3.4 puts `owed` on the items. NOT the storage analysis's figure: `storage.py`
@@ -73,7 +73,7 @@ HORIZON_MINTS = 10_000
 
 
 def gas_to_ton(gas_units: float, transactions: int = 1) -> float:
-    """Compute cost of `gas_units` spread over `transactions` messages, in TON."""
+    """Compute cost of `gas_units` spread over `transactions` messages, in GRAM."""
     return (
         gas_units * GAS_PRICE_NANOTON_PER_UNIT + transactions * FLAT_GAS_PRICE_NANOTON
     ) * NANOTON
@@ -107,7 +107,7 @@ class OpsReserve:
             "ops_reserve_derivation": {
                 "rule": (
                     "OPS_RESERVE = one HORIZON_MINTS of deferred draw, rounded up to "
-                    "the next whole TON. Deferred draw = reservation settlement gas + "
+                    "the next whole GRAM. Deferred draw = reservation settlement gas + "
                     "`owed` storage rent over the same horizon. (Amortized flush gas was "
                     "a third term until D-146: the caller of every permissionless ratchet "
                     "leg pays its own venue gas, so no flush is a deferred cost of a mint.)"
@@ -245,7 +245,7 @@ CLAIM_GAS_SUBSTITUTIONS: dict[str, str] = {}
 #: the source instead of papered over here — see `primes_market.tolk` closeLot.
 #: What is left once that source fix lands is the composite lane's open-time
 #: leak alone, measured at a live sandbox balance (not the arithmetic) by
-#: `PrimesMarket.spec.ts`'s V8 block: ~0.00625 TON per closed composite lot,
+#: `PrimesMarket.spec.ts`'s V8 block: ~0.00625 GRAM per closed composite lot,
 #: quantum-rounded up to 0.01 and added to the retained floor. Kept as a
 #: RETAINED figure rather than a new formula leg for the same reason as the
 #: original 0.06: real TVM forward-fee mechanics do not reduce cleanly to the
@@ -346,8 +346,8 @@ def res_gas_derivation(
             "rule": (
                 "D-90: RES_GAS = the settle hop that rides to the ledger with the "
                 "close + the TVM compute of the close/settle pair, rounded up to "
-                f"the next {quantum_ton} TON, and then FLOORED AT "
-                f"{RETAINED_RES_GAS_TON} TON (D-90.4, raised by D-113). It is "
+                f"the next {quantum_ton} GRAM, and then FLOORED AT "
+                f"{RETAINED_RES_GAS_TON} GRAM (D-90.4, raised by D-113). It is "
                 "CARVED FROM THE WINNING BID."
             ),
             "derived_res_gas_ton": round(derived, 9),
@@ -356,7 +356,7 @@ def res_gas_derivation(
             "_retained_note": (
                 "D-90.4 retains the pre-D-90 RES_GAS so no price moves. Instant "
                 "settlement is cheaper than the claim it replaced, so the fee now "
-                f"over-collects by {retained_headroom} TON per won lot. That is "
+                f"over-collects by {retained_headroom} GRAM per won lot. That is "
                 "published rather than banked: it is a real surplus and a "
                 "candidate for the next re-derivation, not a hidden margin. "
                 "Lowering it is a PRICE change (LOT_FLOOR = MINT_PRICE + RES_GAS) "
@@ -487,7 +487,7 @@ def trophy_auction_gas(gas_baseline: dict[str, int], *,
 
 #: DECISIONS.md D-117 -- the rounding step, OWNER-SET (2026-09-22): the gas & ops
 #: line is the measured worst case rounded UP to the next 5% of the mint. Declared,
-#: not fitted, like `OPS_RESERVE`'s whole TON. The owner chose the coarse step
+#: not fitted, like `OPS_RESERVE`'s whole GRAM. The owner chose the coarse step
 #: because the unspent line is swept back into the ratchet pool (D-117), so the
 #: extra headroom costs the pool nothing on net.
 GAS_OPS_LINE_STEP_PCT = 0.05
@@ -500,7 +500,7 @@ DEFAULT_GAS_BASELINE_PATH = Path(__file__).resolve().parents[2] / "contracts" / 
 
 
 def gas_ops_spend_rows(gas_baseline: dict[str, int]) -> dict[str, float]:
-    """The measured per-mint draw on the SS4.1 gas & ops line, TON, by row."""
+    """The measured per-mint draw on the SS4.1 gas & ops line, GRAM, by row."""
     rows = {
         k[len(GAS_OPS_SPEND_PREFIX):]: v * NANOTON
         for k, v in gas_baseline.items()
@@ -528,19 +528,19 @@ def gas_ops_line(gas_baseline: dict[str, int], *, mint_price_ton: float = 1.0) -
     fire every leg at once. The line is that worst row rounded UP to the next 5%
     step of the mint (`GAS_OPS_LINE_STEP_PCT`, owner-set). What an ordinary mint
     does not spend is swept back into the ratchet pool (`sweep_ops`, D-117), so
-    the line's size moves TON through the pool, not out of it.
+    the line's size moves GRAM through the pool, not out of it.
     """
     rows = gas_ops_spend_rows(gas_baseline)
     worst_row = max(rows, key=rows.get)
     worst_ton = rows[worst_row]
     if worst_ton > mint_price_ton:
         raise ValueError(
-            f"worst mint `{worst_row}` spends {worst_ton} TON, more than MINT_PRICE "
+            f"worst mint `{worst_row}` spends {worst_ton} GRAM, more than MINT_PRICE "
             f"{mint_price_ton}: no gas & ops line can cover it"
         )
-    # Ceil in whole nanoTON (the rows are integers there), not in float steps: a float
+    # Ceil in whole nanoGRAM (the rows are integers there), not in float steps: a float
     # ceil needs a round() to stop 0.15/0.05 = 2.9999999999999996 buying a whole extra
-    # step, and that round() then swallowed a worst case up to ~25 nanoTON ABOVE a step,
+    # step, and that round() then swallowed a worst case up to ~25 nanoGRAM ABOVE a step,
     # publishing a line smaller than the mint it is sized to cover.
     step_nano = round(GAS_OPS_LINE_STEP_PCT * mint_price_ton / NANOTON)
     steps = -(-round(worst_ton / NANOTON) // step_nano)
@@ -566,7 +566,7 @@ def gas_ops_line(gas_baseline: dict[str, int], *, mint_price_ton: float = 1.0) -
 
 
 def gas_ops_draw_default(kind: str) -> float:
-    """D-117: what an ORDINARY mint of `kind` really spends from the line, TON --
+    """D-117: what an ORDINARY mint of `kind` really spends from the line, GRAM --
     the measured `composite_w2` / `prime_purchase` rows. The rest of the line is
     swept back into the ratchet pool, emission-free, by `sweep_ops`."""
     rows = gas_ops_spend_rows(load_gas_baseline(DEFAULT_GAS_BASELINE_PATH))

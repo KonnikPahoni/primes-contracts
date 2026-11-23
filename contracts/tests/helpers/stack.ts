@@ -81,7 +81,7 @@ export async function compileAll() {
 export async function deployStack(opts?: {
     seedHead?: bigint;
     /**
-     * The `T` the genesis seed writes. Defaults to 1000 TON, which is what
+     * The `T` the genesis seed writes. Defaults to 1000 GRAM, which is what
      * every suite here wants: a floor that already exists. Pass `0n` to
      * reproduce the REAL pipeline (`genesisPipeline.ts`, D-46 point 2), which
      * seeds no backing at all — and note that `ignite` then REFUSES to launch

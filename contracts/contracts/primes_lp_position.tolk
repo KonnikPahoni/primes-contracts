@@ -14,7 +14,7 @@ tolk 1.4
 // positions — the same per-owner sharding `owed` uses (§3.2.1/§3.4).
 //
 // ITS ADDRESS IS ITS AUTHORITY, IN BOTH DIRECTIONS. The init data is
-// `(owner, treasuryAddr, empty positions, 0, 0, 0, empty votes, clockDivisor)`, so the address
+// `(owner, treasuryAddr, empty positions, 0, 0, 0, empty votes, 0, 0, clockDivisor)`, so the address
 // is a hash of (this code, this owner, that treasury). The treasury
 // authenticates every message from here by re-deriving `positionAddress(owner)`;
 // this contract authenticates the treasury by `treasuryAddr` and the owner by
@@ -24,7 +24,7 @@ tolk 1.4
 // ---------------------------------------------------------------------------
 // WHAT A POSITION IS, AND WHAT IT BUYS
 // ---------------------------------------------------------------------------
-// An amount of DeDust PRIMES/TON LP, a TIER (30 d / 3 m / 6 m / 1 y), and the
+// An amount of DeDust PRIMES/GRAM LP, a TIER (30 d / 3 m / 6 m / 1 y), and the
 // timestamp the term started. It matures at `lockedAt + tierTerm(tier)` and from
 // that instant is withdrawable in one message (D-147). While the term runs it
 // VOTES with `amount × voteMultiplier(tier)` — on proposals that opened after it
@@ -65,17 +65,29 @@ tolk 1.4
 // A SINK-FORWARD NEEDS NO MATURITY (D-100 point 4). Giving LP up to
 // `primes_lp_sink.tolk` forever is not the thing the term exists to slow down.
 //
+// LOCKED-FOREVER LP KEEPS A VOTE (D-214). When a sink-forward is confirmed the
+// position row is deleted and its amount is ADDED to one per-wallet total,
+// `foreverAmount`, which votes with `amount × VOTE_MULT_FOREVER` and never
+// matures. ONE TOTAL, NOT A ROW PER SINK: a thousand dust sinks are one field
+// written a thousand times, so this account grows by nothing. Every credit
+// restamps `foreverSince` to `now` — the whole total is NEW weight, so LP that
+// already voted on an open proposal as a term cannot vote on it again as
+// forever weight. It votes and proposes under the reserved id `FOREVER_ID`,
+// which no deposit can reach (ids count up from 0 and are never reused). Only
+// this round trip credits it: LP sent to the sink any other way — the genesis
+// seed included — carries no vote.
+//
 // ---------------------------------------------------------------------------
 // THE LP MOVE, AND THE ONE FLAG THAT MAKES IT SAFE
 // ---------------------------------------------------------------------------
 // A withdrawal or sink-forward is a round trip: owner → here (validate, set
-// `inFlight = 1`) → treasury (send the LP, reply `confirm_withdraw`) → here
+// `inFlight = 1`, 2 for a sink) → treasury (send the LP, reply `confirm_withdraw`) → here
 // (delete). `inFlight` stops a second move of the same position before the first
 // reply lands. A bounced forward clears it (nothing moved); a bounced LP transfer
 // comes back as `restore_position` — MATURED and EXPIRED, because its vote weight
 // already left `eligibleWeight` — and the owner retries.
 //
-// NO ADMIN SURFACE. This contract holds a RECORD — never LP, PRIMES or TON beyond
+// NO ADMIN SURFACE. This contract holds a RECORD — never LP, PRIMES or GRAM beyond
 // its own rent. The only destinations any of its messages can cause are the
 // owner's own address and the LP sink, and neither is a field the owner supplies.
 // ============================================================================
@@ -84,13 +96,13 @@ tolk 1.4
 // Gas
 // ---------------------------------------------------------------------------
 
-// 0.05 TON: this contract's own handling of an owner message.
+// 0.05 GRAM: this contract's own handling of an owner message.
 const POSITION_GAS: coins = 50000000;
 // MIRRORED from primes_treasury.tolk's `TREASURY_MIN_FORWARD` (= its
 // `TRANSFER_GAS + CHILD_GAS`): what the treasury asserts has ARRIVED for a move.
 const TREASURY_MIN_FORWARD: coins = 150000000;
 // The nominal figure an owner must forward. A real sender adds a margin.
-const POSITION_MIN_FORWARD: coins = POSITION_GAS + TREASURY_MIN_FORWARD;  // 0.20 TON
+const POSITION_MIN_FORWARD: coins = POSITION_GAS + TREASURY_MIN_FORWARD;  // 0.20 GRAM
 
 // ---------------------------------------------------------------------------
 // The tier ladders — MIRRORED from primes_treasury.tolk
@@ -116,6 +128,12 @@ const TIER_TERM_3: int = 31536000;
 // the treasury refuses a vote whose proposal closes after the record lapses, so a
 // copy that drifted SHORT fails closed (votes refused), never open.
 const VOTE_DURATION: int = 86400;
+
+// D-214: `treasury.forever_vote_multiplier`, MIRRORED from primes_treasury.tolk's
+// `VOTE_MULT_FOREVER` (SimCrossCheck binds both). Not a tier: it has no term.
+const VOTE_MULT_FOREVER: int = 100;
+// The id the forever total votes and proposes under. Never a position.
+const FOREVER_ID: int = 0xFFFFFFFF;
 
 fun voteMultiplier(tier: int): int {
     if (tier == 0) { return VOTE_MULT_0; }
@@ -152,7 +170,8 @@ struct Position {
     // extends the term and keeps it, so extending mid-vote never costs the voter
     // the proposal; every other relock restamps it to `now`.
     weightSince: uint40
-    // 1 while an LP move is in flight to the treasury.
+    // 1 while a withdrawal is in flight to the treasury, 2 while a sink-forward
+    // is (D-214: the confirm credits `foreverAmount` only for a 2). 0 otherwise.
     inFlight: uint8
     // 1 once this position's vote weight has left BOTH aggregates — by `Expire`,
     // or because a bounced move restored it without it. Not the vote rule (the
@@ -175,6 +194,10 @@ struct Storage {
     // forgotten (`now + voteDuration` when the vote was cast). See the header;
     // bounded by the votes this owner cast in the last `voteDuration`.
     voted: map<uint64, uint40>
+    // D-214. Σ the LP this wallet locked forever through its own positions, and
+    // the instant it last grew — the `weightSince` its votes carry.
+    foreverAmount: coins
+    foreverSince: uint40
     // D-139 — the treasury's clock divisor, inherited. LAST, because this cell IS
     // this contract's address.
     clockDivisor: uint16
@@ -213,6 +236,9 @@ struct (0x96000013) RestorePosition {
     positionId: uint32
     amount: coins
     tier: uint8
+    // D-214: 1 when the bounced move was a sink-forward, whose confirm already
+    // credited `foreverAmount` — the restore takes that credit back.
+    fromSink: uint8
 }
 
 // Inbound, from the OWNER only — except `Expire`, which is from ANYONE.
@@ -321,11 +347,18 @@ fun maturesAt(pos: Position, divisor: int): int {
 // term runs, nothing from the instant it matures — computed from the position,
 // never read off an aggregate that catches up only when somebody sends `Expire`.
 fun liveVoteWeight(storage: Storage, positionId: uint32): int {
+    if (positionId == FOREVER_ID) { return storage.foreverAmount * VOTE_MULT_FOREVER; }
     val look = storage.positions.get(positionId);
     if (!look.isFound) { return 0; }
     val pos = look.loadValue();
     if (blockchain.now() >= maturesAt(pos, storage.clockDiv())) { return 0; }
     return pos.amount * voteMultiplier(pos.tier);
+}
+
+// The `weightSince` a vote from `positionId` carries.
+fun weightSinceOf(storage: Storage, positionId: uint32): int {
+    if (positionId == FOREVER_ID) { return storage.foreverSince; }
+    return storage.positions.get(positionId).loadValue().weightSince;
 }
 
 fun dropVote(mutate storage: Storage, pos: Position) {
@@ -406,7 +439,15 @@ fun onInternalMessage(in: InMessage) {
             assert (in.senderAddress == storage.treasuryAddr) throw 100; // wrong_sender
             val look = storage.positions.get(msg.positionId);
             if (!look.isFound) { return; }
-            dropVote(mutate storage, look.loadValue());
+            val gone = look.loadValue();
+            dropVote(mutate storage, gone);
+            if (gone.inFlight == 2) {
+                // D-214: the LP is in the sink now, and its vote moves to the total.
+                storage.foreverAmount += gone.amount;
+                storage.foreverSince = blockchain.now() as uint40;
+                storage.voteWeight = (storage.voteWeight
+                    + gone.amount * VOTE_MULT_FOREVER) as uint120;
+            }
             storage.positions.delete(msg.positionId);
             storage.positionCount -= 1;
             storage.save();
@@ -416,6 +457,14 @@ fun onInternalMessage(in: InMessage) {
             assert (in.senderAddress == storage.treasuryAddr) throw 100; // wrong_sender
             // Idempotent against a second bounce for the same id.
             if (storage.positions.get(msg.positionId).isFound) { return; }
+            if (msg.fromSink == 1) {
+                // D-214: the LP never reached the sink, so the forever credit the
+                // confirm made is taken back — once, behind the idempotency return.
+                storage.foreverAmount = (storage.foreverAmount > msg.amount
+                    ? storage.foreverAmount - msg.amount : 0) as coins;
+                val v = msg.amount * VOTE_MULT_FOREVER;
+                storage.voteWeight = (storage.voteWeight > v ? storage.voteWeight - v : 0) as uint120;
+            }
             // Back MATURED (`lockedAt = 1`, 1970, so every term is served and the
             // owner can retry at once) and EXPIRED: its vote weight left the
             // treasury's `eligibleWeight` on the way out and is not put back, so
@@ -461,7 +510,7 @@ fun onInternalMessage(in: InMessage) {
             assert (in.senderAddress == storage.owner) throw 1164;      // position_not_owner
             var pos = ownedIdle(storage, in.valueCoins, msg.positionId);
             // NO MATURITY GATE (D-100 point 4).
-            pos.inFlight = 1;
+            pos.inFlight = 2;
             storage.positions.set(msg.positionId, pos);
             storage.save();
             forwardToTreasury(storage.treasuryAddr, (WithdrawLp {
@@ -495,7 +544,7 @@ fun onInternalMessage(in: InMessage) {
                 weight: w as uint128,
                 support: msg.support,
                 positionId: msg.positionId,
-                weightSince: storage.positions.get(msg.positionId).loadValue().weightSince,
+                weightSince: weightSinceOf(storage, msg.positionId) as uint40,
                 recordUntil: until as uint40,
             }).toCell());
         }
@@ -568,7 +617,7 @@ fun onInternalMessage(in: InMessage) {
             // electorate the 1% opening bar is measured against would ratchet toward 0
             // (2026-11-08 audit). A refused withdraw restores the position with
             // `inFlight == 0`, and the next poke expires it then.
-            if (pos.inFlight == 1) { return; }
+            if (pos.inFlight != 0) { return; }
             assert (blockchain.now() >= maturesAt(pos, storage.clockDiv()))
                 throw 1166;                                             // position_term_running
             dropVote(mutate storage, pos);
@@ -585,7 +634,7 @@ fun onInternalMessage(in: InMessage) {
         }
 
         else => {
-            // Plain TON top-ups (rent) are accepted. Nothing else is.
+            // Plain GRAM top-ups (rent) are accepted. Nothing else is.
             assert (in.body.isEmpty()) throw 101; // wrong_opcode
         }
     }
@@ -650,6 +699,15 @@ get fun getPosition(positionId: int): (int, int, int, int, int, int, int) {
             maturesAt(p, storage.clockDiv()), p.weightSince);
 }
 
+// D-214. (amount, since, multiplier): the LP this wallet locked forever, the
+// instant that total last grew (a vote counts only on proposals opened after
+// it), and the multiplier it votes with — weight = amount × multiplier, cast
+// under `FOREVER_ID`.
+get fun getForever(): (int, int, int) {
+    val storage = lazy Storage.load();
+    return (storage.foreverAmount, storage.foreverSince, VOTE_MULT_FOREVER);
+}
+
 // D-188 point 7. 1 while this position holds a vote record on proposal `seq` —
 // from the vote until the proposal has certainly closed; 0 before, and again
 // once the record is pruned. The treasury no longer knows who voted.
@@ -699,7 +757,7 @@ get fun getTierTerms(): (int, int, int, int) {
     return (TIER_TERM_0 / d, TIER_TERM_1 / d, TIER_TERM_2 / d, TIER_TERM_3 / d);
 }
 
-// The nominal TON an owner message must forward: this hop plus the treasury's.
+// The nominal GRAM an owner message must forward: this hop plus the treasury's.
 get fun getPositionMinForward(): int {
     return POSITION_MIN_FORWARD;
 }

@@ -7,7 +7,7 @@
 // A mint fans out: the ledger credits one `credit_tribute` per DISTINCT prime
 // factor, pays the treasury, hops to the ratchet, hops to the registrar on a
 // prime, deploys the item and mints the rebate. Each leg carries its own fixed
-// gas budget out of §4.1's 0.10 TON gas-&-ops line. If the fan-out outgrew that
+// gas budget out of §4.1's 0.10 GRAM gas-&-ops line. If the fan-out outgrew that
 // budget, the mint itself would still succeed — the ledger's own compute phase
 // is cheap — and some downstream legs would simply never be delivered. **The
 // symptom is a missing credit, not a thrown error.** So the assertion here is
@@ -317,7 +317,7 @@ describe('TON PRIMES — D6: the tribute fan-out lands whole, at every ω the la
         it(`ω = ${k}: every one of the ${k} tribute legs is delivered, none lost to gas`, async () => {
             const m = await measure(k);
             results.push(m);
-            // THE PROPERTY. The divisor half is 0.08 TON; every nanoton of it
+            // THE PROPERTY. The divisor half is 0.08 GRAM; every nanoton of it
             // must have reached an item or the treasury. A leg dropped for want
             // of gas would show up as a shortfall here while the mint itself
             // still reported success.

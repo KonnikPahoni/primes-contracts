@@ -185,7 +185,7 @@ describe('TON PRIMES — D7: every outbound send has a failure path, and the gap
 
     it('the value-bearing NoBounce sends are payments to possibly-dormant wallets, by design', () => {
         // NoBounce is the right choice when the destination may not exist yet:
-        // TON credited to an uninitialised address accumulates as its balance
+        // GRAM credited to an uninitialised address accumulates as its balance
         // rather than vanishing. The split's outward legs are exactly that case
         // — a treasury, a referral item's owner, an operator wallet that may
         // never have transacted. Spot-checked on the ledger, where the choice is
@@ -207,7 +207,7 @@ describe('V1 (gauntlet, 2026-09-09): a bounced MintItem touches `head` on no pat
     // The collection is deliberately WIRED WRONG — left unwired, its placeholder
     // ledger the deployer rather than the real ledger's address, so the collection's own
     // `sender == ledgerAddr` check (primes_collection.tolk) rejects every
-    // `MintItem` the ledger sends it, and TON bounces each one back (RichBounce)
+    // `MintItem` the ledger sends it, and GRAM bounces each one back (RichBounce)
     // as a genuine, TVM-produced bounce — not a hand-forged message. That
     // misconfiguration is a "genuinely bounced" technique applied to a fresh
     // stack rather than an existing suite's.
@@ -472,7 +472,7 @@ describe('V1 (gauntlet, 2026-09-09): a bounced MintItem touches `head` on no pat
         expect(r.transactions).not.toHaveTransaction({ from: ledger.address, to: treasuryWallet.address });
         expect(r.transactions).not.toHaveTransaction({ on: ledger.address, aborted: true });
         expect(r.transactions).not.toHaveTransaction({ on: collection.address, aborted: true });
-        // The collection holds none of the bounced mint TON (storage rent aside).
+        // The collection holds none of the bounced mint GRAM (storage rent aside).
         const collectionAfter = (await blockchain.getContract(collection.address)).balance;
         expect(collectionAfter).toBeLessThanOrEqual(collectionBefore);
         expect(collectionBefore - collectionAfter).toBeLessThan(toNano('0.0001'));
@@ -508,7 +508,7 @@ describe('V1 (gauntlet, 2026-09-09): a bounced MintItem touches `head` on no pat
 
     // V24 follow-up: a retry that bounces again must cost the ledger nothing. Its fee
     // legs (the forward to the collection, the collection's refusal, the bounce home)
-    // come out of TON the ledger then re-declares in full as `unroutedHeld`, so
+    // come out of GRAM the ledger then re-declares in full as `unroutedHeld`, so
     // anything the caller does not cover is a draw on the ledger's own balance.
     it('V24: a retry_item that bounces again costs the ledger nothing, round after round', async () => {
         await igniteAndExpectBounce();
@@ -706,7 +706,7 @@ function sendMintWonLot(
 // REAL ledger refusing. `PrimesMarket.spec.ts` V9 explains why a wired stack has no
 // natural refusal on this hop; so the close runs one transaction at a time
 // (`sendMessageIter`, its own queue), the market's real settle message is taken
-// off it, and delivered to the real ledger 1 nanoTON under MINT_PRICE — the
+// off it, and delivered to the real ledger 1 nanoGRAM under MINT_PRICE — the
 // ledger's own `insufficient_value` (103) refuses it, TVM builds the rich bounce
 // from the market's own RichBounce flags, and the market's real handler runs.
 // ---------------------------------------------------------------------------

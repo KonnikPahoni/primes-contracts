@@ -1,4 +1,4 @@
-// TON PRIMES — §4.1's invite line, pinned to ONE definition (DECISIONS.md D-202).
+// TON PRIMES — §4.1's invite line, pinned to ONE definition (DECISIONS.md D-202, D-215).
 //
 // The ledger writes the invite comment itself (`inviteComment(n)` in
 // `primes_ledger.tolk`) and `shared/invites.ts` restates it for the app and the
@@ -21,17 +21,22 @@ describe('TON PRIMES — the invite line has exactly one definition (D-202)', ()
         expect(wrapper.inviteAddressDict).toBe(sharedInvites.inviteAddressDict);
         expect(wrapper.inviteCommentText).toBe(sharedInvites.inviteCommentText);
         expect(wrapper.inviteCommentCell).toBe(sharedInvites.inviteCommentCell);
+        expect(wrapper.setInviteTermsBody).toBe(sharedInvites.setInviteTermsBody);
     });
 
-    it('the two owner-set terms match the contract literals', () => {
-        const max = src.match(/^const\s+INVITE_MAX_COUNT\s*:\s*int\s*=\s*(\d+)\s*;/m);
-        const value = src.match(/^const\s+INVITE_TRANSFER_VALUE\s*:\s*coins\s*=\s*(\d+)\s*;/m);
-        expect(max).not.toBeNull();
-        expect(value).not.toBeNull();
-        expect(Number(max![1])).toBe(sharedInvites.INVITE_MAX_COUNT);
-        expect(BigInt(value![1])).toBe(sharedInvites.INVITE_TRANSFER_VALUE_NANOTON);
-        // `inviteCount: uint3` is the field the max is checked against; 3 fits, 4..7 are refused (221).
-        expect(/inviteCount:\s*uint3/.test(src)).toBe(true);
+    it('the three fixed bounds match the contract literals (D-215)', () => {
+        const lit = (name: string, type: string) => src.match(new RegExp(`^const\\s+${name}\\s*:\\s*${type}\\s*=\\s*(\\d+)\\s*;`, 'm'));
+        const ceiling = lit('INVITE_COUNT_CEILING', 'int');
+        const cap = lit('INVITE_LINE_CAP', 'coins');
+        const fee = lit('INVITE_SEND_FEE', 'coins');
+        expect(Number(ceiling![1])).toBe(sharedInvites.INVITE_COUNT_CEILING);
+        expect(BigInt(cap![1])).toBe(sharedInvites.INVITE_LINE_CAP_NANOTON);
+        expect(BigInt(fee![1])).toBe(sharedInvites.INVITE_SEND_FEE_NANOTON);
+        // `inviteCount: uint7` holds the ceiling (100); the live count is checked against it (221).
+        expect(/inviteCount:\s*uint7/.test(src)).toBe(true);
+        expect(sharedInvites.INVITE_COUNT_CEILING).toBeLessThan(128);
+        // The genesis terms the wrapper deploys pass the ledger's own bound check (238).
+        expect(sharedInvites.inviteTermsValid(sharedInvites.INVITE_GENESIS_COUNT, sharedInvites.INVITE_GENESIS_VALUE_NANOTON)).toBe(true);
     });
 
     it('the comment text is the words, then the Tolk literals around n, byte for byte (D-211)', () => {

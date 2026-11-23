@@ -10,7 +10,7 @@ PRIMES has that structure whether or not it was designed in:
     coupling = B raises prime rank and opens PRIME_WINDOW, both of which uplift
                `k_max` on subsequent plays of A (SS4.7.1, SS5)
 
-So the question "is there a schedule of minting that extracts more TON from the
+So the question "is there a schedule of minting that extracts more GRAM from the
 ratchet than it puts in?" is not answered by the clamp alone, and this script
 answers it by solving the chain rather than by argument. See
 `primes_sim/parrondo.py` for the model, and in particular for the six places it
@@ -21,7 +21,7 @@ already in `shared/params.json`; if it ever needs to *choose* a number, somethin
 has been designed by accident. Output goes to `sim/output/parrondo.json`.
 
 The kill criterion is a single bit: `exploit_found`. Any policy that returns more
-TON than it spends -- at any n, any beta row, any rank grant -- falsifies SS5's
+GRAM than it spends -- at any n, any beta row, any rank grant -- falsifies SS5's
 central claim and this script exits non-zero.
 
 Usage (from /sim):
@@ -52,7 +52,7 @@ def main(horizon: int = DEFAULT_HORIZON) -> bool:
     print("Parrondo search  (CONCEPT.md SS5 / SS5.1 / SS4.7.1)")
     print("=" * 78)
     print(
-        "Measuring EMISSION-ONLY return: rebate value at the floor, per TON spent.\n"
+        "Measuring EMISSION-ONLY return: rebate value at the floor, per GRAM spent.\n"
         "Tribute, dividends, referral income and the NFT are excluded on purpose --\n"
         "this is the ratchet's exposure, not whether the game is worth playing.\n"
     )
@@ -69,26 +69,26 @@ def main(horizon: int = DEFAULT_HORIZON) -> bool:
         b = pa.asymptotic_bound(m)
         print(f"  n = {n:>9,}   k_max fully stacked = {b['k_max_fully_stacked']:.4f}"
               f"{'  (clamped at K_CEIL)' if b['clamped_at_K_CEIL'] else ''}"
-              f"   return/TON at beta ceiling = {b['return_per_ton_at_beta_ceiling']:.4f}")
+              f"   return/GRAM at beta ceiling = {b['return_per_ton_at_beta_ceiling']:.4f}")
     print(f"  K_CEIL = {params['rebate']['K_CEIL']}, beta ceiling = {bound['beta_ceiling_in_split']}\n")
 
     print("-- the finite-horizon search (grinding cost paid, not amortised away) --")
     w = report["worst_case"]
-    print(f"  closest any policy gets to break-even: {w['mixed_return_per_ton']:.6f} TON per TON")
+    print(f"  closest any policy gets to break-even: {w['mixed_return_per_ton']:.6f} GRAM per GRAM")
     print(f"    at n = {w['n']:,}, beta row = {w['beta_row']}, recruit rank granted = {w['recruit_rank_granted']}")
-    print(f"    margin to break-even: {w['margin_to_break_even']:.6f} TON per TON\n")
+    print(f"    margin to break-even: {w['margin_to_break_even']:.6f} GRAM per GRAM\n")
 
     ss = max((s for s in report["scenarios"] if s["beta_row"] == "self_sender_referred"),
              key=lambda s: s["mixed_return_per_ton"])
     print("-- the self-sender (self-referral + 3 invites to itself, cash recovered "
           f"{pa.BETA_ROWS[0][2]:.2f} at beta {pa.BETA_ROWS[0][1]:.2f}) --")
-    print(f"  best return: {ss['mixed_return_per_ton']:.6f} TON per TON "
+    print(f"  best return: {ss['mixed_return_per_ton']:.6f} GRAM per GRAM "
           f"at n = {ss['n']:,}, recruit rank granted = {ss['recruit_rank_granted']}\n")
 
     print("-- the Parrondo signature (mixing beats BOTH pure games) --")
     s = report["widest_signature"]
     print(f"  present in {report['parrondo_signature_count']} of {report['scenario_count']} scenarios")
-    print(f"  widest gain: +{s['signature_gain']:.6f} TON per TON "
+    print(f"  widest gain: +{s['signature_gain']:.6f} GRAM per GRAM "
           f"({s['best_pure_return_per_ton']:.4f} pure -> {s['mixed_return_per_ton']:.4f} mixed)")
     print(f"    at n = {s['n']:,}, beta row = {s['beta_row']}, recruit rank granted = {s['recruit_rank_granted']}")
     print(

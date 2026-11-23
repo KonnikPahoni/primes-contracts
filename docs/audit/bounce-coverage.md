@@ -21,7 +21,7 @@ handle, and a NoBounce carrying state the sender would need to reverse. The firs
 is mechanical and detected here; the second is a judgement call, enumerated in
 `BounceCoverage.spec.ts`.
 
-**Totals:** 104 outbound sends · 39 RichBounce · 65 NoBounce · 15 contracts whose bounce handler does real work.
+**Totals:** 105 outbound sends · 39 RichBounce · 66 NoBounce · 15 contracts whose bounce handler does real work.
 
 ## RichBounce sends — these can come back
 
@@ -34,35 +34,35 @@ is mechanical and detected here; the second is a judgement call, enumerated in
 | `primes_jetton_master.tolk` | 162 | `deployAndCredit` | `InternalTransfer` | `ton("0.010") + forwardTonAmount` | dispatches 1 (0x178d4519) |
 | `primes_jetton_wallet.tolk` | 253 | `onInternalMessage` | `InternalTransfer` | `0` | dispatches 2 (0x178d4519, 0x7bdd97de) |
 | `primes_jetton_wallet.tolk` | 280 | `onInternalMessage` | `BurnNotification` | `0` | dispatches 2 (0x178d4519, 0x7bdd97de) |
-| `primes_ledger.tolk` | 2799 | `handleRetryItem` | `(unknown)` | `item.mintValue + held` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 3363 | `handleClaimDividend` | `CreditDividend` | `0` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 3420 | `handleRetryCredit` | `CreditTribute` | `CREDIT_TRIBUTE_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 3455 | `handleRetryMint` | `JettonMint` | `DONATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 3533 | `handleIgnite` | `MintItem` | `ITEM_DEPLOY_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 3900 | `handleDonateFloor` | `JettonMint` | `DONATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 4090 | `handleFlushUnsold` | `LotBlockBookmarks` | `LOT_BLOCK_BOOKMARKS_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 4116 | `handleLotBlockBookmark` | `CreditDividend` | `CLAIM_DIVIDEND_MIN_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 4144 | `handleImportLotBlock` | `LotBlockImport` | `0` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 4637 | `payHeldSplit` | `CreditTribute` | `CREDIT_TRIBUTE_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 4657 | `payHeldSplit` | `ForwardToOwner` | `REFERRAL_AMOUNT` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 5390 | `executeMint` | `MintItem` | `itemValue + heldSplitValue` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 5411 | `executeMint` | `JettonMint` | `REBATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_lp_position.tolk` | 356 | `forwardToTreasury` | `(unknown)` | `0` | single-message |
+| `primes_ledger.tolk` | 2836 | `handleRetryItem` | `(unknown)` | `item.mintValue + held` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 3400 | `handleClaimDividend` | `CreditDividend` | `0` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 3457 | `handleRetryCredit` | `CreditTribute` | `CREDIT_TRIBUTE_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 3492 | `handleRetryMint` | `JettonMint` | `DONATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 3570 | `handleIgnite` | `MintItem` | `ITEM_DEPLOY_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 3937 | `handleDonateFloor` | `JettonMint` | `DONATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 4132 | `handleFlushUnsold` | `LotBlockBookmarks` | `LOT_BLOCK_BOOKMARKS_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 4158 | `handleLotBlockBookmark` | `CreditDividend` | `CLAIM_DIVIDEND_MIN_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 4186 | `handleImportLotBlock` | `LotBlockImport` | `0` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 4687 | `payHeldSplit` | `CreditTribute` | `CREDIT_TRIBUTE_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 4707 | `payHeldSplit` | `ForwardToOwner` | `REFERRAL_AMOUNT` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 5440 | `executeMint` | `MintItem` | `itemValue + heldSplitValue` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 5461 | `executeMint` | `JettonMint` | `REBATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_lp_position.tolk` | 389 | `forwardToTreasury` | `(unknown)` | `0` | single-message |
 | `primes_market.tolk` | 2165 | `closeLot` | `SettlePrimeClearing` | `MINT_PRICE + SETTLE_GAS` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
 | `primes_market.tolk` | 2183 | `closeLot` | `MintWonLot` | `MINT_PRICE + SETTLE_GAS` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
 | `primes_market.tolk` | 2690 | `onInternalMessage` | `ClearingCleared` | `returned` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
 | `primes_market.tolk` | 2756 | `onInternalMessage` | `ClearingCleared` | `premium + PREMIUM_HOP_GAS` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
 | `primes_minter_card.tolk` | 236 | `onInternalMessage` | `CardMint` | `0` | single-message |
-| `primes_ratchet.tolk` | 935 | `sendTstonWithdraw` | `JettonBurn` | `TSTON_EXIT_GAS` | dispatches 4 (DEDUST_SWAP_OP, TONSTAKERS_DEPOSIT_OP, TSTON_BURN_OP, TEP74_TRANSFER_OP) |
-| `primes_ratchet.tolk` | 975 | `sendTstonTransfer` | `(unknown)` | `value` | dispatches 4 (DEDUST_SWAP_OP, TONSTAKERS_DEPOSIT_OP, TSTON_BURN_OP, TEP74_TRANSFER_OP) |
-| `primes_ratchet.tolk` | 1859 | `handleStake` | `TonstakersDeposit` | `amount + TONSTAKERS_DEPOSIT_FEE + STAKE_GAS` | dispatches 4 (DEDUST_SWAP_OP, TONSTAKERS_DEPOSIT_OP, TSTON_BURN_OP, TEP74_TRANSFER_OP) |
-| `primes_ratchet.tolk` | 2324 | `handleFlush` | `(inline)` | `amount + DEDUST_SWAP_GAS` | dispatches 4 (DEDUST_SWAP_OP, TONSTAKERS_DEPOSIT_OP, TSTON_BURN_OP, TEP74_TRANSFER_OP) |
+| `primes_ratchet.tolk` | 964 | `sendTstonWithdraw` | `JettonBurn` | `TSTON_EXIT_GAS` | dispatches 4 (DEDUST_SWAP_OP, TONSTAKERS_DEPOSIT_OP, TSTON_BURN_OP, TEP74_TRANSFER_OP) |
+| `primes_ratchet.tolk` | 1004 | `sendTstonTransfer` | `(unknown)` | `value` | dispatches 4 (DEDUST_SWAP_OP, TONSTAKERS_DEPOSIT_OP, TSTON_BURN_OP, TEP74_TRANSFER_OP) |
+| `primes_ratchet.tolk` | 1891 | `handleStake` | `TonstakersDeposit` | `amount + TONSTAKERS_DEPOSIT_FEE + STAKE_CREDIT_MARGIN` | dispatches 4 (DEDUST_SWAP_OP, TONSTAKERS_DEPOSIT_OP, TSTON_BURN_OP, TEP74_TRANSFER_OP) |
+| `primes_ratchet.tolk` | 2388 | `handleFlush` | `(inline)` | `amount + DEDUST_SWAP_GAS` | dispatches 4 (DEDUST_SWAP_OP, TONSTAKERS_DEPOSIT_OP, TSTON_BURN_OP, TEP74_TRANSFER_OP) |
 | `primes_stake.tolk` | 439 | `sendJetton` | `JettonTransfer` | `TRANSFER_GAS` | single-message |
 | `primes_stake_position.tolk` | 229 | `forwardSettle` | `Settle` | `0` | single-message |
-| `primes_treasury.tolk` | 672 | `sendJetton` | `JettonTransfer` | `gas` | dispatches 2 (0x96000014, 0xa0000006) |
-| `primes_treasury.tolk` | 1001 | `onInternalMessage` | `ConfirmVenue` | `0` | dispatches 2 (0x96000014, 0xa0000006) |
-| `primes_treasury.tolk` | 1064 | `onInternalMessage` | `TonPayout` | `prop.amount` | dispatches 2 (0x96000014, 0xa0000006) |
-| `primes_treasury.tolk` | 1116 | `onInternalMessage` | `JettonTransfer` | `0` | dispatches 2 (0x96000014, 0xa0000006) |
+| `primes_treasury.tolk` | 682 | `sendJetton` | `JettonTransfer` | `gas` | dispatches 2 (0x96000014, 0xa0000006) |
+| `primes_treasury.tolk` | 1015 | `onInternalMessage` | `ConfirmVenue` | `0` | dispatches 2 (0x96000014, 0xa0000006) |
+| `primes_treasury.tolk` | 1078 | `onInternalMessage` | `TonPayout` | `prop.amount` | dispatches 2 (0x96000014, 0xa0000006) |
+| `primes_treasury.tolk` | 1130 | `onInternalMessage` | `JettonTransfer` | `0` | dispatches 2 (0x96000014, 0xa0000006) |
 | `primes_venue_timelock.tolk` | 258 | `sendUpdateVenue` | `UpdateVenue` | `value` | **empty** |
 | `primes_vesting.tolk` | 246 | `onInternalMessage` | `JettonTransfer` | `TRANSFER_GAS + NOTIFY_GAS` | dispatches 1 (0x0f8a7ea5) |
 | `primes_voucher.tolk` | 360 | `onInternalMessage` | `PayProgramBounty` | `0` | single-message |
@@ -92,28 +92,28 @@ is mechanical and detected here; the second is a judgement call, enumerated in
 | `primes_jetton_master.tolk` | 275 | `onInternalMessage` | `TakeWalletAddress` | `0` |
 | `primes_jetton_wallet.tolk` | 196 | `onInternalMessage` | `TransferNotification` | `msg.forwardTonAmount` |
 | `primes_jetton_wallet.tolk` | 219 | `onInternalMessage` | `Excesses` | `0` |
-| `primes_ledger.tolk` | 3274 | `refund` | `(inline)` | `amount` |
-| `primes_ledger.tolk` | 3559 | `handleIgnite` | `LaunchOpenMarket` | `LAUNCH_HOP_GAS` |
-| `primes_ledger.tolk` | 3590 | `handleSyncLaunch` | `LaunchOpenMarket` | `0` |
-| `primes_ledger.tolk` | 3735 | `handleClearingCleared` | `(empty)` | `treasuryDue` |
-| `primes_ledger.tolk` | 4004 | `replyMarkRejected` | `MarkRejected` | `0` |
-| `primes_ledger.tolk` | 4044 | `handleMarkOffHead` | `LotBlockClaim` | `0` |
-| `primes_ledger.tolk` | 4201 | `handleSyncHead` | `HeadUpdate` | `0` |
-| `primes_ledger.tolk` | 4230 | `handleAdvanceHead` | `(inline)` | `0` |
-| `primes_ledger.tolk` | 4301 | `onInternalMessage` | `SettleConfirmed` | `15000000` |
-| `primes_ledger.tolk` | 4362 | `handleCardMint` | `CardMintRefunded` | `0` |
-| `primes_ledger.tolk` | 4436 | `handleCardMint` | `(unknown)` | `INVITE_TRANSFER_VALUE` |
-| `primes_ledger.tolk` | 4526 | `handleSettle` | `SettleConfirmed` | `15000000` |
-| `primes_ledger.tolk` | 4544 | `forwardToRatchet` | `PoolInject` | `amount + RATCHET_HOP_GAS` |
-| `primes_ledger.tolk` | 4695 | `payHeldSplit` | `(empty)` | `TREASURY_AMOUNT + forfeitToTreasury + opMeters.treasuryHeld` |
-| `primes_ledger.tolk` | 4707 | `payHeldSplit` | `(empty)` | `operatorDue` |
-| `primes_ledger.tolk` | 5016 | `executeMint` | `LotBlockSoldPrime` | `LOT_BLOCK_HOP_VALUE` |
-| `primes_ledger.tolk` | 5061 | `executeMint` | `LotBlockRelease` | `LOT_BLOCK_RELEASE_VALUE` |
-| `primes_ledger.tolk` | 5144 | `executeMint` | `CardAddRecruit` | `CARD_RECRUIT_GAS` |
-| `primes_ledger.tolk` | 5194 | `executeMint` | `CardPrimeMinted` | `CARD_PRIME_GAS` |
-| `primes_ledger.tolk` | 5435 | `executeMint` | `PayEraBounty` | `15000000` |
-| `primes_ledger.tolk` | 5495 | `executeMint` | `PaySpecialNumberRebate` | `15000000` |
-| `primes_ledger.tolk` | 5542 | `executeMint` | `AwardEraTrophy` | `REGISTRAR_HOP_GAS` |
+| `primes_ledger.tolk` | 3311 | `refund` | `(inline)` | `amount` |
+| `primes_ledger.tolk` | 3596 | `handleIgnite` | `LaunchOpenMarket` | `LAUNCH_HOP_GAS` |
+| `primes_ledger.tolk` | 3627 | `handleSyncLaunch` | `LaunchOpenMarket` | `0` |
+| `primes_ledger.tolk` | 3772 | `handleClearingCleared` | `(empty)` | `treasuryDue` |
+| `primes_ledger.tolk` | 4046 | `replyMarkRejected` | `MarkRejected` | `0` |
+| `primes_ledger.tolk` | 4086 | `handleMarkOffHead` | `LotBlockClaim` | `0` |
+| `primes_ledger.tolk` | 4243 | `handleSyncHead` | `HeadUpdate` | `0` |
+| `primes_ledger.tolk` | 4272 | `handleAdvanceHead` | `(inline)` | `0` |
+| `primes_ledger.tolk` | 4343 | `onInternalMessage` | `SettleConfirmed` | `15000000` |
+| `primes_ledger.tolk` | 4404 | `handleCardMint` | `CardMintRefunded` | `0` |
+| `primes_ledger.tolk` | 4481 | `handleCardMint` | `(unknown)` | `terms.inviteValue` |
+| `primes_ledger.tolk` | 4576 | `handleSettle` | `SettleConfirmed` | `15000000` |
+| `primes_ledger.tolk` | 4594 | `forwardToRatchet` | `PoolInject` | `amount + RATCHET_HOP_GAS` |
+| `primes_ledger.tolk` | 4745 | `payHeldSplit` | `(empty)` | `TREASURY_AMOUNT + forfeitToTreasury + opMeters.treasuryHeld` |
+| `primes_ledger.tolk` | 4757 | `payHeldSplit` | `(empty)` | `operatorDue` |
+| `primes_ledger.tolk` | 5066 | `executeMint` | `LotBlockSoldPrime` | `LOT_BLOCK_HOP_VALUE` |
+| `primes_ledger.tolk` | 5111 | `executeMint` | `LotBlockRelease` | `LOT_BLOCK_RELEASE_VALUE` |
+| `primes_ledger.tolk` | 5194 | `executeMint` | `CardAddRecruit` | `CARD_RECRUIT_GAS` |
+| `primes_ledger.tolk` | 5244 | `executeMint` | `CardPrimeMinted` | `CARD_PRIME_GAS` |
+| `primes_ledger.tolk` | 5485 | `executeMint` | `PayEraBounty` | `15000000` |
+| `primes_ledger.tolk` | 5545 | `executeMint` | `PaySpecialNumberRebate` | `15000000` |
+| `primes_ledger.tolk` | 5592 | `executeMint` | `AwardEraTrophy` | `REGISTRAR_HOP_GAS` |
 | `primes_lot_block.tolk` | 91 | `returnChange` | `(unknown)` | `0` |
 | `primes_lot_block.tolk` | 170 | `onInternalMessage` | `LotBlockRefused` | `0` |
 | `primes_lot_block.tolk` | 193 | `onInternalMessage` | `LotBlockWords` | `0` |
@@ -125,15 +125,16 @@ is mechanical and detected here; the second is a judgement call, enumerated in
 | `primes_minter_card.tolk` | 255 | `onInternalMessage` | `(unknown)` | `0` |
 | `primes_minter_card.tolk` | 273 | `onInternalMessage` | `CardRecruitCounted` | `0` |
 | `primes_minter_card.tolk` | 313 | `onBouncedMessage` | `(unknown)` | `0` |
-| `primes_ratchet.tolk` | 999 | `returnCallerChange` | `Excesses` | `0` |
-| `primes_ratchet.tolk` | 1578 | `onInternalMessage` | `JettonBurn` | `0` |
+| `primes_ratchet.tolk` | 1028 | `returnCallerChange` | `Excesses` | `0` |
+| `primes_ratchet.tolk` | 1607 | `onInternalMessage` | `JettonBurn` | `0` |
+| `primes_ratchet.tolk` | 1923 | `handleStakeRefund` | `Excesses` | `0` |
 | `primes_registrar.tolk` | 190 | `refundAll` | `(empty)` | `0` |
 | `primes_registrar.tolk` | 301 | `onInternalMessage` | `NamingPaid` | `cfg.renameFee + NAMING_PAID_GAS` |
 | `primes_registrar.tolk` | 312 | `onInternalMessage` | `(empty)` | `0` |
 | `primes_stake.tolk` | 463 | `sendToChild` | `(unknown)` | `CHILD_GAS` |
 | `primes_stake.tolk` | 545 | `onInternalMessage` | `StakeCredit` | `0` |
-| `primes_treasury.tolk` | 695 | `sendToChild` | `(unknown)` | `gas` |
-| `primes_treasury.tolk` | 777 | `onInternalMessage` | `LpCredit` | `0` |
+| `primes_treasury.tolk` | 705 | `sendToChild` | `(unknown)` | `gas` |
+| `primes_treasury.tolk` | 787 | `onInternalMessage` | `LpCredit` | `0` |
 | `primes_voucher.tolk` | 341 | `onInternalMessage` | `ReceiptAdvance` | `0` |
 | `primes_voucher.tolk` | 419 | `onBouncedMessage` | `ReceiptRestore` | `0` |
 
@@ -153,10 +154,10 @@ response field here is TEP-74's `response_destination`, answered with
 | `primes_bounty_vault.tolk` | 624 | `payOut(… respondTo …)` | `Excesses =>` |
 | `primes_bounty_vault.tolk` | 663 | `payOut(… respondTo …)` | `Excesses =>` |
 | `primes_jetton_master.tolk` | 178 | `responseAddr:` | `Excesses =>` |
-| `primes_ratchet.tolk` | 942 | `responseAddr:` | `Excesses =>` |
-| `primes_ratchet.tolk` | 1072 | `sendTstonTransfer(… responseAddr …)` | `Excesses =>` |
-| `primes_ratchet.tolk` | 1585 | `responseAddr:` | `Excesses =>` |
-| `primes_treasury.tolk` | 1084 | `sendJetton(… responseTo …)` | `Excesses =>` |
+| `primes_ratchet.tolk` | 971 | `responseAddr:` | `Excesses =>` |
+| `primes_ratchet.tolk` | 1101 | `sendTstonTransfer(… responseAddr …)` | `Excesses =>` |
+| `primes_ratchet.tolk` | 1614 | `responseAddr:` | `Excesses =>` |
+| `primes_treasury.tolk` | 1098 | `sendJetton(… responseTo …)` | `Excesses =>` |
 
 ## Limits
 

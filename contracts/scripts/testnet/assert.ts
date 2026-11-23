@@ -30,7 +30,7 @@ export type AssertResult = {
     detail: string;
 };
 
-const ton = (v: bigint) => (Number(v) / 1e9).toFixed(9) + ' TON';
+const ton = (v: bigint) => (Number(v) / 1e9).toFixed(9) + ' GRAM';
 
 /** §5: `S` is cumulative emission plus the genesis bounty vault, NEVER decremented. */
 export function sMonotone(before: Snapshot, after: Snapshot): AssertResult {
@@ -51,14 +51,14 @@ export function sMonotone(before: Snapshot, after: Snapshot): AssertResult {
  * identity reports a permanent false solvency gap.
  *
  * **D-151 MADE IT SIX TERMS, and this predicate did not follow until 2026-09-21.**
- * §4.3.2's staked reserve moves TON out of `pending` into `stakedCost`, and an
+ * §4.3.2's staked reserve moves GRAM out of `pending` into `stakedCost`, and an
  * exit moves it through `exiting` on the way back, so a three-term reading of a
  * set that has ever staked is short by exactly the staked position — which would
  * have stopped the run on the first `stake` with a false §5 failure, on the same
  * shape of defect `MISTAKES.md` 2026-09-20 records (a harness measuring a term
  * instead of the conserved quantity).
  *
- * `realizedLoss` is the sixth term and the one that is not a pot of TON. When a
+ * `realizedLoss` is the sixth term and the one that is not a pot of GRAM. When a
  * leg of the exit machine redeems BELOW cost — a slashing at the counterparty,
  * §5's one external risk — the shortfall leaves `T` overstated by exactly that
  * much and the contract records it rather than netting it away
@@ -91,7 +91,7 @@ export function tIdentity(s: Snapshot): AssertResult {
 
 /**
  * §4.3.2 (D-151): a `stake`, an exit leg and a `harvest` are all REARRANGEMENTS.
- * None of them is allowed to move `T` at all — staking moves TON between two
+ * None of them is allowed to move `T` at all — staking moves GRAM between two
  * terms of it, and `harvest()` touches no term of it ("realize, never mark").
  *
  * Asserted as its own predicate rather than left to `T_IDENTITY` because the two
@@ -195,7 +195,7 @@ async function indexEcho(chainHead: number): Promise<AssertResult> {
     };
 }
 
-/** An address's TON balance, for the balance-delta asserts a split needs. */
+/** An address's GRAM balance, for the balance-delta asserts a split needs. */
 export async function balance(a: Address): Promise<bigint> {
     return retry(() => makeClient().getBalance(a), 'getBalance');
 }

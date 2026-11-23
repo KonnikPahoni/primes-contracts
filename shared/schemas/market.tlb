@@ -85,8 +85,8 @@ factor$_ prime_number:uint256 exponent:uint8 s:uint128 = Factor;
 ;; replaced the tier lift with the P0/3 term), so it varies with `n` and cannot be
 ;; derived from the mode alone. It is write-once from `n` at open: no message
 ;; carries it and no handler updates it, which is the half of the old MKT-1
-;; that was ever structural. The other half — "floor(MODE_DUTCH_BUYNOW) = 1 TON
-;; exactly" — is DELETED with §12's "no lane terminates above 1 TON".
+;; that was ever structural. The other half — "floor(MODE_DUTCH_BUYNOW) = 1 GRAM
+;; exactly" — is DELETED with §12's "no lane terminates above 1 GRAM".
 ;; ============================================================
 
 ;; Opens an ASCENDING lot AND places the opener's own bid, which must be >= P0(n).
@@ -169,7 +169,7 @@ open_head_lot#f2000002
 ;; ONE message, TWO meanings, resolved by the lot's mode (D-20 deletes the
 ;; MODE_DUTCH_CLOCK pre-bid case with the mode itself):
 ;;
-;;   MODE_ASCENDING     a raise; must clear high + max(0.015 TON,
+;;   MODE_ASCENDING     a raise; must clear high + max(0.015 GRAM,
 ;;                      bps[D/10]*high/10000) — D-33's score ladder. The
 ;;                      previous high bidder is refunded IN THE SAME TRANSACTION,
 ;;                      never as a claimable balance.
@@ -307,7 +307,7 @@ head_update#e0000031 query_id:uint64 head:uint256 = InternalMsgBody;
 ;; marked before — a direct mint claimed it in the race window between this
 ;; contract's lagging `head_hint` check and the ledger's authoritative one. The
 ;; router unwinds the lot THIS transaction's `open_lot` just created and
-;; refunds its current high bidder the bid less REJECT_GAS (0.1 TON, the failed
+;; refunds its current high bidder the bid less REJECT_GAS (0.1 GRAM, the failed
 ;; open's worst-case gas, which the market's float must not pay -- D-196 made a
 ;; claimed far number re-openable for ever), and raises `head_hint` to
 ;; `head` so the same stale gap cannot be reopened.
@@ -368,10 +368,10 @@ mint_won_lot#b0000020
 ;; Three properties follow and they are the acceptance criteria:
 ;;   1. the split stays closed at 100% — the premium is not in the split at all;
 ;;   2. the ratchet arithmetic is unchanged — a premium is a pure T increment
-;;      against ZERO emission, so it is strictly floor-accretive. A 40 TON prime
+;;      against ZERO emission, so it is strictly floor-accretive. A 40 GRAM prime
 ;;      is a larger floor step than 39 patient composite mints;
 ;;   3. principle 6 is not violated — splitting the full clearing price would pay
-;;      a referrer 4 TON on a recruit's single mint, a windfall unrelated to spend.
+;;      a referrer 4 GRAM on a recruit's single mint, a windfall unrelated to spend.
 ;;
 ;; The ledger-side handler adds `amount` to T, leaves S untouched and forwards the
 ;; value to the ratchet as `pending` — exactly §5.1's "k = 0 money, T rises, S is

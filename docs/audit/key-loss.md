@@ -20,10 +20,10 @@ is inferred from the item that asked for it.
 
 | credential | if lost | degrades or halts | replaceable without a redeploy? |
 |---|---|---|---|
-| `KEEPER_WALLET_MNEMONIC` (operator gas wallet) | nobody is *running* the permissionless calls | **degrades** | **yes** — move TON to a new wallet |
+| `KEEPER_WALLET_MNEMONIC` (operator gas wallet) | nobody is *running* the permissionless calls | **degrades** | **yes** — move GRAM to a new wallet |
 | `primes_venue_timelock.tolk`'s `proposerAddr` | the DeDust venue addresses can never be repointed | degrades, then halts `flush()` **only if** a venue dies | **no** |
 | `primes_voucher.tolk`'s `signerPubkey` | no quest voucher can be signed | degrades | **not applicable in v1** — see below |
-| `primes_ledger.tolk`'s `operatorAddr` on `set_invite_text` (D-211) | the invite words are frozen at their last value | **degrades** (invites still send, link intact) | **no** — the address is ledger deploy data |
+| `primes_ledger.tolk`'s `operatorAddr` on `set_invite_terms` (D-211, D-215) | the invite words, count and value are frozen at their last value | **degrades** (invites still send, link intact) | **no** — the address is ledger deploy data |
 
 ---
 
@@ -42,7 +42,7 @@ cooldown and the market's `headHint` lags, so a passed prime gets no descending 
 somebody calls `sync_head`. Both are recoverable at any later moment by any caller, and the
 keeper already alerts when flush sits eligible-but-uncalled past cooldown times two.
 
-**Replaceable: yes.** This key pays gas and can be replaced by moving TON to a new wallet.
+**Replaceable: yes.** This key pays gas and can be replaced by moving GRAM to a new wallet.
 Point a new mnemonic at the same `.env` and the lanes resume.
 
 **But there is a coupling, and it is the thing to know.** `PRIMES_PROPOSER_ADDR` **must be a

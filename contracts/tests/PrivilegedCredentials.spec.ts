@@ -1,6 +1,6 @@
 // TON PRIMES — the disclosure guard for `docs/audit/privileged-credentials.md`
 // (GAUNTLET W5). CONCEPT.md §8's "no admin withdraw path" is true and narrow: it is
-// a claim about moving TON, and a reviewer who reads it as "no privileged keys at
+// a claim about moving GRAM, and a reviewer who reads it as "no privileged keys at
 // all" has been told less than the whole truth. That page lists the three standing
 // credentials that do exist. THIS spec is what stops it going stale — a fourth
 // credential added to a contract and not disclosed fails here rather than being

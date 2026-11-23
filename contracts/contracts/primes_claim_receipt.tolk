@@ -26,13 +26,13 @@ tolk 1.4
 // in flight at once honest: the mark is always the sum of the deltas the vault
 // accepted.
 //
-// This contract holds no PRIMES and no TON beyond its own rent. It holds a RECORD.
+// This contract holds no PRIMES and no GRAM beyond its own rent. It holds a RECORD.
 // ============================================================================
 
 // Kept on this account when it forwards or refunds, so the receipt never runs
 // into storage debt. A gas constant (rent on ~1 data cell + code for decades at
 // config 18's basechain price), not an economic parameter.
-const RECEIPT_STORAGE_RESERVE: coins = 10000000; // 0.01 TON
+const RECEIPT_STORAGE_RESERVE: coins = 10000000; // 0.01 GRAM
 
 // ---------------------------------------------------------------------------
 // Storage — THE FIELD ORDER IS PART OF THE ADDRESS (see the header)
@@ -74,7 +74,7 @@ struct (0x9a000006) ReceiptRestore {
 
 type AllowedMessage = ReceiptAdvance | ReceiptRestore;
 
-// What a no-op leaves behind is the claimant's TON, so it goes back to them.
+// What a no-op leaves behind is the claimant's GRAM, so it goes back to them.
 fun refundExcess(storage: Storage) {
     reserveToncoinsOnBalance(RECEIPT_STORAGE_RESERVE, RESERVE_MODE_AT_MOST);
     createMessage({

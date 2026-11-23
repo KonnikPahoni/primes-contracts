@@ -12,7 +12,7 @@ Two kinds of test live here and they are deliberately different in character:
     is the failure mode that produced a wrong histogram once already.
 
 Nothing here asserts a *value* that depends on an unmeasured premise. Asserting
-"the objective is 0.38 TON per head mint" would pin a number the module itself
+"the objective is 0.38 GRAM per head mint" would pin a number the module itself
 publishes as BOUNDED, and the test would then be defending a premise rather than
 a property.
 """
@@ -315,7 +315,7 @@ def test_d20_prime_lot_nominal_leg_matches_an_ordinary_prime_mint_split():
     nominal `T` contribution is unchanged by D-20 and only the delivering
     message differs. The premium is the addition, not a replacement.
 
-    This is the exact assumption whose absence produced the 59.8 TON
+    This is the exact assumption whose absence produced the 59.8 GRAM
     `SimCrossCheck` gap, so it is pinned rather than trusted.
     """
     p = SimParams(seed=11, primes_skip_head=True,

@@ -39,16 +39,16 @@ drift from the code without the generator being wrong, which is the point of gen
 | [parameter-provenance.md](parameter-provenance.md) | Where each economic constant comes from. A number traceable to neither the simulation nor `CONCEPT.md` is a bug. |
 | [genesis-emission-curve.md](genesis-emission-curve.md) | The genesis emission schedule and the simulation run that produced it. |
 | [stat-provenance.md](stat-provenance.md) | Every figure the app displays, mapped to the get-method it is read from (`CONCEPT.md` §9.1). |
-| [money-arithmetic.md](money-arithmetic.md) | Rounding, truncation and dust across every place the contracts divide TON. |
+| [money-arithmetic.md](money-arithmetic.md) | Rounding, truncation and dust across every place the contracts divide GRAM. |
 
 ## Where money can move
 
 | document | what it answers |
 |---|---|
-| [withdraw-surface.md](withdraw-surface.md) | Every outbound-message site in every contract, classified by destination. TON leaves a contract only through these, so "no admin withdraw path" is a property of this set. |
+| [withdraw-surface.md](withdraw-surface.md) | Every outbound-message site in every contract, classified by destination. GRAM leaves a contract only through these, so "no admin withdraw path" is a property of this set. |
 | [sender-gates.md](sender-gates.md) | Who each privileged handler will accept a message from. |
 | [bounce-coverage.md](bounce-coverage.md) | What happens to the money when a message bounces or a standard protocol reply comes home. |
-| [privileged-credentials.md](privileged-credentials.md) | The three standing credentials that do exist, each one's powers, limits and bounding test. None can move a TON balance. |
+| [privileged-credentials.md](privileged-credentials.md) | The three standing credentials that do exist, each one's powers, limits and bounding test. None can move a GRAM balance. |
 | [key-loss.md](key-loss.md) | The failure half of the page above: what stops working the day each credential is lost, and which cannot be replaced without a genesis redeploy. |
 
 ## Building and running it

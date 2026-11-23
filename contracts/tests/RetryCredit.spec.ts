@@ -187,10 +187,10 @@ describe('TON PRIMES — retry_credit (engineering-spec.md §3.3, P0.3/P2.C4)', 
         expect(await item.getOwed()).toBe(SEEDED_AMOUNT);
 
         // B-1: the retry MOVES the liability between lanes, it does not
-        // discharge it. `credit_tribute` carries gas and a number, so the TON
+        // discharge it. `credit_tribute` carries gas and a number, so the GRAM
         // never left this contract — it stopped being "owed to a retry" and
         // started being "owed to the owner of 2". The total is unchanged, and
-        // it must be, because the same 0.05 TON is still sitting here.
+        // it must be, because the same 0.05 GRAM is still sitting here.
         //
         // This assertion used to read `liability === 0n`, which is B-1 in
         // miniature: a successful retry appeared to make the ledger solvent
@@ -265,7 +265,7 @@ describe('TON PRIMES — retry_credit (engineering-spec.md §3.3, P0.3/P2.C4)', 
         });
         const item = await itemAt(2n);
 
-        // Below CLAIM_DIVIDEND_MIN_VALUE (0.01 TON): refused before any state
+        // Below CLAIM_DIVIDEND_MIN_VALUE (0.01 GRAM): refused before any state
         // changes, never a partial drain of the ledger's own balance.
         const underfunded = await ledger.sendRetryCredit(stranger.getSender(), {
             creditId: SEEDED_CREDIT_ID,
@@ -274,7 +274,7 @@ describe('TON PRIMES — retry_credit (engineering-spec.md §3.3, P0.3/P2.C4)', 
         expect(underfunded.transactions).toHaveTransaction({ to: ledger.address, success: false, exitCode: 103 });
         expect(await item.getOwed()).toBe(0n); // untouched — the retry never ran
 
-        // Exactly funded (this file's usual 0.1 TON fixture value) still works.
+        // Exactly funded (this file's usual 0.1 GRAM fixture value) still works.
         const ok = await ledger.sendRetryCredit(stranger.getSender(), {
             creditId: SEEDED_CREDIT_ID,
             value: toNano('0.1'),

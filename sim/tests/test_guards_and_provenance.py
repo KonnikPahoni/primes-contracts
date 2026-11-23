@@ -205,7 +205,7 @@ def _line(worst_nanoton, mint_price_ton=1.0):
 
 @pytest.mark.parametrize("worst_nano,pct", [
     (150_000_000, 0.15),   # exactly on a step: no extra step from 2.9999999999999996
-    (150_000_001, 0.20),   # one nanoTON over a step buys the next one
+    (150_000_001, 0.20),   # one nanoGRAM over a step buys the next one
     (150_000_020, 0.20),   # was 0.15 -- the round(.., 6) swallowed it
     (180_000_000, 0.20),
     (191_764_880, 0.20),   # the committed worst_plain_w12 row

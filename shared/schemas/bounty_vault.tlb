@@ -22,13 +22,13 @@ pay_era_bounty#b0000032
     query_id:uint64
     era_boundary:uint256
     beneficiary:MsgAddress
-    t:Coins                 ;; ledger's POST-MINT T (nanoTON), DENOMINATION_PLAN P4
+    t:Coins                 ;; ledger's POST-MINT T (nanoGRAM), DENOMINATION_PLAN P4
     s:Coins                 ;; ledger's POST-MINT S (nano-PRIMES)
   = InternalMsgBody;
 
 ;; D-99 §1.5. `kind` is 0 = REBATE_COMPOSITE_PER_POINT or 1 = REBATE_PRIME_FAMILY;
 ;; `points` is D(n) on kind 0 and ignored on kind 1. The vault's own genesis-fixed
-;; rebateSchedule decides the TON value — the ledger decides eligibility and size
+;; rebateSchedule decides the GRAM value — the ledger decides eligibility and size
 ;; in points only, same D22 trust shape as pay_era_bounty. `n` is the idempotency key.
 pay_special_number_rebate#b0000072
     query_id:uint64
@@ -47,12 +47,12 @@ pay_special_number_rebate#b0000072
 ;; even after 5,000 years of continuous mints the primorial sequence has
 ;; produced only a few dozen boundaries).
 ;;
-;; THE SCHEDULE IS TON-DENOMINATED (DENOMINATION_PLAN P4, contract note D22).
+;; THE SCHEDULE IS GRAM-DENOMINATED (DENOMINATION_PLAN P4, contract note D22).
 ;; Each entry is `(bounty_ton, max_primes)`; the vault pays
 ;;   amount = min(bounty_ton * s / t, max_primes)
 ;; i.e. the PRIMES that `bounty_ton` buys at the floor `p_f = T/S` this mint just
 ;; set. A fixed nominal PRIMES bounty would inflate with the floor (~45x over
-;; year one at baseline demand); a TON-denominated one holds its designed value
+;; year one at baseline demand); a GRAM-denominated one holds its designed value
 ;; and drains the vault more slowly as the floor rises.
 ;;
 ;; `t`/`s` come from the ledger because the vault cannot call a get-method, and
@@ -99,7 +99,7 @@ pay_program_bounty#90000002
 ;; track directly. There is no row of its for this message to replay (702). This message replays that row — same
 ;; beneficiary, same amount, decided once, never re-decided here — and deletes
 ;; it, so a second call fails closed with 702. The caller funds the hop:
-;; >= 0.15 TON attached (`RETRY_PAYOUT_VALUE`, 103 below it).
+;; >= 0.15 GRAM attached (`RETRY_PAYOUT_VALUE`, 103 below it).
 retry_bounty_payout#90000004
     query_id:uint64
   = InternalMsgBody;
@@ -114,7 +114,7 @@ retry_bounty_payout#90000004
 ;; the vault's), and the recipient's jetton wallet answers each payout with
 ;; `excesses#d53276db`. Until 2026-09-17 the vault had no handler and the reply
 ;; aborted with exit 101 every time. Nothing was lost — the wallet sends it
-;; non-bounceable, so the credit phase had already landed the TON — but the whole
+;; non-bounceable, so the credit phase had already landed the GRAM — but the whole
 ;; MINT TRACE reads FAILED in an explorer when any transaction in it aborts
 ;; (testnet trace 8c354845...d724a). Permissionless by design: nothing moves.
 excesses#d53276db
@@ -165,7 +165,7 @@ retry_entry$_
 ;;
 ;; get_deferred_payouts -> (deferred_count:uint32, journal_key:uint64)
 ;;   H12 / DECISIONS.md D-129. A payout this contract OWES and has not delivered:
-;;   either the balance guard deferred it (the vault could not afford the 0.1 TON
+;;   either the balance guard deferred it (the vault could not afford the 0.1 GRAM
 ;;   jetton hop out of its own balance, so the row was journalled and nothing was
 ;;   sent) or its transfer bounced and the row was rolled back. Deliberately NOT a
 ;;   third field on get_vault_payouts: that pair is the §3.3 supply report, and a

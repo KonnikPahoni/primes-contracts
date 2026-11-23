@@ -15,7 +15,7 @@
  * case — the preflight reported and funded one subwallet and the runner
  * deployed from a different one. Every genesis address derives from that
  * wallet, so the two disagreeing is not a cosmetic drift: `genesisPrep.ts`
- * would green-light a wallet holding 15 TON while `deployGenesis.ts --skew-safe`
+ * would green-light a wallet holding 15 GRAM while `deployGenesis.ts --skew-safe`
  * deployed from an empty default-id wallet, and the DeDust pool precomputed by
  * `dryRunGenesisAddresses.ts` would be keyed on a jetton master no run would
  * ever deploy. That last one is unrecoverable: the pool address lands in the
@@ -124,16 +124,17 @@ export function clockDivisorFromEnv(env: Map<string, string>): number {
  * D-153 — THE TEST STAKE FLOOR, read as a MINIMUM and published as a DIVISOR.
  *
  * `PRIMES_STAKE_MIN_TON` is the smallest stake §4.3.2's `stake` should accept on
- * the set being deployed. Mainnet is `500` and that is the default, so a `.env`
- * without the key deploys exactly what `shared/params.json`'s
- * `staked_reserve.stake_min_ton` declares.
+ * the set being deployed. Mainnet is `shared/params.json`'s
+ * `staked_reserve.stake_min_ton`, read below rather than copied, and that is the
+ * default: a `.env` without the key deploys exactly what the sim declares.
  *
  * WHY THE KEY EXISTS AT ALL. The liquid reserve is 20% of the ratchet's
  * obligation, so `amount = pending - target = 0.8 * pending` and the FIRST
- * `stake` is illegal until `pending` exceeds **625 TON**. On testnet the only
+ * `stake` is illegal until `pending` exceeds **1.25 × stake_min_ton** (625 GRAM
+ * at the old 500, 62.5 at today's 50). On testnet the only
  * permissionless route into `pending` is `donate_floor`, and §8 guarantees no
- * key ever gets that TON back — so a wave that wanted to prove the staked
- * reserve had to burn ~600 unrecoverable TON, every wave. Same shape as the
+ * key ever gets that GRAM back — so a wave that wanted to prove the staked
+ * reserve had to burn that much unrecoverable GRAM, every wave. Same shape as the
  * nine-day wall clock D-139 solved, on the value axis instead of the time axis.
  *
  * Expressed as the MINIMUM rather than as the divisor for the same reason
@@ -143,7 +144,9 @@ export function clockDivisorFromEnv(env: Map<string, string>): number {
  * the nearest divisor and the caller is expected to print the effective figure
  * (`resolveStakeMin` below returns both).
  */
-const MAINNET_STAKE_MIN_TON = 500;
+const MAINNET_STAKE_MIN_TON: number = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'shared', 'params.json'), 'utf8'),
+).staked_reserve.stake_min_ton;
 
 export function resolveStakeMin(env: Map<string, string>): { divisor: number; effectiveTon: number } {
     const raw = envValue(env, 'PRIMES_STAKE_MIN_TON');
@@ -152,7 +155,7 @@ export function resolveStakeMin(env: Map<string, string>): { divisor: number; ef
     if (!Number.isFinite(want) || want <= 0 || want > MAINNET_STAKE_MIN_TON) {
         throw new Error(
             `PRIMES_STAKE_MIN_TON must be a number in (0, ${MAINNET_STAKE_MIN_TON}] ` +
-                `(got ${raw}). It is a MINIMUM in TON, not a divisor, and it can only be ` +
+                `(got ${raw}). It is a MINIMUM in GRAM, not a divisor, and it can only be ` +
                 `lowered from the declared figure — never raised.`
         );
     }
@@ -160,7 +163,7 @@ export function resolveStakeMin(env: Map<string, string>): { divisor: number; ef
     if (divisor > 65535) {
         throw new Error(
             `PRIMES_STAKE_MIN_TON=${want} implies a stake divisor of ${divisor}, past the ` +
-                `uint16 ceiling of 65535 (the smallest reachable minimum is ~0.0076 TON)`
+                `uint16 ceiling of 65535 (the smallest reachable minimum is ~0.0076 GRAM)`
         );
     }
     return { divisor, effectiveTon: MAINNET_STAKE_MIN_TON / divisor };

@@ -5,11 +5,11 @@
 // allocation and `S0` from it (`S0 = seed·L/2 + V`, D-166); `T` at the genesis seed is
 // always `0` regardless (no real deposit at genesis, seed or not).
 //
-// D-100 point 2 IS WHY THIS FILE MATTERS MORE THAN IT USED TO. The seed (200 TON)
-// and the genesis DONATION (132.50 TON, D-154) were the same number by construction until
+// D-100 point 2 IS WHY THIS FILE MATTERS MORE THAN IT USED TO. The seed (200 GRAM)
+// and the genesis DONATION (132.50 GRAM, D-154) were the same number by construction until
 // the owner unpinned them, so a script that reached for the wrong one was still
-// right. It is not any more: `genesis_seed_ton` sizes supply and no TON moves for
-// it, while `genesis_donation_ton` is the TON that actually lands in `T` through
+// right. It is not any more: `genesis_seed_ton` sizes supply and no GRAM moves for
+// it, while `genesis_donation_ton` is the GRAM that actually lands in `T` through
 // a separate permissionless `donate_floor`. The last test below pins that the
 // override touches the first and not the second.
 // `PRIMES_TESTNET_SEED_TON` exists only so that a full genesis can be
@@ -105,13 +105,13 @@ describe('nominal seed override', () => {
     it('does not touch the D-100 donation, which is a different number entirely', () => {
         // The confusion this guards against, stated as a test rather than as a
         // comment: an override is an AFFORDABILITY knob on the nominal seed, and
-        // the TON that actually moves at genesis is the donation either way. If some
+        // the GRAM that actually moves at genesis is the donation either way. If some
         // future edit routed the donation through `resolveSeedTon`, a testnet
         // rehearsal would donate the override and mainnet the real figure.
         process.env.PRIMES_TESTNET_SEED_TON = '10';
         const { provider } = fakeProvider('testnet');
         expect(resolveSeedTon(provider)).toBe(toNano('10'));
-        // Unmoved by the override. D-204 took the donation to 200 TON, which is the
+        // Unmoved by the override. D-204 took the donation to 200 GRAM, which is the
         // nominal seed's figure again (D-154 had it at 132.50, D-100 point 2 at
         // 4.20) — the same number in two fields, and still two fields: the override
         // moves one and not the other.
@@ -127,7 +127,7 @@ describe('nominal seed override', () => {
         const { provider, lines } = fakeProvider('testnet');
         resolveSeedTon(provider);
 
-        const floors = lines.join('\n').match(/1 TON = ([\d.]+) PRIMES/g);
+        const floors = lines.join('\n').match(/1 GRAM = ([\d.]+) PRIMES/g);
         expect(floors).toHaveLength(2); // this run, then spec
         const [run, spec] = floors!.map((l) => Number(l.match(/([\d.]+) PRIMES/)![1]));
         const seedRatio = params.genesis.genesis_seed_ton / 10;

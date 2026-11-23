@@ -194,7 +194,7 @@ paths:
   /boards/referrals:
     get:
       tags: [boards]
-      summary: Numbers ranked by the TON their referral key has paid (D-177, CONCEPT §9.11).
+      summary: Numbers ranked by the GRAM their referral key has paid (D-177, CONCEPT §9.11).
       description: >
         Each figure is `getReferralPaid()` on that key's own item (G89): the §4.1 referral
         line it has relayed, as the item received it, never decremented. The keys ranked are
@@ -466,8 +466,8 @@ paths:
 
 
         Each amount rides in the unit it moved in and is never converted: `amountNanoton`
-        (TON), `primesAmountRaw` (nano-PRIMES), `lpAmountRaw` (raw LP jetton units). A
-        `mint`/`gift` row's TON is `MINT_PRICE`; a `won`/`bought` row's is the lot's high
+        (GRAM), `primesAmountRaw` (nano-PRIMES), `lpAmountRaw` (raw LP jetton units). A
+        `mint`/`gift` row's GRAM is `MINT_PRICE`; a `won`/`bought` row's is the lot's high
         bid. A stake row's PRIMES is the position's principal — a claim's payout is computed
         on the stake master and logged nowhere, so a `stake_claim` has none. `tier` and
         `positionId` name an LP or stake position (null on a deposit or a new stake, whose
@@ -581,8 +581,8 @@ paths:
 
 
         **No row carries an asset label, and that is deliberate.** Three shapes say their
-        asset plainly — `treasury_ton_inflow` is TON, `treasury_withdraw_lp` is LP, and
-        `treasury_propose` carries its own `asset` (0 TON, 1 PRIMES, 2 LP). Two cannot be
+        asset plainly — `treasury_ton_inflow` is GRAM, `treasury_withdraw_lp` is LP, and
+        `treasury_propose` carries its own `asset` (0 GRAM, 1 PRIMES, 2 LP). Two cannot be
         labelled by this service: a `treasury_jetton_inflow` is PRIMES or LP according to
         which of the treasury's two jetton wallets forwarded it (`jettonWallet`, against
         `getTreasuryConfig()`), and a `treasury_execute` names only a proposal `seq` whose

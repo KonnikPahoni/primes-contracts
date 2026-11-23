@@ -64,7 +64,7 @@ import {
   TREASURY_DISTRIBUTE_MIN_FORWARD_NANOTON,
   VOUCHER,
 } from "./opcodes";
-import { inviteListCell, INVITE_MAX_COUNT, isInvitable } from "./invites";
+import { inviteListCell, INVITE_COUNT_CEILING, isInvitable } from "./invites";
 
 // ---------------------------------------------------------------------------
 // Value constants (nanoton), exact per ground truth.
@@ -92,25 +92,25 @@ export const CLAIM_GAS_NANOTON = 50000000n;
 // forward-fee deduction intact or the bid is silently recorded as less than the sender
 // thinks they bid. Same small fixed margin convention as FEE_MARGIN_NANOTON, added on top
 // of the caller's bid. `open_lot` books its value the same way.
-export const BID_FEE_MARGIN_NANOTON = 10000000n; // 0.01 TON
+export const BID_FEE_MARGIN_NANOTON = 10000000n; // 0.01 GRAM
 
 /** Gas for the permissionless `close` of an ASCENDING lot. The contract funds both
  *  close-time landings from its own balance (the reservation hop and the premium hop are
- *  NOT netted out of the winning bid, or the escrow leg would be short of the 1 TON the
+ *  NOT netted out of the winning bid, or the escrow leg would be short of the 1 GRAM the
  *  §4.1 split is closed at), so the caller only covers this message's own execution. */
-export const CLOSE_LOT_GAS_NANOTON = 50000000n; // 0.05 TON
+export const CLOSE_LOT_GAS_NANOTON = 50000000n; // 0.05 GRAM
 
 /** Gas for `open_head_lot`. D-4/D-20: unpriced and unbid — it only starts the descending
  *  clock for a prime the head has already passed, so there is no opening bid to place and
  *  requiring one would put the opener in front of the clock they just started. It is the
  *  market's own floor (`OPEN_HEAD_VALUE`): the open's compute is paid from it and the rest
  *  rides on to the ledger, so the market's float pays nothing (§4.4, D-196). */
-export const OPEN_HEAD_LOT_GAS_NANOTON = 100000000n; // 0.1 TON
+export const OPEN_HEAD_LOT_GAS_NANOTON = 100000000n; // 0.1 GRAM
 
 // ---------------------------------------------------------------------------
 // §3.2's factor dictionary — 8-bit uint keys in insertion order, values
 // storeUint(prime, 256).storeUint(exponent, 8).storeUint(s, 128) — is NOT
-// defined here. It is the proof a player submits to mint a composite for 1 TON,
+// defined here. It is the proof a player submits to mint a composite for 1 GRAM,
 // and `contracts/wrappers/PrimesLedger.ts` builds the same dictionary for every
 // sandbox test. A private copy on either side would mean the tests prove the
 // wrapper's bytes while the player spends through these, so it lives once in
@@ -138,17 +138,17 @@ function storeBeneficiary(b: Builder, beneficiary: Address | null): Builder {
 // ---------------------------------------------------------------------------
 
 /**
- * §4.1's INVITE LINE (D-202): up to `INVITE_MAX_COUNT` recipients THE MINTER names. Each
- * funded slot gets one plain 0.1 TON NoBounce transfer from the ledger carrying a text
+ * §4.1's INVITE LINE (D-202, D-215): up to the ledger's live count of recipients THE MINTER
+ * names. Each funded slot gets one plain NoBounce transfer of the live value from the ledger carrying a text
  * comment (`shared/invites.ts` `inviteCommentText`; operator-set words, ledger-written link,
  * D-211). There is no signature: D-202
  * deleted it with the generators, because nothing in the transfer is minter-written but
  * the destination.
  */
 export interface MintInvites {
-  /** The minter's DECLARED count, 0..3. Unspent slots fall to β (D-101/D-202). */
+  /** The minter's DECLARED count, 0..the live `getInviteTerms` count (≤ 100). Unspent slots fall to β (D-101/D-202). */
   count: number;
-  /** Keyed BY SLOT, 1..3, never 0 — `InviteList.addresses` is a `map<uint3, address>`. Holes allowed. */
+  /** Keyed BY SLOT, 1..count, never 0 — `InviteList.addresses` is a `map<uint7, address>`. Holes allowed. */
   addresses: { slot: number; address: string }[];
 }
 
@@ -159,8 +159,9 @@ export type InviteInput = MintInvites | { count: number; addresses: Map<number, 
 /** The `InviteList` ref, checked. Exported for tests; the mint builder is the only caller
  *  in the app. */
 export function buildInviteListCell(invites: InviteInput): Cell {
-  if (!Number.isInteger(invites.count) || invites.count < 1 || invites.count > INVITE_MAX_COUNT) {
-    throw new Error(`invite count must be an integer 1..${INVITE_MAX_COUNT}, got ${invites.count}`);
+  // The live count is the ledger's to enforce (221); the ceiling is what the wire can say.
+  if (!Number.isInteger(invites.count) || invites.count < 1 || invites.count > INVITE_COUNT_CEILING) {
+    throw new Error(`invite count must be an integer 1..${INVITE_COUNT_CEILING}, got ${invites.count}`);
   }
   for (const { slot, address } of inviteEntries(invites)) {
     // The ledger walks slots 1..count. A slot outside that is one the walk never reads,
@@ -184,7 +185,7 @@ function inviteEntries(invites: InviteInput): { slot: number; address: string | 
 
 /**
  * The `InviteList` BYTES, unchecked. `contracts/tests/InviteTransfers.spec.ts` proves the
- * ledger refuses a count of 4 on the wire (`invite_count_over_max`, 221), which it cannot
+ * ledger refuses a count over its live terms on the wire (`invite_count_over_max`, 221), which it cannot
  * do if the builder refuses first.
  */
 export function encodeInviteListCell(invites: InviteInput): Cell {
@@ -252,15 +253,15 @@ export function encodeMintBody(opts: {
     .storeDict(opts.factors.length > 0 ? dict : undefined)
     .storeUint(opts.referralKey, 32);
   // D-191 point 1: no `beneficiary` field — the card the body is sent to IS the beneficiary's.
-  // `Mint`'s TAIL, `primes_ledger.tolk:2049`: `inviteCount: uint3` then
+  // `Mint`'s TAIL, `primes_ledger.tolk` `Mint`: `inviteCount: uint7` (D-215) then
   // `invites: Cell<InviteList>?`. This used to be a bare `storeMaybeRef(null)` for
   // `patron: Cell<PatronMintArgs>?` — D-106 DELETED patron mode and D-101 put these two
   // fields in its place, so that one bit was being read as the first bit of `inviteCount`
   // and every mint died on cell underflow behind it. The count is on the wire even when it
-  // is zero: Tolk reads three bits unconditionally.
-  b.storeUint(opts.invites?.count ?? 0, 3);
+  // is zero: Tolk reads seven bits unconditionally.
+  b.storeUint(opts.invites?.count ?? 0, 7);
   b.storeMaybeRef(opts.invites ? encodeInviteListCell(opts.invites) : null);
-  // UNCHANGED by the invite line: the transfers it funds are paid out of the 1 TON split's
+  // UNCHANGED by the invite line: the transfers it funds are paid out of the 1 GRAM split's
   // residual β (§4.1), not attached on top of it.
   return b.endCell();
 }
@@ -269,7 +270,7 @@ export function encodeMintBody(opts: {
  * `buildReleaseMessage` is DELETED (D-90.2).
  *
  * It built `release(n)` — D-32's discretionary exit from a won claim: 90% of the escrowed
- * 1 TON back to the reserver, 10% forfeit to the treasury, and the window ending at the
+ * 1 GRAM back to the reserver, 10% forfeit to the treasury, and the window ending at the
  * mint. There is no claim. A won lot MINTS IN ITS OWN CLOSE, so from the moment `close`
  * lands the caller holds an NFT, and the way out of an NFT you no longer want is the
  * secondary market rather than a protocol buy-back.
@@ -296,7 +297,7 @@ export function encodeMintBody(opts: {
 // prompt for a transaction the contract will reject.
 //
 // THE FEE-MARGIN RULE IS SHARPER HERE THAN ANYWHERE ELSE IN THIS FILE. `open_lot` and
-// `bid` both compare `in.valueCoins` — the value AFTER TON has deducted the message's own
+// `bid` both compare `in.valueCoins` — the value AFTER GRAM has deducted the message's own
 // forward fee — against a threshold (`>= P0(n)` for open, `>= minPayment` for bid), and
 // then STORE that same `in.valueCoins` as the new high bid. So sending the exact nominal
 // both (a) risks a throw 1003 / 1004 after the wallet has signed, and (b) would, if it
@@ -401,7 +402,7 @@ export function buildOpenHeadLotMessage(opts: { n: bigint; queryId?: bigint }): 
  *     SS3's 1-day descending lane for a curated composite the head had already passed.
  *     Point 2: specialness is PRICE, not mechanism. A decorated composite is bought ahead
  *     of the head on the ordinary ascending lane at its own `P0(n)` (`buildOpenLotMessage`),
- *     and mints at the head for 1 TON once its turn comes. D-99 goes one step further and
+ *     and mints at the head for 1 GRAM once its turn comes. D-99 goes one step further and
  *     deletes the tiers that "special" named: `P0(n)` is one additive score's ladder rung,
  *     the same rule for every number.
  *
@@ -418,7 +419,7 @@ export function buildOpenHeadLotMessage(opts: { n: bigint; queryId?: bigint }): 
  * by the lot's own mode:
  *
  *   - **MODE_ASCENDING** — a raise. `bidNanoton` must be at least `getLot(n).minPayment`,
- *     which is `high + max(1 TON, 5% · high)`. The previous high bidder is refunded in the
+ *     which is `high + max(1 GRAM, 5% · high)`. The previous high bidder is refunded in the
  *     same transaction; there is never a claimable balance to forget. `beneficiary` and
  *     `referralKey` are IGNORED on this lane — the lot uses the payload it was opened with.
  *   - **MODE_DUTCH_BUYNOW** — **the purchase**, and it settles in the same transaction.
@@ -482,7 +483,7 @@ export function buildClaimTributeMessage(opts?: { queryId?: bigint }): { body: C
  * `multiples` is how many endowments to send. One `ITEM_DEPLOY_VALUE` is what the mint gave
  * the item once and is the whole of a composite's rent, so one multiple buys another of
  * whatever the first bought — see that constant's own comment for why this is the honest
- * unit and a round TON figure is not.
+ * unit and a round GRAM figure is not.
  *
  * The forward fee comes off the value in flight, so the margin rides on top exactly as it
  * does on a mint: without it the balance credited is a little short of the endowment and the
@@ -511,7 +512,10 @@ export function buildTopUpMessage(opts?: { multiples?: number; queryId?: bigint 
  * `primes_ratchet.tolk` exactly (`MessageCrossCheck.spec.ts` pins them to the source):
  *
  *   flush   = DEDUST_SWAP_GAS 0.25                                  + 0.01 = 0.26
- *   stake   = TONSTAKERS_DEPOSIT_FEE 1 + STAKE_GAS 0.3              + 0.01 = 1.31
+ *   stake   = TONSTAKERS_DEPOSIT_FEE 1 + STAKE_CREDIT_MARGIN 0.01   + 0.01 = 1.02
+ *             (the 1 is the pool's gas reserve, not a fee: ~0.89 of it comes back as
+ *             the pool's `excesses`, which the ratchet forwards to the caller; the
+ *             0.1 notification pays the ratchet's fill. Net to the caller ≈ 0.13 GRAM.)
  *   unstake = TSTON_EXIT_GAS 0.8 + EXIT_LATER_LEGS_GAS 1.15         + 0.01 = 1.96
  *   harvest = HARVEST_GAS 0.15 (0.05 forward to the treasury, M1)   + 0.01 = 0.16
  *
@@ -519,13 +523,13 @@ export function buildTopUpMessage(opts?: { multiples?: number; queryId?: bigint 
  * what the chain does not spend stays in the ratchet's gas buffer. Literals rather than
  * sums of the constants below: this block is evaluated before them.
  */
-export const RATCHET_CALLER_COMPUTE_NANOTON = 10000000n; // 0.01 TON
-export const FLUSH_CALLER_GAS_NANOTON = 260000000n; // 0.26 TON
-export const STAKE_CALLER_GAS_NANOTON = 1310000000n; // 1.31 TON
-export const UNSTAKE_CALLER_GAS_NANOTON = 1960000000n; // 1.96 TON
-export const HARVEST_CALLER_GAS_NANOTON = 160000000n; // 0.16 TON
+export const RATCHET_CALLER_COMPUTE_NANOTON = 10000000n; // 0.01 GRAM
+export const FLUSH_CALLER_GAS_NANOTON = 260000000n; // 0.26 GRAM
+export const STAKE_CALLER_GAS_NANOTON = 1020000000n; // 1.02 GRAM
+export const UNSTAKE_CALLER_GAS_NANOTON = 1960000000n; // 1.96 GRAM
+export const HARVEST_CALLER_GAS_NANOTON = 160000000n; // 0.16 GRAM
 /** What a flush attaches: the required figure plus the standing fee margin. */
-export const FLUSH_GAS_NANOTON = FLUSH_CALLER_GAS_NANOTON + FEE_MARGIN_NANOTON; // 0.27 TON
+export const FLUSH_GAS_NANOTON = FLUSH_CALLER_GAS_NANOTON + FEE_MARGIN_NANOTON; // 0.27 GRAM
 
 /**
  * `amount` is VENUE-DEPTH SIZING (2026-09-19) and is a CEILING THE CALLER MAY LOWER,
@@ -562,16 +566,16 @@ export function buildFlushMessage(opts?: { queryId?: bigint; amountNanoton?: big
 
 /** Gas for a registrar trophy message (`annotate`, `transfer_trophy`): its compute and one
  *  storage write. On a FREE first engraving what is left stays as the registrar's rent. */
-export const REG_BASE_GAS_NANOTON = 30000000n; // 0.03 TON
+export const REG_BASE_GAS_NANOTON = 30000000n; // 0.03 GRAM
 
 /** D-212: what a PAID re-engraving carries on top of `renameFee` — the fee's trip to the
  *  ratchet and the registrar's own compute (`primes_registrar.tolk` REG_RENAME_GAS). */
-export const REG_RENAME_GAS_NANOTON = 50000000n; // 0.05 TON
+export const REG_RENAME_GAS_NANOTON = 50000000n; // 0.05 GRAM
 
 /** D-212: what a `name_number` carries on top of the fee — the collection's door
  *  (`primes_collection.tolk` NAME_RELAY_GAS), which covers the item and the fee's trip to
  *  the ratchet. The change comes home. */
-export const NAME_RELAY_GAS_NANOTON = 60000000n; // 0.06 TON
+export const NAME_RELAY_GAS_NANOTON = 60000000n; // 0.06 GRAM
 
 /**
  * §4.7.1's text cap: the name is ONE cell with no refs (D-188 point 2), and 48 characters
@@ -590,7 +594,7 @@ function nameText(text: string): Cell {
 
 /**
  * An ERA TROPHY's engraving (§4.7.1), sent to the REGISTRAR by the trophy's holder. The
- * FIRST is free — gas only (D-179). Every later one costs `renameFee` in TON (D-212,
+ * FIRST is free — gas only (D-179). Every later one costs `renameFee` in GRAM (D-212,
  * `getTrophyRenameFee()`), which the registrar sends to the floor; pass it as `renameFee`
  * when the trophy's `getTrophyAnnotation(n)` count is above 0. A refusal refunds.
  */
@@ -649,7 +653,7 @@ export function encodeNameNumberBody(opts: { n: bigint; text: Cell; queryId?: bi
  * (`reg_not_primorial`, 914). `DESIGN.md` G45 — the call was complete on the wrapper
  * side (`PrimesRegistrar.ts:sendTransferTrophy`) before this had a caller in the app.
  *
- * `value` is gas only, same shape as `buildAnnotateMessage` above: no TON moves, the
+ * `value` is gas only, same shape as `buildAnnotateMessage` above: no GRAM moves, the
  * registrar holds none (§3.4), and whatever the trophy sold for was settled off this
  * contract entirely.
  */
@@ -670,7 +674,7 @@ export function buildTransferTrophyMessage(opts: {
 /** What a `claim_voucher` carries: at least the voucher's `CLAIM_MIN_VALUE` (0.15, throw 103
  *  below it), carried on to the vault to pay its jetton hop. The figure `PrimesVoucher.spec.ts` and `GenesisRehearsal`
  *  prove a claim pays out with. */
-export const VOUCHER_CLAIM_GAS_NANOTON = 200000000n; // 0.2 TON
+export const VOUCHER_CLAIM_GAS_NANOTON = 200000000n; // 0.2 GRAM
 
 /**
  * `VOUCHER.claim_voucher` — redeem a §9.5 signed voucher (DESIGN.md G51).
@@ -726,13 +730,13 @@ export function buildClaimVoucherMessage(opts: {
 // ---------------------------------------------------------------------------
 
 /** `TREASURY_MIN_FORWARD` — what must REACH the treasury, after fees. */
-export const TREASURY_MIN_FORWARD_NANOTON = 150000000n; // 0.15 TON
+export const TREASURY_MIN_FORWARD_NANOTON = 150000000n; // 0.15 GRAM
 /** `POSITION_MIN_FORWARD` — the child's own hop (0.05) plus the treasury's (0.15). */
-export const POSITION_MIN_FORWARD_NANOTON = 200000000n; // 0.20 TON
+export const POSITION_MIN_FORWARD_NANOTON = 200000000n; // 0.20 GRAM
 /** A TEP-74 wallet's own handling, on top of what it forwards. Same figure the child
  *  budgets for its own hop, and the reason a deposit's message value is not just the
  *  forward amount. */
-export const JETTON_WALLET_GAS_NANOTON = 50000000n; // 0.05 TON
+export const JETTON_WALLET_GAS_NANOTON = 50000000n; // 0.05 GRAM
 
 /** The `forward_payload` tag a custody deposit carries (`getTreasuryActions()`) — the only
  *  LP tag the treasury accepts since D-167 deleted the donate tag. */
@@ -762,7 +766,7 @@ export function buildLpDepositPayload(tier: number): Cell {
  * through the wallet's re-serialization into `transfer_notification`.
  *
  * The value is nominal PLUS a margin on both legs, never the exact figure — the treasury
- * asserts `in.valueCoins >= TREASURY_MIN_FORWARD` on what actually ARRIVES, after TON has
+ * asserts `in.valueCoins >= TREASURY_MIN_FORWARD` on what actually ARRIVES, after GRAM has
  * taken the message's forward fee (the same live failure `MINT_VALUE_NANOTON` documents).
  */
 export function buildLpDepositMessage(opts: {
@@ -862,7 +866,7 @@ export function buildPositionVoteMessage(opts: {
   return { body, value: POSITION_MIN_FORWARD_NANOTON + FEE_MARGIN_NANOTON };
 }
 
-/** Open a proposal: transfer {TON | PRIMES | tsTON} to an address. Refused unless the
+/** Open a proposal: transfer {GRAM | PRIMES | tsTON} to an address. Refused unless the
  *  proposer holds `propose_min_bps` of the eligible weight and has no other open one. */
 export function buildPositionProposeMessage(opts: {
   asset: number;
@@ -909,7 +913,7 @@ export function buildPruneProposalMessage(
     .storeUint(queryId ?? 0n, 64)
     .storeUint(seq, 32)
     .endCell();
-  return { body, value: 50000000n }; // 0.05 TON: one dictionary delete
+  return { body, value: 50000000n }; // 0.05 GRAM: one dictionary delete
 }
 
 /** D-168 / §5.5.3. Send one epoch's PRIMES budget from the treasury to the stake master —
@@ -1020,8 +1024,8 @@ export function buildStakeRelockMessage(opts: {
 // the third and last sender: the swap form in the app (`components/SwapCard`), which
 // trades BOTH ways and therefore needs the jetton leg nothing else in this repo sends.
 //
-// TWO VAULTS, TWO SHAPES, AND THEY ARE NOT INTERCHANGEABLE. Buying PRIMES sends TON to the
-// NATIVE vault with the whole swap inline (`swap#ea06185d`), because the TON is the message
+// TWO VAULTS, TWO SHAPES, AND THEY ARE NOT INTERCHANGEABLE. Buying PRIMES sends GRAM to the
+// NATIVE vault with the whole swap inline (`swap#ea06185d`), because the GRAM is the message
 // value. Selling PRIMES sends a TEP-74 `transfer` to the seller's OWN jetton wallet,
 // addressed to the JETTON vault, with `swap#e3a0d482` as the forward payload and no amount
 // field — the transfer that carries it IS the amount. Sending either shape to the other
@@ -1031,12 +1035,12 @@ export function buildStakeRelockMessage(opts: {
 // pool checks `limit` one hop past the vault, commits its refund and then throws, so the
 // swapper gets `payout#474f86cf` back rather than a bounce. That is why `limit` is a real
 // number here and never zero — a refused swap costs gas and returns the input, where a
-// zero limit accepts any fill at any price, which on a 16-TON pool is a standing invitation.
+// zero limit accepts any fill at any price, which on a 16-GRAM pool is a standing invitation.
 // ---------------------------------------------------------------------------
 
 /** What DeDust's native vault needs on top of the swap input, for its own hop into the
  *  pool and the pool's payout hop back. Mirrors `primes_ratchet.tolk`'s `DEDUST_SWAP_GAS`
- *  (0.25 TON), which is the same message to the same vault. */
+ *  (0.25 GRAM), which is the same message to the same vault. */
 export const DEDUST_SWAP_GAS_NANOTON = 250000000n;
 
 
@@ -1076,7 +1080,7 @@ function dedustSwapStep(b: Builder, pool: Address, limit: bigint): Builder {
  * ever sent (`ratchet_flush_gas`, measured 2026-09-17) — the same mistake, one contract over.
  */
 export function buildDedustSwapTonMessage(opts: {
-  /** The TON going in, in nanotons. */
+  /** The GRAM going in, in nanotons. */
   amountNanoton: bigint;
   /** `getVenue().dedustPool`. Never typed in — one deployment, one venue. */
   poolAddress: string;
@@ -1114,7 +1118,7 @@ export function buildDedustSwapTonMessage(opts: {
  * `transfer_notification`, and an inline payload does not survive that re-serialization.
  *
  * The vault does nothing until the notification arrives, so `forward_ton_amount` must cover
- * the vault's hop AND the pool's payout hop — it is the same 0.25 TON the native leg attaches
+ * the vault's hop AND the pool's payout hop — it is the same 0.25 GRAM the native leg attaches
  * as message value, moved to where a jetton transfer carries it.
  */
 export function buildDedustSwapPrimesMessage(opts: {
@@ -1127,7 +1131,7 @@ export function buildDedustSwapPrimesMessage(opts: {
   /** The seller's own PRIMES jetton wallet (`/primes/wallet/:address`) — where this
    *  message is SENT. A transfer leaves from the owner's wallet, never from the master. */
   ownerAddress: string;
-  /** `limit` — the least TON this swap will accept, in nanotons. */
+  /** `limit` — the least GRAM this swap will accept, in nanotons. */
   minOutNanoton: bigint;
   deadline: number;
   queryId?: bigint;
@@ -1158,14 +1162,14 @@ export function buildDedustSwapPrimesMessage(opts: {
 //
 // Same vault pair as the swap above, different opcodes and a different failure mode. A
 // deposit is TWO messages, one per side, and DeDust pairs them inside the pool: the native
-// vault takes TON with `deposit_liquidity#d55e4686` inline, and the jetton vault takes
+// vault takes GRAM with `deposit_liquidity#d55e4686` inline, and the jetton vault takes
 // PRIMES as a TEP-74 `transfer` carrying `deposit_liquidity#40e108d6` in its
 // `forward_payload`. Both legs must name the SAME asset pair in the SAME order and the
 // SAME `target_balances`, or the pool treats them as two different deposits.
 //
 // THEY ARE SENT IN ONE SIGNATURE. TonConnect takes up to four messages per request, so the
 // app sends both legs together (`useChainSend` takes an array) — a player who signed one
-// half and not the other would have TON parked in a vault waiting for a partner that never
+// half and not the other would have GRAM parked in a vault waiting for a partner that never
 // comes. The pool refunds an unmatched leg on its own, but the refund is a round trip the
 // player never asked for.
 //
@@ -1206,16 +1210,16 @@ export function storeDedustAsset(b: Builder, asset: DedustAsset): Builder {
 }
 
 /** DeDust's own figure for the native vault's hop into the pool plus the pool's reply. */
-export const DEDUST_DEPOSIT_NATIVE_GAS_NANOTON = 300000000n; // 0.3 TON
+export const DEDUST_DEPOSIT_NATIVE_GAS_NANOTON = 300000000n; // 0.3 GRAM
 /** What the jetton leg must FORWARD to the vault, on top of the wallet's own handling. */
-export const DEDUST_DEPOSIT_JETTON_FORWARD_NANOTON = 400000000n; // 0.4 TON
+export const DEDUST_DEPOSIT_JETTON_FORWARD_NANOTON = 400000000n; // 0.4 GRAM
 
 /**
  * The asset pair, in the order both legs must name it.
  *
  * DeDust normalises pair order when it derives the pool address, so a caller cannot get
  * the *pool* wrong — but `target_balances` is positional, so a caller can absolutely pair
- * the TON figure with the PRIMES asset. One helper returns both together so they cannot be
+ * the GRAM figure with the PRIMES asset. One helper returns both together so they cannot be
  * assembled apart.
  */
 function dedustPairFor(primesJettonMaster: string): {
@@ -1229,9 +1233,9 @@ function dedustPairFor(primesJettonMaster: string): {
 }
 
 /**
- * THE TON LEG — `deposit_liquidity#d55e4686`, sent to the NATIVE vault.
+ * THE GRAM LEG — `deposit_liquidity#d55e4686`, sent to the NATIVE vault.
  *
- * `value` is the deposited TON PLUS the vault's gas, never the TON alone: the vault
+ * `value` is the deposited GRAM PLUS the vault's gas, never the GRAM alone: the vault
  * compares what ARRIVES against the declared `amount`, and the forward fee comes out in
  * between — the same failure the swap leg's header documents, one opcode over.
  *
@@ -1240,7 +1244,7 @@ function dedustPairFor(primesJettonMaster: string): {
  * correct and passing the pool's reserves is not.
  */
 export function buildDedustDepositTonMessage(opts: {
-  /** The TON going in, in nanotons. Also this leg's `target_balance`. */
+  /** The GRAM going in, in nanotons. Also this leg's `target_balance`. */
   amountNanoton: bigint;
   /** The PRIMES the OTHER leg sends, in nano-PRIMES. Its `target_balance`. */
   pairedPrimes: bigint;
@@ -1292,7 +1296,7 @@ export function buildDedustDepositTonMessage(opts: {
 export function buildDedustDepositPrimesMessage(opts: {
   /** The PRIMES going in, in nano-PRIMES. Also this leg's `target_balance`. */
   amountPrimes: bigint;
-  /** The TON the OTHER leg sends, in nanotons. Its `target_balance`. */
+  /** The GRAM the OTHER leg sends, in nanotons. Its `target_balance`. */
   pairedTon: bigint;
   /** `/contracts`' `jettonMaster`. */
   primesJettonMaster: string;

@@ -8,7 +8,7 @@
  *      every wallet in the world, forever, without ever failing — which is how it shipped
  *      in 0.2.0. Every method below is asserted against the envelope its route ACTUALLY
  *      sends, and the shapes here were read off the route handlers, not guessed.
- *   2. **`Number()` on a nanoton figure.** A TON balance past 2^53 silently loses
+ *   2. **`Number()` on a nanoton figure.** A GRAM balance past 2^53 silently loses
  *      precision. Every decoded numeric is a `bigint` and the table asserts the value, not
  *      just the shape.
  *
@@ -173,7 +173,7 @@ const CASES: Case[] = [
   },
   {
     // §5's identity as ONE ordered snapshot. `tCache` equals the six terms (the ratchet-local
-    // claim), and `T − tCache` is TON a `PoolInject` is still carrying: 0.65 here.
+    // claim), and `T − tCache` is GRAM a `PoolInject` is still carrying: 0.65 here.
     name: "ratchetIdentity() — every identity term from one snapshot, the mirror beside T",
     body: enveloped({
       ledgerAddress: "EQledger",
@@ -325,7 +325,7 @@ const CASES: Case[] = [
     want: ADDR,
   },
   {
-    name: "name() — D-212: the owner, the standing name, and the next fee in TON",
+    name: "name() — D-212: the owner, the standing name, and the next fee in GRAM",
     body: ok({
       namer: { data: { namer: ADDR } },
       annotation: { data: { count: 1, text: "the first odd prime" } },

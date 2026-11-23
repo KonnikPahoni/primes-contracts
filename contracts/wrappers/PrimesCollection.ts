@@ -33,8 +33,8 @@ export type CollectionConfig = {
      * code and deploy data, so compute it first.
      */
     registrarAddr?: Address;
-    /** D-212 (§4.7.1): the first naming's fee and every later one's, nanoTON. Deploy data,
-     *  no setter. Tests default to 1 TON / 200 TON. */
+    /** D-212 (§4.7.1): the first naming's fee and every later one's, nanoGRAM. Deploy data,
+     *  no setter. Tests default to 1 GRAM / 200 GRAM. */
     nameFee?: bigint;
     renameFee?: bigint;
 };
@@ -94,7 +94,7 @@ function collectionConfigToCell(config: CollectionConfig): Cell {
         .endCell();
 }
 
-/** Test-harness defaults (D-212): a 1 TON first naming, the owner's 200 TON rename. Genesis
+/** Test-harness defaults (D-212): a 1 GRAM first naming, the owner's 200 GRAM rename. Genesis
  *  passes the real figures; nothing else may rely on these. */
 export const DEFAULT_NAME_FEE = 1_000_000_000n;
 export const DEFAULT_RENAME_FEE = 200_000_000_000n;

@@ -26,11 +26,11 @@ tolk 1.4
 //     in this file, it is what "no admin surface" costs, and the alternative — a
 //     recovery path — is the withdraw path §8 forbids everywhere else.
 //
-// IT TOUCHES NO ECONOMIC STATE. Nothing here mints, burns, or moves TON beyond
+// IT TOUCHES NO ECONOMIC STATE. Nothing here mints, burns, or moves GRAM beyond
 // the gas riding its own messages. `S` (cumulative emission) counted this
 // allocation at genesis and does not move (§3.3); `T` never saw it. So `p_f =
 // T/S` is IDENTICAL with and without this contract — the vest changes who can
-// sell and when, never anybody's floor. It holds a jetton wallet and ZERO TON
+// sell and when, never anybody's floor. It holds a jetton wallet and ZERO GRAM
 // liability, so it does not appear in the §3.4 solvency check at all.
 //
 // THE CLOCK STARTS AT `set_wallet`, NOT AT DEPLOY. The one-shot wallet bootstrap
@@ -63,12 +63,12 @@ tolk 1.4
 // to fall behind irrecoverably.
 // ============================================================================
 
-// 0.1 TON: one jetton-wallet transfer hop plus the destination wallet's deploy,
+// 0.1 GRAM: one jetton-wallet transfer hop plus the destination wallet's deploy,
 // exactly as primes_bounty_vault.tolk and primes_stake.tolk size the same send.
 const TRANSFER_GAS: coins = 100000000;
 
 // ---------------------------------------------------------------------------
-// 0.05 TON RIDING THE TRANSFER AS `forwardTonAmount`. D-100 point 6.
+// 0.05 GRAM RIDING THE TRANSFER AS `forwardTonAmount`. D-100 point 6.
 //
 // WHY IT EXISTS. The beneficiary is `primes_treasury.tolk` — a CONTRACT — and
 // `primes_jetton_wallet.tolk` emits a `transfer_notification` only when the
@@ -98,12 +98,12 @@ const TRANSFER_GAS: coins = 100000000;
 // rather than sloppy: the notification is sent NoBounce, so if it ever arrives
 // underfunded the PRIMES are credited to the wallet, the treasury never learns,
 // and there is no reconcile path — the exact failure this constant exists to
-// end, reintroduced by a tighter number. Overpaying 0.05 TON four times in the
+// end, reintroduced by a tighter number. Overpaying 0.05 GRAM four times in the
 // life of the protocol is the cheap side of that asymmetry. Shaving it is not.
 //
 // BOUNCE IS UNCHANGED, AND THAT IS ARITHMETIC NOT ASSERTION. `onBouncedMessage`
 // rolls back by `original.amount` — the PRIMES field of the bounced
-// `JettonTransfer`, which this change does not touch. The TON riding the message
+// `JettonTransfer`, which this change does not touch. The GRAM riding the message
 // is not in that arithmetic and never was. The one thing a bigger value does
 // change is WHICH failures are possible: the destination wallet must have enough
 // left after its own gas to emit the notification, or its transaction fails in

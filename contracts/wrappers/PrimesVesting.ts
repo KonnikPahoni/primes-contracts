@@ -23,7 +23,7 @@ import { VESTING } from '../../shared/opcodes';
  * permissionless and can only ever pay the deploy-fixed beneficiary, so who
  * calls it does not matter.
  *
- * It moves no TON and touches neither `T` nor `S`, so `p_f` is identical with
+ * It moves no GRAM and touches neither `T` nor `S`, so `p_f` is identical with
  * and without it.
  */
 /**
@@ -125,7 +125,7 @@ export class PrimesVesting implements Contract {
      * deploy-fixed beneficiary in one message — a caller who has ignored the
      * contract for a year catches up in a single call. Throws 1141
      * (`vest_nothing_due`) when no new tranche has matured, and 103 when the
-     * caller underfunds the 0.1 TON transfer hop.
+     * caller underfunds the 0.1 GRAM transfer hop.
      */
     async sendRelease(provider: ContractProvider, via: Sender, opts: { value: bigint; queryID?: number }) {
         await provider.internal(via, {

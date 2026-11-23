@@ -20,12 +20,12 @@
 //   I2  pool accounting (D-26, §5): the THREE-term backing identity,
 //       T == seedT + pending + swapped, as an exact equality — INCLUDING
 //       ACROSS A `donate_floor`, which is new and is the point (D-100 point 1)
-//   I3  owed conservation: every nanoTON of tribute credited is either still
+//   I3  owed conservation: every nanoGRAM of tribute credited is either still
 //       owed on an item or has been paid out to that item's owner
 //   I4  head monotonicity: head only ever advances, by exactly 1, and only via a
 //       successful mint or settlement
 //   I5  no admin withdraw path: no privileged sender (genesis script, timelock,
-//       proposer, book, vault, deployer) can move TON out of the ledger
+//       proposer, book, vault, deployer) can move GRAM out of the ledger
 //   I6  reservation exclusivity: a reserved n is never mintable through the
 //       normal reveal path, and an unreserved n is never settleable
 //   I7  jetton authority: post-seal, mint_genesis is dead and only the ledger mints
@@ -37,7 +37,7 @@
 //       meter equals `Σ_p item.owed` walked over every prime that was ever
 //       credited. This is the one that proves the meter honest rather than
 //       merely self-consistent — §3.2's tribute is credited to items as a
-//       NUMBER while the TON stays on the ledger, so a missed decrement is
+//       NUMBER while the GRAM stays on the ledger, so a missed decrement is
 //       invisible everywhere else and hands player money to `sweep_ops`.
 //   I9  monotone state vector: NO observable in the declared monotone set ever
 //       decreases, under ANY message sequence — see below
@@ -63,7 +63,7 @@
 //
 // The monotone set (all read through public get-methods, CONCEPT.md §9.1):
 //
-//   ledger.getFloorNum()          T, total TON ever committed to the pool (§5)
+//   ledger.getFloorNum()          T, total GRAM ever committed to the pool (§5)
 //   ledger.getFloorDen()          S, cumulative emission + bounty vault (§3.3, §5)
 //   T/S                           the floor itself, cross-multiplied (== I1)
 //   ledger.getHead()              the head (== I4)
@@ -71,7 +71,7 @@
 //   ledger.getDivAcc()            the flat prime-dividend accumulator (§3.2)
 //   ledger.getDivEntry(p)         per-prime claim stamp; only ever restamped up
 //   ledger.getLastMintTime()      last settled mint, unix seconds
-//   ratchet.getSwapped()          TON irreversibly swapped into the pool (§5)
+//   ratchet.getSwapped()          GRAM irreversibly swapped into the pool (§5)
 //   ratchet.getLastFlushTs()      last flush, unix seconds
 //   ledger.getMinterState(a)[0]   prime rank, lifetime, per owner (§4.7.1)
 //   ledger.getRecruitRank(a)      lifetime recruits (SS4.7, D-106) -- LIVE now:
@@ -110,6 +110,9 @@ const S_MAX: bigint = BigInt(
         fs.readFileSync(path.join(__dirname, '..', '..', 'shared', 'params.json'), 'utf-8'),
     ).rebate.S_MAX_nanoprimes,
 );
+const STAKE_MIN_TON: number = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'shared', 'params.json'), 'utf-8'),
+).staked_reserve.stake_min_ton;
 import { PrimesJettonMaster } from '../wrappers/PrimesJettonMaster';
 import { PrimesItem } from '../wrappers/PrimesItem';
 import { PrimesVenueTimelock } from '../wrappers/PrimesVenueTimelock';
@@ -123,6 +126,7 @@ import {
     TREASURY_TIERS,
     depositPayload,
 } from '../wrappers/PrimesTreasury';
+import { FOREVER_VOTE_MULTIPLIER } from '../../shared/opcodes';
 import { PrimesLpPosition } from '../wrappers/PrimesLpPosition';
 import { PrimesLpSink } from '../wrappers/PrimesLpSink';
 // D-168's pair, for the ST-1/ST-2 harness at the very bottom of the file.
@@ -290,7 +294,7 @@ describe('TON PRIMES — fuzz corpus + invariant harness', () => {
         );
         await ledger.sendDeploy(deployer.getSender(), toNano('20'));
 
-        // 1 tsTON = 1 TON; a free-TON buffer deep enough that every exit fills on leg 1.
+        // 1 tsTON = 1 GRAM; a free-GRAM buffer deep enough that every exit fills on leg 1.
         pool = blockchain.openContract(
             MockTonstakersPool.createFromConfig({ rateNum: toNano('1'), rateDen: toNano('1'), freeTon: toNano('100000') }, codes.pool)
         );
@@ -311,8 +315,8 @@ describe('TON PRIMES — fuzz corpus + invariant harness', () => {
                     dedustPool: dedust.address,
                     primesJettonVault: dedust.address,
                     // §4.3.2: the staked reserve, on the mock. The divided minimum
-                    // (D-153; 500 / 100 = 5 TON) lets the walk stake without a
-                    // 625 TON donation per cycle.
+                    // (D-153; 50 / 100 = 0.5 GRAM) lets the walk stake without a
+                    // 62.5 GRAM donation per cycle.
                     tonstakersPool: pool.address,
                     dedustTstonVault: pool.address,
                     dedustTstonPool: deployer.address,
@@ -489,7 +493,7 @@ describe('TON PRIMES — fuzz corpus + invariant harness', () => {
         //      Every writer of `storage.T` on the ledger — the mint's
         //      `poolInjectionFinal + premium`, the tribute-divisor rounding
         //      remainder, the flat-dividend remainder, and the market's auction
-        //      clearing — mirrors the same nanoTON into `poolToRatchet`, so an
+        //      clearing — mirrors the same nanoGRAM into `poolToRatchet`, so an
         //      equality is the honest assertion here and a bound is not. Since
         //      `DECISIONS.md` D-114 (amends D-7), a clearing's `T` write and its
         //      `poolToRatchet` mirror are both only the RATCHET'S HALF of the
@@ -505,25 +509,25 @@ describe('TON PRIMES — fuzz corpus + invariant harness', () => {
         //      identity was broken by exactly the donated amount, every time.
         //      Nothing in this file ever called `donate_floor`, so the equality
         //      above held vacuously over the donation path while the live
-        //      testnet ratchet panel reported `beyond T 4.000 TON` and was
+        //      testnet ratchet panel reported `beyond T 4.000 GRAM` and was
         //      right. D-100 deletes the `seedT` credit; the sequence below and
         //      the dedicated test after it now DONATE, so this line is the
         //      contract-level proof of the fix rather than a restatement of it.
         //      (MISTAKES.md, 2026-09-04.)
         //      §4.3.2 / D-151 GROWS IT TO FIVE TERMS, and the discipline is
         //      exactly the one the `inFlightFlush` paragraph above states. The
-        //      ratchet's `pending` is now only its LIQUID TON — the whole
+        //      ratchet's `pending` is now only its LIQUID GRAM — the whole
         //      obligation is `pending + stakedCost + exiting` — because
         //      `getSolvency().liability` must keep equalling `pending` exactly
         //      (DecompositionSolvency.spec.ts:336-338) and `balance >=
-        //      liability` must stay true while the staked TON is physically
+        //      liability` must stay true while the staked GRAM is physically
         //      somewhere else. `stake()` moves `pending -> stakedCost` in one
         //      step, an exit moves `stakedCost -> exiting` at send and
         //      `exiting -> pending` on arrival, and every failure route reverses
         //      the pair it moved.
         //
         //      `realizedLoss` is the SIXTH term and the only one that is not a
-        //      pot of TON: if TON ever leaves `T` for good, no message can lower
+        //      pot of GRAM: if GRAM ever leaves `T` for good, no message can lower
         //      `T` — the ledger owns it — so the shortfall is recorded here
         //      instead of vanishing, which is the same thing as saying `T` is
         //      overstated by exactly `realizedLoss` and that the number is
@@ -555,7 +559,7 @@ describe('TON PRIMES — fuzz corpus + invariant harness', () => {
         // I2b — the mirror `/ratchet/identity` and RatchetPanel rely on. Every credit
         //      to `T` except the genesis seed sends a `PoolInject` carrying the
         //      post-credit `T`, so at rest (the sandbox settles every hop) the
-        //      ratchet's `tCache` IS `T`. Live, `T − tCache` is then exactly TON in
+        //      ratchet's `tCache` IS `T`. Live, `T − tCache` is then exactly GRAM in
         //      flight, never a standing gap. A new `T +=` path without a forward
         //      fails here. Below `seeded`, no inject has followed the seed yet.
         const { t: tCache } = await ratchet.getFloorCache();
@@ -585,7 +589,7 @@ describe('TON PRIMES — fuzz corpus + invariant harness', () => {
             owedTotal += owed;
         }
 
-        // I10 — B-1. `tributeOwed` is the TON this contract custodies on behalf
+        // I10 — B-1. `tributeOwed` is the GRAM this contract custodies on behalf
         //       of item `owed` balances, and it is maintained O(1) precisely so
         //       `getSolvency` stays one call — which means nothing on chain
         //       forces it to match reality. This is the check that does.
@@ -1216,7 +1220,7 @@ describe('TON PRIMES — fuzz corpus + invariant harness', () => {
      * `X` to the ratchet's `pending`. `T` therefore moved by X while
      * `seedT + pending + swapped` moved by 2X. The gap grew by the donated
      * amount on every donation, permanently, and the live testnet's ratchet
-     * panel reported it as `beyond T 4.000 TON` against `seedT = 4.000 TON` —
+     * panel reported it as `beyond T 4.000 GRAM` against `seedT = 4.000 GRAM` —
      * the alarm was correct and the books were wrong (D-100 point 1,
      * MISTAKES.md 2026-09-04).
      *
@@ -1280,7 +1284,7 @@ describe('TON PRIMES — fuzz corpus + invariant harness', () => {
     /**
      * MINT-PATH BOUNCE: win an ascending lot on composite `n`, but run the close
      * one transaction at a time and deliver the market's REAL `mint_won_lot` to
-     * the ledger 1 nanoTON under MINT_PRICE — the ledger's own 103 refuses it, TVM
+     * the ledger 1 nanoGRAM under MINT_PRICE — the ledger's own 103 refuses it, TVM
      * bounces it, and the market's real handler refunds the winner. (A wired
      * stack has no natural refusal on this hop: `BounceCoverage.spec.ts`.) Nothing
      * is minted, so `n` is off-head for good with no owner and no tribute.
@@ -1317,7 +1321,7 @@ describe('TON PRIMES — fuzz corpus + invariant harness', () => {
     /** §4.3.2 STAKE: top `pending` up past the (divided) minimum and stake the excess. */
     async function stakeLeg(who: SandboxContract<TreasuryContract>) {
         // stake moves `pending - 0.2·(pending + stakedCost + exiting)`, and must move
-        // more than the divided 5 TON minimum: donate whatever closes the gap, + 5 TON.
+        // more than the divided 5 GRAM minimum: donate whatever closes the gap, + 5 GRAM.
         const k = await ratchet.getStaking();
         const need = (toNano('5') * 10n + (k.stakedCost + k.exiting) * 2n) / 8n - (await ratchet.getPending()) + toNano('5');
         await donate(who, need > toNano('5') ? need : toNano('5'));
@@ -1335,7 +1339,8 @@ describe('TON PRIMES — fuzz corpus + invariant harness', () => {
      */
     async function exitLeg(who: SandboxContract<TreasuryContract>) {
         blockchain.now! += 86400 + 10; // past FLUSH_COOLDOWN, and any flush's stale timeout
-        const STAKE_MIN_DIVIDED = toNano('5'); // 500 TON / stakeDivisor 100
+        // `staked_reserve.stake_min_ton` / stakeDivisor 100, the contract's own integer division.
+        const STAKE_MIN_DIVIDED = toNano(String(STAKE_MIN_TON)) / 100n;
         if ((await ratchet.getPending()) - (await ratchet.getStaking()).reserveTarget > STAKE_MIN_DIVIDED) {
             const st = await ratchet.sendStake(who.getSender(), { value: STAKE_VALUE });
             expect(st.transactions).not.toHaveTransaction({ aborted: true });
@@ -1613,6 +1618,8 @@ describe('TON PRIMES — TR-1..TR-7, the governed treasury (D-100)', () => {
     let lpDelivered: bigint;
     /** TR-6's right-hand side: LP the harness handed the sink and the sink accepted. */
     let sinkTally: bigint;
+    // D-214: LP each owner locked forever through a position — it keeps voting.
+    let foreverOf: Map<string, bigint>;
     let lastLocked: bigint;
     /** Owners the harness has ever deposited for — the set TR-5 and TR-7 walk. */
     let known: Set<string>;
@@ -1677,6 +1684,7 @@ describe('TON PRIMES — TR-1..TR-7, the governed treasury (D-100)', () => {
 
         lpDelivered = 0n;
         sinkTally = 0n;
+        foreverOf = new Map();
         lastLocked = 0n;
         known = new Set();
         distributedSeen = 0n;
@@ -1776,7 +1784,7 @@ describe('TON PRIMES — TR-1..TR-7, the governed treasury (D-100)', () => {
      * sites plus the one `TonPayout`), and three inbound messages account for
      * all the ones that spend its books:
      *
-     *   Execute      a passed proposal — TON, PRIMES or tsTON
+     *   Execute      a passed proposal — GRAM, PRIMES or tsTON
      *   Distribute   D-168's monthly budget to the stake master, by formula
      *   WithdrawLp   a depositor taking back their OWN LP
      *
@@ -1790,7 +1798,7 @@ describe('TON PRIMES — TR-1..TR-7, the governed treasury (D-100)', () => {
      *
      * `tonBalance` is deliberately NOT in the decrease check: it is the
      * account's real balance and it falls by gas on every message, so a
-     * "did it go down" test on it would fire on a refused message. TON leaving
+     * "did it go down" test on it would fire on a refused message. GRAM leaving
      * as VALUE is caught by the outbound `TonPayout` arm instead, which is
      * gas-independent.
      */
@@ -1939,7 +1947,8 @@ describe('TON PRIMES — TR-1..TR-7, the governed treasury (D-100)', () => {
         let eligible = 0n;
         for (const owner of known) {
             const mine = positions.filter((p) => p.owner === owner);
-            const expected = voteWeightOf(mine);
+            const expected =
+                voteWeightOf(mine) + (foreverOf.get(owner) ?? 0n) * BigInt(FOREVER_VOTE_MULTIPLIER);
             eligible += expected;
             let actual = 0n;
             try {
@@ -2053,7 +2062,7 @@ describe('TON PRIMES — TR-1..TR-7, the governed treasury (D-100)', () => {
                         })
                 );
             } else if (roll < 0.44) {
-                // Plain TON in: the 58% forfeit share (D-100 point 6, D-166).
+                // Plain GRAM in: the 58% forfeit share (D-100 point 6, D-166).
                 await step(label, async () => await treasury.sendTon(stranger.getSender(), toNano('3')));
             } else if (roll < 0.56) {
                 // D-168's permissionless `distribute()` — refused (and booking
@@ -2115,6 +2124,7 @@ describe('TON PRIMES — TR-1..TR-7, the governed treasury (D-100)', () => {
                     });
                     if ((await child.getPosition(p.id)).amount === 0n) {
                         lpDelivered -= p.amount;
+                        foreverOf.set(who.address.toString(), (foreverOf.get(who.address.toString()) ?? 0n) + p.amount);
                         // The treasury's transfer would have credited the SINK's
                         // own LP wallet, which then notifies it. The stand-in
                         // wallet cannot, so the harness plays that hop — and
@@ -2141,7 +2151,7 @@ describe('TON PRIMES — TR-1..TR-7, the governed treasury (D-100)', () => {
                     label,
                     async () =>
                         await child.sendPropose(who.getSender(), {
-                            asset: [TreasuryAsset.TON, TreasuryAsset.PRIMES, TreasuryAsset.TSTON][
+                            asset: [TreasuryAsset.GRAM, TreasuryAsset.PRIMES, TreasuryAsset.TSTON][
                                 Math.floor(rng() * 3)
                             ],
                             amount: toNano('1'),

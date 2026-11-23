@@ -120,7 +120,7 @@ def test_large_primes_earn_more_at_equal_multiplicative_age(spf_1e5):
 
 def test_flat_dividend_line_is_constant_but_decays_per_prime(spf_1e5):
     d = tr.flat_dividend_decay(100_000, spf_1e5, sample_decades=(1e3, 1e4, 1e5))
-    # The LINE does not decay: f * 0.10 TON per mint, at every n.
+    # The LINE does not decay: f * 0.10 GRAM per mint, at every n.
     assert d["flat_line_ton_per_mint"] == pytest.approx(0.02)
     assert d["_aggregate_line_is_constant"] is True
     # PER PRIME it does, like 1/pi(n) -- the qualifier SS5.4 owes the reader.

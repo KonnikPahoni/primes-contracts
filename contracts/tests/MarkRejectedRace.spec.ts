@@ -2,7 +2,7 @@
 //
 // REPLACES `EscrowAggregate.spec.ts`. That suite existed to prove the market's
 // running total over per-shard escrow — §4.4's "347 numbers reserved ahead of
-// the head, 512 TON escrowed" — tracked the shards it summed. D-90 deletes the
+// the head, 512 GRAM escrowed" — tracked the shards it summed. D-90 deletes the
 // escrow: a won lot MINTS IN ITS OWN CLOSE, so there is no pool to aggregate,
 // no shard to derive an address for, and no `shard_*` message to forge. §3.4's
 // decomposition is two pools now, `pending` and `owed`, and neither is here.

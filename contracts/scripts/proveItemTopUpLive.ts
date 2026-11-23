@@ -128,11 +128,11 @@ async function main() {
         sendMode: SendMode.PAY_GAS_SEPARATELY,
         messages: [internal({ to: stranger.address, value: toNano(FLOAT_TON), bounce: false, body: undefined })],
     });
-    await waitForSeqno(funder, seqno, `float ${FLOAT_TON} TON to the stranger`);
+    await waitForSeqno(funder, seqno, `float ${FLOAT_TON} GRAM to the stranger`);
     await sleep(8000);
 
     // --- the top-up itself, from that stranger -------------------------------
-    console.log(`\n--- top_up#c1000006, ${TOPUP_TON} TON, from a wallet that owns nothing ---`);
+    console.log(`\n--- top_up#c1000006, ${TOPUP_TON} GRAM, from a wallet that owns nothing ---`);
     const strangerSender = stranger.sender(strangerKeys.secretKey);
     seqno = await retry(() => stranger.getSeqno(), 'stranger seqno');
     await item.sendTopUp(strangerSender, { value: toNano(TOPUP_TON) });
@@ -147,7 +147,7 @@ async function main() {
     console.log(`  balance += ${balanceAfter - balanceBefore} nanoton`);
 
     const fail: string[] = [];
-    if (balanceAfter <= balanceBefore) fail.push('the item did not gain TON — the top_up was refused or bounced');
+    if (balanceAfter <= balanceBefore) fail.push('the item did not gain GRAM — the top_up was refused or bounced');
     if (runwayAfter <= runwayBefore) fail.push(`the runway did not rise (${runwayBefore} -> ${runwayAfter})`);
     if (fail.length > 0) {
         console.log('\nFAILED:');
@@ -155,7 +155,7 @@ async function main() {
         process.exit(1);
     }
     console.log('\nX9 PROVEN: a wallet that owns nothing extended the item\'s storage runway.');
-    console.log(`stranger mnemonic (throwaway, testnet, holds ~${FLOAT_TON} TON of dust): ${strangerMnemonic.join(' ')}`);
+    console.log(`stranger mnemonic (throwaway, testnet, holds ~${FLOAT_TON} GRAM of dust): ${strangerMnemonic.join(' ')}`);
 }
 
 main().catch((e) => {

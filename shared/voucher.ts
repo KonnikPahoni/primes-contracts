@@ -59,7 +59,7 @@ const NANO = 1_000_000_000n;
  *   SECU — the whole `security_bounty` track: D-170 pays ONE prize to ONE wallet.
  *
  * Every QSTS quest is a row inside `reward_nanoprimes` since D-118's 2026-11-20 amendment folded
- * `story-verified-reach` (a legacy TON figure, ~6,191 PRIMES at the genesis floor) into the
+ * `story-verified-reach` (a legacy GRAM figure, ~6,191 PRIMES at the genesis floor) into the
  * social board; backend/attribution's `quest-caps.test.ts` fails if a board outgrows its cap.
  */
 export const VOUCHER_MAX_PER_WALLET: Readonly<Record<number, bigint>> = {

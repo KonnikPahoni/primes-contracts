@@ -1,11 +1,11 @@
 // §4.1 / §3.1: an unresolvable referral line falls to the pool, never to the team.
 //
-// The referral relay (`forward_to_owner`) used to pass its 0.1 TON to `owner` with
+// The referral relay (`forward_to_owner`) used to pass its 0.1 GRAM to `owner` with
 // no `populated` check. Anyone can deploy an item's canonical empty state, whose
 // `owner` is the collection placeholder, and a referral can overtake `Populate`
-// (the V32 race), so the TON reached the collection's catch-all royalty arm: half
+// (the V32 race), so the GRAM reached the collection's catch-all royalty arm: half
 // to the operator. The item now refuses (307) and the ledger sends the relay
-// bounceable, so the TON comes home as surplus for `sweep_ops` to pool.
+// bounceable, so the GRAM comes home as surplus for `sweep_ops` to pool.
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { beginCell, Cell, contractAddress, toNano } from '@ton/core';
 import '@ton/test-utils';

@@ -34,7 +34,7 @@ tolk 1.4
 // wants kept separate from the vault's payouts.
 //
 // There is no `withdraw`, no `sweep`, no owner field, and no message any sender
-// can send that moves TON to an address of the sender's choosing. The `Flush`
+// can send that moves GRAM to an address of the sender's choosing. The `Flush`
 // message is permissionless precisely because it cannot be aimed.
 //
 // ---- What arrives here ----
@@ -54,7 +54,7 @@ tolk 1.4
 // `computeMinOut` below for the arithmetic, the widening order, and the
 // overflow bound.
 //
-// When the venue cannot fill at or above `min_out`, the TON comes back and
+// When the venue cannot fill at or above `min_out`, the GRAM comes back and
 // `pending` is restored unchanged, leaving the protocol in exactly the state it
 // was in before the attempt. It comes back by TWO different routes and the
 // contract implements both: a POOL refusal (slippage or expiry, the normal
@@ -77,7 +77,7 @@ const K_SCALE: int = 1000000000; // fixed-point scale, 1.0 == 1e9
 
 const FLUSH_PCT: int = 200000000;      // 0.2, fixed-point
 const FLUSH_COOLDOWN: int = 86400;      // 1 day
-const FLUSH_MIN: coins = 5000000000;   // 5 TON (owner-set, down from the 50 TON Phase 1 input)
+const FLUSH_MIN: coins = 5000000000;   // 5 GRAM (owner-set, down from the 50 GRAM Phase 1 input)
 
 // ============================ PHASE A: SETTLED ==============================
 // CALIBRATED. `FLOOR_GUARD` is a Phase A output and Phase A has run: it is
@@ -90,16 +90,16 @@ const FLUSH_MIN: coins = 5000000000;   // 5 TON (owner-set, down from the 50 TON
 // What sized it: `flush.sandwich_profitability_check` re-measures the sandwich
 // attack WITH the guard live. At 0 the guard is `min_out = amount * S / T`,
 // i.e. "refuse to buy above the floor" with no premium on top, and that alone
-// declines ALL 1317 sandwich attempts as unprofitable: 0 events, 0.00 TON of
+// declines ALL 1317 sandwich attempts as unprofitable: 0 events, 0.00 GRAM of
 // attacker PnL. The unguarded control in the same file is the contrast:
-// 4883 TON of attacker PnL over the same horizon.
+// 4883 GRAM of attacker PnL over the same horizon.
 //
 // RE-MEASURED AFTER D-143 (GAUNTLET.md G40, 2026-09-20), and the re-run is why
 // these numbers no longer read as they did. Under venue-depth sizing the guard
 // refuses the SIZE far less often, so the fill rate went from 3/1089 (0.3%) to
 // **895/1317 (68.0%)** and refusal fell from the 99.4% case to 32.0%. The
 // question that mattered was whether 0 survives a guard that now actually
-// fills, and it does — with 27x the swap volume through it (31,835 TON against
+// fills, and it does — with 27x the swap volume through it (31,835 GRAM against
 // 20,462), the attacker's net PnL is still exactly 0.00 over 0 events. A
 // positive premium would buy margin on events that do not occur and pay for it
 // with fills that now do.
@@ -107,7 +107,7 @@ const FLUSH_MIN: coins = 5000000000;   // 5 TON (owner-set, down from the 50 TON
 // SUPERSEDED BY D-190 (2026-09-26): the 0.00 above came from an attacker that
 // sized the flush BEFORE its pump and never pumped more than 0.5x the flush.
 // A caller-attacker (D-143 lets it pick `amount`) pumps, sizes the tranche to
-// the pumped pool, and sells back: 3.0% of swapped TON over the base run, as
+// the pumped pool, and sells back: 3.0% of swapped GRAM over the base run, as
 // burn efficiency lost below the floor — `T`, `S` and `p_f` never move. The
 // owner accepted it; a margin here only shrinks it, so 0 stands.
 //
@@ -119,8 +119,8 @@ const FLOOR_GUARD: int = 0;            // fixed-point, e.g. 0.01 would be 100000
 
 // Overflow bound for the guard's fixed-point arithmetic — see computeMinOut.
 // TVM integers are 257-bit signed, so products must stay under 2^256.
-// 2^120 nano-units is ~1.3e36, roughly 1e27 TON / 1e27 PRIMES: unreachable by
-// nineteen orders of magnitude against TON's ~5e9 total supply, and still
+// 2^120 nano-units is ~1.3e36, roughly 1e27 GRAM / 1e27 PRIMES: unreachable by
+// nineteen orders of magnitude against GRAM's ~5e9 total supply, and still
 // leaving 2^120 * 2^120 = 2^240 of headroom under the 2^256 ceiling.
 const MUL_OPERAND_BOUND: int = 1329227995784915872903807060280344576; // 2^120
 
@@ -133,7 +133,7 @@ const DEDUST_SWAP_OP: int = 0xea06185d;
 // GAUNTLET V2: how long the swap has to land before DeDust's own pool refuses
 // it as stale — `SwapParams.deadline`, a wall-clock cutoff the vault enforces
 // on its side, independent of and in addition to `limit` (the floor guard).
-// 10 minutes is generous against TON's ~5s blocks and mirrors the kind of
+// 10 minutes is generous against GRAM's ~5s blocks and mirrors the kind of
 // window every DEX aggregator on TON defaults to; there is nothing sim-derived
 // about it (it bounds a liveness failure, not an economic quantity).
 const DEDUST_SWAP_DEADLINE_WINDOW: int = 600;
@@ -145,10 +145,10 @@ const DEDUST_SWAP_DEADLINE_WINDOW: int = 600;
 // out is DeDust's deadline, which the divisor does not shorten.
 //
 // It used to reuse D-155's 72 h exit timeout, and that was the lock window: a
-// round trip whose fill notification never came (DeDust forwarding no TON with
+// round trip whose fill notification never came (DeDust forwarding no GRAM with
 // the payout, or too little for this contract's compute) held 223 and 230 —
-// flush, stake AND unstake — shut for three days per 0.26 TON flush. Measured on
-// testnet 2026-09-24 the forward is ~0.1566 TON on every fill (traces
+// flush, stake AND unstake — shut for three days per 0.26 GRAM flush. Measured on
+// testnet 2026-09-24 the forward is ~0.1566 GRAM on every fill (traces
 // `1b0646d7…`, `9675a5a1…`, `1848ca88…`, `fe60a0cb…`), so this is a backstop, not
 // the normal path.
 const FLUSH_STALE_TIMEOUT: int = 3600;       // 1 h = 6x DEDUST_SWAP_DEADLINE_WINDOW
@@ -160,7 +160,7 @@ const FLUSH_STALE_TIMEOUT: int = 3600;       // 1 h = 6x DEDUST_SWAP_DEADLINE_WI
 // `storeCoins(amount)`: the message declared the whole of its own value as the
 // swap input, so by the time it arrived the forward fee had already been taken
 // out of `value` and DeDust's native vault saw `msg_value < amount`. It throws
-// exit 263 on exactly that, aborts, and bounces the TON home — where
+// exit 263 on exactly that, aborts, and bounces the GRAM home — where
 // `onBouncedMessage` below restores `pending` and stamps `FLUSH_BOUNCED`, which
 // is indistinguishable on the dashboard from the floor guard legitimately
 // refusing a fill (§4.3.1). So every flush read as "refused above the floor"
@@ -171,14 +171,14 @@ const FLUSH_STALE_TIMEOUT: int = 3600;       // 1 h = 6x DEDUST_SWAP_DEADLINE_WI
 // sent one swap with `value == amount` and one with `value == amount + 0.25`.
 //   value == amount        -> compute exit 263, aborted, bounced
 //   value == amount + 0.25 -> compute exit 0, filled
-// 0.25 TON is what DeDust's own SDK attaches for a native-vault swap.
+// 0.25 GRAM is what DeDust's own SDK attaches for a native-vault swap.
 //
 // WHO PAYS IT: THE CALLER (D-146, signed 2026-09-22). The owner's rule is the
 // specification: "calling flush from any wallet should not affect the gas and
 // fees reserve in any way." Until D-146 this contract's own gas buffer paid it,
-// and that was the drain G39/D-146 measured — the cooldown rate-limits TON while
-// the cost is per CALL, so a one-nanoton tranche burned 0.20 TON of buffer for
-// ~0.05 TON of the caller's value, with no bounce and no cooldown.
+// and that was the drain G39/D-146 measured — the cooldown rate-limits GRAM while
+// the cost is per CALL, so a one-nanoton tranche burned 0.20 GRAM of buffer for
+// ~0.05 GRAM of the caller's value, with no bounce and no cooldown.
 //
 // So every permissionless leg that pays a venue — `flush`, `stake`, `unstake`,
 // `harvest` — asserts `valueCoins >= <its venue gas> + CALLER_COMPUTE_GAS` and
@@ -188,26 +188,26 @@ const FLUSH_STALE_TIMEOUT: int = 3600;       // 1 h = 6x DEDUST_SWAP_DEADLINE_WI
 // amount that leaves `pending` itself: no caller can move it down, whatever
 // they attach. The buffer now pays storage rent and nothing else.
 //
-// This ends "the caller risks only ~0.01 TON" (CONCEPT.md §4.3 point 2), and
+// This ends "the caller risks only ~0.01 GRAM" (CONCEPT.md §4.3 point 2), and
 // that was the point: permissionless still means ANYONE MAY call it, not that
 // someone else pays. The keeper attaches it like any other caller.
-const DEDUST_SWAP_GAS: int = 250000000;   // 0.25 TON
+const DEDUST_SWAP_GAS: int = 250000000;   // 0.25 GRAM
 // The caller's share of THIS contract's own compute on a leg, on top of the
 // venue's gas. Measured in `contracts/gas-baseline.json`: the four legs run
-// 9,472-11,006 gas, ~0.0008 TON at basechain config 21; 0.01 is the same
+// 9,472-11,006 gas, ~0.0008 GRAM at basechain config 21; 0.01 is the same
 // single-hop guard scale the ledger's `CLAIM_DIVIDEND_MIN_VALUE`/`SWEEP_GAS`
 // use. Whatever the compute does not spend goes back with the change.
-const CALLER_COMPUTE_GAS: int = 10000000;   // 0.01 TON
+const CALLER_COMPUTE_GAS: int = 10000000;   // 0.01 GRAM
 
-// A REFUSED DEDUST SWAP DOES NOT BOUNCE. It pays the TON back, and this is the
+// A REFUSED DEDUST SWAP DOES NOT BOUNCE. It pays the GRAM back, and this is the
 // opcode it pays it back with. Verified against mainnet on 2026-09-16, not
-// inferred: trace 0vgUx3EUXuoH3l9kfjvHfxkO8khDq5qw1iTE58hdV5M= is a 50.28 TON
+// inferred: trace 0vgUx3EUXuoH3l9kfjvHfxkO8khDq5qw1iTE58hdV5M= is a 50.28 GRAM
 // native-vault swap whose `limit` the pool could not meet, and the chain is
 //
 //   swap#ea06185d      -> native vault   exit 0
 //   swap_external#61ee542d -> pool        exit 304 (SLIPPAGE_EXCEEDED), aborted FALSE
 //   pay_out_from_pool#ad4eb6f5 -> vault   exit 0
-//   payout#474f86cf    -> ORIGINAL SENDER, 50.2759 TON, bounce flag FALSE
+//   payout#474f86cf    -> ORIGINAL SENDER, 50.2759 GRAM, bounce flag FALSE
 //
 // with `bounced` false on every hop. 6,000 consecutive native-vault
 // transactions were scanned: 3,052 inbound `ea06185d`, ALL exit 0, and ZERO
@@ -227,7 +227,7 @@ const CALLER_COMPUTE_GAS: int = 10000000;   // 0.01 TON
 // itself on its first normal outcome. `tests/RatchetDedustRefund.spec.ts` is
 // the regression.
 //
-// The TON was never at risk: `payout` is sent NON-bounceable, so the old
+// The GRAM was never at risk: `payout` is sent NON-bounceable, so the old
 // `assert (in.body.isEmpty()) throw 101` fallback threw AFTER the credit phase
 // had already added the refund to this contract's balance. What was lost was
 // the accounting — `pending` short, `swapped` inflated, `lastOutcome` stuck on
@@ -246,7 +246,7 @@ const CALLER_COMPUTE_GAS: int = 10000000;   // 0.01 TON
 //
 // THE ONE NAMING TRAP, and it is worth two readings. In sim/primes_sim/engine.py
 // `pending` is the WHOLE obligation and `liquid` is derived from it. HERE
-// `storage.pending` is ONLY the liquid TON actually on this contract's balance,
+// `storage.pending` is ONLY the liquid GRAM actually on this contract's balance,
 // because `getSolvency().liability` must keep equalling `pending` exactly and
 // `balance >= liability` must stay true. So the contract's obligation is
 //
@@ -262,17 +262,19 @@ const CALLER_COMPUTE_GAS: int = 10000000;   // 0.01 TON
 const RESERVE_BPS: int = 2000;
 const BPS_DEN: int = 10000;
 
-// `staked_reserve.stake_min_ton` = 500. NOT a dust guard: the pool charges a
-// FLAT 1 TON deposit fee, so the stake size decides whether staking earns
-// anything at all — the sim sizes it so flat fees stay under a tenth of the
-// yield they buy. (A second constraint, that stakes be rare enough for the
+// `staked_reserve.stake_min_ton` = 50. NOT a dust guard: every stake costs its
+// caller a FLAT ~0.113 GRAM (the 1 GRAM reserve minus the ~0.89 excess that
+// comes back, `staked_reserve.deposit_fee_ton`), so the stake size decides
+// whether staking earns anything at all — the sim sizes it so flat fees stay
+// under a tenth of the yield they buy. It was 500 while the sim charged the
+// whole 1 GRAM reserve as a fee (MISTAKES.md 2026-11-23). (A second constraint, that stakes be rare enough for the
 // ratchet's own gas accrual to fund the fees, was retired by D-146: the caller
 // pays them now.)
 //
 // Read through `RatchetConfig.stakeMinTon()`, never directly: D-153's
 // `stakeDivisor` scales it at deploy time the way `clockDivisor` scales the
 // cooldown, and 1 is the identity.
-const STAKE_MIN: coins = 500000000000;         // 500 TON
+const STAKE_MIN: coins = 50000000000;          // 50 GRAM
 
 // `staked_reserve.harvest_interval_seconds` = 2592000 (30 days). Divided by the
 // same D-139 deploy-time clock divisor `FLUSH_COOLDOWN` is, for the same reason:
@@ -297,60 +299,69 @@ const EXIT_SLIPPAGE_BPS: int = 50;
 // so treat the FIGURES as "as at the fetch date" and the OPCODES as fixed.
 //
 // WHO PAYS THEM: THE CALLER, exactly as DEDUST_SWAP_GAS is paid (D-146). NEVER
-// `pending`: a fee taken out of the staked amount would drop `T` by 1 TON on
+// `pending`: a fee taken out of the staked amount would drop `T` by 1 GRAM on
 // every stake and `p_f = T/S` with it, which is the ratchet theorem (§5) broken
 // by an accounting choice. And no longer the gas buffer either — each arm asserts
 // the caller attached its venue's fees and refuses by name (225) if not.
 
-// `pool.func:79`, subtracted from the message value at `:288-290` before
-// anything is credited.
-const TONSTAKERS_DEPOSIT_FEE: coins = 1000000000;   // 1 TON
+// `pool.func:79`. A GAS RESERVE, not a fee the pool keeps: `:288-289` credits
+// `msg_value - DEPOSIT_FEE` and reserves the rest, then mints with
+// CARRY_ALL_BALANCE (`pool_mint_helpers.func:19-23`), so the ~0.89 GRAM the mint
+// chain does not burn comes back from our tsTON wallet as `excesses` carrying
+// the deposit's own query id (measured on mainnet, 2026-11-23: 0.9987 leaves the
+// pool, 0.1 notification + 0.887-0.897 excesses arrive). The CALLER fronted it,
+// so `handleStakeRefund` sends that excess on to the caller (MISTAKES.md
+// 2026-11-23).
+const TONSTAKERS_DEPOSIT_FEE: coins = 1000000000;   // 1 GRAM
 
-// The pool's own compute plus the `transfer_notification` (0.1 TON) and
-// `excesses` it answers a deposit with (`pool.func:288-301`). It rides ON TOP of
-// the fee, and — see `handleTstonNotification` below — the part of it the pool does
-// not spend is CREDITED AS DEPOSIT, so it ends up in the staked position rather
-// than being returned. That is deliberate and accounted: it is gas-buffer TON,
-// never `pending`, so `stakedCost` does not count it. `harvest()` sees only PART
-// of it as yield: the learned rate under-states TON per tsTON by that same surplus,
-// so the surplus of the stake the rate was learned from never shows (B37). A
-// conservative error — it defers yield, it never sends backing.
-const STAKE_GAS: coins = 300000000;                 // 0.3 TON
+// NOT GAS. The pool's compute, its `transfer_notification` (0.1 GRAM) and the
+// `excesses` are all paid out of TONSTAKERS_DEPOSIT_FEE above. This only has to
+// beat the deposit's own forward fee, which SEND_MODE_REGULAR takes off the value:
+// the pool credits `value - DEPOSIT_FEE` = X + this − fwd_fee, and that must stay
+// AT OR ABOVE the X we book, or every learned pair over-states GRAM per tsTON —
+// the side where B37's keep-the-higher rule, the late-mint restore and leg 2's
+// floor stop being conservative (GAUNTLET.md B37's adversarial review). The
+// forward fee of a 96-bit body is well under 0.001 GRAM; `RatchetStaking.spec.ts`
+// pins the direction. What the pool does not spend of it is credited as deposit:
+// gas-buffer GRAM, never `pending`, so `stakedCost` does not count it. It was
+// 0.3 GRAM, sized when the 1 GRAM was mistaken for a fee, and cost every caller
+// 0.3 for nothing (MISTAKES.md 2026-11-23).
+const STAKE_CREDIT_MARGIN: coins = 10000000;        // 0.01 GRAM
 
 // The TEP-74 burn leg that IS a withdrawal request needs `msg_value > fwd_fee +
-// 2*gas_consumption + burn_notification` with `burn_notification = 0.75 TON`
+// 2*gas_consumption + burn_notification` with `burn_notification = 0.75 GRAM`
 // (`jetton-wallet.func:19`, `:221`), and the pool then gates the withdrawal on
-// `WITHDRAWAL_FEE = ONE_TON / 2` (`pool.func:80`, `:189`). 0.8 TON clears both
+// `WITHDRAWAL_FEE = ONE_TON / 2` (`pool.func:80`, `:189`). 0.8 GRAM clears both
 // and matches `staked_reserve.exit_fee_ton`.
-const TSTON_EXIT_GAS: coins = 800000000;            // 0.8 TON
+const TSTON_EXIT_GAS: coins = 800000000;            // 0.8 GRAM
 
-// Audit M1 (2026-11-19): harvest's transfer MUST forward TON, or a TEP-74 wallet
+// Audit M1 (2026-11-19): harvest's transfer MUST forward GRAM, or a TEP-74 wallet
 // sends the treasury no `transfer_notification` (`jetton-wallet.func:169`) and its
 // `tstonBalance +=` never runs — the tsTON lands uncounted and no proposal can
-// spend it. 0.05 TON is a gas figure, the same as vesting's `NOTIFY_GAS`
+// spend it. 0.05 GRAM is a gas figure, the same as vesting's `NOTIFY_GAS`
 // (`primes_vesting.tolk:115`): it pays only the treasury's tsTON branch, which
-// returns before its 0.15 TON `TREASURY_MIN_FORWARD` check (gas-baseline
+// returns before its 0.15 GRAM `TREASURY_MIN_FORWARD` check (gas-baseline
 // `treasury.tston_in`).
-const HARVEST_FORWARD_TON: coins = 50000000;        // 0.05 TON
-// The wallet hop plus that forward, ON TOP of the old 0.1 TON hop rather than
+const HARVEST_FORWARD_TON: coins = 50000000;        // 0.05 GRAM
+// The wallet hop plus that forward, ON TOP of the old 0.1 GRAM hop rather than
 // carved out of it: the wallet needs `value > forward + 2·fwd_fee +
 // 2·gas_consumption + min_tons_for_storage` (`jetton-wallet.func:115-121`;
 // `gas_consumption` = 19M + using_libs·7.5M with using_libs = −1, i.e. 0.0115
-// TON, `jetton_dao/external_params.func:6`; storage 0.01, `:10`), about 0.09
-// TON with forward fees — 0.15 leaves room for a wallet that does not use libs
+// GRAM, `jetton_dao/external_params.func:6`; storage 0.01, `:10`), about 0.09
+// GRAM with forward fees — 0.15 leaves room for a wallet that does not use libs
 // (0.019 each).
-const HARVEST_GAS: coins = 150000000;               // 0.15 TON
+const HARVEST_GAS: coins = 150000000;               // 0.15 GRAM
 
-// Leg 2 is a jetton-side DeDust swap, so the vault's 0.25 TON rides as
+// Leg 2 is a jetton-side DeDust swap, so the vault's 0.25 GRAM rides as
 // `forward_ton_amount` inside the transfer instead of as message value — the
 // same figure and the same reason as DEDUST_SWAP_GAS above, moved to where a
 // jetton transfer carries it (see shared/messages.ts's
 // `buildDedustSwapPrimesMessage`, which sends the identical shape for PRIMES).
-const DEDUST_JETTON_FORWARD_TON: coins = 250000000; // 0.25 TON
+const DEDUST_JETTON_FORWARD_TON: coins = 250000000; // 0.25 GRAM
 const DEDUST_JETTON_SWAP_GAS: coins = 350000000;    // 0.25 forward + 0.1 wallet hop
 // D-146: what `unstake`'s caller prepays for the legs a REPLY sends — leg 2's
 // swap and leg 3's bill burn — because nobody is there to pay when they fire.
-const EXIT_LATER_LEGS_GAS: coins = DEDUST_JETTON_SWAP_GAS + TSTON_EXIT_GAS;  // 1.15 TON
+const EXIT_LATER_LEGS_GAS: coins = DEDUST_JETTON_SWAP_GAS + TSTON_EXIT_GAS;  // 1.15 GRAM
 
 // Upstream opcodes, all from shared/opcodes.ts's RATCHET namespace.
 const TONSTAKERS_DEPOSIT_OP: int = 0x47d54391;
@@ -366,7 +377,7 @@ const DEDUST_SWAP_JETTON_OP: int = 0xe3a0d482;
 //   EXIT_IDLE -> EXIT_LEG_BURN_FOK   `unstake` burns with fill_or_kill = 1
 //     filled  -> tonstakers_withdrawal arrives          -> EXIT_IDLE
 //     refused -> transfer_notification (the re-mint)    -> EXIT_LEG_DEDUST
-//   EXIT_LEG_DEDUST                  a guarded tsTON -> TON swap
+//   EXIT_LEG_DEDUST                  a guarded tsTON -> GRAM swap
 //     filled  -> dedust payout arrives                  -> EXIT_IDLE
 //     refused -> transfer_notification (the tsTON back) -> EXIT_LEG_BILL
 //   EXIT_LEG_BILL                    burn with wait_till_round_end = 1
@@ -387,7 +398,7 @@ const EXIT_LEG_BILL: int = 3;
 // reply bricked the ratchet with no recovery short of a redeploy. It happened on
 // testnet on 2026-09-21: a leg 2 payout arrived from an address that was not
 // `venue.dedustNativeVault`, the `DedustPayout` arm threw 100, the message was
-// non-bounceable so the TON was credited while no accounting ran, and the
+// non-bounceable so the GRAM was credited while no accounting ran, and the
 // machine sat at `exitLeg == 2` forever.
 //
 // 72 HOURS, and the floor is set by leg 3, not by leg 1 or 2. Leg 3 is a
@@ -417,7 +428,7 @@ const EXIT_RECOVERY_TIMEOUT: int = 259200;  // 72 h = 2x leg 3's round
 struct VenueTreasury {
     treasuryAddr: address          // the LP-governed treasury — harvest's only destination
     // The NATIVE vault of the factory `dedustTstonPool` lives on: it pays leg 2's
-    // TON output with `payout#474f86cf`. Its own field, not `Venue.dedustNativeVault`,
+    // GRAM output with `payout#474f86cf`. Its own field, not `Venue.dedustNativeVault`,
     // because `UpdateVenue` re-points that one and leaves the tsTON pool where it is:
     // checked against the flush venue's vault, every leg-2 fill after a venue
     // migration threw 100 and stranded uncounted (2026-11-08 audit). Here and not
@@ -448,7 +459,7 @@ struct Venue {
     // `UpdateVenue` that landed while a flush was in flight until the next flush
     // is sent: that trip's reply addresses, kept so the OLD vault's refund or
     // fill still settles it. Authenticated against the new venue instead, the
-    // refund threw 100 on a non-bounceable message, the TON stayed in the gas
+    // refund threw 100 on a non-bounceable message, the GRAM stayed in the gas
     // buffer, and the stale close booked the tranche as filled — and anyone
     // could force it by sending `Flush` and the timelock's permissionless
     // `Execute` back to back. `UpdateVenue` itself is never refused or delayed
@@ -487,15 +498,16 @@ struct RatchetConfig {
     clockDivisor: uint16
     // D-153 — THE SAME IDEA ON THE OTHER AXIS. `clockDivisor` scales the gates
     // this contract enforces in SECONDS; `stakeDivisor` scales the one it
-    // enforces in TON. 1 IS MAINNET AND THE IDENTITY.
+    // enforces in GRAM. 1 IS MAINNET AND THE IDENTITY.
     //
-    // WHY IT HAS TO EXIST. `STAKE_MIN` is 500 TON and the liquid reserve is 20%
-    // of the obligation, so `amount = pending - target = 0.8 * pending > 500`
-    // makes the first `stake` illegal until `pending` exceeds **625 TON**. On
+    // WHY IT HAS TO EXIST. `STAKE_MIN` was 500 GRAM (50 since 2026-11-23) and the
+    // liquid reserve is 20% of the obligation, so `amount = pending - target =
+    // 0.8 * pending > 500` made the first `stake` illegal until `pending`
+    // exceeded **625 GRAM** (62.5 now). On
     // mainnet that arrives in the ordinary course of the game. On testnet the
     // only permissionless route into `pending` is `donate_floor`, and §8
-    // guarantees no key can ever take that TON back — so proving §4.3.2 at a
-    // live node cost 600 unrecoverable TON per wave, every wave, for a
+    // guarantees no key can ever take that GRAM back — so proving §4.3.2 at a
+    // live node cost 600 unrecoverable GRAM per wave, every wave, for a
     // threshold whose economic correctness is a sim output and whose
     // enforcement is already proved in `RatchetStaking.spec.ts`.
     //
@@ -509,7 +521,7 @@ struct RatchetConfig {
     // WHY IT IS SEPARATE FROM `clockDivisor` rather than reusing it. The two
     // axes are independent: a wave that wants realistic clocks (divisor 1) to
     // watch a real cooldown still needs a reachable stake minimum, and a wave
-    // that wants fast clocks may want the real 625 TON gate. Folding them would
+    // that wants fast clocks may want the real 625 GRAM gate. Folding them would
     // make one choice impossible for no saving — the field is one `uint16` in a
     // cell that already carries three addresses.
     //
@@ -583,8 +595,8 @@ struct BurnStats {
 // thing, and keeps the burn get-methods off the staking path's cell loads.
 struct StakeMeta {
     // The tsTON rate, as the PAIR it was learned as: `lastRateNum` nanotons of
-    // deposit minted `lastRateDen` nano-tsTON. TON per tsTON is num/den; tsTON
-    // per TON is den/num. Published unrounded by `getStaking` so a reader checks
+    // deposit minted `lastRateDen` nano-tsTON. GRAM per tsTON is num/den; tsTON
+    // per GRAM is den/num. Published unrounded by `getStaking` so a reader checks
     // the ratio rather than a quotient we chose (§9.1).
     lastRateNum: uint64
     lastRateDen: uint64
@@ -623,22 +635,39 @@ struct StakeMeta {
     recoveredExit: coins
     tstonWalletAddr: address   // this contract's OWN tsTON wallet; one-shot from genesis
     tstonWalletSet: uint8      // 0 until SetTstonWallet lands; the three arms refuse at 0
+    // Who fronted the open stake's 1 GRAM pool reserve, and that stake's query id.
+    // A ref: StakeMeta's own cell has no room for a second address.
+    stakeRefund: Cell<StakeRefund>
+}
+
+// The one `excesses` that is the CALLER's money: from our tsTON wallet, echoing
+// the stake's query id. Written by every stake, cleared when paid, and cleared
+// wherever a stake ends without its excess (a bounce, a write-off) or another
+// arm starts (unstake, harvest): query ids are caller-chosen and the wrappers
+// default them to 0, so a stale row must never meet a later arm's excess.
+struct StakeRefund {
+    to: address?
+    queryId: uint64
+}
+
+fun noStakeRefund(): Cell<StakeRefund> {
+    return (StakeRefund { to: null, queryId: 0 }).toCell();
 }
 
 struct Staking {
-    stakedCost: coins      // TON deposited into the pool, AT COST. A term of `T`.
-    exiting: coins         // TON on its way back out of the pool, at cost. A term of `T`.
+    stakedCost: coins      // GRAM deposited into the pool, AT COST. A term of `T`.
+    exiting: coins         // GRAM on its way back out of the pool, at cost. A term of `T`.
     tstonHeld: coins       // nano-tsTON this contract owns, EXCLUDING `inFlightExit`
-    inFlightStake: coins   // TON awaiting a deposit's mint notification; 0 if none
+    inFlightStake: coins   // GRAM awaiting a deposit's mint notification; 0 if none
     inFlightExit: coins    // nano-tsTON inside the exit state machine; 0 if none
     exitCostBasis: coins   // the `exiting` slice this one exit is responsible for
-    realizedLoss: coins    // cumulative TON that left `T` and did not come back (§5, §8)
+    realizedLoss: coins    // cumulative GRAM that left `T` and did not come back (§5, §8)
     meta: Cell<StakeMeta>
 }
 
 struct Storage {
-    pending: coins           // TON held here, not yet swapped. §5's `T = swapped + pending`.
-    swapped: coins           // cumulative TON that has left through the venue leg
+    pending: coins           // GRAM held here, not yet swapped. §5's `T = swapped + pending`.
+    swapped: coins           // cumulative GRAM that has left through the venue leg
     inFlightFlush: coins     // awaiting the DeDust round trip; 0 if none
     // Read-only mirrors of the ledger's authoritative T and S, pushed on every
     // PoolInject. Used ONLY to price the floor guard. Never a source of truth.
@@ -712,7 +741,7 @@ struct (0xb0000051) SetLedger {
 // address derives from this contract's address (TEP-74 wallets are addressed by
 // owner), so it cannot be embedded in this contract's own address-determining
 // data — same circular-address family as SetLedger and the vault's SetWallet.
-// It arms `getBurnStats`; it grants no authority and changes no TON path.
+// It arms `getBurnStats`; it grants no authority and changes no GRAM path.
 struct (0xb0000052) SetJettonWallet {
     queryId: uint64
     jettonWalletAddr: address
@@ -756,7 +785,7 @@ struct (0x595f07bc) JettonBurn {
     customPayload: cell?
 }
 
-// inbound, from the DeDust native TON vault: our own swap's TON, handed back
+// inbound, from the DeDust native GRAM vault: our own swap's GRAM, handed back
 // because the pool could not meet `limit`. See the "A REFUSED DEDUST SWAP DOES NOT BOUNCE" note above for the
 // mainnet evidence that this, and not a bounce, is how a refusal arrives.
 //
@@ -816,7 +845,7 @@ struct (0x47d54391) TonstakersDeposit {
 
 // inbound, from the Tonstakers pool: an immediate withdrawal that FILLED
 // (`op-codes.func:43`). Non-bounceable, CARRY_ALL_BALANCE, and THE BODY CARRIES
-// NO AMOUNT — the filled TON is the message value, arriving mixed with whatever
+// NO AMOUNT — the filled GRAM is the message value, arriving mixed with whatever
 // is left of the gas we attached to our own burn. The two are not separable,
 // which is why the rate is learned from a DEPOSIT and never from this.
 struct (0x0a77535c) TonstakersWithdrawal {
@@ -835,7 +864,7 @@ struct (0x05138d91) PayoutOwnershipAssigned {
     forwardPayload: RemainingBitsAndRefs
 }
 
-// inbound, from the payout collection at round end: the bill's TON share
+// inbound, from the payout collection at round end: the bill's GRAM share
 // (`payout_nft/nft-collection.func:262-268`). Non-bounceable, and again no
 // amount field — the money IS the message.
 struct (0xdb3b8abd) PayoutDistributedAsset {
@@ -863,7 +892,7 @@ type AllowedMessage = PoolInject | Flush | UpdateVenue | SetLedger | SetJettonWa
 //
 // UNITS (§10 flags this explicitly, and getting it wrong silently misprices the
 // guard rather than failing loudly):
-//   amount : nanotons                     (TON leaving for the venue)
+//   amount : nanotons                     (GRAM leaving for the venue)
 //   T      : nanotons                     (pool backing)
 //   S      : nano-PRIMES                  (jetton supply, 9 decimals)
 //   T / S  : nanotons per nano-PRIMES     — the floor price p_f
@@ -907,14 +936,14 @@ fun computeMinOut(amount: coins, tCache: coins, sCache: coins): coins {
 // ---------------------------------------------------------------------------
 
 // THE RESERVE IS A FRACTION OF THE WHOLE OBLIGATION, not of the liquid part.
-// `pending` here is only the TON physically on this balance (see the header
+// `pending` here is only the GRAM physically on this balance (see the header
 // note on the sim's opposite convention), so the obligation `flush()` may one
 // day have to meet is `pending + stakedCost + exiting` and the reserve is
 // RESERVE_BPS of that. Written as a function rather than stored because a
 // stored copy would go stale on every `PoolInject` — and a stale reserve is a
 // reserve that is wrong exactly when the mint rate is highest.
 //
-// It is INVARIANT ACROSS A STAKE OR AN EXIT: both only move TON between the
+// It is INVARIANT ACROSS A STAKE OR AN EXIT: both only move GRAM between the
 // three terms, so the sum, and therefore the target, does not move. That is
 // what makes `unstake` sizeable in one step.
 fun reserveTargetOf(pending: coins, stk: Staking): int {
@@ -1004,7 +1033,7 @@ fun returnCallerChange(keep: int, caller: address, queryId: int) {
     }).send(SEND_MODE_CARRY_ALL_BALANCE | SEND_MODE_IGNORE_ERRORS);
 }
 
-// LEG 2 — the guarded tsTON -> TON swap on DeDust.
+// LEG 2 — the guarded tsTON -> GRAM swap on DeDust.
 //
 //     min_out = amount * max(costBasis, lastRate * (1 - EXIT_SLIPPAGE_BPS))
 //
@@ -1018,7 +1047,7 @@ fun returnCallerChange(keep: int, caller: address, queryId: int) {
 // what we paid.
 //
 // The owner's sentence is the specification (D-151): "There should be no loss —
-// i can tolerate slight devaluation due to direct tsTON to TON swap, but it
+// i can tolerate slight devaluation due to direct tsTON to GRAM swap, but it
 // should be guarded. If exchange rate is bad — activate manual withdrawal and
 // when it lands flush." The second sentence IS leg 3. A book that will not pay
 // our cost is "exchange rate is bad", so the right answer is to refuse and fall
@@ -1076,14 +1105,14 @@ fun sendExitDedustSwap(stk: Staking, meta: StakeMeta, vs: VenueStaking, queryId:
 // drawn back down into `pending`.
 //
 // WHY THE CREDIT IS CAPPED AT `exitCostBasis` AND THE SURPLUS IS NOT BACKING.
-// Every one of the three legs pays non-bounceably with the TON mixed into the
+// Every one of the three legs pays non-bounceably with the GRAM mixed into the
 // message value — leg 1 arrives CARRY_ALL_BALANCE on top of our own leftover
 // gas, and legs 2 and 3 the same. So the value is a payout PLUS change and the
 // two are not separable at arrival. Crediting the whole of it would put returned
 // gas into `pending`, and `pending` is a term of the ledger's `T`, which this
 // contract cannot move: the identity would break by exactly the change. The cap
 // keeps every credit matched by an equal debit of `exiting`, and the surplus
-// (returned gas, and any rate gain above cost) stays where unattributable TON
+// (returned gas, and any rate gain above cost) stays where unattributable GRAM
 // always stays here — the gas buffer, which is not a term of `T`.
 //
 // THE SHORTFALL, when there is one, is the realized loss and it leaves `T`
@@ -1123,11 +1152,11 @@ fun sendExitDedustSwap(stk: Staking, meta: StakeMeta, vs: VenueStaking, queryId:
 //   whose address is SALTED with `random()` at deploy
 //   (`address_calculations.func:67-68`) and so cannot be whitelisted without a
 //   new admin surface. Leg 2's `payout#474f86cf` does come from the native vault
-//   we check — but ANYONE can make that vault pay us, by swapping jetton -> TON
+//   we check — but ANYONE can make that vault pay us, by swapping jetton -> GRAM
 //   with `recipient_addr` = this contract. So these arrivals are made SAFE UNDER
 //   FORGERY instead: each credits `c = min(value, exitCostBasis)` to `pending`
 //   and draws `exiting` and `exitCostBasis` down by the SAME `c` — both terms of
-//   `T`, and the TON backing `c` is on this balance because it is the message
+//   `T`, and the GRAM backing `c` is on this balance because it is the message
 //   value itself. The exit closes only when `exitCostBasis` reaches 0. A forged
 //   arrival is therefore a donation that costs the forger exactly what it
 //   credits, and the genuine payout that follows closes the residual, its
@@ -1140,16 +1169,16 @@ fun sendExitDedustSwap(stk: Staking, meta: StakeMeta, vs: VenueStaking, queryId:
 //
 // (Until 2026-09-26 this function closed the exit on ANY arrival and booked
 // `exitCostBasis - value` as loss, while this comment claimed the same-figure
-// arithmetic above. A 0.02 TON forged `payout_distributed_asset` closed a whole
-// tranche and stranded its TON in the gas buffer.)
+// arithmetic above. A 0.02 GRAM forged `payout_distributed_asset` closed a whole
+// tranche and stranded its GRAM in the gas buffer.)
 fun creditExitArrival(valueCoins: int, partial: bool) {
     var storage = lazy Storage.load();
     var stk = storage.staking.load();
     if (stk.inFlightExit == 0 && stk.exitCostBasis == 0) {
-        // Nothing outstanding: the TON has already been credited to the balance
+        // Nothing outstanding: the GRAM has already been credited to the balance
         // by the time compute runs, and throwing would abort while keeping it —
         // the exact half-state the DedustPayout handler exists to prevent.
-        // Unattributable TON stays as this account's gas buffer.
+        // Unattributable GRAM stays as this account's gas buffer.
         return;
     }
     var meta = stk.meta.load();
@@ -1248,17 +1277,17 @@ fun handleTstonNotification(amount: coins, queryId: int, from: address?) {
     if (stk.inFlightStake > 0 && minted) {
         // A DEPOSIT FILLED, and this is the ONLY place the tsTON rate is ever
         // learned (D-151: the finding that deleted the probe-burn design). Both
-        // sides are known exactly here — the TON we chose to stake and the tsTON
+        // sides are known exactly here — the GRAM we chose to stake and the tsTON
         // the pool minted — where a withdrawal's body carries no amount at all.
         //
         // `lastRateNum` is `inFlightStake`, i.e. the amount charged to
         // `stakedCost`, and NOT the message value: the pool credits
-        // `value - DEPOSIT_FEE`, which includes the unspent part of STAKE_GAS,
-        // so `amount` is minted against slightly more TON than we counted. That
-        // makes the learned tsTON-per-TON slightly HIGH, and every use of it is
+        // `value - DEPOSIT_FEE`, which includes what STAKE_CREDIT_MARGIN leaves,
+        // so `amount` is minted against slightly more GRAM than we counted. That
+        // makes the learned tsTON-per-GRAM slightly HIGH, and every use of it is
         // conservative in that direction: `harvest()` computes LESS accrued
         // yield and leg 2 demands a marginally lower floor, inside a band of
-        // STAKE_GAS/STAKE_MIN — under 6 bps at the minimum stake, against a
+        // STAKE_CREDIT_MARGIN/STAKE_MIN — 2 bps at the minimum stake, against a
         // 50 bps tolerance. The alternative would be pretending to know a
         // forward fee the contract cannot read.
         //
@@ -1275,7 +1304,7 @@ fun handleTstonNotification(amount: coins, queryId: int, from: address?) {
         // at the new rate reads that tsTON as yield and sends it to the treasury.
         // The fill itself is excluded from both sides: `pre` is read before it is
         // added, and its cost X is taken off `stakedCost`. Direction: X nanotons
-        // bought `amount` nano-tsTON, so TON per tsTON is X / amount.
+        // bought `amount` nano-tsTON, so GRAM per tsTON is X / amount.
         val pre = stk.tstonHeld;
         val preCost = stk.stakedCost - stk.inFlightStake;
         if (meta.writtenOff > 0 && amount > 0) {
@@ -1288,9 +1317,9 @@ fun handleTstonNotification(amount: coins, queryId: int, from: address?) {
             }
         }
         stk.tstonHeld += amount;
-        // B37 — KEEP THE HIGHER TON-PER-tsTON, never just the latest. Every learned
-        // pair under-states it (the pool minted against X + the unspent STAKE_GAS,
-        // the pair books X), by STAKE_GAS/X: a SMALL stake under-states it most. And
+        // B37 — KEEP THE HIGHER GRAM-PER-tsTON, never just the latest. Every learned
+        // pair under-states it (the pool minted against X + what STAKE_CREDIT_MARGIN
+        // leaves, the pair books X), by that over X: a SMALL stake under-states it most. And
         // `harvest()` values ALL of `stakedCost` at the one pair, so a small stake
         // after a large one dragged the rate down, priced the earlier tranches'
         // gas surplus out, and read accrued < 0 on real yield (20261121 testnet:
@@ -1313,13 +1342,13 @@ fun handleTstonNotification(amount: coins, queryId: int, from: address?) {
     }
 
     if (stk.inFlightExit > 0 && amount == stk.inFlightExit) {
-        // The venue cell is read only here: a bill payout carries 0.01 TON of
+        // The venue cell is read only here: a bill payout carries 0.01 GRAM of
         // gas (`nft-collection.func:19`), and the path it takes must not pay for
         // a load it does not use.
         val vs = storage.venue.load().staking.load();
         val fromDedust = from != null && from == vs.dedustTstonVault;
         if (meta.exitLeg == EXIT_LEG_BURN_FOK && minted) {
-            // Leg 1 was refused: the pool could not fill out of its free TON and
+            // Leg 1 was refused: the pool could not fill out of its free GRAM and
             // `fill_or_kill = 1` told it to re-mint rather than queue. Nothing
             // was sold, so the tranche is untouched and the machine moves to the
             // guarded swap. `tstonHeld` is deliberately NOT credited — the
@@ -1395,7 +1424,7 @@ fun handleTstonNotification(amount: coins, queryId: int, from: address?) {
 
 // AUDIT H2 B1(b): the 1/1 pair the wrapper seeds at deploy, before any
 // authenticated fill. No fill can write it back: a learned pair is (X, amount)
-// with X above the stake minimum (at least 500 TON / 65535 = 7.6 million nanotons).
+// with X above the stake minimum (at least 50 GRAM / 65535 = 0.76 million nanotons).
 fun rateIsSeed(meta: StakeMeta): bool {
     return meta.lastRateNum == 1 && meta.lastRateDen == 1;
 }
@@ -1518,7 +1547,7 @@ fun onInternalMessage(in: InMessage) {
             // worst a forged notification can do is ask us to send a burn
             // order to the forger's own contract for tokens the forger says
             // we own there — which burns the forger's tokens or bounces off a
-            // non-wallet, and moves no TON either way (the burn rides the
+            // non-wallet, and moves no GRAM either way (the burn rides the
             // notification's own attached gas, never this contract's balance,
             // which is pool backing). `S` is untouched: it is cumulative
             // emission on the ledger and never decremented (§3.3).
@@ -1550,17 +1579,17 @@ fun onInternalMessage(in: InMessage) {
             // (the only party that pays a swap's proceeds) and the amount to meet
             // the swap's own `limit` (DeDust never fills below it). A stranger's
             // 1-nanoPRIMES transfer used to clear the tracker here, so a refusal
-            // arriving afterwards found nothing in flight and its TON — one
+            // arriving afterwards found nothing in flight and its GRAM — one
             // `FLUSH_PCT` tranche of `pending` a day — was stranded in the gas
             // buffer. A forger must now hand over `lastMinOut` PRIMES, worth at
-            // least the TON he strands at the floor, and those PRIMES are burned.
+            // least the GRAM he strands at the floor, and those PRIMES are burned.
             if (burn.walletSet == 1 && in.senderAddress == burn.jettonWalletAddr) {
                 val jettonFrom = msg.sender;
                 // The vault of the venue the open flush was SENT to (audit R2-M1).
                 val trip = flushReplyVenue(storage.venue.load(), storage.inFlightFlush);
                 if (jettonFrom != null && jettonFrom == trip.primesJettonVault) {
                     // THE TALLY COUNTS SWAP PROCEEDS ONLY. A holder's own transfer to
-                    // our wallet also notifies honestly, but it chooses the TON the
+                    // our wallet also notifies honestly, but it chooses the GRAM the
                     // burn rides on: at ~0.006 it paid this handler and not the burn,
                     // which IGNORE_ERRORS below then dropped, and `getBurnStats` (§3.3's
                     // "measured" burn) counted PRIMES that were never burned
@@ -1588,7 +1617,7 @@ fun onInternalMessage(in: InMessage) {
                     // the leg that fills it.
                     customPayload: null,
                 }).toCell(),
-            // IGNORE_ERRORS: the burn rides only the TON DeDust forwarded, and if
+            // IGNORE_ERRORS: the burn rides only the GRAM DeDust forwarded, and if
             // that is too little to pay its forward fee the action phase would fail
             // and roll back the `inFlightFlush` clear above with it — the flush lock
             // this fill exists to lift. An unpaid burn is dropped instead; the PRIMES
@@ -1631,7 +1660,7 @@ fun onInternalMessage(in: InMessage) {
             var storage = lazy Storage.load();
             val venue = storage.venue.load();
 
-            // §4.3.2 LEG 2 FILLED. The tsTON pool's native vault pays a jetton -> TON
+            // §4.3.2 LEG 2 FILLED. The tsTON pool's native vault pays a jetton -> GRAM
             // swap's OUTPUT with the same `payout#474f86cf` the flush venue's vault
             // pays a refusal with, so state decides which this is. It cannot be
             // ambiguous: `handleFlush` refuses while an exit is on leg 1 or 2 and
@@ -1650,9 +1679,9 @@ fun onInternalMessage(in: InMessage) {
                 }
             }
 
-            // A payout from the native vault can only be our own swap's TON coming
-            // back: this contract swaps TON -> PRIMES and never the other way, so
-            // it can never be the SUCCESSFUL output of a jetton -> TON swap, which
+            // A payout from the native vault can only be our own swap's GRAM coming
+            // back: this contract swaps GRAM -> PRIMES and never the other way, so
+            // it can never be the SUCCESSFUL output of a jetton -> GRAM swap, which
             // is the other thing this opcode carries. That makes the sender check
             // the whole correlation — no `queryId` bookkeeping is needed, and
             // `Flush.queryId` is caller-supplied and therefore not a correlator we
@@ -1667,13 +1696,13 @@ fun onInternalMessage(in: InMessage) {
 
             // THE VALUE IS THE CORRELATION. The sender check above does NOT make
             // this payout ours: anyone can make the native vault pay this address
-            // by swapping jetton -> TON with `recipient_addr` = us, timed while
+            // by swapping jetton -> GRAM with `recipient_addr` = us, timed while
             // our own swap is in flight and about to FILL. Read as a refusal, that
-            // put `inFlightFlush` back into `pending` after the TON had really left
+            // put `inFlightFlush` back into `pending` after the GRAM had really left
             // — `pending` overstated against the balance. A genuine refusal pays
             // back the whole input, so `value >= inFlightFlush`; anything smaller
             // is not our round trip and joins the gas buffer. A forger who pays
-            // the whole amount has donated exactly the TON he restored.
+            // the whole amount has donated exactly the GRAM he restored.
             if (storage.inFlightFlush > 0 && in.valueCoins >= storage.inFlightFlush) {
                 storage.pending += storage.inFlightFlush;
                 storage.swapped -= storage.inFlightFlush;
@@ -1687,14 +1716,14 @@ fun onInternalMessage(in: InMessage) {
                 storage.lastFlushTime = 0;
                 storage.save();
             }
-            // `inFlightFlush == 0` is NOT an error and must not throw: the TON has
+            // `inFlightFlush == 0` is NOT an error and must not throw: the GRAM has
             // already been credited by the time compute runs, and throwing would
             // abort the transaction while keeping it, which is the exact
             // half-state this handler exists to prevent. Nothing is credited to
             // `pending` in that case either — `pending` is mirrored by `T` on the
             // ledger (§5's identity), and this contract cannot move `T`, so
             // inventing backing here would break the identity rather than restore
-            // it. Unattributable TON stays as this account's gas buffer, exactly
+            // it. Unattributable GRAM stays as this account's gas buffer, exactly
             // like the swap's own change.
         }
 
@@ -1739,7 +1768,7 @@ fun onInternalMessage(in: InMessage) {
             // LEG 1 FILLED. The pool sends this itself (`pool.func:206-212`), and its
             // address is in the venue, so the sender is checked here. This arrival
             // closes the exit whole and books any shortfall as loss, so a stranger
-            // must not be able to trigger it with 0.02 TON.
+            // must not be able to trigger it with 0.02 GRAM.
             //
             // A STRANGER'S OWN BURN CANNOT REACH THIS ARM. The pool pays
             // `from_address`, the OWNER of the burning wallet, and ignores the
@@ -1752,7 +1781,7 @@ fun onInternalMessage(in: InMessage) {
             // `ton-blockchain/liquid-staking-contract` @ main, 2026-09-29.
             // Partial credit here would be no safer, and it would lose the one
             // place a slashing shortfall is booked.) Anything else
-            // is unattributable TON and joins the gas buffer — never a throw, the
+            // is unattributable GRAM and joins the gas buffer — never a throw, the
             // message is non-bounceable (MISTAKES.md 2026-09-17).
             val peek = lazy Storage.load();
             val vs = peek.venue.load().staking.load();
@@ -1781,9 +1810,11 @@ fun onInternalMessage(in: InMessage) {
         }
 
         Excesses => {
-            // From either jetton wallet. Accepted and ignored: the value is
-            // already on the balance by the time compute runs, where it joins the
-            // gas buffer, which is what paid for the message that earned it.
+            // From either jetton wallet. The stake's own reply goes back to the
+            // caller who fronted it; every other one is accepted and ignored: the
+            // value is already on the balance by the time compute runs, where it
+            // joins the gas buffer, which is what paid for the message that earned it.
+            handleStakeRefund(msg.queryId, in.senderAddress);
         }
 
         else => {
@@ -1838,10 +1869,10 @@ fun handleStake(queryId: int, valueCoins: int, caller: address) {
     assert (amount > storage.cfg.load().stakeMinTon()) throw 226;  // ratchet_stake_below_min
 
     // THE POOL'S FEES COME OUT OF THE CALLER'S VALUE (D-146), never out of
-    // `pending` (D-151: a 1 TON fee taken from the staked amount would drop `T`
+    // `pending` (D-151: a 1 GRAM fee taken from the staked amount would drop `T`
     // on every stake and `p_f = T/S` with it) and no longer out of the gas
     // buffer. Asserted by name rather than left to die in the ACTION phase.
-    assert (valueCoins >= TONSTAKERS_DEPOSIT_FEE + STAKE_GAS + CALLER_COMPUTE_GAS) throw 225; // ratchet_flush_gas
+    assert (valueCoins >= TONSTAKERS_DEPOSIT_FEE + STAKE_CREDIT_MARGIN + CALLER_COMPUTE_GAS) throw 225; // ratchet_flush_gas
     val keep = contract.getOriginalBalance() - valueCoins - amount;
 
     // Two-phase optimistic write, exactly as `handleFlush` does it: the term
@@ -1852,6 +1883,7 @@ fun handleStake(queryId: int, valueCoins: int, caller: address) {
     stk.stakedCost += amount;
     stk.inFlightStake = amount;
     meta.stakeStartedAt = blockchain.now() as uint32;
+    meta.stakeRefund = (StakeRefund { to: caller, queryId: queryId }).toCell();
     stk.meta = meta.toCell();
     storage.staking = stk.toCell();
     storage.save();
@@ -1860,11 +1892,40 @@ fun handleStake(queryId: int, valueCoins: int, caller: address) {
         bounce: BounceMode.RichBounce,
         // The deposit is the VALUE, less the pool's flat fee — the body has no
         // amount field at all.
-        value: amount + TONSTAKERS_DEPOSIT_FEE + STAKE_GAS,
+        value: amount + TONSTAKERS_DEPOSIT_FEE + STAKE_CREDIT_MARGIN,
         dest: vs.tonstakersPool,
         body: (TonstakersDeposit { queryId: queryId }).toCell(),
     }).send(SEND_MODE_REGULAR);
     returnCallerChange(keep, caller, queryId);
+}
+
+// The pool's `excesses` for the open stake: the unspent part of the 1 GRAM
+// reserve the caller attached (TONSTAKERS_DEPOSIT_FEE). Forwarded with the
+// INBOUND value only (CARRY_ALL_REMAINING_MESSAGE_VALUE, which also pays this
+// compute out of it), so the balance above `pending` ends where it began — D-146
+// holds and this is no withdraw path. Authenticated on the sender AND the query
+// id; anything else falls through to the plain ignore. The 0.1 notification
+// before it stays here: it pays the fill's own compute.
+fun handleStakeRefund(queryId: int, sender: address) {
+    var storage = lazy Storage.load();
+    var stk = storage.staking.load();
+    var meta = stk.meta.load();
+    val refund = meta.stakeRefund.load();
+    if (refund.to == null || refund.queryId != queryId || sender != meta.tstonWalletAddr) {
+        return;
+    }
+    // The caller who fronted the reserve: `player` in withdraw-surface's terms.
+    val caller = refund.to!;
+    meta.stakeRefund = noStakeRefund();
+    stk.meta = meta.toCell();
+    storage.staking = stk.toCell();
+    storage.save();
+    createMessage({
+        bounce: BounceMode.NoBounce,
+        value: 0,
+        dest: caller,
+        body: (Excesses { queryId: queryId }).toCell(),
+    }).send(SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE | SEND_MODE_IGNORE_ERRORS);
 }
 
 // UNSTAKE. Callable ONLY when the liquid reserve is short — with the floor's
@@ -1893,7 +1954,7 @@ fun handleUnstake(queryId: int, valueCoins: int, caller: address) {
     if (needTon > stk.stakedCost) { needTon = stk.stakedCost; }
 
     // SIZED AT COST BASIS, not at `lastRate`. `tstonHeld / stakedCost` is this
-    // contract's own average tsTON-per-TON and is the one ratio it knows without
+    // contract's own average tsTON-per-GRAM and is the one ratio it knows without
     // trusting a learned number; because the pool's rate only ever rises, a
     // tranche sized at cost redeems AT LEAST `needTon` and never less, which is
     // the direction that matters when the point of the call is to refill a
@@ -1910,7 +1971,7 @@ fun handleUnstake(queryId: int, valueCoins: int, caller: address) {
     var tstonAmount = (needTon * stk.tstonHeld + stk.stakedCost - 1) / stk.stakedCost;
     if (tstonAmount > stk.tstonHeld) { tstonAmount = stk.tstonHeld; }
     // A DUST TRANCHE IS NOT AN EXIT (the G93 keeper finding, now enforced here).
-    // A 1-nano tranche redeems to 0 TON, parks the machine on leg 3 with nothing
+    // A 1-nano tranche redeems to 0 GRAM, parks the machine on leg 3 with nothing
     // to settle, and holds `stake`/`unstake` shut for `exitRecoverySec`, so any
     // stranger could freeze the reserve's refill for 72 h with one dust call.
     // The floor is the sim's `staked_reserve.harvest_dust_tston`, the same
@@ -1945,12 +2006,13 @@ fun handleUnstake(queryId: int, valueCoins: int, caller: address) {
     // D-155 — the ONLY write of the timeout's clock. Every later leg inherits
     // it, so the 72 hours are counted from the exit, not from the last hop.
     meta.exitStartedAt = blockchain.now() as uint32;
+    meta.stakeRefund = noStakeRefund();
     stk.meta = meta.toCell();
     storage.staking = stk.toCell();
     storage.save();
 
     // LEG 1 — Tonstakers' own immediate withdrawal, at the pool's exact rate.
-    // `wait_till_round_end = 0, fill_or_kill = 1`: TON at `total_balance/supply`
+    // `wait_till_round_end = 0, fill_or_kill = 1`: GRAM at `total_balance/supply`
     // or the pool re-mints and nothing was sold. No DEX, no price impact, no
     // partial state (`pool.func:197-218`, `:232-240`).
     sendTstonWithdraw(meta.tstonWalletAddr, queryId, tstonAmount, 0, 1);
@@ -1984,11 +2046,11 @@ fun handleHarvest(queryId: int, valueCoins: int, caller: address) {
     // WHICH WAY ROUND THE RATE GOES, and it is the one line in this file where
     // getting it backwards is silently profitable-looking rather than loud.
     // `lastRateNum` nanotons of deposit minted `lastRateDen` nano-tsTON, so
-    // tsTON per TON is den/num and the tsTON our cost is WORTH AT THE RATE WE
+    // tsTON per GRAM is den/num and the tsTON our cost is WORTH AT THE RATE WE
     // PAID is `stakedCost * lastRateDen / lastRateNum`. Anything above that is
     // tsTON the pool's own appreciation added, denominated in tsTON, which is
-    // what we send. Sanity check with numbers: stake 100 TON at 1 tsTON = 1.05
-    // TON (num = 105, den = 100) and the pool mints 95.238 tsTON; a year later
+    // what we send. Sanity check with numbers: stake 100 GRAM at 1 tsTON = 1.05
+    // GRAM (num = 105, den = 100) and the pool mints 95.238 tsTON; a year later
     // the rate is unchanged and `100 * 100 / 105 = 95.238`, accrued 0 — the
     // inverted reading would give `100 * 105 / 100 = 105` and a negative
     // accrual that underflows into a colossal one.
@@ -2007,6 +2069,7 @@ fun handleHarvest(queryId: int, valueCoins: int, caller: address) {
 
     stk.tstonHeld -= accrued;
     meta.lastHarvestTime = blockchain.now() as uint32;
+    meta.stakeRefund = noStakeRefund();
     stk.meta = meta.toCell();
     storage.staking = stk.toCell();
     storage.save();
@@ -2025,7 +2088,7 @@ fun handleHarvest(queryId: int, valueCoins: int, caller: address) {
 // WHY IT HAS TO EXIST. Every transition in the machine is driven by an inbound
 // reply, and a reply is not a guarantee: the 2026-09-21 testnet failure was a
 // leg 2 payout from an address `DedustPayout`'s sender gate rejects, which threw
-// 100 on a NON-BOUNCEABLE message — the TON was credited to the balance, no
+// 100 on a NON-BOUNCEABLE message — the GRAM was credited to the balance, no
 // accounting ran, and `exitLeg` stayed at 2 with nothing left to move it. That
 // is not a staking outage: `flush()` refused while any exit was open (230), and
 // `flush()` is how `pending` becomes `swapped` (§4.3.1). One lost reply bricked
@@ -2039,7 +2102,7 @@ fun handleHarvest(queryId: int, valueCoins: int, caller: address) {
 //     permissionless in exactly the sense the other three arms are (§11.14).
 //   - It cannot DOUBLE-CREDIT a payout that arrives late. Once it has run,
 //     `inFlightExit` and `exitCostBasis` are both 0, and `creditExitArrival`'s
-//     first branch returns on exactly that state: the late TON joins the gas
+//     first branch returns on exactly that state: the late GRAM joins the gas
 //     buffer instead of being counted twice.
 //   - It may leave `tstonHeld` OVERSTATED on legs 1 and 2 — if the tranche
 //     really was sold and the proceeds landed unattributed, this contract now
@@ -2071,7 +2134,7 @@ fun handleHarvest(queryId: int, valueCoins: int, caller: address) {
 // `realizedLoss`: `inFlightStake - stakeCredited`, the part no arrived tsTON was
 // credited against (audit H2 — under non-optimistic deposits the fill DID land,
 // unauthenticated, and this residual is only the drift between the last learned
-// rate and the pool's). Not restored to `pending`: that TON is gone from this
+// rate and the pool's). Not restored to `pending`: that GRAM is gone from this
 // balance, and crediting it would overstate `T`. Not credited as tsTON at
 // `lastRate`: the mint may never have happened, and invented tsTON reads as
 // yield `harvest()` pays out. tsTON that lands afterwards restores at most its
@@ -2091,6 +2154,7 @@ fun handleRecoverExit() {
         meta.stakeCredited = 0;
         stk.inFlightStake = 0;
         // `stakeStartedAt` is kept: it times the hold on the next stake.
+        meta.stakeRefund = noStakeRefund();
         stk.meta = meta.toCell();
         storage.staking = stk.toCell();
         storage.save();
@@ -2127,12 +2191,12 @@ fun handleRecoverExit() {
 // notification or a refund from the venue it was sent to (`flushReplyVenue` — a
 // venue change mid-flight no longer orphans it, audit R2-M1), so one the venue
 // DROPPED, or filled with too
-// little forwarded TON to run the notification, would hold 223 and 230 closed —
+// little forwarded GRAM to run the notification, would hold 223 and 230 closed —
 // the ratchet's buyback and its staked reserve both wedged. Past
 // `FLUSH_STALE_TIMEOUT` (1 h; the swap's own deadline is ten minutes) nothing can
 // still answer, so the trip is closed AS FILLED: `swapped` keeps the amount and
 // `pending` gets nothing back. That is the direction that can never overstate
-// `pending`: if the swap was in fact refused, its TON sits in the gas buffer and
+// `pending`: if the swap was in fact refused, its GRAM sits in the gas buffer and
 // `getSolvency`'s delta is higher, never negative.
 fun flushIsStale(storage: Storage): bool {
     return storage.inFlightFlush > 0
@@ -2187,8 +2251,8 @@ fun handleFlush(msg: Flush, valueCoins: int, caller: address) {
     // sizing (CLAUDE.md rule 3). The middle line used to read
     // `{ amount = storage.pending; }`, which is the OPPOSITE rule: it turned
     // "too small to bother with" into "then spend everything". The two agree
-    // outside `FLUSH_MIN <= pending <= FLUSH_MIN / FLUSH_PCT` (50..250 TON) and
-    // inside it the contract spent up to 250 TON where the sim spends 50 — the
+    // outside `FLUSH_MIN <= pending <= FLUSH_MIN / FLUSH_PCT` (50..250 GRAM) and
+    // inside it the contract spent up to 250 GRAM where the sim spends 50 — the
     // maximum-slippage choice, at exactly the depth where slippage decides
     // whether `min_out` is reachable at all. Nothing downstream was calibrated
     // against the old reading; `SimCrossCheck.spec.ts` now pins the two together.
@@ -2205,15 +2269,15 @@ fun handleFlush(msg: Flush, valueCoins: int, caller: address) {
     // a guard working exactly as designed: the swap's AVERAGE execution price
     // ran above `p_f` while the SPOT price sat well below it, and §4.3.1's
     // promise — that a market under the floor gets bought — silently did not
-    // hold. Measured on testnet: pool 1.2826 TON / 479,142 PRIMES, spot 2.1x
-    // BELOW the floor, and a 19.733 TON tranche demanding 3,469,538 PRIMES
+    // hold. Measured on testnet: pool 1.2826 GRAM / 479,142 PRIMES, spot 2.1x
+    // BELOW the floor, and a 19.733 GRAM tranche demanding 3,469,538 PRIMES
     // from a pool holding 479,142 in total. Refused, correctly, and
     // indistinguishable on the dashboard from "the market is above the floor".
     //
     // NO FIXED FRACTION FIXES THIS. 1/10, 1/20 and 1/50 of that same `pending`
     // all still bounce; 1/100 clears the curve and is then raised straight
     // back to `FLUSH_MIN` by the line above; and whatever fraction is chosen
-    // breaks again as `pending` grows (the sim reaches 210,833 TON). The size
+    // breaks again as `pending` grows (the sim reaches 210,833 GRAM). The size
     // has to come from the VENUE, and this contract cannot read the venue:
     // TVM has no synchronous cross-contract call, and DeDust publishes its
     // reserves as a get-method, not as a message it will answer.
@@ -2232,9 +2296,9 @@ fun handleFlush(msg: Flush, valueCoins: int, caller: address) {
     // can buy a single nanoton above `p_f`. The clamp is one-directional —
     // `min(msg.amount, autoSize)` — so a caller may only ask for LESS than the
     // contract would have sent, never more, and `FLUSH_MIN` therefore binds
-    // the auto path only (a venue whose `a_max` is under 5 TON is exactly the
+    // the auto path only (a venue whose `a_max` is under 5 GRAM is exactly the
     // case this exists for). The two things a bad `amount` can do are
-    // underspend, which leaves the TON in `pending` backing `T` either way,
+    // underspend, which leaves the GRAM in `pending` backing `T` either way,
     // and bounce, which the refund path already reverses in full.
     // 0 means "size it yourself" and keeps every existing caller correct.
     var amount = autoSize;
@@ -2255,7 +2319,7 @@ fun handleFlush(msg: Flush, valueCoins: int, caller: address) {
     storage.swapped += amount;
 
     // THE COOLDOWN IS CHARGED PRO RATA, and it has to be, because the caller
-    // now picks the size. `FLUSH_COOLDOWN` rate-limits TON THROUGHPUT — how
+    // now picks the size. `FLUSH_COOLDOWN` rate-limits GRAM THROUGHPUT — how
     // fast the ratchet may spend `pending` into the venue — and keying it to
     // the call instead of the amount is what would turn caller-sizing into a
     // denial of service: a stranger asking for one nanoton would spend the
@@ -2331,7 +2395,7 @@ fun handleFlush(msg: Flush, valueCoins: int, caller: address) {
         body: beginCell()
             .storeUint(DEDUST_SWAP_OP, 32)
             .storeUint(msg.queryId, 64)
-            .storeCoins(amount)              // swap#: amount — the TON side of the swap
+            .storeCoins(amount)              // swap#: amount — the GRAM side of the swap
             .storeAddress(venue.dedustPool)  // SwapStep: pool_addr
             .storeUint(0, 1)                 // SwapStepParams: kind = given_in$0
             .storeCoins(minOut)              // SwapStepParams: limit
@@ -2364,7 +2428,7 @@ fun onBouncedMessage(in: InMessageBounced) {
         // harvest arm below. A late bounce of a trip `flushIsStale` already closed as
         // filled, landing while a NEWER trip is open, used to restore the newer trip's
         // `inFlightFlush`: `pending` then overstated its backing by the difference once
-        // that trip filled. A bounce that is not the open trip's credits nothing; its TON
+        // that trip filled. A bounce that is not the open trip's credits nothing; its GRAM
         // joins the gas buffer, exactly as a late refund after the stale close does.
         var sw = rich.originalBody.beginParse();
         sw.loadUint(32);                 // op
@@ -2408,7 +2472,7 @@ fun onBouncedMessage(in: InMessageBounced) {
 
     if (opcode == TONSTAKERS_DEPOSIT_OP) {
         // The pool refused the deposit outright (deposits closed, value below the
-        // fee, unrecognised op). The TON is home; put it back in `pending`.
+        // fee, unrecognised op). The GRAM is home; put it back in `pending`.
         var stk = storage.staking.load();
         var meta = stk.meta.load();
         storage.pending += stk.inFlightStake;
@@ -2425,6 +2489,7 @@ fun onBouncedMessage(in: InMessageBounced) {
         meta.writtenOff -= back;
         meta.stakeCredited = 0;
         meta.stakeStartedAt = 0;
+        meta.stakeRefund = noStakeRefund();
         stk.meta = meta.toCell();
         storage.staking = stk.toCell();
         storage.save();
@@ -2563,8 +2628,8 @@ get fun getFlushStatus(): (int, int, int, int) {
 // Bundling them is what makes the honest reading the default one.
 //
 //   tCache, sCache           — T and S. `p_f = T / S`. NOTE: mirrors, see below.
-//   pending                  — TON held here, not yet swapped. `T = swapped + pending`.
-//   swapped                  — cumulative TON that has left through the venue leg.
+//   pending                  — GRAM held here, not yet swapped. `T = swapped + pending`.
+//   swapped                  — cumulative GRAM that has left through the venue leg.
 //   lastOutcome              — 0 never, 1 filled, 2 bounced (§12: a long gap is normal).
 //   lastAttemptTime          — when that outcome was recorded; 0 if never.
 //
@@ -2615,9 +2680,9 @@ get fun getFloorCache(): (int, int) {
 }
 
 // §3.4's load-bearing property, in ONE get-call: (balance, declared liability,
-// delta). The ratchet's declared liability is every TON it is holding as pool
+// delta). The ratchet's declared liability is every GRAM it is holding as pool
 // backing and could still owe the pool: `pending`, and only `pending`.
-// `inFlightFlush` is deliberately NOT part of the liability — that TON has
+// `inFlightFlush` is deliberately NOT part of the liability — that GRAM has
 // physically left this contract's balance for the venue, and either fills or
 // comes back through the bounce handler (which restores it to `pending` in the
 // same step). Counting it here would make `delta` transiently negative for the
@@ -2666,16 +2731,16 @@ get fun getLastFlushTs(): int {
 // about the staked reserve must be recomputable from chain state, and it shows
 // all of these).
 //
-//   stakedCost       — TON in the pool, AT COST. A term of `T`.
+//   stakedCost       — GRAM in the pool, AT COST. A term of `T`.
 //   tstonHeld        — nano-tsTON owned, EXCLUDING a tranche inside the exit
 //                      machine; `exiting` is where that one is counted.
-//   exiting          — TON on its way back, at cost. A term of `T`.
+//   exiting          — GRAM on its way back, at cost. A term of `T`.
 //   lastRateNum/Den  — the rate as the PAIR it was learned as, so a reader can
 //                      check the ratio rather than a quotient we rounded.
 //   reserveTarget    — DERIVED, never stored: RESERVE_BPS of the whole
 //                      obligation `pending + stakedCost + exiting`.
 //   lastHarvestTime  — 0 until the first harvest; the 30-day gate reads it.
-//   realizedLoss     — cumulative TON that left `T` and did not come back.
+//   realizedLoss     — cumulative GRAM that left `T` and did not come back.
 //                      Reported NEXT TO `stakedCost` and never netted into it,
 //                      the same separation getBurnStats draws. §5's one external
 //                      risk and §8's "loss published" are this number.
@@ -2761,7 +2826,7 @@ get fun getHarvestDest(): slice {
     return beginCell().storeAddress(t.treasuryAddr).endCell().beginParse();
 }
 
-// The vault leg 2's TON output is accepted from — the tsTON pool's own factory's
+// The vault leg 2's GRAM output is accepted from — the tsTON pool's own factory's
 // native vault, deploy data like the rest of §4.3.2's staking addresses.
 get fun getTstonPayoutVault(): slice {
     val storage = lazy Storage.load();

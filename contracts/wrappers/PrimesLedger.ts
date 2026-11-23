@@ -37,14 +37,14 @@ export const LedgerOpcodes = {
     ClaimDividend: LEDGER.claim_dividend, // §3.2: permissionless, credits p's item with div_acc − entry[p]
     SweepOps: LEDGER.sweep_ops, // CONCEPT §4.1 / §8, permissionless
     ClearingCleared: LEDGER.clearing_cleared, // CONCEPT §6 points 2-3 / D-20, from the market only
-    DonateFloor: LEDGER.donate_floor, // D-91 point 4 / D-100 point 1 — permissionless: TON in, T and S up, PRIMES to the sender
+    DonateFloor: LEDGER.donate_floor, // D-91 point 4 / D-100 point 1 — permissionless: GRAM in, T and S up, PRIMES to the sender
     SettlePrimeClearing: MARKET.settle_prime_clearing, // D-20 — a prime sale, from the market only
     Ignite: LEDGER.ignite, // CONCEPT §6 point 0: mints Unity and starts the game
     SyncLaunch: LEDGER.sync_launch, // permissionless re-send of ignite's launch_open fan-out
     GenesisSeed: LEDGER.genesis_seed,
     SetPeers: LEDGER.set_peers,
     SetSinks: LEDGER.set_sinks,
-    SetInviteText: LEDGER.set_invite_text, // D-211
+    SetInviteTerms: LEDGER.set_invite_terms, // D-211, D-215
     MarkOffHead: MARKET.mark_off_head,
     // 0xb0000022 (MarkUnreserved) is DELETED with D-45 — the reserved mark is
     // permanent, so the ledger has no handler for it. Do not reuse.
@@ -113,6 +113,9 @@ export type LedgerConfig = {
     d?: LedgerConfigD;
     /** D-211: §4.1's invite words at deploy. Defaults to `shared/invites.ts` `INVITE_TEXT_GENESIS`. */
     inviteText?: string;
+    /** D-215: §4.1's invite count / value at deploy. Default `INVITE_GENESIS_COUNT` / `_VALUE_NANOTON`. */
+    inviteCount?: number;
+    inviteValue?: bigint;
     /**
      * TEST HARNESSES ONLY. Genesis always deploys at head 2 with an empty
      * bitmap; nothing on-chain can set either.
@@ -203,6 +206,8 @@ function configCell(cfg: LedgerConfig): Cell {
         .storeRef(configACell(cfg.a))
         .storeRef(configBCell(cfg))
         .storeRef(configDCell(cfg))
+        .storeUint(cfg.inviteCount ?? INVITE_GENESIS_COUNT, 7) // D-215 inviteCount
+        .storeCoins(cfg.inviteValue ?? INVITE_GENESIS_VALUE_NANOTON) // D-215 inviteValue
         .storeRef(inviteTextCell(cfg.inviteText ?? INVITE_TEXT_GENESIS)) // D-211
         .endCell();
 }
@@ -298,6 +303,7 @@ function operatorMetersCell(): Cell {
         .storeCoins(0) // premiumTreasuryPaidTotal — D-114
         .storeUint(0, 64) // inviteSlotsFunded — §4.1's invite line, D-101
         .storeUint(0, 64) // inviteTransfersSent (D-202)
+        .storeUint(0, 64) // inviteValuePaid (D-215)
         .storeCoins(0) // treasuryHeld — G81
         .storeCoins(0) // operatorHeld — G81
         .storeCoins(0) // forfeitedBeyondWindow — D-196
@@ -405,7 +411,7 @@ function ledgerConfigToCell(cfg: LedgerConfig): Cell {
 // §3.2: the factor dictionary — `FactorEntry`, `isqrt`, its `DictionaryValue`
 // and `encodeFactors` — is NOT defined here, for exactly the invite reason
 // below. It lives in `shared/factors.ts`: the WEBAPP builds the same dictionary
-// for every real 1 TON composite mint, so a private copy in this wrapper would
+// for every real 1 GRAM composite mint, so a private copy in this wrapper would
 // mean every `pnpm test:contracts` proof about a submitted factorization ran
 // against bytes no player ever sends. Re-exported, not re-written, so the
 // sandbox exercises the webapp's exact code path — and so the specs and helpers
@@ -419,17 +425,8 @@ import { encodeMintBody } from '../../shared/messages';
 // §4.1's invite line (D-202): the invite list's dict encoding and the comment the ledger
 // sends live in `shared/invites.ts` and are re-exported, not re-written, so the sandbox
 // exercises the exact bytes the webapp and keeper build. `InviteCrossCheck.spec.ts` pins them.
-export { inviteAddressDict, inviteListCell, inviteCommentText, inviteCommentCell, inviteTextCell } from '../../shared/invites';
-import { inviteTextCell, INVITE_TEXT_GENESIS } from '../../shared/invites';
-
-/** D-211: the `set_invite_text` body. Shared by the wrapper and `scripts/setInviteText.ts`. */
-export function setInviteTextBody(words: string, queryID = 0): Cell {
-    return beginCell()
-        .storeUint(LedgerOpcodes.SetInviteText, 32)
-        .storeUint(queryID, 64)
-        .storeRef(inviteTextCell(words))
-        .endCell();
-}
+export { inviteAddressDict, inviteListCell, inviteCommentText, inviteCommentCell, inviteTextCell, setInviteTermsBody } from '../../shared/invites';
+import { inviteTextCell, setInviteTermsBody, INVITE_TEXT_GENESIS, INVITE_GENESIS_COUNT, INVITE_GENESIS_VALUE_NANOTON } from '../../shared/invites';
 
 export class PrimesLedger implements Contract {
     constructor(readonly address: Address, readonly init?: { code: Cell; data: Cell }) {}
@@ -528,8 +525,8 @@ export class PrimesLedger implements Contract {
 
     /**
      * THE mint. One message, one signature, MINT_PRICE + margin attached
-     * (primes_ledger.tolk D8). `value` must exceed 1 TON — the ledger asserts
-     * against what survives the forward fee, so exactly 1 TON reverts with 103.
+     * (primes_ledger.tolk D8). `value` must exceed 1 GRAM — the ledger asserts
+     * against what survives the forward fee, so exactly 1 GRAM reverts with 103.
      *
      * `beneficiary` is §4.5's gift: the NFT and the rebate go there instead of
      * to the payer. D-106 also made it the RECRUIT EDGE — a beneficiary the
@@ -548,7 +545,7 @@ export class PrimesLedger implements Contract {
             /**
              * §4.1's invite line (D-202). `count` is what the minter DECLARES
              * (0..3); `addresses` is keyed by SLOT (1..count) and a slot with
-             * no entry funds nothing — its 0.1 TON stays in the residual β.
+             * no entry funds nothing — its 0.1 GRAM stays in the residual β.
              */
             invites?: { count: number; addresses: Map<number, Address> } | null;
             value: bigint;
@@ -882,7 +879,7 @@ export class PrimesLedger implements Contract {
      * the premium above MINT_PRICE, on every lane alike, uniformly.
      */
     /**
-     * D-91 point 4 — the permissionless floor donation. `amount` TON in; `T`
+     * D-91 point 4 — the permissionless floor donation. `amount` GRAM in; `T`
      * rises by it, `S` rises by the emission, and that many nano-PRIMES are
      * minted TO THE SENDER, who pairs and burns on DeDust themselves. This is
      * where the pool's PRIMES side comes from.
@@ -898,7 +895,7 @@ export class PrimesLedger implements Contract {
      * `T = seedT + swapped + pending` closes with the donation counted once.
      *
      * Anyone may call it, any number of times. `value` must cover `amount`
-     * plus 0.025 TON of hop gas (0.005 ratchet + 0.02 jetton mint) plus the
+     * plus 0.025 GRAM of hop gas (0.005 ratchet + 0.02 jetton mint) plus the
      * usual compute margin — send `amount + 0.05n`, never exactly `amount`.
      */
     async sendDonateFloor(
@@ -965,7 +962,7 @@ export class PrimesLedger implements Contract {
     }
 
     /**
-     * CONCEPT §6 point 2: nanoTON of p's tribute line forfeited while p had no
+     * CONCEPT §6 point 2: nanoGRAM of p's tribute line forfeited while p had no
      * owner, LIFETIME: the ledger's row (while p has no owner) plus the counter
      * the sale handed to item(p) (D-188 point 4). Monotonic; 0 for any p that has
      * never forfeited. `getForfeitedRaw` is the ledger's half alone. D-198: plus the
@@ -1084,7 +1081,8 @@ export class PrimesLedger implements Contract {
      * §4.1's invite line / §9.1 (D-202): the invite line, lifetime. CUMULATIVE.
      * `slotsToPool` is `slotsFunded - transfersSent` — the slots that fell to β,
      * so "unspent slots go to the pool" is checked from outside rather than
-     * asserted. `linePaid` is `transfersSent * 0.1 TON` exactly.
+     * asserted. `valueDelivered` is what invitees received (D-215: summed at each
+     * mint's live value); `linePaid` is that plus `transfersSent × INVITE_SEND_FEE` exactly.
      */
     async getInviteSpend(provider: ContractProvider) {
         const r = await provider.get('getInviteSpend', []);
@@ -1092,14 +1090,21 @@ export class PrimesLedger implements Contract {
             slotsFunded: r.stack.readBigNumber(),
             transfersSent: r.stack.readBigNumber(),
             slotsToPool: r.stack.readBigNumber(),
+            valueDelivered: r.stack.readBigNumber(),
             linePaid: r.stack.readBigNumber(),
         };
     }
 
-    /** §4.1's invite line (D-202): the two owner-set terms, read off the contract. */
+    /** §4.1's invite line (D-215): the live operator-set terms and the three fixed bounds. */
     async getInviteTerms(provider: ContractProvider) {
         const r = await provider.get('getInviteTerms', []);
-        return { maxCount: r.stack.readNumber(), transferValue: r.stack.readBigNumber() };
+        return {
+            count: r.stack.readNumber(),
+            value: r.stack.readBigNumber(),
+            sendFee: r.stack.readBigNumber(),
+            lineCap: r.stack.readBigNumber(),
+            countCeiling: r.stack.readNumber(),
+        };
     }
 
     /** D-202: the exact body an invite transfer for the mint of `n` carries. */
@@ -1112,12 +1117,18 @@ export class PrimesLedger implements Contract {
         return (await provider.get('getInviteText', [])).stack.readCell().beginParse().loadStringTail();
     }
 
-    /** D-211: rewrite §4.1's invite words. Refused 100 unless `via` is `FeeDests.operatorAddr`. */
-    async sendSetInviteText(provider: ContractProvider, via: Sender, opts: { words: string; value: bigint; queryID?: number }) {
+    /** D-211 + D-215: rewrite §4.1's invite count, value and words. Refused 100 unless `via`
+     *  is `FeeDests.operatorAddr`; 238 outside the bounds; 237 for bad words. `value` is the
+     *  GRAM attached for gas, `inviteValue` the per-transfer value being set. */
+    async sendSetInviteTerms(
+        provider: ContractProvider,
+        via: Sender,
+        opts: { count: number; inviteValue: bigint; words: string; value: bigint; queryID?: bigint },
+    ) {
         await provider.internal(via, {
             value: opts.value,
             sendMode: SendMode.PAY_GAS_SEPARATELY,
-            body: setInviteTextBody(opts.words, opts.queryID ?? 0),
+            body: setInviteTermsBody(opts.count, opts.inviteValue, opts.words, opts.queryID ?? 0n),
         });
     }
     /** §3.2 / §9.1: π(n), the count of minted primes (the flat dividend's divisor). */
@@ -1172,7 +1183,7 @@ export class PrimesLedger implements Contract {
     /**
      * D-117: a bounced `mint_item` parks its original body (held split included) under
      * `n`. This re-sends it to the same owner with the same held split; the caller pays
-     * the deploy (`value` >= 0.035 TON). Unknown `n` is a no-op, not a throw.
+     * the deploy (`value` >= 0.035 GRAM). Unknown `n` is a no-op, not a throw.
      */
     async sendRetryItem(provider: ContractProvider, via: Sender, opts: { n: bigint; value: bigint; queryID?: number }) {
         await provider.internal(via, {

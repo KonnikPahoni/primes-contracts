@@ -39,8 +39,8 @@ const MockTonstakersPoolOpcodes = {
 
 export type MockTonstakersPoolConfig = {
     /**
-     * tsTON per TON as a fraction: `rateNum` TON buys `rateDen` tsTON. "1 tsTON
-     * = 1.05 TON" is `{ rateNum: toNano('1.05'), rateDen: toNano('1') }`.
+     * tsTON per GRAM as a fraction: `rateNum` GRAM buys `rateDen` tsTON. "1 tsTON
+     * = 1.05 GRAM" is `{ rateNum: toNano('1.05'), rateDen: toNano('1') }`.
      * Default 0n/1n so the mock cannot mint by accident — a deposit before a
      * `sendSetRate` fails hard rather than crediting zero tsTON.
      */
@@ -130,7 +130,7 @@ export class MockTonstakersPool implements Contract {
         });
     }
 
-    /** Leg 2's DeDust depth — how much TON the tsTON/TON book can pay out. */
+    /** Leg 2's DeDust depth — how much GRAM the tsTON/GRAM book can pay out. */
     async sendSetDedustTon(
         provider: ContractProvider,
         via: Sender,
@@ -183,7 +183,7 @@ export class MockTonstakersPool implements Contract {
     }
 
     /** Round end for a non-optimistic deposit: mints at the CURRENT rate and pays
-     *  the bill as a 0.01 TON transfer from the collection. */
+     *  the bill as a 0.01 GRAM transfer from the collection. */
     async sendSettleDepositBill(provider: ContractProvider, via: Sender, opts: { value: bigint; queryID?: number }) {
         await provider.internal(via, {
             value: opts.value,

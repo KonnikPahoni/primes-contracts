@@ -8,7 +8,7 @@ testnet-only, so the major version stays at 0 while contract wire formats can st
 
 ### Added
 
-- **`primes_name_number`** (`DECISIONS.md` D-212): name a number this wallet owns, for TON,
+- **`primes_name_number`** (`DECISIONS.md` D-212): name a number this wallet owns, for GRAM,
   through the collection — `nameFee` for the first naming, `renameFee` after, both read live
   from the collection's `getNaming()`. The server now registers 23 tools: 14 reads and 9 writes.
 - **Official MCP Registry listing**: `package.json` carries `mcpName`
@@ -27,7 +27,7 @@ testnet-only, so the major version stays at 0 while contract wire formats can st
 
 ### Changed
 
-- **BREAKING: naming is paid in TON, and the PRIMES sink is gone** (D-212). `primes_audit`
+- **BREAKING: naming is paid in GRAM, and the PRIMES sink is gone** (D-212). `primes_audit`
   returns `supply` and `solvency` only (no `sink`). `primes_name` reports the current owner
   as the namer, plus `nameFee`/`renameFee`/`nextFee`, and a primorial's `trophy` engraving.
   `primes_annotate` is the era trophy alone: the first engraving free, later ones at the
@@ -58,7 +58,7 @@ Seven composite reads, and the registry properties asserted rather than document
 
 - **Seven read tools**, each answering a question an agent asks *before* it acts rather
   than mirroring one HTTP route:
-  - `primes_wallet` — TON, PRIMES, both §4.7 rank ladders and any unclaimed bounty, in one
+  - `primes_wallet` — GRAM, PRIMES, both §4.7 rank ladders and any unclaimed bounty, in one
     call. A wallet missing any of them is the normal state for a new player, so each is
     settled separately and one absence does not blank the rest.
   - `primes_ratchet` — pending, swapped, the floor and the last flush outcome. `bounced` is

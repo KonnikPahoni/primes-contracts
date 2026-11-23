@@ -25,10 +25,10 @@ called **the ratchet**, which makes a published internal floor price go up and n
 
 ### Why do numbers have to be minted in order?
 
-Only the 1 TON mint is sequential. The head is a shared clock everyone is watching, and every
+Only the 1 GRAM mint is sequential. The head is a shared clock everyone is watching, and every
 number it passes gets a position, a date and a minter.
 
-You *can* have 1729 on day one — but not for 1 TON. Any number ahead of the head is sold by
+You *can* have 1729 on day one — but not for 1 GRAM. Any number ahead of the head is sold by
 paid ascending auction: opening the lot is the first bid at its starting price, and winning
 mints the number in the transaction that closes the lot. The head then skips 1729 forever
 (§4.4, D-45/D-88/D-90). So the interesting numbers are not a free-for-all; they are priced,
@@ -37,7 +37,7 @@ deleted the flat-fee route, and D-90 the escrowed claim behind it.)*
 
 ### What does a mint cost?
 
-**1 TON, all-in**, for an ordinary composite at the head. The protocol pays every deploy
+**1 GRAM, all-in**, for an ordinary composite at the head. The protocol pays every deploy
 cost out of that — there is no separate gas charge (§3.1, §4.1).
 
 Two exceptions, both auctions:
@@ -45,7 +45,7 @@ Two exceptions, both auctions:
 - **Primes at their turn** clear by descending auction (see below).
 - **Every number ahead of the head**, prime or composite, clears by ascending auction (§4.4, D-30, D-88).
 
-### Where does my 1 TON go?
+### Where does my 1 GRAM go?
 
 Five ways, and the split is **closed at 100%** (§4.1):
 
@@ -55,12 +55,12 @@ Five ways, and the split is **closed at 100%** (§4.1):
 | Referral (to the owner of a *number*, not an address) | 10% |
 | Treasury (governed — spendable only by a passed vote) | 5% |
 | Gas & ops (sized to the measured worst-case mint, D-117; the unspent part is swept to the ratchet) | 20% |
-| Invites (0..3 text transfers of 0.1 TON to wallets you name; the app pre-fills them) | up to 0.30 TON |
+| Invites (0..3 text transfers of 0.1 GRAM to wallets you name; the app pre-fills them) | up to 0.30 GRAM |
 | **Residual β → the ratchet** | **the rest** |
 
 *(Six until 2026-09-07. `DECISIONS.md` D-106 deleted a conditional **patron line** that
 took 25% of a recruited player's first mint and 7.5% of each one after, up to a lifetime
-1.00 TON. Nothing pays TON for recruiting now.)*
+1.00 GRAM. Nothing pays GRAM for recruiting now.)*
 
 β ranges over `[0.25, 0.75]`. With no invites sent it is **0.55 for a referred composite**
 and **0.65 for a prime**; each invite sent takes 0.1 off, so a referred composite that sends all
@@ -86,14 +86,14 @@ players collectively, never to the operator (§3.1, §4.1).
 
 `p_f = T / S`, where:
 
-- **`T`** = total TON ever committed to the pool by the protocol
+- **`T`** = total GRAM ever committed to the pool by the protocol
 - **`S`** = total PRIMES ever emitted as rebates, plus the genesis bounty vault
 
 No oracle, no external dependency. Both numbers are on-chain counters you can read (§5).
 
 ### Why does the floor only ever go up?
 
-Because every mint injects `β` TON into `T`, and pays back a rebate worth **`k × β`**, where
+Because every mint injects `β` GRAM into `T`, and pays back a rebate worth **`k × β`**, where
 **`k` is always strictly less than 1**. You always get back less value than you put in. That
 gap is the ratchet, and it is the whole theorem (§5).
 
@@ -134,7 +134,7 @@ You are paid in **rights** rather than in tokens (§4.7, §5.1):
 
 - The **perpetual tribute claim** — every future composite divisible by your prime pays you,
   forever.
-- **The pen on the number** while you own it — any owner names a number once for TON
+- **The pen on the number** while you own it — any owner names a number once for GRAM
   (`DECISIONS.md` D-212).
 - **+1 prime rank.**
 - **`PRIME_UPLIFT`** — a bounded credit to your `k_max` on your next `PRIME_WINDOW`
@@ -167,13 +167,13 @@ short reading reports a solvency gap that is not there. `seeded` is founder capi
 straight into `T` without ever passing through the ratchet, and it is **`0` in this
 deployment** (D-26); since D-100 point 1 a **floor donation no longer touches it** either —
 that raises `T` and lands in `pending` like every other injection, counted once. The last
-three arrived with the staked reserve (§4.3.2): `stakedCost` is TON sitting in the Tonstakers
+three arrived with the staked reserve (§4.3.2): `stakedCost` is GRAM sitting in the Tonstakers
 pool at what it cost, `exiting` is a batch on its way back out of it, and `realizedLoss` is
-TON that left and did not come back. One call, `getStaking()`, returns all three.
+GRAM that left and did not come back. One call, `getStaking()`, returns all three.
 
 ### There's a gap between `T` and what's actually in the DeDust pool. Is that bad?
 
-No, and it is disclosed rather than discovered (§5). `pending` is TON sitting on the ratchet
+No, and it is disclosed rather than discovered (§5). `pending` is GRAM sitting on the ratchet
 that has not been swapped yet. Under the floor guard it can be large and long-lived by
 design.
 
@@ -196,8 +196,8 @@ obligation sits in the Tonstakers pool. Three things bound what that costs you:
 
 - **It is carried at cost.** A tsTON price that is wrong, stale or manipulated cannot raise
   the floor by a nanoton, because the floor never counts the position at market.
-- **Nothing is sold under cost to get it back.** Of the three ways TON comes home, only one
-  names a price, and that one refuses any fill below what the TON cost — it waits for the
+- **Nothing is sold under cost to get it back.** Of the three ways GRAM comes home, only one
+  names a price, and that one refuses any fill below what the GRAM cost — it waits for the
   pool's own rate instead. Waiting is the right answer to a bad price.
 - **A loss would be published, not buried.** `getStaking()` returns `realizedLoss`. If it is
   ever non-zero, the floor is overstating the backing by exactly `realizedLoss / S`, and the
@@ -222,7 +222,7 @@ operator by rule.
 ### When does the protocol buy PRIMES?
 
 **Only at or below its own floor** (§4.3.1). The flush's slippage limit is set to
-`amount·S/T`, so a flush that would buy above `p_f` simply bounces and the TON stays on the
+`amount·S/T`, so a flush that would buy above `p_f` simply bounces and the GRAM stays on the
 ratchet as backing.
 
 Three consequences:
@@ -230,7 +230,7 @@ Three consequences:
 - Protocol buying is **countercyclical** — it buys weakness, not strength.
 - It **caps the flush-MEV attack at the floor.** Above `p_f`, pumping the pool makes the buy
   bounce. Below it, a sandwicher can still make the ratchet fill at up to `p_f` and sell
-  back: that costs burn efficiency (fewer PRIMES burned per TON), never backing — `T`, `S`
+  back: that costs burn efficiency (fewer PRIMES burned per GRAM), never backing — `T`, `S`
   and `p_f` do not move (`DECISIONS.md` D-190).
 - The ratchet stops being a five-day queue and becomes **standing floor defense**.
 
@@ -239,21 +239,21 @@ Three consequences:
 Anybody. `flush()` is **permissionless** and fills only at or below `p_f` (§4.3, §4.3.1).
 There is no privileged caller and no schedule that depends on the operator being alive.
 
-**Whoever calls it pays for it** (`DECISIONS.md` D-146). A flush attaches DeDust's 0.25 TON
-of swap gas plus a little compute — 0.26 TON, and the contract refuses anything less — and the
-change comes back. The same holds for the three staking arms (stake 1.31, unstake 1.96, harvest
-0.16 TON). No call can spend the ratchet's own balance above `pending`, so nobody can drain it
+**Whoever calls it pays for it** (`DECISIONS.md` D-146). A flush attaches DeDust's 0.25 GRAM
+of swap gas plus a little compute — 0.26 GRAM, and the contract refuses anything less — and the
+change comes back. The same holds for the three staking arms (stake 1.02 — about 0.89 of it refunded — unstake 1.96, harvest
+0.16 GRAM). No call can spend the ratchet's own balance above `pending`, so nobody can drain it
 by calling in a loop; the keeper pays its own calls like anyone else.
 
-### Can the team withdraw the TON?
+### Can the team withdraw the GRAM?
 
-**No.** There is **no admin withdraw path on any TON balance** — not timelocked, not
+**No.** There is **no admin withdraw path on any GRAM balance** — not timelocked, not
 multisig, not "emergency" (§8). This is the strongest claim in the system and it is a
 structural property, not a policy.
 
-### What happens to TON that gets swapped into the pool?
+### What happens to GRAM that gets swapped into the pool?
 
-It is locked there **forever**. Flush buys add no LP, so every TON the protocol swaps lands
+It is locked there **forever**. Flush buys add no LP, so every GRAM the protocol swaps lands
 in pool reserves **nobody can withdraw on the protocol's behalf** (§5). The genesis pair's LP
 receipt is not burned and nothing happens to it at deploy: the launch sequence sends it to
 the **LP sink**, `primes_lp_sink.tolk`, a contract with no outbound message type (§6 point 3,
@@ -269,18 +269,18 @@ take it on trust: the sink's `getLocked()` is the figure.
 ### Is there anything I can *do* with PRIMES besides sell it?
 
 **Stake it** (§5.3, below). There is no longer a burn-priced sink: naming, the last thing one
-sold, is paid in **TON** since `DECISIONS.md` D-212, and `primes_sink.tolk` is deleted.
+sold, is paid in **GRAM** since `DECISIONS.md` D-212, and `primes_sink.tolk` is deleted.
 
 ### How does naming a number work?
 
 Any **current owner** of a minted number — prime or composite — sends `name_number` to the
 collection with the fee attached (§4.7.1). The first naming of a number costs `nameFee`
-(about 50 EUR in TON, fixed at genesis from that day's rate, because a contract cannot read
-EUR); every later naming costs `renameFee`, **200 TON**, whoever owns it then. Both are in
+(about 50 EUR in GRAM, fixed at genesis from that day's rate, because a contract cannot read
+EUR); every later naming costs `renameFee`, **200 GRAM**, whoever owns it then. Both are in
 the collection's `getNaming()`. The fee goes to the **ratchet floor**: `T` rises by exactly
 the fee and `S` does not, so every naming lifts the floor for every holder. If you are not
 the owner, underpay, or name a number nobody minted, the whole payment comes back. The pen
-follows the NFT: sell the number and the buyer may rename it (for 200 TON); you may not.
+follows the NFT: sell the number and the buyer may rename it (for 200 GRAM); you may not.
 An era trophy's first engraving stays free.
 
 ### What happened to the §5.2 sink families?
@@ -288,10 +288,10 @@ An era trophy's first engraving stays free.
 D-2 signed three; none is a burn any more:
 
 1. **Burn-priced cosmetics and rights** — **empty** since D-212. It listed name annotations
-   (now paid in TON, above), constellation registration bonds (**deleted**, D-102) and
+   (now paid in GRAM, above), constellation registration bonds (**deleted**, D-102) and
    era-ceremony lots (**deleted**, D-126).
 2. **Burn-priced queue position** — **dropped, not re-aimed.** D-30 deleted the reservation
-   fee it was to be paid against, and pricing a place in a TON auction in burned PRIMES would
+   fee it was to be paid against, and pricing a place in a GRAM auction in burned PRIMES would
    put a second currency inside a lane whose whole point is one clearing price
    (`DECISIONS.md` D-35).
 3. **PRIMES staking** (§5.3, `DECISIONS.md` D-168) — **redesigned, and not a burn.** It used to
@@ -304,10 +304,10 @@ D-2 signed three; none is a burn any more:
 
 One rule, and it is what keeps the whole layer free:
 
-> A sink may consume PRIMES and may grant rights. It may **never** move TON, never decrement
+> A sink may consume PRIMES and may grant rights. It may **never** move GRAM, never decrement
 > `S`, and never touch the split.
 
-So a sink contract holds a jetton wallet and **zero TON liability** — it does not appear in
+So a sink contract holds a jetton wallet and **zero GRAM liability** — it does not appear in
 the solvency check at all. Burning inside a sink does not move `p_f`; it widens the
 circulating-supply gap in holders' favour (§5.2).
 
@@ -345,28 +345,28 @@ each month's payout is `amount × weight` over everyone's.
 - **What you give up:** your PRIMES, until the term ends. There is **no early exit**. At
   maturity earning stops; you withdraw, or `relock` to start a new term.
 - **What it costs everyone else: nothing new.** The rewards were already minted into `S` at
-  genesis, so staking mints nothing, moves no TON and changes neither `T` nor `S` — the floor
+  genesis, so staking mints nothing, moves no GRAM and changes neither `T` nor `S` — the floor
   `p_f = T/S` does not care whether you stake. It does not touch your `k_max` either.
 - **Stakes do not vote.** Governance stays with LP locked in the treasury (§5.5.5).
 
-### Why does staking pay PRIMES, not TON?
+### Why does staking pay PRIMES, not GRAM?
 
-**Because the only TON the protocol could pay you with is TON it has promised to somebody
+**Because the only GRAM the protocol could pay you with is GRAM it has promised to somebody
 else** (§5.3, `DECISIONS.md` D-168).
 
-Look at where TON sits (§3.4). `pending` on the ratchet is the floor's backing — it belongs
+Look at where GRAM sits (§3.4). `pending` on the ratchet is the floor's backing — it belongs
 to nobody, and paying it out would lower `p_f`, which the ratchet theorem forbids. `owed` on
-the ledger is the prime owners' tribute. The treasury's TON is fee revenue that only a passed
-vote can spend. A TON reward line would need a new cut of the §4.1 split — a new pool of TON
+the ledger is the prime owners' tribute. The treasury's GRAM is fee revenue that only a passed
+vote can spend. A GRAM reward line would need a new cut of the §4.1 split — a new pool of GRAM
 with a new owner — and the split is closed at 100%.
 
 PRIMES has none of those problems. The treasury already holds 1,000,000 of them from its
 vest, they are already counted in `S`, and handing them to stakers moves nothing the floor
-depends on. The stake contract ends up **owing PRIMES and holding no TON**, and its books
+depends on. The stake contract ends up **owing PRIMES and holding no GRAM**, and its books
 close in one call (`getStakeSolvency`: what it holds ≥ principal + stream + unclaimed).
 
 **And why not the old design — a bigger rebate for stakers?** Because that one *did* cost
-everyone else. Extra `k_max` means more PRIMES emitted per TON injected, so `S` outruns `T`
+everyone else. Extra `k_max` means more PRIMES emitted per GRAM injected, so `S` outruns `T`
 and the floor climbs more slowly for every holder who did not stake. It also lowered the
 price at which minting-and-dumping pays off, for exactly the wallets holding the most PRIMES
 (§8.1). It shipped switched off (D-34) and D-168 deletes it.
@@ -440,14 +440,14 @@ the pool**, not to the operator.
 
 No, and the structure is what makes that answer checkable rather than a promise (§11.4).
 
-**Exactly one mechanism in this game pays TON for bringing somebody in: §4.1's referral
+**Exactly one mechanism in this game pays GRAM for bringing somebody in: §4.1's referral
 line, 10%, single-level, paid only on a mint the payer made themselves.** There is no second
 one. Depth is what turns a discount into a pyramid, and there is **no second-level field
 anywhere in the data model**, so depth is *absent* rather than merely disallowed.
 
 *(Until 2026-09-07 there was a second: a **patron line** paying a recruiter 25% of a
 recruit's first mint and 7.5% of each one after, to a disclosed lifetime maximum of
-`PATRON_CAP` = 1.00 TON — exactly the price of the mint that started it, so the mechanism's
+`PATRON_CAP` = 1.00 GRAM — exactly the price of the mint that started it, so the mechanism's
 ceiling was a refund. `DECISIONS.md` D-106 deleted it, which makes the answer here shorter
 and stronger: there is no extraction to bound.)*
 
@@ -516,20 +516,20 @@ a palindrome, a run, trailing zeros), whether it **reads as a real calendar date
 mathematical form it has (Mersenne, Fermat, perfect, primorial, factorial, prime, power of
 two, Fibonacci, twin, square, triangular, Harshad, happy, …), whether it is culturally
 recognisable, and where it sits on the number line. Ten points doubles the price:
-`price = 1 TON × 2^(D/10)`.
+`price = 1 GRAM × 2^(D/10)`.
 
 So `19720909` — 9 September 1972 — scores 30 for being a valid `YYYYMMDD` date, 2 for being
-only eight digits long and 2 for having a prime digit sum, and opens at about **10.6 TON**.
+only eight digits long and 2 for having a prime digit sum, and opens at about **10.6 GRAM**.
 Nine digits away, `19720900` is not a date at all — there is no zeroth day — and opens at
-**3.48 TON**, on eight points of trailing zeros and its length. `20240230` opens at
-**2.30 TON** for the same reason: 30 February has never happened. The score is checked
+**3.48 GRAM**, on eight points of trailing zeros and its length. `20240230` opens at
+**2.30 GRAM** for the same reason: 30 February has never happened. The score is checked
 against **real Gregorian validity**, leap years and month lengths included, because a
 birthday that never happened must not be priced as one.
 
 Three things worth knowing before you feel cheated:
 
 - **This only applies ahead of the head.** If you wait for the sequential line to reach a
-  composite, it mints for exactly **1 TON**, however memorable it is. There is no exception
+  composite, it mints for exactly **1 GRAM**, however memorable it is. There is no exception
   and no skip. What you are paying for early is *earliness*, and "you should have waited" is
   a complete answer.
 - **Nothing is hidden.** `getScoreBreakdown(n)` returns the score and a bitmask of every
@@ -547,9 +547,9 @@ cost twelve times more than either, `42` and `1337` cost the floor, and a birthd
 ordinary number. Four separate pricing curves took a `max()` and only the loudest survived.
 Now they add.)*
 
-### Why does a prime cost more than 1 TON?
+### Why does a prime cost more than 1 GRAM?
 
-Because 1 TON undersells them (D-4). A prime carries a perpetual tribute claim, naming
+Because 1 GRAM undersells them (D-4). A prime carries a perpetual tribute claim, naming
 rights and prime rank; a flat price captures none of that.
 
 So a prime is sold by **descending (Dutch) buy-now**: it opens high according to its score
@@ -557,9 +557,9 @@ and falls over one week to that prime's **resting price**, then sits there forev
 buys. You can buy at the standing price at any point on the slope.
 
 **What the resting price is, since D-88 point 1 and D-99:**
-`max(NPV(p) / 2, P0(p) / 3, 1 TON)` — half of what the deploy-time table says the prime is
+`max(NPV(p) / 2, P0(p) / 3, 1 GRAM)` — half of what the deploy-time table says the prime is
 expected to earn in tribute over the life of the game, or a third of what it opened at, or
-1 TON, whichever is largest (`restingPriceOf` in `primes_market.tolk`). Either way the whole
+1 GRAM, whichever is largest (`restingPriceOf` in `primes_market.tolk`). Either way the whole
 descent is **at most a 3× fall**:
 where the finite `NPV` table has an entry the lot opens at `1.5 × NPV(p)` off that same
 table, and where it misses, the `P0(p) / 3` term keeps the same 3×. *(There used to be a
@@ -567,11 +567,11 @@ third case — a "special" prime rested at its rarity tier's `price_min`. D-99 d
 tiers; a memorable prime now opens higher because its score is higher, and its resting
 price follows automatically.)*
 
-So the honest version of the old promise: **a small prime does not fall to 1 TON.** It earns
+So the honest version of the old promise: **a small prime does not fall to 1 GRAM.** It earns
 tribute on every one of its multiples, forever, and its floor says so. Only a prime past the
-end of the finite `NPV` table *and* opening at 3 TON or less rests at exactly the 1 TON a
+end of the finite `NPV` table *and* opening at 3 GRAM or less rests at exactly the 1 GRAM a
 composite costs. What patience buys you on a prime is up to a 3× discount off the opening
-price, not a 1 TON number.
+price, not a 1 GRAM number.
 
 ### Doesn't that stall the line? Primes are common.
 
@@ -603,15 +603,15 @@ price within a week and stays purchasable there forever, instead of drifting or 
 The price it stops at is `getPrimeFloor(p)`, computed by the contract from `p` alone at the
 moment the lot is created. **Nobody can set it** — no message carries it and no handler
 updates it — which is the part that actually protects you. *(This used to be the stronger
-claim "every prime decays to exactly 1 TON"; D-88 point 1 deleted that, because a small
-prime's tribute claim is worth far more than 1 TON and pricing it at 1 TON gave the number
+claim "every prime decays to exactly 1 GRAM"; D-88 point 1 deleted that, because a small
+prime's tribute claim is worth far more than 1 GRAM and pricing it at 1 GRAM gave the number
 away.)*
 
-### Where does the money above the 1 TON mint leg go?
+### Where does the money above the 1 GRAM mint leg go?
 
 **Half to the ratchet, half to the treasury contract** (D-114, which amended D-7's 100% to
-the ratchet). `RES_GAS` (0.07 TON) is carved off first to pay for the settlement, the nominal
-1 TON runs through the normal five-way split, and the premium above `MINT_PRICE + RES_GAS`
+the ratchet). `RES_GAS` (0.07 GRAM) is carved off first to pay for the settlement, the nominal
+1 GRAM runs through the normal five-way split, and the premium above `MINT_PRICE + RES_GAS`
 splits 50/50: the ratchet half is credited as `pending`, the treasury half goes to the
 governed treasury (no key, spends only by a passed vote).
 
@@ -619,8 +619,8 @@ Three things follow:
 
 1. The split stays closed at 100% — the premium is not in the split at all.
 2. The ratchet half is a `T` increment against **zero** emission, so it is purely
-   floor-accretive. A 40 TON prime's premium alone still puts ~19.5 TON into `T` with no PRIMES emitted.
-3. Nobody gets a windfall. Splitting the full clearing price would pay a referrer 4 TON on
+   floor-accretive. A 40 GRAM prime's premium alone still puts ~19.5 GRAM into `T` with no PRIMES emitted.
+3. Nobody gets a windfall. Splitting the full clearing price would pay a referrer 4 GRAM on
    one recruit's single mint, which is unrelated to that recruit's own spend.
 
 ### Is there a limit to how far ahead I can buy?
@@ -654,7 +654,7 @@ naming rights, and the eight era trophies.
 
 Two things this list used to include and no longer does, both removed on 2026-08-19
 (`DECISIONS.md` D-36, D-37). **A waived reservation fee** — rank was said to waive
-`RES_PRIORITY_BASE`, a 0.01 TON fee. It was never implemented, and the fee itself has since
+`RES_PRIORITY_BASE`, a 0.01 GRAM fee. It was never implemented, and the fee itself has since
 been deleted along with the whole flat-fee reservation lane (D-30), so there is nothing left
 to waive. **Era dividends** — a slice of each era bounty was to be split across Patrons by
 recruits activated that era. It was never implemented either, and it is dropped rather than
@@ -678,17 +678,17 @@ you up §4.7's ladder. Their first five mints of their own run at a raised rebat
 
 ### What does recruiting pay?
 
-**No TON at all.** A recruit raises *your own* rebate ceiling by a tier — a limit on what
+**No GRAM at all.** A recruit raises *your own* rebate ceiling by a tier — a limit on what
 your future mints can earn you, not a payment from the person you introduced, and bounded by
 the same single `K_CEIL = 0.95` clamp as every other uplift in the game.
 
 This is a deliberate change and it is worth knowing why, because the old answer was better
 marketing. Until 2026-09-07 there was **patron mode**: you minted a composite into an
-*unclaimed* state locked to one recipient, with an optional TON purse released on their first
+*unclaimed* state locked to one recipient, with an optional GRAM purse released on their first
 mint, and you were paid an annuity — 25% of their first mint, 7.5% of each one after, to a
-1.00 TON cap. The pitch wrote itself: bring one real player and your gift was free.
+1.00 GRAM cap. The pitch wrote itself: bring one real player and your gift was free.
 
-It did not survive its own arithmetic. The cap was a **fixed 1.00 TON**, but the cost of the
+It did not survive its own arithmetic. The cap was a **fixed 1.00 GRAM**, but the cost of the
 mint that bought it *rises* as the rebate ceiling `k_max(n)` decays with the head — so the
 whole thing inverts at around **n ≈ 1173**, a third of the way through the first decade of
 the number line. The simulation's kill criterion reported FAIL for the mechanic's entire
@@ -704,18 +704,18 @@ A ceiling is a fraction, not an amount, so there is no cost basis for it to drif
 
 You can, and it is **priced rather than defended against**. A recruit is credited only when
 the beneficiary is an address the ledger has never seen, so **gifting the same wallet twice
-counts once**: each recruit costs you one fresh address and one full 1 TON mint, paid at the
+counts once**: each recruit costs you one fresh address and one full 1 GRAM mint, paid at the
 same price everyone else pays, and every one of those mints ratchets the floor. Since D-202 the
-net cost is **0.70 TON**: the gift mint may name your own wallets as its three invitees and
-send 0.30 TON back to you.
+net cost is **0.70 GRAM**: the gift mint may name your own wallets as its three invitees and
+send 0.30 GRAM back to you.
 
 What you get for it is one tier on a ladder that raises the ceiling on your own future
-mints. **No TON comes back.** The cheapest way to farm it is to be a customer.
+mints. **No GRAM comes back.** The cheapest way to farm it is to be a customer.
 
 ### Why not just airdrop numbers to random wallets?
 
 Because a pushed NFT is drainer spam and wallets hide it — that is exactly how the old invite
-NFTs reached nobody (D-202). What a mint pushes now is up to three 0.1 TON transfers whose
+NFTs reached nobody (D-202). What a mint pushes now is up to three 0.1 GRAM transfers whose
 comment carries the minter's referral link, to wallets **the minter** names (the app pre-fills a
 list; anyone may replace it). The contract picks no one, so no oracle is needed, and the payer
 keeps the incentive to target well. A text transfer to a stranger is still unsolicited, and
@@ -744,7 +744,7 @@ a decided mechanic, not a live one.
 D-14's reversal is still worth stating plainly, for whenever issuance ships: the earlier
 argument was that unbuyability was the whole reason for issuing them — *a prize that money
 can buy is not a prize for recruiting*. That argument was conceded, not refuted. Any surface
-describing era trophies as currently existing, awarded, or as "what no amount of TON can
+describing era trophies as currently existing, awarded, or as "what no amount of GRAM can
 buy" is **wrong on both counts** — none has been issued, and if one ever is, it will be
 transferable.
 
@@ -754,7 +754,7 @@ Both are deleted (`DECISIONS.md` D-202, 2026-11-07). An invite used to be a gene
 deployed to the invitee's address, and no wallet ever told the invitee it had arrived; a
 constellation could not be built without one, so the two went together, with the discovery
 bounty that paid early builds — its PRIMES stayed in the bounty vault for §9.6's riddles. An
-invite is now a plain 0.1 TON transfer whose comment carries the minter's referral link, which
+invite is now a plain 0.1 GRAM transfer whose comment carries the minter's referral link, which
 Telegram shows as text when a wallet sends it — whether it does when the ledger sends it is
 the owner's Phase 0 probe (`contracts/scripts/mainnet/inviteProbe.ts`), not yet run.
 
@@ -768,7 +768,7 @@ Yes, and that is a decision rather than an oversight (§9.10, D-131). The audien
 auditor, and an auditor with a wallet is a player. No contract path has a cooldown, a
 per-wallet cap or a proof-of-humanity check; every read surface is anonymous with `CORS *`;
 every write is an ordinary TON message any wallet can sign. A program and a person pay the
-same 1 TON, submit the same proofs, and are checked by the same asserts.
+same 1 GRAM, submit the same proofs, and are checked by the same asserts.
 
 Nothing was relaxed to allow this and nothing was added to discourage it. §8 already priced
 every automated behaviour before the packaging existed, which is why saying so out loud
@@ -803,7 +803,7 @@ read-only and throw before any network call rather than after one.
 ### Does running a bot make money?
 
 Not at the floor, and the copy will not pretend otherwise. §8 prices an automated loop at
-`k · β · P < P` — a self-referred composite loop returns roughly 0.81 TON against the 1 TON
+`k · β · P < P` — a self-referred composite loop returns roughly 0.81 GRAM against the 1 GRAM
 it spends. Self-referral is assumed universal in that model rather than treated as an
 exploit.
 
@@ -889,7 +889,7 @@ Money leaves it in exactly two ways, and there is no third:
 - **`distribute()`**, which once every 30 days sends a fixed fraction of the treasury's PRIMES
   to the staking contract (§5.3, `DECISIONS.md` D-168 — it replaced the LP miner rule).
 
-A proposal is one thing only: *transfer `{TON | PRIMES | tsTON}` to an address.* It cannot
+A proposal is one thing only: *transfer `{GRAM | PRIMES | tsTON}` to an address.* It cannot
 change a parameter, call a contract, or upgrade anything — there is nothing in this system a
 vote is allowed to reach. To spend, it has to clear all of this:
 
@@ -966,7 +966,7 @@ all (`DECISIONS.md` D-167).
 
 The floor is `p_f = T/S` and **locked depth is never part of `T`** (§5.5.4, D-100 point 4).
 The reason is not conservatism, it is arithmetic: an LP receipt is a claim on a pool whose
-TON/PRIMES composition **moves with every trade**, so a term derived from it can *fall*. `T`
+GRAM/PRIMES composition **moves with every trade**, so a term derived from it can *fall*. `T`
 only ever rises, and the whole of §5 is a proof that `p_f` therefore only ever rises. Adding
 a term that can fall would not weaken that proof — it would void it.
 
@@ -974,7 +974,7 @@ So there are **two guarantees, and they are on two different panels**:
 
 | | What it is | Does it move down? |
 |---|---|---|
-| **The floor** | `p_f = T/S` — a redemption ratio backed by TON the protocol actually holds | **No.** Monotone by construction. |
+| **The floor** | `p_f = T/S` — a redemption ratio backed by GRAM the protocol actually holds | **No.** Monotone by construction. |
 | **Locked depth** | LP receipts sent to `primes_lp_sink.tolk`, a contract with **no outbound message type at all** | The *balance* never falls — nobody can withdraw it, ever. What it is *worth* moves with the pool. |
 
 Locked depth is a **market** guarantee: this much of the pair can never be pulled, so the
@@ -1032,7 +1032,7 @@ bug against §9.1, not a design choice.
 
 Because it was an undefined noun doing four jobs, and the word is **retired** (§3.4).
 
-There are **two separate pools of TON with two different owners**, each in its own
+There are **two separate pools of GRAM with two different owners**, each in its own
 contract so that `balance ≈ declared liability` is checkable in one get-call:
 
 | Component | Holds | Whose money |
@@ -1040,10 +1040,10 @@ contract so that `balance ≈ declared liability` is checkable in one get-call:
 | **Ledger** | `owed` | the prime owners' |
 | **Ratchet** | `pending` | nobody's |
 
-The **treasury** added by D-100 is not a third one, and the reason is which TON it holds: fee
+The **treasury** added by D-100 is not a third one, and the reason is which GRAM it holds: fee
 revenue that nobody is owed. It holds no `pending`, no `owed`, no purse and no refundable
 money, it has no key, and it spends only by a passed proposal or by `distribute()` (§5.5).
-The **LP sink** holds no TON liability at all — it declares no outbound message type, so
+The **LP sink** holds no GRAM liability at all — it declares no outbound message type, so
 there is no withdraw path to guard rather than a guarded one.
 
 There was a third — an **escrow** holding refundable reservation money — until D-90 deleted

@@ -246,7 +246,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         });
     });
 
-    it('accepts bare TON — the 58% forfeit share (D-166) — with nothing to authorise', async () => {
+    it('accepts bare GRAM — the 58% forfeit share (D-166) — with nothing to authorise', async () => {
         const before = (await treasury.getTreasuryBalances()).tonBalance;
         await treasury.sendTon(stranger.getSender(), toNano('50'));
         const after = (await treasury.getTreasuryBalances()).tonBalance;
@@ -459,7 +459,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     });
 
     it('refuses TransferNotification/WithdrawLp/Distribute underfunded below the published minimum (103)', async () => {
-        // The LP deposit path: `TREASURY_MIN_FORWARD` (0.15 TON) is refused
+        // The LP deposit path: `TREASURY_MIN_FORWARD` (0.15 GRAM) is refused
         // before anything is recorded — the burn sink's "refuse before crediting
         // what we cannot finish" precedent.
         const low = await treasury.sendTransferNotification(lpWallet.getSender(), {
@@ -492,7 +492,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         );
         expect(w.transactions).toHaveTransaction({ to: treasury.address, exitCode: 103 });
 
-        // `distribute()` requires its published `distributeMinForward` (0.15 TON).
+        // `distribute()` requires its published `distributeMinForward` (0.15 GRAM).
         const d = await treasury.sendDistribute(stranger.getSender(), { value: toNano('0.05') });
         expect(d.transactions).toHaveTransaction({ to: treasury.address, exitCode: 103 });
 
@@ -632,7 +632,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         await deposit(minnow, toNano('1'), 0);
         const small = childOf(minnow.address);
         const r = await small.sendPropose(minnow.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('1'),
             dest: minnow.address,
             positionId: 0,
@@ -653,7 +653,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         blockchain.now = 1800000000 + 30 * 86400 + 1;
         const child = childOf(minnow.address);
         const r = await child.sendPropose(minnow.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('1'),
             dest: minnow.address,
             positionId: 0,
@@ -668,14 +668,14 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     it('allows one open proposal per proposer, and a second once the first closes', async () => {
         const child = await seedElectorate();
         await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('1'),
             dest: whale.address,
             positionId: 0,
             value: FORWARD,
         });
         const second = await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('2'),
             dest: whale.address,
             positionId: 0,
@@ -691,7 +691,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         // second before `closes`.
         blockchain.now = (await treasury.getProposal(0)).closes - 1;
         const stillOpen = await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('2'),
             dest: whale.address,
             positionId: 0,
@@ -703,7 +703,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         // closed is settled business either way.
         blockchain.now = 1800000000 + NOTICE + VOTE_DURATION + 1;
         await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('2'),
             dest: whale.address,
             positionId: 0,
@@ -716,7 +716,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         // A: opens, passes, but is left unexecuted past its own close.
         const child = await seedElectorate();
         await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('1'),
             dest: whale.address,
             positionId: 0,
@@ -729,7 +729,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         // not executed) and lets the same proposer open B.
         blockchain.now = 1800000000 + NOTICE + VOTE_DURATION + 1;
         await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('2'),
             dest: whale.address,
             positionId: 0,
@@ -752,7 +752,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         // B is still open (its own window has not closed) — the proposer must
         // still be refused a third proposal, C.
         const attemptC = await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('3'),
             dest: whale.address,
             positionId: 0,
@@ -767,7 +767,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         // Once B itself closes, the slot frees normally.
         blockchain.now = (await treasury.getProposal(1)).closes;
         await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('3'),
             dest: whale.address,
             positionId: 0,
@@ -805,7 +805,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     it('tallies one wallet one vote at its full weight, and refuses a second', async () => {
         const child = await seedElectorate();
         await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('1'),
             dest: whale.address,
             positionId: 0,
@@ -835,7 +835,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     it('refuses a vote after the window closes', async () => {
         const child = await seedElectorate();
         await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('1'),
             dest: whale.address,
             positionId: 0,
@@ -857,7 +857,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     it('refuses a vote from LP locked once the VOTE has opened (§5.5.5, 1202)', async () => {
         const child = await seedElectorate();
         await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('1'),
             dest: whale.address,
             positionId: 0,
@@ -880,10 +880,10 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         expect((await treasury.getProposal(0)).no).toEqual(0n);
     });
 
-    /** The whale proposes 1 TON to itself; the clock is left IN THE NOTICE. */
+    /** The whale proposes 1 GRAM to itself; the clock is left IN THE NOTICE. */
     async function proposeAt(child: SandboxContract<PrimesLpPosition>) {
         const r = await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('1'),
             dest: whale.address,
             positionId: 0,
@@ -896,7 +896,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     // same-tier relock before maturity (a pure extension) keeps it.
     async function proposeFromWhale(child: SandboxContract<PrimesLpPosition>) {
         await child.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('1'),
             dest: whale.address,
             positionId: 0,
@@ -1029,7 +1029,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         }
         // A later `propose` prunes the two oldest DUE rows — never this one.
         const later = await childOf(minnow.address).sendPropose(minnow.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('1'),
             dest: minnow.address,
             positionId: 0,
@@ -1041,7 +1041,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     });
 
     // AUDIT R2-H1, the reproduced scenario. Empty electorate; one wallet locks ONE
-    // NANO-UNIT of LP for 30 days and proposes 24 of the treasury's 100 TON to a
+    // NANO-UNIT of LP for 30 days and proposes 24 of the treasury's 100 GRAM to a
     // fresh address. Before the notice the vote opened in the proposal's own
     // second, so 1202 refused everyone who was not already locked and a stranger's
     // `execute` paid out a day later.
@@ -1052,7 +1052,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         expect((await treasury.getGov()).eligibleWeight).toEqual(1n);
         const dc = childOf(dust.address);
         const p = await dc.sendPropose(dust.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('24'),
             dest: payee.address,
             positionId: 0,
@@ -1263,7 +1263,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     }
 
     it('refuses an execute before the vote closes', async () => {
-        await openAndPass({ asset: TreasuryAsset.TON, amount: toNano('1'), dest: minnow.address });
+        await openAndPass({ asset: TreasuryAsset.GRAM, amount: toNano('1'), dest: minnow.address });
         expect((await treasury.getExecutable(0)).reason).toEqual(1158);
         const r = await treasury.sendExecute(stranger.getSender(), { seq: 0, value: toNano('1') });
         expect(r.transactions).toHaveTransaction({
@@ -1280,7 +1280,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         const wc = childOf(whale.address);
         const mc = childOf(minnow.address);
         await wc.sendPropose(whale.getSender(), {
-            asset: TreasuryAsset.TON,
+            asset: TreasuryAsset.GRAM,
             amount: toNano('1'),
             dest: minnow.address,
             positionId: 0,
@@ -1302,8 +1302,8 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     });
 
     it('refuses an execute above 25% of the asset balance AT EXECUTE TIME (TR-3)', async () => {
-        // The treasury holds ~100 TON. A 40 TON proposal is above the cap.
-        await openAndPass({ asset: TreasuryAsset.TON, amount: toNano('40'), dest: minnow.address });
+        // The treasury holds ~100 GRAM. A 40 GRAM proposal is above the cap.
+        await openAndPass({ asset: TreasuryAsset.GRAM, amount: toNano('40'), dest: minnow.address });
         blockchain.now = 1800000000 + NOTICE + VOTE_DURATION + 1;
         const view = await treasury.getExecutable(0);
         expect(view.executable).toBe(false);
@@ -1320,7 +1320,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     it('refuses an execute whose asset fell below the amount after the vote passed (1162)', async () => {
         // TR-3's other half: `available` is read AT EXECUTE TIME, so a balance that
         // dropped between the vote and the execute refuses by name, ahead of the cap.
-        await openAndPass({ asset: TreasuryAsset.TON, amount: toNano('10'), dest: minnow.address });
+        await openAndPass({ asset: TreasuryAsset.GRAM, amount: toNano('10'), dest: minnow.address });
         blockchain.now = 1800000000 + NOTICE + VOTE_DURATION + 1;
         expect((await treasury.getExecutable(0)).executable).toBe(true);
 
@@ -1336,8 +1336,8 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
         expect((await treasury.getProposal(0)).executed).toEqual(0);
     });
 
-    it('executes a passed TON proposal permissionlessly, once', async () => {
-        await openAndPass({ asset: TreasuryAsset.TON, amount: toNano('10'), dest: minnow.address });
+    it('executes a passed GRAM proposal permissionlessly, once', async () => {
+        await openAndPass({ asset: TreasuryAsset.GRAM, amount: toNano('10'), dest: minnow.address });
         blockchain.now = 1800000000 + NOTICE + VOTE_DURATION + 1;
         expect((await treasury.getExecutable(0)).executable).toBe(true);
 
@@ -1488,10 +1488,10 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     });
 
     it('makes a bounced execute retryable — the retry_credit precedent', async () => {
-        // A bounceable TON payout to an address with no contract at it bounces.
+        // A bounceable GRAM payout to an address with no contract at it bounces.
         // `executed` was already set when the send went out, so without the
         // bounce handler the proposal would be lost forever.
-        await openAndPass({ asset: TreasuryAsset.TON, amount: toNano('10'), dest: DEAD_ADDRESS });
+        await openAndPass({ asset: TreasuryAsset.GRAM, amount: toNano('10'), dest: DEAD_ADDRESS });
         blockchain.now = 1800000000 + NOTICE + VOTE_DURATION + 1;
         const r = await treasury.sendExecute(stranger.getSender(), { seq: 0, value: toNano('1') });
         // The payout left and came back.
@@ -1566,7 +1566,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
     // -----------------------------------------------------------------------
     // D-188 point 7 — THE TREASURY'S STATE IS O(LIVE PROPOSALS). Config 43 caps
     // an account at 65,536 cells; a vote book of one row per (proposal,
-    // position) filled it for ~650-900 TON of dust votes. Votes are recorded on
+    // position) filled it for ~650-900 GRAM of dust votes. Votes are recorded on
     // the voter's child now, and settled proposals are deleted.
     // -----------------------------------------------------------------------
     describe('storage ceiling · D-188 point 7', () => {
@@ -1587,7 +1587,7 @@ describe('U3 — the governed treasury (§5.5, D-100 points 7-10)', () => {
 
         async function propose(child: SandboxContract<PrimesLpPosition>) {
             await child.sendPropose(whale.getSender(), {
-                asset: TreasuryAsset.TON,
+                asset: TreasuryAsset.GRAM,
                 amount: toNano('1'),
                 dest: whale.address,
                 positionId: 0,

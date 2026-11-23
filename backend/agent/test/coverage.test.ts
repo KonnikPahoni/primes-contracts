@@ -40,7 +40,7 @@ const WIRED_ACTIONS: Record<string, keyof PrimesAgent> = {
   // X3 / D-62's permissionless `top_up`: the one write anybody may make on ANY number.
   buildTopUpMessage: "topUp",
   buildAnnotateMessage: "annotate",
-  // D-212: a number's own name, for TON, through the collection.
+  // D-212: a number's own name, for GRAM, through the collection.
   buildNameNumberMessage: "name",
   buildTransferTrophyMessage: "transferTrophy",
   // The venue leg. Both directions are one method — the SDK picks the builder from `side`,
@@ -65,9 +65,9 @@ const EXCLUDED_ACTIONS: Record<string, string> = {
   // `/lp/wallet/{address}` now serves the derivation (`read.lpWallet()` above). What
   // actually keeps the position lifecycle off this surface is the line below.
   buildDedustDepositTonMessage:
-    "half of a two-sided DeDust deposit. The pool mints LP only once BOTH legs land — TON at the " +
+    "half of a two-sided DeDust deposit. The pool mints LP only once BOTH legs land — GRAM at the " +
     "native vault and PRIMES at the jetton vault — and `wallet().send` signs one message at a time, " +
-    "so an agent that sent this alone would park TON in a vault waiting for a partner it might never " +
+    "so an agent that sent this alone would park GRAM in a vault waiting for a partner it might never " +
     "send. Wiring it needs a multi-message send this SDK does not have.",
   buildDedustDepositPrimesMessage: "the other half of the same pair; see above",
   buildLpDepositMessage:

@@ -28,7 +28,7 @@ solved.
 
 WHAT IS MEASURED
 ----------------
-**Emission-only value.** Every payoff here is the TON-denominated value the
+**Emission-only value.** Every payoff here is the GRAM-denominated value the
 protocol *emits* to the player: the rebate, marked at the floor price. Deliberately
 excluded:
 
@@ -40,8 +40,8 @@ excluded:
 
 ONE EXCEPTION, and it is a scenario input, not a default: `cash_recovered`. A
 minter may name itself as referrer AND as all three invite recipients
-(TELEGRAM_INVITES_PLAN.md, owner decision 2), so 0.10 + 3 x 0.1 = 0.40 TON of
-every mint comes straight back as TON. That is not emission, but it IS money the
+(TELEGRAM_INVITES_PLAN.md, owner decision 2), so 0.10 + 3 x 0.1 = 0.40 GRAM of
+every mint comes straight back as GRAM. That is not emission, but it IS money the
 loop recovers, so the self-sender row grants it on every mint, prime or
 composite, at the beta that row actually leaves for the ratchet (0.25).
 
@@ -66,15 +66,15 @@ favour, so a negative result is a bound rather than an observation:
      prime, SS4.1), rather than pinned at the 0.65 planning number.
   4. **Both rank ladders are grantable.** `recruit_rank` is a scenario input rather
      than a decision, so the attacker may be handed the top recruit tier at zero
-     cost, even though reaching it in reality means 100 gift mints at 1 TON each
+     cost, even though reaching it in reality means 100 gift mints at 1 GRAM each
      to 100 distinct fresh addresses (D-106's recruit edge).
-  5. **No gas.** Mint price is the flat 1 TON with no transaction cost.
+  5. **No gas.** Mint price is the flat 1 GRAM with no transaction cost.
 
 THE TWO QUESTIONS, AND THE TWO ANSWERS
 --------------------------------------
 `asymptotic_bound()` -- closed form. Grant the attacker infinite free grinding to
 the best rank and window state reachable, forever. The best sustainable return per
-TON spent is then `K_CEIL_effective * beta`, which is exactly what the single
+GRAM spent is then `K_CEIL_effective * beta`, which is exactly what the single
 `K_CEIL` clamp bounds. This is the strong statement and it needs no search.
 
 `optimal_net_value()` -- finite-horizon dynamic programming over the real state
@@ -129,7 +129,7 @@ class ParrondoModel:
     beta_composite: float = 0.65
     # Granted for free (see generosity note 4). Not a decision variable.
     recruit_rank: int = 0
-    # TON returned to the player outside the rebate on EVERY mint, as a fraction
+    # GRAM returned to the player outside the rebate on EVERY mint, as a fraction
     # of the price: the self-sender's own referral + invite transfers. 0 except on
     # the self-sender row (see the module docstring's one exception).
     cash_recovered: float = 0.0
@@ -177,13 +177,13 @@ class ParrondoModel:
         return k_max
 
     def composite_payoff(self, primes_minted: int, window_pos: int, mints_made: int) -> float:
-        """Net TON on one composite mint: rebate value at the floor, plus any
+        """Net GRAM on one composite mint: rebate value at the floor, plus any
         recovered cash, minus price."""
         k = self.k_effective(primes_minted, window_pos, mints_made)
         return (k * self.beta_composite + self.cash_recovered) * self.mint_price - self.mint_price
 
     def prime_payoff(self) -> float:
-        """Net TON on one prime mint. SS5.1: `k = 0`, so only recovered cash comes back."""
+        """Net GRAM on one prime mint. SS5.1: `k = 0`, so only recovered cash comes back."""
         return self.cash_recovered * self.mint_price - self.mint_price
 
 
@@ -230,11 +230,11 @@ def initial_state(m: ParrondoModel) -> tuple[int, int, int]:
 
 
 def asymptotic_bound(m: ParrondoModel) -> dict:
-    """Best sustainable TON returned per TON spent, granting the attacker every
+    """Best sustainable GRAM returned per GRAM spent, granting the attacker every
     uplift at once and forever.
 
     No search: `k_max_effective` is monotone in every uplift, so the supremum is
-    the fully-stacked value, and the return per TON on a composite mint is
+    the fully-stacked value, and the return per GRAM on a composite mint is
     `k * beta`. This is the statement `K_CEIL` exists to make, restated as an
     attacker's rate of return so that it is comparable with the DP below.
 
@@ -283,8 +283,8 @@ class _Chain:
 
     comp_next: np.ndarray
     prime_next: np.ndarray
-    comp_gross: np.ndarray  # rebate value emitted on a composite mint (+ cash), TON
-    prime_gross: float      # cash recovered on a prime mint, TON (SS5.1: no rebate)
+    comp_gross: np.ndarray  # rebate value emitted on a composite mint (+ cash), GRAM
+    prime_gross: float      # cash recovered on a prime mint, GRAM (SS5.1: no rebate)
     price: float
     pi: float
     start: int
@@ -308,11 +308,11 @@ def _compile(m: ParrondoModel) -> _Chain:
 def _solve(ch: _Chain, horizon: int, rho: float) -> tuple[float, np.ndarray, np.ndarray]:
     """Backward induction maximising expected `sum(gross - rho * spend)`.
 
-    `rho = 1` is the plain net-TON objective. Sweeping `rho` turns the same solver
+    `rho = 1` is the plain net-GRAM objective. Sweeping `rho` turns the same solver
     into a ratio search (see `optimal_ratio`): the largest `rho` for which the
-    optimum is still positive is the best TON-returned-per-TON-spent any policy
+    optimum is still positive is the best GRAM-returned-per-GRAM-spent any policy
     achieves, which is the number a Parrondo comparison actually needs. Maximising
-    net TON alone would not do -- with every action loss-making the net optimum
+    net GRAM alone would not do -- with every action loss-making the net optimum
     degenerates to "never mint", which is true, uninteresting, and says nothing
     about how close the mixture gets to break-even.
 
@@ -388,7 +388,7 @@ class DPResult:
 
 
 def optimal_net_value(m: ParrondoModel, horizon: int = 400) -> DPResult:
-    """The falsification test: the policy maximising expected net TON.
+    """The falsification test: the policy maximising expected net GRAM.
 
     At each opportunity nature offers a prime head with probability `pi_prime` and
     a composite head otherwise; the player then mints it or skips. Skipping is
@@ -416,7 +416,7 @@ def optimal_net_value(m: ParrondoModel, horizon: int = 400) -> DPResult:
 
 
 def optimal_ratio(m: ParrondoModel, horizon: int = 400, iterations: int = 34) -> dict:
-    """The best TON-returned-per-TON-spent achievable by ANY policy.
+    """The best GRAM-returned-per-GRAM-spent achievable by ANY policy.
 
     Bisection on `rho`: `_solve` at a given `rho` asks "is there a policy whose
     gross beats `rho` times its spend?", and the all-skip policy pins the optimum
@@ -478,7 +478,7 @@ def parrondo_signature(m: ParrondoModel, horizon: int = 400) -> dict:
     player who mints a few primes to hold rank and then mints composites is playing
     the game as intended, not exploiting it.
 
-    The failure condition is `exploit`: any policy returning more TON than it
+    The failure condition is `exploit`: any policy returning more GRAM than it
     spends. Both are reported because the first is the early-warning signal for
     the second. The margin between the best mixed strategy and 1.0 is the only
     thing standing between "the rank ladder is a reward" and "the rank ladder is a
@@ -580,7 +580,7 @@ def model_from_params(
 # with cash: a referred composite with the full invite line (TELEGRAM_INVITES_PLAN.md)
 # leaves beta = 1 - .05 - gas & ops - .10 - .10 - 3 x 0.1 = 0.25 for the ratchet,
 # and a minter that self-refers and sends all three invites to itself recovers
-# 0.10 + 0.30 = 0.40 TON in cash on every mint. It is read from the split, not
+# 0.10 + 0.30 = 0.40 GRAM in cash on every mint. It is read from the split, not
 # typed: `econ.beta(False, True, invite_count=INVITE_MAX_COUNT)` and
 # `referral_pct + INVITE_MAX_COUNT * INVITE_TRANSFER_VALUE_TON`.
 _SELF_SENDER_BETA = econ.beta(False, True, invite_count=econ.INVITE_MAX_COUNT)
@@ -627,7 +627,7 @@ def scan(horizon: int = 400, params: dict | None = None) -> dict:
     widest = max(scenarios, key=lambda s: s["signature_gain"])
     return {
         "_what_this_measures": (
-            "Emission-only TON returned per TON spent, over the SS4.7.1 rank / "
+            "Emission-only GRAM returned per GRAM spent, over the SS4.7.1 rank / "
             "SS5.1 prime-window state machine. Tribute, dividends, referral income "
             "and the NFT itself are EXCLUDED -- this measures the ratchet's exposure, "
             "not whether the game is worth playing."

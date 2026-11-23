@@ -25,7 +25,7 @@ tolk 1.4
 //      is "does the ratchet's fill-detection round-trip against a real
 //      TransferNotification", not DeDust's own internal wallet topology.
 //   2. REJECT — the configured price does not meet `limit`, so this contract
-//      PAYS THE TON BACK with `payout#474f86cf`, non-bounceable, to the swap's
+//      PAYS THE GRAM BACK with `payout#474f86cf`, non-bounceable, to the swap's
 //      sender. It used to `throw` instead, on the belief that a slippage
 //      failure reaches the caller as a TVM bounce. It does not, and this mock
 //      asserting that it did is what hid the defect the `DedustPayout` handler
@@ -179,7 +179,7 @@ fun onInternalMessage(in: InMessage) {
                     }).toCell(),
                 }).send(SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE);
             } else {
-                // Slippage. Hand the TON back the way a real vault does: a fresh,
+                // Slippage. Hand the GRAM back the way a real vault does: a fresh,
                 // NON-bounceable message to the original sender, carrying every
                 // remaining nanoton. Not a throw — see outcome 2 in the header.
                 createMessage({

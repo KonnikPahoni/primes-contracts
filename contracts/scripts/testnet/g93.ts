@@ -115,7 +115,7 @@ async function cmdAdvanceHead(c: Contracts, handle: string) {
     const pending = await retry(() => c.ledger.getWalkPending(), 'getWalkPending');
     const head0 = await retry(() => c.ledger.getHead(), 'getHead');
     const bal0 = await retry(() => c.client.getBalance(w.wallet.address), 'balance');
-    console.log(`walkPending ${pending}, head ${head0}; sending advance_head (0.3 TON, change rides back)`);
+    console.log(`walkPending ${pending}, head ${head0}; sending advance_head (0.3 GRAM, change rides back)`);
     await c.ledger.sendAdvanceHead(w.sender, { value: toNano('0.3') });
     await new Promise((r) => setTimeout(r, SETTLE_MS));
     const pending1 = await retry(() => c.ledger.getWalkPending(), 'getWalkPending(after)');
@@ -135,8 +135,8 @@ async function cmdAdvanceHead(c: Contracts, handle: string) {
             ok: cost < toNano('0.05'),
             name: 'ADVANCE_HEAD_REFUNDS',
             getMethod: 'caller balance',
-            after: `${fromNano(cost)} TON spent`,
-            detail: 'the 0.3 TON rides back less gas (CARRY_ALL_REMAINING)',
+            after: `${fromNano(cost)} GRAM spent`,
+            detail: 'the 0.3 GRAM rides back less gas (CARRY_ALL_REMAINING)',
         },
     ]);
 }
@@ -208,7 +208,7 @@ async function cmdRetryLane(c: Contracts) {
     const next = await retry(() => c.ledger.getNextUnroutedItem(0n), 'getNextUnroutedItem(0)');
     const collAddr = addr('PRIMES_COLLECTION_ADDRESS');
     const bal = await retry(() => c.client.getBalance(collAddr), 'collection balance');
-    console.log(`next parked item ${next}; collection balance ${fromNano(bal)} TON`);
+    console.log(`next parked item ${next}; collection balance ${fromNano(bal)} GRAM`);
     finish('retry-item-lane', [
         {
             ok: next === -1n,
@@ -221,7 +221,7 @@ async function cmdRetryLane(c: Contracts) {
             ok: bal < toNano('1'),
             name: 'COLLECTION_AT_FLOOR',
             getMethod: 'collection balance',
-            after: `${fromNano(bal)} TON`,
+            after: `${fromNano(bal)} GRAM`,
             detail: 'the item confirms the mint, so no held split rests on the collection',
         },
     ]);

@@ -73,7 +73,7 @@ export const TEP74 = {
 export const DEDUST = {
   // outbound, in the `forward_payload` of a TEP-74 transfer to the JETTON vault.
   // NOT the native vault's opcode and NOT interchangeable with it: the native
-  // swap declares its own `amount` because TON arrives as message value, while
+  // swap declares its own `amount` because GRAM arrives as message value, while
   // this one takes the amount from the transfer that carries it.
   swap_jetton: 0xe3a0d482,
   // The two halves of a PLAYER's liquidity deposit (`shared/messages.ts`'s
@@ -135,15 +135,15 @@ export const VENUE_TIMELOCK = {
 // (`primes_ledger.tolk`'s `MINT_MARGIN`). A wire constant of RES_GAS's kind —
 // not a params.json economic parameter (CLAUDE.md rule 3 is not engaged) —
 // sized so it never partial-refunds an intentionally padded send: the webapp
-// pads to MINT_PRICE + 0.01 TON (`webapp/src/chain/values.ts`
-// FEE_MARGIN_NANOTON) and `smokeMintLive.ts` to +0.05 TON. Pinned to the
+// pads to MINT_PRICE + 0.01 GRAM (`webapp/src/chain/values.ts`
+// FEE_MARGIN_NANOTON) and `smokeMintLive.ts` to +0.05 GRAM. Pinned to the
 // ledger's literal by `SimCrossCheck.spec.ts`'s constant sweep (GAUNTLET.md G60).
-export const MINT_MARGIN_NANOTON = 500000000n; // 0.5 TON
+export const MINT_MARGIN_NANOTON = 500000000n; // 0.5 GRAM
 
 export const LEDGER = {
   // inbound, from any wallet.
   //
-  // THE mint: one message, one signature, 1 TON attached (primes_ledger.tolk D8).
+  // THE mint: one message, one signature, 1 GRAM attached (primes_ledger.tolk D8).
   // D-191 point 1: SENT TO THE BENEFICIARY'S MINTER CARD, not to the ledger — the
   // card forwards it inside `MINTER_CARD.card_mint`; the ledger no longer accepts it
   // from a wallet.
@@ -206,7 +206,7 @@ export const LEDGER = {
   // a prime's forfeit entry is cleared by `SettlePrimeClearing`, not here.
   clearing_cleared: 0xb0000009,
   // inbound, PERMISSIONLESS (D-91 point 4). The permissionless floor donation:
-  // `amount` TON in, added to BOTH `T` and `seedT` (D-26 keeps closing) and
+  // `amount` GRAM in, added to BOTH `T` and `seedT` (D-26 keeps closing) and
   // forwarded to the ratchet as `pending`; `S` rises by `amount * L` and those
   // PRIMES are minted to the sender, who pairs and burns them on DeDust
   // themselves. This is where the pool's PRIMES side comes from.
@@ -215,7 +215,7 @@ export const LEDGER = {
   // inbound, from the TWO ROYALTY-BEARING COLLECTIONS ONLY (DECISIONS.md D-128).
   // A marketplace forwards a TEP-66 secondary royalty to the collection, which
   // splits it and sends the ratchet's half here: `T += amount`, `S` UNTOUCHED,
-  // and the TON forwarded to the ratchet as `pending` — `clearing_cleared`'s
+  // and the GRAM forwarded to the ratchet as `pending` — `clearing_cleared`'s
   // body without the market's door, so a royalty is a pure floor step exactly
   // as a clearing is.
   //
@@ -251,9 +251,12 @@ export const LEDGER = {
   // and the generators collection. Do not reuse.
   // 0xb0000047 (`quote_floor`) is RETIRED by D-212 with the burn sink that asked
   // it (and 0x92000002, its `floor_quote` reply). Do not reuse.
-  // inbound, from `FeeDests.operatorAddr` only (D-211): §4.1's invite words. Moves
-  // no value; the ledger still writes the link and `n` after them.
-  set_invite_text: 0xb0000085,
+  // 0xb0000085 (`set_invite_text`) is RETIRED by D-215: `set_invite_terms` carries
+  // the words with the count and value. Do not reuse.
+  // inbound, from `FeeDests.operatorAddr` only (D-211, D-215): §4.1's invite count,
+  // value and words, inside INVITE_COUNT_CEILING and INVITE_LINE_CAP. Moves no value;
+  // the ledger still writes the link and `n` after the words.
+  set_invite_terms: 0xb0000086,
   // 0x98000001 (`deploy_generator`) is RETIRED by D-202: an invite slot is now a
   // plain text-comment transfer (op 0), which needs no opcode. Do not reuse.
   // 0xb0000043 (`record_patron_link`) is RETIRED by D-106 along with patron
@@ -269,13 +272,13 @@ export const LEDGER = {
   // 0xb0000031 is RETIRED. Do not reuse: it is the pre-DENOMINATION_PLAN body
   // (query_id, era_boundary, beneficiary) whose amount came from a
   // PRIMES-denominated schedule. P4 floor-indexes the schedule, so the body now
-  // carries the ledger's post-mint (T, S) and the vault converts TON -> PRIMES
+  // carries the ledger's post-mint (T, S) and the vault converts GRAM -> PRIMES
   // itself. A stale sender must be REJECTED, not silently mis-parsed, so the
   // opcode moves rather than the body changing under a fixed number.
   pay_era_bounty: 0xb0000032,
   // outbound, to the bounty vault, on any mint settling a SPECIAL_NUMBERS_PLAN.md
   // category match (Phase 2). Tier only; the vault's own genesis-fixed schedule
-  // decides the TON value (D22 trust shape, mirrored for special numbers).
+  // decides the GRAM value (D22 trust shape, mirrored for special numbers).
   pay_special_number_rebate: 0xb0000072,
   // D-88 point 2 DELETES `settle_special_composite` (0xb0000073) along with
   // SS3's 1-day composite decay lane, its only sender. A special composite is
@@ -305,14 +308,14 @@ export const LEDGER = {
   // D-189, permissionless: continues a head-advance walk a mint stopped early
   // (`get_walk_pending` = 1). No-op otherwise; unspent value returns.
   advance_head: 0xb000007c,
-  // D-196, permissionless and caller-funded (IMPORT_LOT_BLOCK_VALUE, 0.05 TON): pulls
+  // D-196, permissionless and caller-funded (IMPORT_LOT_BLOCK_VALUE, 0.05 GRAM): pulls
   // the frontier block's auction marks in from its lot block once the block starts
   // below `head + window` (`getLotBlockState().dueNow`). Refused 225 when not due;
   // while one is in flight it re-sends the same request (the lot block keeps its words).
   import_lot_block: 0xb000007e,
   // D-196, lot block -> ledger: the import's answer (the lot block keeps its words).
   lot_block_words: 0xb000007f,
-  // D-198, PERMISSIONLESS, caller-funded (0.15 TON): move block `unsoldFlushed`'s unsold
+  // D-198, PERMISSIONLESS, caller-funded (0.15 GRAM): move block `unsoldFlushed`'s unsold
   // rows (bookmark + forfeit counter per prime) to its lot block once the head has left
   // it (`getUnsoldFlush().dueNow`). Refused 225 while the head is still in the block. The
   // head-advance walk stops LOT_BLOCK_WINDOW_BLOCKS past the cursor.
@@ -355,13 +358,13 @@ export const RATCHET = {
   // inbound, one-shot from the genesis script: this contract's OWN PRIMES jetton
   // wallet, so the burn counter (§3.3 / §11.21) can tell a genuine proceeds
   // notification from a forged one. Arms `getBurnStats`; grants no authority and
-  // touches no TON path. Same circular-address bootstrap as set_ledger.
+  // touches no GRAM path. Same circular-address bootstrap as set_ledger.
   set_jetton_wallet: 0xb0000052,
   // outbound, to the DeDust native vault. The swap body's third field is
   // §4.3.1's floor guard `min_out = amount * S / T * (1 + FLOOR_GUARD)`,
   // replacing the pre-v5 `storeCoins(1)` that accepted any fill at any price.
   dedust_swap: 0xea06185d,
-  // inbound, from the DeDust native vault: a refused swap's TON, handed back.
+  // inbound, from the DeDust native vault: a refused swap's GRAM, handed back.
   // NOT A BOUNCE, and that distinction is load-bearing. DeDust checks `limit`
   // in the POOL, one hop past the vault; the pool commits its refund and then
   // throws (exit 304), so the vault's own transaction SUCCEEDS and a TON bounce
@@ -383,7 +386,7 @@ export const RATCHET = {
 
   // -------------------------------------------------------------------------
   // §4.3.2 — THE STAKED RESERVE (D-151). Idle `pending` above a sim-sized
-  // liquid reserve is deposited into the TON liquid-staking pool Tonstakers
+  // liquid reserve is deposited into the GRAM liquid-staking pool Tonstakers
   // runs, held as tsTON and counted in `T` AT COST. Every value below was read
   // from `ton-blockchain/liquid-staking-contract` @ main on 2026-09-20 — file
   // and line are on each entry — and NOT from the GitBook, which publishes no
@@ -399,7 +402,7 @@ export const RATCHET = {
   // no caller names an amount, on this or either of the two below.
   stake: 0xb0000053,
   // inbound, permissionless. Callable ONLY when liquid `pending` is under the
-  // reserve, i.e. when the floor's standing bid needs the TON back.
+  // reserve, i.e. when the floor's standing bid needs the GRAM back.
   unstake: 0xb0000054,
   // inbound, permissionless, ≥ 30 days apart: sends accrued tsTON (held above
   // cost at `lastRate`) to the LP-governed treasury. Realizes, never marks.
@@ -419,7 +422,7 @@ export const RATCHET = {
   // outbound, to the Tonstakers pool. Body is the header and nothing else:
   //   deposit#47d54391 query_id:uint64 = InternalMsgBody
   // (`contracts/op-codes.func:41`, `contracts/interaction.tlb:52`). The pool
-  // skims a FLAT `DEPOSIT_FEE = 1 TON` off the message value and credits the
+  // skims a FLAT `DEPOSIT_FEE = 1 GRAM` off the message value and credits the
   // remainder (`contracts/pool.func:79`, `:288-290`), which is why the stake
   // minimum is an economic parameter and not a dust guard.
   tonstakers_deposit: 0x47d54391,
@@ -433,7 +436,7 @@ export const RATCHET = {
   // inbound, from the Tonstakers pool: an immediate withdrawal that FILLED.
   //   withdrawal#0a77535c query_id:uint64 = InternalMsgBody
   // (`contracts/op-codes.func:43`). Non-bounceable, `CARRY_ALL_BALANCE`. The
-  // body carries NO amount, and the value is the filled TON plus whatever is
+  // body carries NO amount, and the value is the filled GRAM plus whatever is
   // left of our own attached gas — the two cannot be separated, which is why
   // the tsTON rate is learned from a DEPOSIT and never from a withdrawal
   // (D-151; it is the finding that deleted the probe-burn design).
@@ -448,7 +451,7 @@ export const RATCHET = {
   // sender and takes NO accounting action on it, which is what makes accepting
   // it from any sender safe.
   payout_ownership_assigned: TEP62.ownership_assigned,
-  // inbound, from the payout collection at round end: the bill's TON share.
+  // inbound, from the payout collection at round end: the bill's GRAM share.
   // Non-bounceable, `CARRY_ALL_REMAINING_MESSAGE_VALUE`
   // (`contracts/payout_nft/nft-collection.func:262-268`). Same unverifiable
   // sender as above, so the handler is written to be SAFE UNDER FORGERY rather
@@ -463,7 +466,7 @@ export const RATCHET = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Registrar — high byte 0xB0. Holds no protocol TON at all.
+// Registrar — high byte 0xB0. Holds no protocol GRAM at all.
 //
 // Its only outbound messages are a trophy re-engraving's fee to the main collection
 // (`naming_paid`, D-212) and the payer's change, so §3.4's declared-liability-is-zero
@@ -519,7 +522,7 @@ export const REGISTRAR = {
   // for predicate purposes" cannot drift apart.
   //
   // No admin path, no operator override, no ledger arm: the ledger ISSUES a
-  // trophy and has no say in where it goes afterwards. And no TON moves — the
+  // trophy and has no say in where it goes afterwards. And no GRAM moves — the
   // registrar holds none (§3.4), so this is one dictionary write and the price,
   // if there was one, was settled somewhere else entirely.
   transfer_trophy: 0xb0000070,
@@ -563,7 +566,7 @@ export const MARKET_LIMITS = {
 // (`staking.tier_weights`). The rewards are the treasury's PRIMES, sent once per
 // epoch by its permissionless `distribute()` (TREASURY below) and streamed over the
 // next epoch. Earning stops at `maturesAt`; principal returns only at or after it
-// (ST-3). Nothing here touches `k`, `S`, `T` or TON: the master owes PRIMES only.
+// (ST-3). Nothing here touches `k`, `S`, `T` or GRAM: the master owes PRIMES only.
 //
 // THE CHILD'S ADDRESS IS THE AUTHENTICATION, as on the treasury: the master
 // re-derives `positionAddress(owner)` for every `settle`. Every settle is a round
@@ -650,17 +653,17 @@ export const STAKE_ACC_SCALE = 18446744073709551616n; // 2^64
 
 /** Nominal `forward_ton_amount` a STAKE's transfer must carry (`getStakeMinForward`):
  *  a child deploy or a refund transfer, whichever the payload decides. */
-export const STAKE_MIN_FORWARD_NANOTON = 150000000n; // 0.15 TON
-/** Nominal TON a claim / relock / withdraw to the CHILD must carry
+export const STAKE_MIN_FORWARD_NANOTON = 150000000n; // 0.15 GRAM
+/** Nominal GRAM a claim / relock / withdraw to the CHILD must carry
  *  (`getPositionMinForward().ownerMinForward`). */
-export const STAKE_POSITION_MIN_FORWARD_NANOTON = 200000000n; // 0.20 TON
-/** Nominal TON an `expire` poke must carry — no transfer behind it
+export const STAKE_POSITION_MIN_FORWARD_NANOTON = 200000000n; // 0.20 GRAM
+/** Nominal GRAM an `expire` poke must carry — no transfer behind it
  *  (`getPositionMinForward().expireMinForward`). */
-export const STAKE_EXPIRE_MIN_FORWARD_NANOTON = 100000000n; // 0.10 TON
+export const STAKE_EXPIRE_MIN_FORWARD_NANOTON = 100000000n; // 0.10 GRAM
 
 // ---------------------------------------------------------------------------
 // THE BURN SINK (high byte 0x92) is DELETED by D-212 (CONCEPT §5.2): a naming is
-// paid in TON on the collection now, and the sink's one action went with it.
+// paid in GRAM on the collection now, and the sink's one action went with it.
 // Retired, not recycled — `set_wallet` 0x92000001, `floor_quote` 0x92000002,
 // and the action tags SINK_ACTION_ANNOTATE 0x414e4e54 ("ANNT"), BOND 0x424f4e44
 // and CERM 0x4345524d.
@@ -696,13 +699,13 @@ export const STAKE_EXPIRE_MIN_FORWARD_NANOTON = 100000000n; // 0.10 TON
 // deploy-fixed beneficiary, which is what makes the absence of a withdraw path
 // greppable rather than asserted (§8's standard).
 //
-// It moves no TON and touches neither `T` nor `S` — the allocation was already
+// It moves no GRAM and touches neither `T` nor `S` — the allocation was already
 // counted into `S` at genesis (§3.3) — so `p_f` is identical with and without
-// it. Zero TON liability, absent from the §3.4 solvency check.
+// it. Zero GRAM liability, absent from the §3.4 solvency check.
 //
 // 0x91/0x92 are the staking and burn sinks', 0x93/0x94 the retired constellations pair;
 // 0x95 is the next free byte and the right neighbourhood — like the sinks, this
-// is a PRIMES-custody contract with no TON path.
+// is a PRIMES-custody contract with no GRAM path.
 // ---------------------------------------------------------------------------
 export const VESTING = {
   // inbound, one-shot from the genesis script: this contract's OWN PRIMES jetton
@@ -831,12 +834,12 @@ export const TREASURY = {
   // LP on a withdrawal or a sink-forward, tsTON on a proposal — moves as a plain
   // TEP-74 transfer from the treasury's own wallet.
   jetton_transfer: TEP74.transfer,
-  // outbound, TON only, on `execute` of an asset-0 proposal. It carries a body so
+  // outbound, GRAM only, on `execute` of an asset-0 proposal. It carries a body so
   // the bounce handler gets the proposal sequence back to reset `executed`.
   ton_payout: 0x96000014,
   // outbound, D-194, on `execute` of a venue-confirm proposal (asset 3): to the venue
   // timelock, `seq` = the timelock record the vote confirmed. Moves no value; a bounce
-  // (stale seq) resets `executed` like a TON payout's.
+  // (stale seq) resets `executed` like a GRAM payout's.
   confirm_venue: 0xa0000006,
 } as const;
 
@@ -866,6 +869,17 @@ export const TREASURY_TIERS = [
 ] as const;
 
 /**
+ * D-214: LP locked forever through a position's `to_sink` keeps voting, as ONE per-wallet
+ * total on the child (`getForever()`), weighted `amount x FOREVER_VOTE_MULTIPLIER`
+ * (`treasury.forever_vote_multiplier`) and never maturing. Not a tier — it has no term,
+ * no deposit and no relock — so it is not in `TREASURY_TIERS`. It votes and proposes under
+ * the reserved position id `FOREVER_POSITION_ID`. The treasury's
+ * `getForeverVoteMultiplier()` is the §9.1 authority; this is the convenience copy.
+ */
+export const FOREVER_VOTE_MULTIPLIER = 100;
+export const FOREVER_POSITION_ID = 0xffffffff;
+
+/**
  * The three proposable assets, `asset:uint8` on the wire. LP is not one (D-167): the only
  * LP the treasury holds is the depositors', and TR-5 says a vote never moves it.
  *
@@ -873,7 +887,7 @@ export const TREASURY_TIERS = [
  * idle part of `pending` into Tonstakers and `harvest()` sends the ACCRUED tsTON — never
  * the cost basis, which stays a term of `T` — to this treasury as a plain TEP-74 transfer.
  */
-export const TREASURY_ASSET = { TON: 0, PRIMES: 1, TSTON: 2, VENUE: 3 } as const;
+export const TREASURY_ASSET = { GRAM: 0, PRIMES: 1, TSTON: 2, VENUE: 3 } as const;
 // `VENUE` (D-194) is not an asset: a venue-confirm proposal. `amount` is the venue
 // timelock's queued-record `seq`, `dest` is the timelock, and it moves no value.
 
@@ -882,19 +896,19 @@ export const TREASURY_ASSET = { TON: 0, PRIMES: 1, TSTON: 2, VENUE: 3 } as const
 export const TREASURY_VENUE_CONFIRM_GAS_NANOTON = 30000000n;
 
 /**
- * Nominal TON a caller must forward with a treasury-bound message: enough for the most
+ * Nominal GRAM a caller must forward with a treasury-bound message: enough for the most
  * expensive outcome (a jetton transfer that may deploy the recipient's wallet, plus a
  * hop to the child). Per CLAUDE.md a real sender adds a margin.
  */
 export const TREASURY_MIN_FORWARD_NANOTON = 150000000n;
-/** Nominal TON a `distribute()` caller must attach: the transfer hop (0.1) plus the
- *  0.05 TON forwarded so the stake master's wallet raises the notification. */
+/** Nominal GRAM a `distribute()` caller must attach: the transfer hop (0.1) plus the
+ *  0.05 GRAM forwarded so the stake master's wallet raises the notification. */
 export const TREASURY_DISTRIBUTE_MIN_FORWARD_NANOTON = 150000000n;
 
 // ---------------------------------------------------------------------------
 // THE LP SINK — high byte 0x97. CONCEPT §5.5; DECISIONS D-100 points 4 and 9.
 //
-// LOCKED DEPTH. DeDust PRIMES/TON LP receipts go in and NOTHING comes out —
+// LOCKED DEPTH. DeDust PRIMES/GRAM LP receipts go in and NOTHING comes out —
 // this contract declares no outbound message type at all, which is a stronger
 // statement than "no withdraw path" and is checkable by grepping the compiled
 // cell for SENDRAWMSG (`contracts/tests/LpSink.spec.ts` does exactly that).
@@ -903,7 +917,7 @@ export const TREASURY_DISTRIBUTE_MIN_FORWARD_NANOTON = 150000000n;
 // counter somebody maintains off-chain to be readable, whereas a sink's locked
 // depth IS its jetton wallet balance and `getLocked()` is the same number twice.
 //
-// LOCKED DEPTH IS NEVER SUMMED INTO `T` (D-100 point 4). A pool's TON/PRIMES
+// LOCKED DEPTH IS NEVER SUMMED INTO `T` (D-100 point 4). A pool's GRAM/PRIMES
 // composition moves with every trade, so an LP-derived term is non-monotonic and
 // would void §5's ratchet theorem. The floor and the liquidity are two separate
 // guarantees on two separate panels, and every surface that shows locked depth
@@ -1040,7 +1054,7 @@ export const ITEM = {
   // owned from block one and none of the four has anything to act on. Do not
   // reuse the values.
   // inbound, from the LEDGER only, on a referral payout: the ledger cannot read
-  // an item's owner synchronously mid-mint, so it forwards the referral TON to
+  // an item's owner synchronously mid-mint, so it forwards the referral GRAM to
   // `ItemAddress(key)` and the item — which knows its own owner — relays it on.
   forward_to_owner: 0xc1000002,
   // inbound, permissionless (D-62/GAUNTLET.md D9.1): a composite item is
@@ -1419,27 +1433,27 @@ export const ERRORS = {
   // 213-215 are RETIRED by D-106 (patron mode's three refusals). Left as a gap
   // rather than reused: a code is a promise about what a failure MEANT, and a
   // recycled number makes an old bounce report the wrong cause.
-  /** B-1: a `claim_tribute` relay arrived for more TON than the ledger holds.
+  /** B-1: a `claim_tribute` relay arrived for more GRAM than the ledger holds.
    *  §3.2's tribute is credited to items as a NUMBER and custodied here, so
    *  this is the ledger admitting it cannot cover an obligation it declared —
    *  the failure `tributeOwed` in the solvency liability exists to prevent.
    *  The transaction aborts and the relay bounces, so the item restores `owed`
    *  and the claim is retryable; the code exists so the cause is diagnosable
-   *  rather than reading as TVM's generic action-phase "not enough TON" (37). */
+   *  rather than reading as TVM's generic action-phase "not enough GRAM" (37). */
   ledger_tribute_insolvent: 216,
   /** 217 IS RETIRED AND MUST NOT BE REUSED. It was `ledger_donation_would_dilute`:
    *  under D-91 point 4 `donate_floor` emitted at the fixed `L = 10,000`
-   *  PRIMES/TON, which only raises `p_f` while `p_f <= 1/L`, so a late donation
+   *  PRIMES/GRAM, which only raises `p_f` while `p_f <= 1/L`, so a late donation
    *  had to be REFUSED to keep §5's ratchet theorem. D-100 point 1 replaces the
    *  refusal with a clamp — `emitted = min(X·L, X·S/T)` — so the dilution case
    *  is unreachable by construction and there is nothing left to throw. The code
    *  is left named here rather than deleted because it appears in past testnet
    *  transactions and a reused number would misread them. */
   /** `ignite` on a ledger whose floor has no backing. The genesis seed writes
-   *  `T = 0` (D-46 point 2 — no founder TON is deposited), so `p_f = T/S` is
+   *  `T = 0` (D-46 point 2 — no founder GRAM is deposited), so `p_f = T/S` is
    *  zero until D-92's `donate_floor` lands. Opening minting first is not a
    *  cosmetic ordering slip: the rebate is `R = k*I*S/T`, so the mint after the
-   *  first one emits ~20% of the genesis supply for 1 TON (measured in
+   *  first one emits ~20% of the genesis supply for 1 GRAM (measured in
    *  `contracts/tests/UnbackedFloorLaunch.spec.ts`). The donation is
    *  incremental and permissionless, so any positive `T` — one tranche or ten,
    *  a testnet-sized donation or the full 240 — satisfies this. */
@@ -1455,17 +1469,21 @@ export const ERRORS = {
   ledger_dividend_prime_unsold: 219,
   // §4.1's invite line, 220-222. 220 (`invite_bad_sig`) and 222
   // (`ledger_invite_unset`) are RETIRED by D-202 with the invite signer. Do not reuse.
-  /** `invite_count > INVITE_MAX_COUNT` (3, params.json `invites.max_count`). The field is
-   *  `uint3` so 4..7 are representable; this is the check that makes them unreachable.
-   *  Malformed input from the minter, not an unresolvable line. */
+  /** `invite_count` above the ledger's live `Config.inviteCount` (D-215; genesis 3). The
+   *  field is `uint7`; this is the check that makes every count over the live terms
+   *  unreachable. Malformed or stale input from the minter, not an unresolvable line. */
   invite_count_over_max: 221,
   /** Audit R2-L1 (2026-11-19): a named invite slot is not on workchain 0. Refused in the
    *  compute phase so the mint bounces through the minter card and refunds; the send
-   *  itself would have failed in the action phase (36) and kept the payer's 1 TON. */
+   *  itself would have failed in the action phase (36) and kept the payer's 1 GRAM. */
   invite_bad_workchain: 236,
-  /** D-211: `set_invite_text` carried refs, a partial byte, or more than
+  /** D-211: `set_invite_terms` carried words with refs, a partial byte, or more than
    *  INVITE_TEXT_MAX_BYTES (86) — words that would overflow the comment cell. */
   invite_text_bad: 237,
+  /** D-215: invite terms outside the fixed bounds — value 0, count over
+   *  INVITE_COUNT_CEILING (100), or count × (value + INVITE_SEND_FEE) over INVITE_LINE_CAP
+   *  (0.31 GRAM). Thrown by `set_invite_terms`, and by a mint whose spend would exceed the cap. */
+  invite_terms_bad: 238,
   /** GAUNTLET V15: `flush()` was called while a DeDust round trip is still
    *  open (`inFlightFlush != 0`). `handleFlush` used to OVERWRITE that field
    *  rather than refuse, so a bounce from the first swap would restore the
@@ -1503,8 +1521,8 @@ export const ERRORS = {
    *  lot's listing is refused earlier, by `mark_off_head`. */
   ledger_prime_already_owned: 235,
   /** D-146 (signed 2026-09-22): the CALLER of a permissionless ratchet leg attached
-   *  less than that leg's venue gas plus 0.01 TON of compute — flush 0.26 (DeDust's
-   *  0.25), stake 1.31 (Tonstakers' 1 TON fee + 0.3), unstake 1.96 (all three exit
+   *  less than that leg's venue gas plus 0.01 GRAM of compute — flush 0.26 (DeDust's
+   *  0.25), stake 1.02 (Tonstakers' 1 GRAM gas reserve, ~0.89 refunded, + 0.01 credit margin), unstake 1.96 (all three exit
    *  legs, prepaid), harvest 0.11 (`shared/messages.ts`' `*_CALLER_GAS_NANOTON`).
    *  The caller pays and gets the change back, so no call can move the ratchet's
    *  balance above `pending`. Until D-146 this code meant the opposite — the
@@ -1523,7 +1541,7 @@ export const ERRORS = {
    *  sends nothing, and shows up in no get-method. */
   ratchet_flush_gas: 225,
   /** A `stake` whose computed size is at or below `STAKE_MIN` (§4.3.2). Not a
-   *  dust guard: the Tonstakers pool charges a FLAT 1 TON `DEPOSIT_FEE` per
+   *  dust guard: the Tonstakers pool charges a FLAT 1 GRAM `DEPOSIT_FEE` per
    *  deposit regardless of size (`pool.func:79`, `:288-290`), so a small stake
    *  is a guaranteed loss. The minimum is sized by the sim against the modelled
    *  APR, not picked. */
@@ -1852,7 +1870,7 @@ export const ERRORS = {
   treasury_already_voted: 1155,
   // `propose` from an owner whose weight is below `treasury.propose_min_bps` of
   // `eligible_weight`. A FRACTION, never a fixed PRIMES count — D-100 "options
-  // not taken": 10M PRIMES is 3.5 TON at genesis and 3.2M TON at the modelled
+  // not taken": 10M PRIMES is 3.5 GRAM at genesis and 3.2M GRAM at the modelled
   // year-3 floor, so a fixed threshold is two different rules over time.
   treasury_propose_below_threshold: 1156,
   // `propose` from an owner who already has an open proposal (D-100 point 8).
@@ -1972,7 +1990,7 @@ export const ERRORS = {
   // the REGISTRAR's trophy transfer: the sender does not hold trophy `n`.
   reg_not_namer: 915,
   // 916 (`reg_annotation_not_free`) and 918 (`reg_sink_unset`) are RETIRED by
-  // D-212: a paid re-engraving takes TON, and every engraving refusal refunds.
+  // D-212: a paid re-engraving takes GRAM, and every engraving refusal refunds.
   // 917 (`reg_bond_unpaid`) is RETIRED with the registration bond (D-102). Do
   // not reuse.
 
@@ -2096,7 +2114,7 @@ export const SCORE_TERMS = {
   TZ_CAP: 3,
   /**
    * The ONE clamp on the sum, and the ceiling with it: `MINT_PRICE · 2^(87/10)`
-   * is 415.87 TON, just under owner answer 9's 420. 88 points would reach 445.7,
+   * is 415.87 GRAM, just under owner answer 9's 420. 88 points would reach 445.7,
    * which is why the clamp is here and not one point higher.
    */
   SCORE_MAX: 87,

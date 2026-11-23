@@ -22,9 +22,9 @@ import { LEDGER } from '../../shared/opcodes';
  * The second one required a VIRGIN ledger, on the reasoning that an assignment onto
  * accrued backing would silently ERASE it. But `T` does not need a mint to become
  * non-zero: `handleRoyaltyToRatchet` (`royalty_to_ratchet#b0000079`, D-128) raises it
- * on any TEP-66 royalty, and BOTH the numbers and the generators collection sweep TON
+ * on any TEP-66 royalty, and BOTH the numbers and the generators collection sweep GRAM
  * that merely ARRIVES at them. So any stranger who sent either collection a fraction
- * of a TON between its deploy and the seed made the seed throw 104 — forever, on a
+ * of a GRAM between its deploy and the seed made the seed throw 104 — forever, on a
  * ledger that cannot be re-deployed to the same address. On testnet a faucet-spam bot
  * did exactly that, unprompted, within four minutes.
  *

@@ -11,7 +11,7 @@
 //     dicts grow with adoption, so rent grows too, but every mint pays them a
 //     hop and the §4.1 gas-&-ops line exists to cover exactly this.
 //     `params.json` models it: `fees.ops_reserve_derivation` prices `owed`
-//     storage rent over a 10,000-mint horizon at 4.73 TON and folds it into
+//     storage rent over a 10,000-mint horizon at 4.73 GRAM and folds it into
 //     `OPS_RESERVE`. That is the half already thought about.
 //
 //   FIXED storage, with NO income — an ITEM. A number NFT's data does not grow;
@@ -217,7 +217,7 @@ describe('TON PRIMES — D9: storage rent, measured, against every contract that
     }, 600_000);
 
     it('the contracts with INCOME are nowhere near starvation', () => {
-        // The ledger holds `OPS_RESERVE` = 94 TON (params.json-derived, see below) and is paid a hop on every
+        // The ledger holds `OPS_RESERVE` = 94 GRAM (params.json-derived, see below) and is paid a hop on every
         // mint; its measured rent at an empty dict is a rounding error against
         // that. The point of the assertion is the ORDER OF MAGNITUDE, not the
         // exact figure — a regression that made rent comparable to income would
@@ -250,7 +250,7 @@ describe('TON PRIMES — D9: storage rent, measured, against every contract that
         // finite, computable life.
         const rent = rentPerYear['item'];
         expect(rent).toBeGreaterThan(0n);
-        // Deployed with ITEM_DEPLOY_VALUE (0.025 TON) less deploy gas. The
+        // Deployed with ITEM_DEPLOY_VALUE (0.025 GRAM) less deploy gas. The
         // runway is what that buys at the measured rate.
         const endowment = toNano('0.025');
         const years = Number(endowment / rent);
@@ -301,7 +301,7 @@ describe('TON PRIMES — D9: storage rent, measured, against every contract that
 
     it('...and a PRIME item is topped up by every mint that cites it, so it is not exposed', () => {
         // The contrast that makes D9.1 precise rather than alarmist. A prime's
-        // item receives `CREDIT_TRIBUTE_VALUE` (0.008 TON) of gas on every
+        // item receives `CREDIT_TRIBUTE_VALUE` (0.008 GRAM) of gas on every
         // composite mint citing it — more than two years of rent, per citation
         // (it was over three until D-188 points 4 and 6 put the dividend
         // bookmark, its `credit_dividend` arm and the naming right on the item:
@@ -407,7 +407,7 @@ describe('TON PRIMES — D9: storage rent, measured, against every contract that
         expect(topUp.transactions).toHaveTransaction({ to: itemAddr, success: true });
 
         const after = (await blockchain.getContract(itemAddr)).balance;
-        // Most of the 1 TON landed (some is spent on this transaction's own
+        // Most of the 1 GRAM landed (some is spent on this transaction's own
         // gas) — an order-of-magnitude check that the value was credited, not
         // merely accepted and burned.
         expect(after - before).toBeGreaterThan(toNano('0.9'));
@@ -541,9 +541,9 @@ describe('TON PRIMES — D9: storage rent, measured, against every contract that
         expect(await item2.getOwed()).toBe(0n);
         const afterClaim = (await blockchain.getContract(item2Addr)).balance;
         expect(afterClaim).toBeGreaterThanOrEqual(afterRefusal);
-        // Measured (`CLAIM_TRIBUTE_MIN_VALUE`'s own comment): 0.03 TON attached
-        // leaves the item ~0.0096 TON RICHER, not merely unchanged — real
-        // break-even is closer to ~0.0204 TON. A wide floor either side keeps
+        // Measured (`CLAIM_TRIBUTE_MIN_VALUE`'s own comment): 0.03 GRAM attached
+        // leaves the item ~0.0096 GRAM RICHER, not merely unchanged — real
+        // break-even is closer to ~0.0204 GRAM. A wide floor either side keeps
         // this from chasing gas-model noise while still pinning the sign.
         expect(afterClaim - before).toBeGreaterThan(toNano('0.005'));
         expect(afterClaim - before).toBeLessThan(toNano('0.015'));

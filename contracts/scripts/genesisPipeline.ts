@@ -58,16 +58,16 @@
  * WHAT RUNS AFTER THIS SCRIPT, AND IN THIS ORDER (D-93). The launch is
  * **seed -> donate -> ignite**, and the middle step is not this script's:
  *
- *   a. `scripts/donateFloor.ts` — D-204's **200 TON** `donate_floor`
+ *   a. `scripts/donateFloor.ts` — D-204's **200 GRAM** `donate_floor`
  *      (D-92's 240 was re-set by the owner, not re-derived), which is what
  *      creates the floor at all. Permissionless, asserts no launch flag, and
  *      incremental, so a testnet rehearsal may send tranches or a smaller sum.
  *      DO NOT CONFUSE IT WITH `genesis.genesis_seed_ton` (200): that figure
  *      sizes `S₀` and never moves; see `GenesisParams.seedTon`.
- *   a'. the operator pairs the donation's 1,972,333 PRIMES against **~21.24 TON**
+ *   a'. the operator pairs the donation's 1,972,333 PRIMES against **~21.24 GRAM**
  *      on DeDust BY HAND, and sends the receipt to the LP SINK (D-154 closes
  *      D-100 point 4's choice for the genesis pair: opening depth is locked
- *      depth). D-140: the TON side is `PRIMES × p_f`, so the book opens AT the
+ *      depth). D-140: the GRAM side is `PRIMES × p_f`, so the book opens AT the
  *      floor; quoting it at `L` is what opened it 286× above. D-166 took the
  *      operator's 250,000-PRIMES vest tranche out of the pair along with the
  *      operator's lock. No contract builds that deposit (D-100 R1-2 — no verified
@@ -76,11 +76,11 @@
  *
  * The order is enforced on chain and not merely documented here, because the
  * rebate is `R = k*I*S/T` (math-note §2): against `T = 0` the mint after the
- * first one emits ~20% of the genesis supply for 1 TON, where the same mint
+ * first one emits ~20% of the genesis supply for 1 GRAM, where the same mint
  * after the donation emits 0.28%. See `tests/UnbackedFloorLaunch.spec.ts`.
  *
  * D-46 SUPERSEDES D-19 AND THE FOUNDER-SEEDED-LP SHAPE OF THIS PIPELINE. There
- * is no deploy-time DeDust deposit and no LP burn here any more: no TON leaves
+ * is no deploy-time DeDust deposit and no LP burn here any more: no GRAM leaves
  * the genesis wallet as pool backing. (D-46 gave the operator a disclosed
  * genesis mint to pair by hand; D-77 vested it, D-100 point 6 halved it and
  * D-166 deleted the operator's half: the operator's pairing inventory is now the
@@ -128,7 +128,7 @@ import { PrimesLpSink } from '../wrappers/PrimesLpSink';
  * (its `MarketConfig` stores it inline as `map<uint64, coins>`), so the encoder
  * moves here rather than being deleted with its old home.
  *
- * TON `coins` is `VarUInteger 16` — a 4-bit byte-length prefix — which is what
+ * GRAM `coins` is `VarUInteger 16` — a 4-bit byte-length prefix — which is what
  * `BigVarUint(4)` encodes. Getting this wrong does not fail loudly: the dict
  * builds, the deploy succeeds, and every lookup simply misses, so every prime
  * would quietly open at the ladder fallback instead of its NPV.
@@ -142,7 +142,7 @@ function npvTableToDict(
         // `.toFixed(9)` is not cosmetic. The sim emits `NPV(p)` as a full-precision
         // double — 869.0531779691883 — and `toNano` REFUSES more than nine decimals
         // with a bare "Invalid number", so the raw table from `shared/params.json`
-        // cannot be passed through as-is. Nine decimals is exactly the nanoTON
+        // cannot be passed through as-is. Nine decimals is exactly the nanoGRAM
         // resolution the value is about to be stored at, so the round is lossless
         // at the destination and the truncation is not a judgement call.
         dict.set(BigInt(prime), toNano(Number(ton).toFixed(9)));
@@ -241,7 +241,7 @@ export type GenesisParams = {
      * program has been inert on every genesis this repo has produced — silently,
      * because cheap-failing is exactly what it is meant to do when a kind is
      * unfunded, and a mint that pays no rebate looks identical to a mint whose
-     * number earned none. The vault is the authority on the TON value (D22), so
+     * number earned none. The vault is the authority on the GRAM value (D22), so
      * an unfunded vault is a program that does not exist.
      */
     rebateSchedule: RebateScheduleEntry[];
@@ -283,25 +283,25 @@ export type GenesisParams = {
     lpPrimesPerTon: number;
     /**
      * D-46 (supersedes CONCEPT §6 point 3's old founder-seed reading): `T₀` is
-     * now a NOMINAL supply-sizing input only, in nanoTON — it is never
+     * now a NOMINAL supply-sizing input only, in nanoGRAM — it is never
      * deposited anywhere. `treasuryVestPrimes = T0 * lpPrimesPerTon / 2` is the
      * vested genesis mint (D-166: the treasury's D-100 point 6 half, the
      * operator's half deleted), and the vault stays `T0 * lpPrimesPerTon * 5`,
-     * so `S₀ = 11,000,000` with no real TON behind it at deploy. `genesis.genesis_seed_ton` in
+     * so `S₀ = 11,000,000` with no real GRAM behind it at deploy. `genesis.genesis_seed_ton` in
      * shared/params.json.
      *
      * D-100 point 2 SPLIT THIS FIELD'S OLD JOB IN TWO, and it is the one thing
      * to get right in this type. Until D-100 the nominal seed and the genesis
      * donation were the same number by construction (D-92 chose the donation to
      * reproduce `seed/S₀`), so a script could read either and be right. They are
-     * now 200 and 132.50: `seedTon` sizes `S₀` and NO TON EVER MOVES FOR IT, while
-     * `donationTon` below is the TON that actually lands in `T`, through the
+     * now 200 and 132.50: `seedTon` sizes `S₀` and NO GRAM EVER MOVES FOR IT, while
+     * `donationTon` below is the GRAM that actually lands in `T`, through the
      * separate permissionless `donate_floor` step. Nothing in this pipeline may
      * send `seedTon` anywhere.
      */
     seedTon: bigint;
     /**
-     * D-154 — `genesis.genesis_donation_ton` (132.50), OWNER-SET, in TON.
+     * D-154 — `genesis.genesis_donation_ton` (132.50), OWNER-SET, in GRAM.
      *
      * Not sent by `runGenesis`: the donation is `donateGenesisFloor`, its own
      * step, and on a live deploy its own script (D-93's seed → donate → ignite).
@@ -312,10 +312,10 @@ export type GenesisParams = {
     donationTon: number;
     /**
      * D-140 — `genesis.genesis_floor_price_ton_per_primes` (3.5e-7), the floor
-     * the genesis donation buys, in TON per PRIMES.
+     * the genesis donation buys, in GRAM per PRIMES.
      *
      * Threaded for exactly one reason: the pairing instructions this pipeline
-     * prints quote the TON side of the DeDust pair as `PRIMES × p_f`, and that
+     * prints quote the GRAM side of the DeDust pair as `PRIMES × p_f`, and that
      * multiplier is a sim-derived figure (CLAUDE.md rule 3), not something a
      * script may re-derive from `seedTon` and the vault multiplier — which is
      * exactly the coincidence D-100 point 2 broke.
@@ -328,7 +328,7 @@ export type GenesisParams = {
      */
     donationPrimes: number;
     /**
-     * D-20 — `NPV(p)` for every prime, keyed by prime, in TON.
+     * D-20 — `NPV(p)` for every prime, keyed by prime, in GRAM.
      * `shared/params.json` `trophy_auction.npv_ladder.npv_ton_by_prime`, emitted
      * by the sim.
      *
@@ -374,10 +374,10 @@ export type GenesisParams = {
      */
     distributionRateBpsPerDay: number;
     /**
-     * D-212 (§4.7.1) — the naming fees, nanoTON. `nameFee` is the first naming of a
-     * number (owner: ~50 EUR at the genesis-day TON/EUR rate, so it is a genesis INPUT,
+     * D-212 (§4.7.1) — the naming fees, nanoGRAM. `nameFee` is the first naming of a
+     * number (owner: ~50 EUR at the genesis-day GRAM/EUR rate, so it is a genesis INPUT,
      * never a constant); `renameFee` every later one and every paid trophy re-engraving
-     * (owner: 200 TON, `shared/params.json` `naming.rename_fee_ton`). Deploy data on the
+     * (owner: 200 GRAM, `shared/params.json` `naming.rename_fee_ton`). Deploy data on the
      * collection (both) and the registrar (`renameFee`), no setter.
      */
     nameFee: bigint;
@@ -400,11 +400,11 @@ export type GenesisParams = {
     clockDivisor?: number;
     /**
      * D-153 — the same deploy-time scaling on the VALUE axis, and it reaches
-     * ONE contract (the ratchet) rather than five. `STAKE_MIN` is 500 TON and
+     * ONE contract (the ratchet) rather than five. `STAKE_MIN` is 50 GRAM and
      * the liquid reserve is 20% of the obligation, so §4.3.2's `stake` is
-     * illegal until `pending` exceeds 625 TON — reachable on mainnet in the
+     * illegal until `pending` exceeds 62.5 GRAM — reachable on mainnet in the
      * ordinary course of the game and reachable on testnet only by burning
-     * ~600 unrecoverable TON into `donate_floor`. 1 is mainnet and the
+     * ~600 unrecoverable GRAM into `donate_floor`. 1 is mainnet and the
      * identity; deploy scripts read it from `PRIMES_STAKE_MIN_TON` (default
      * 500 = divisor 1) and `getStakeMin()` publishes the divided figure.
      */
@@ -563,7 +563,7 @@ export function validatePresentation(p: GenesisPresentation): void {
  *     nothing will ever send tsTON from or to.
  *
  * Neither failure is visible at genesis. It surfaces months later as a
- * `harvest()` that does nothing, or a `stake()` that deposits TON into a dead
+ * `harvest()` that does nothing, or a `stake()` that deposits GRAM into a dead
  * account, and genesis is a ONE-SHOT: the venue addresses are init data and both
  * wallet messages close behind themselves, so the only repair is a fresh
  * deployment at fresh addresses. So this runs before anything is sent, and it
@@ -577,7 +577,7 @@ export function validatePresentation(p: GenesisPresentation): void {
  * `ratchetAddr`/`treasuryAddr` are OPTIONAL because of when each half can run.
  * Everything else — present, basechain, non-zero, not the genesis placeholder —
  * needs nothing but `params`, so it runs beside `validatePresentation` BEFORE the
- * first `sendDeploy`, where a mistake costs an error message instead of seven TON
+ * first `sendDeploy`, where a mistake costs an error message instead of seven GRAM
  * and a half-wired set. The two "not the receiving contract itself" exclusions
  * cannot: those addresses do not exist until their contracts are constructed. So
  * this is called twice, and the second call is still before any staking message.
@@ -658,7 +658,7 @@ export type GenesisEnv = {
      * with a get-call against `params.dedustPool`; the sandbox rehearsal supplies
      * a stand-in, exactly as it does for the pool address itself.
      *
-     * ORDERING CONSEQUENCE FOR A REAL DEPLOY: the DeDust PRIMES/TON pool must
+     * ORDERING CONSEQUENCE FOR A REAL DEPLOY: the DeDust PRIMES/GRAM pool must
      * exist before genesis runs, because an undeployed pool answers no
      * get-method. That is a step in `docs/testnet-deployment.md`, not a fallback
      * this pipeline may invent — a wrong LP wallet is init data on the sink and
@@ -758,7 +758,7 @@ export function treasuryVestPrimes(params: GenesisParams, tonNominal: bigint): b
 }
 
 /**
- * One `MintGenesis` into the treasury's vesting lock. Nothing else: no TON
+ * One `MintGenesis` into the treasury's vesting lock. Nothing else: no GRAM
  * transfer out, no LP deposit, no burn.
  *
  * The `totalAmount` assertion is why `treasuryVestPrimes` is shared: the lock's
@@ -826,8 +826,8 @@ export const OPENING_HEAD = 4n;
  * legitimate design state, but it is not a legitimate *accident*. The table
  * lands in ADDRESS-DETERMINING init data and no message can change it, so a
  * deploy that silently picked the fallback because a key had been renamed would
- * be discovered only when someone opened a lot on 17 at 7 TON instead of the
- * ~311 TON its tribute claim is worth — and fixing it would mean a fresh
+ * be discovered only when someone opened a lot on 17 at 7 GRAM instead of the
+ * ~311 GRAM its tribute claim is worth — and fixing it would mean a fresh
  * genesis, not a setter.
  *
  * So: an absent table throws here. To ship the fallback deliberately, pass
@@ -864,7 +864,7 @@ export function jettonMasterConfig(genesisAddress: Address, jettonWalletCode: Ce
 }
 
 /**
- * R17 — the mainnet ordering problem: a DeDust pool for the PRIMES/TON pair needs the
+ * R17 — the mainnet ordering problem: a DeDust pool for the PRIMES/GRAM pair needs the
  * PRIMES jetton master's address before it can be created, and the master is not deployed
  * until step 3 of `runGenesis`/`deployAndWire`, which itself needs the pool's address at
  * step 25b (`lpSink.set_wallet`, `treasury.set_wallets`) — circular on a network where the
@@ -942,7 +942,7 @@ export async function deployAndWire(
     // D-212: both naming fees are deploy data with no setter; a zero fee would leave
     // the ledger's floor step refusing every naming (`amount > 0`, 103).
     if (params.nameFee <= 0n || params.renameFee <= 0n) {
-        throw new Error('genesis: nameFee and renameFee must both be > 0 nanoTON (D-212)');
+        throw new Error('genesis: nameFee and renameFee must both be > 0 nanoGRAM (D-212)');
     }
     const registrarAddress = PrimesRegistrar.createFromConfig(
         { genesisScriptAddr: env.genesisAddress, renameFee: params.renameFee },
@@ -1034,7 +1034,7 @@ export async function deployAndWire(
     //   - `stakeAddr` (D-168) is the stake master deployed just above:
     //     `distribute()`'s one recipient, fixed at deploy.
     //
-    // 0.6 TON like the vesting locks, not the usual 0.5: this contract has to
+    // 0.6 GRAM like the vesting locks, not the usual 0.5: this contract has to
     // pay basechain storage for a dictionary of proposals, and nothing tops it up
     // — it takes no fee from anything.
     //
@@ -1330,7 +1330,7 @@ export async function deployAndWire(
     // passes a different `tonNominal` later hits the assertion rather than a
     // silently mis-sized lock.
     //
-    // 0.6 TON, not the 0.5 every other contract gets: this one has to pay
+    // 0.6 GRAM, not the 0.5 every other contract gets: this one has to pay
     // basechain storage until its last tranche, where the others are topped up
     // by the traffic they serve.
     //
@@ -1636,7 +1636,7 @@ export async function completeGenesis(
     //     deploy data. Until this lands, the ratchet burns exactly as before but
     //     counts nothing, and `getBurnStats` reports `counting = 0` so the
     //     dashboard shows the number as unavailable instead of as a measured
-    //     zero. It grants no authority and moves no TON.
+    //     zero. It grants no authority and moves no GRAM.
     const ratchetWalletAddr = await d.master.getWalletAddress(d.ratchet.address);
     await d.ratchet.sendSetJettonWallet(env.genesisSender, {
         jettonWalletAddr: ratchetWalletAddr,
@@ -1925,12 +1925,12 @@ export async function completeGenesis(
  * THE GENESIS DONATION — D-100 point 2 REVERSES D-92'S ARROW, D-154 RESIZES IT.
  *
  * D-92 declared the opening floor and solved for the donation:
- * `X = S₀ / (1/p_f − L)` = 12,000,000 / (60,000 − 10,000) = 240 TON. The method
- * was fine; the input is not available any more. D-100 point 2 recorded 4.20 TON
- * at genesis plus up to 150 TON incrementally afterwards (point 3); **D-154
- * front-loads that whole commitment** — the operator funds **132.50 TON at
+ * `X = S₀ / (1/p_f − L)` = 12,000,000 / (60,000 − 10,000) = 240 GRAM. The method
+ * was fine; the input is not available any more. D-100 point 2 recorded 4.20 GRAM
+ * at genesis plus up to 150 GRAM incrementally afterwards (point 3); **D-154
+ * front-loads that whole commitment** — the operator funds **132.50 GRAM at
  * genesis**, because D-140 pins the pair at the floor and so makes opening depth
- * quadratic in this figure (17.39 TON of book at 132.50 then; ~14.13 since D-166
+ * quadratic in this figure (17.39 GRAM of book at 132.50 then; ~14.13 since D-166
  * took the operator's tranche out of the pair and S₀ to 11,000,000, counting the
  * donor's own mint in the floor's `S`). The donation is the OWNER-SET INPUT and
  * `genesis.genesis_floor_price_ton_per_primes` (1.0761e-5) is what the sim derives
@@ -1941,7 +1941,7 @@ export async function completeGenesis(
  * for the reason it existed in the first place: `donateFloor.ts` and the sandbox
  * rehearsal must not be able to disagree about what genesis donates, and one
  * exported name is what stops them. Running D-92's formula against the current
- * file would yield 4.2148 TON — close enough to look right in a log line and
+ * file would yield 4.2148 GRAM — close enough to look right in a log line and
  * wrong enough to open the floor at a figure params.json does not state.
  *
  * `T > 0` (D-93) is what makes a donation this small legal at all, and D-100
@@ -1972,7 +1972,7 @@ export type GenesisPairingParams = {
  *
  * D-100 point 1: `donate_floor` mints `min(X·L, X·S/T)` to the donor. At genesis
  * `T = 0`, so the clamp is inactive and the flat `L` applies — and then D-156's
- * supply taper, `(S_MAX − S)/S_MAX`, which every `S +=` site applies. 132.50 TON
+ * supply taper, `(S_MAX − S)/S_MAX`, which every `S +=` site applies. 132.50 GRAM
  * donated mints 1,312,854.17 PRIMES (NOT `X·L` = 1,325,000: the 2026-09-24
  * testnet genesis measured it), and THAT is the whole pairing inventory. D-140
  * added the operator's first vest tranche (250,000) to it; D-166 deleted the
@@ -1995,7 +1995,7 @@ export function genesisPairingPrimes(g: GenesisPairingParams): number {
 }
 
 /**
- * The TON side of that same pair — D-140, and the whole of the decision in one
+ * The GRAM side of that same pair — D-140, and the whole of the decision in one
  * line of arithmetic.
  *
  * **On an empty pool the deposit ratio IS the price.** Posting `primes * p_f`
@@ -2005,9 +2005,9 @@ export function genesisPairingPrimes(g: GenesisPairingParams): number {
  * denomination knob, the rate `donate_floor` MINTS at, never a price) is what
  * opened the book 286× over the floor.
  *
- * Rounds DOWN, in nanoTON, because the chain's granularity has to land
- * somewhere and below the floor is the safe side: a book a nanoTON under `p_f`
- * is a book `flush()` fills, and a book a nanoTON over is one it refuses.
+ * Rounds DOWN, in nanoGRAM, because the chain's granularity has to land
+ * somewhere and below the floor is the safe side: a book a nanoGRAM under `p_f`
+ * is a book `flush()` fills, and a book a nanoGRAM over is one it refuses.
  */
 export function genesisPairingTon(g: GenesisPairingParams): number {
     const nanotonPerPrimes = Math.floor(g.genesis_floor_price_ton_per_primes * 1e9);
@@ -2039,12 +2039,12 @@ export function pairingInstructions(
         `  LP sink's LP jetton wallet  : ${lpSinkJettonWallet.toString()}`,
         '      ^ this is the balance getLocked() must equal. Compare them, do not trust one.',
         '',
-        `  1. donate ${ton} TON to the ledger ${d.ledger.address.toString()}`,
+        `  1. donate ${ton} GRAM to the ledger ${d.ledger.address.toString()}`,
         '     (scripts/donateFloor.ts — permissionless; it defaults to exactly this figure)',
         `     It mints you ${primes} PRIMES: X·L (T = 0, so D-100 point 1's clamp is inactive) less D-156's taper.`,
         '     THAT is the pairing inventory (D-166: there is no operator vest tranche to add).',
-        `  2. pair those ${primes} PRIMES against ${pairTon} TON of your own on DeDust, BY HAND.`,
-        '     D-140: the TON side is `PRIMES × p_f`, NOT `PRIMES ÷ L`. On an empty pool the deposit',
+        `  2. pair those ${primes} PRIMES against ${pairTon} GRAM of your own on DeDust, BY HAND.`,
+        '     D-140: the GRAM side is `PRIMES × p_f`, NOT `PRIMES ÷ L`. On an empty pool the deposit',
         '     ratio sets the price, and this one opens the market AT the floor, which is where',
         '     §4.3.1 lets flush() fill. Pairing at L opens it 286× above the floor instead.',
         '     No contract here builds that deposit: there is no verified DeDust deposit wire',
@@ -2065,24 +2065,24 @@ export function pairingInstructions(
  * `ignite` refuses to launch until it does (218 `ledger_floor_unbacked`). The
  * reason that is a chain assert and not a runbook line: the rebate is
  * `R = k·I·S/T` (math-note §2), unbounded as `T → 0`, so a mint against an
- * unbacked floor emits ~20% of the genesis supply for 1 TON against 0.28% once
+ * unbacked floor emits ~20% of the genesis supply for 1 GRAM against 0.28% once
  * the donation has landed (`tests/UnbackedFloorLaunch.spec.ts` measures both).
  *
  * `donate_floor` is permissionless and asserts no launch flag, so this step has
  * no privileged sender and no ordering constraint beyond "after the seed". It
  * is incremental too: call it once with the full amount, or in tranches — and
- * after D-100 point 3 the operator's own further outlay (up to 150 TON) comes
+ * after D-100 point 3 the operator's own further outlay (up to 150 GRAM) comes
  * through this same message, so "incremental" is the normal case rather than a
- * testnet convenience. The genesis figure itself is D-154's 132.50 TON;
+ * testnet convenience. The genesis figure itself is D-154's 132.50 GRAM;
  * `genesisDonationTon` above is the one definition of it.
  *
  * A NOTE ON THE TWO NUMBERS THIS STEP IS BETWEEN, because they used to be one.
  * `genesis.genesis_seed_ton` (200) is a NOMINAL that sizes `S₀` and the pool
- * depth the sim models — no TON ever moves for it. `genesis.genesis_donation_ton`
- * (132.50) is the TON that actually lands in `T`, here. Before D-100 point 2 they
+ * depth the sim models — no GRAM ever moves for it. `genesis.genesis_donation_ton`
+ * (132.50) is the GRAM that actually lands in `T`, here. Before D-100 point 2 they
  * were made equal by construction (D-92 chose the donation to reproduce
  * `seed/S₀`), so a script could read either and be right; that coincidence is
- * gone and reading the seed here would donate 200 TON.
+ * gone and reading the seed here would donate 200 GRAM.
  */
 export async function donateGenesisFloor(env: GenesisEnv, d: GenesisDeployment, amount: bigint) {
     const log = env.log ?? (() => {});

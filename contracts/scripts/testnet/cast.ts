@@ -53,9 +53,9 @@ const ROLES: { name: string; ton: string; why: string }[] = [
     { name: 'A', ton: '20', why: 'recruiter — six gift mints, opens the prime lot, owns the trophy' },
     { name: 'B', ton: '6', why: 'primorial minter, deliberately NOT A (§7 pays two wallets)' },
     { name: 'C', ton: '8', why: 'outbidder — a displaced-bid refund is only real from a stranger' },
-    // 40, not 60: `TESTNET_MASTER_PLAN.md` §4 sizes phase 5 at 15 TON of swap plus
+    // 40, not 60: `TESTNET_MASTER_PLAN.md` §4 sizes phase 5 at 15 GRAM of swap plus
     // ~25 of two-sided LP, so 40 is the WORK and the other 20 was headroom. Trimmed
-    // 2026-09-19 when two abandoned geneses took ~40 TON out of the wave's budget.
+    // 2026-09-19 when two abandoned geneses took ~40 GRAM out of the wave's budget.
     // Raise it back when the budget allows; the whole table is the one place to do it.
     { name: 'L', ton: '30', why: 'LP + governance — moves the pool price, deposits two-sided' },
     { name: 'S', ton: '3', why: 'staker (D-34: live but inert, so this proves a no-op)' },
@@ -64,18 +64,18 @@ const ROLES: { name: string; ton: string; why: string }[] = [
     // point is that anyone may send it: `ops.ts all`/`sweep-ops`/`vest`, both
     // phase-7 lot closes (0.5 each), `money.ts dividend`, the timelock
     // `execute`/`retry`, `bounty.ts retry-scan`, `collections.ts ask`,
-    // `lpGovernance.ts expire` — and the whole of phase 10, which is ~2.8 TON of
-    // mock/arm/forge sends on its own. That sums to ~5 TON against a 2 TON
+    // `lpGovernance.ts expire` — and the whole of phase 10, which is ~2.8 GRAM of
+    // mock/arm/forge sends on its own. That sums to ~5 GRAM against a 2 GRAM
     // float, so the run would have failed mid-phase-10 on `sender.ts`'s balance
-    // guard with no step left that re-runs `cast.ts fund`. Budget: +6 TON on
+    // guard with no step left that re-runs `cast.ts fund`. Budget: +6 GRAM on
     // §4's floats line (78 -> 84), all of it swept back at the end.
     { name: 'F', ton: '8', why: 'the stranger — every permissionless op in phases 3,4,7,9,10 is sent from here' },
     // R2..R6 hold 0.5, not 2: they only ever RECEIVE. A gift mint is paid by the
     // giver and an invite generator is deployed out of the minter's own value, so
-    // a recruit never sends anything and a 2 TON float was 7.5 TON of the wave's
+    // a recruit never sends anything and a 2 GRAM float was 7.5 GRAM of the wave's
     // budget parked where nothing spends it. R1 is the exception and keeps a real
     // float — it is the one that burns its newcomer window down with self-mints.
-    { name: 'R1', ton: '6', why: 'recruit — and the one that burns its own newcomer window down with three self-mints, so it needs three 1 TON mints of float, not one' },
+    { name: 'R1', ton: '6', why: 'recruit — and the one that burns its own newcomer window down with three self-mints, so it needs three 1 GRAM mints of float, not one' },
     { name: 'R2', ton: '0.5', why: 'recruit — also the re-gift, which must NOT count twice' },
     { name: 'R3', ton: '0.5', why: 'recruit' },
     { name: 'R4', ton: '0.5', why: 'recruit' },
@@ -258,7 +258,7 @@ async function cmdNew() {
             float: role.ton,
             why: role.why,
         });
-        console.log(role.name.padEnd(3) + ' ' + short(w.address) + '  float ' + role.ton + ' TON');
+        console.log(role.name.padEnd(3) + ' ' + short(w.address) + '  float ' + role.ton + ' GRAM');
     }
     const out: CastFile = {
         createdAt: new Date().toISOString(),
@@ -297,7 +297,7 @@ async function cmdOwner() {
     console.log('');
     console.log('handle   P   (testnet only — never fund this from mainnet)');
     console.log('address  ' + entry.address);
-    console.log('balance  ' + fromNano(bal) + ' TON   (float ' + entry.float + ')');
+    console.log('balance  ' + fromNano(bal) + ' GRAM   (float ' + entry.float + ')');
     console.log('seed     ' + entry.mnemonic.join(' '));
 }
 
@@ -306,12 +306,12 @@ async function cmdList() {
     const cast = load();
     const funder = await openDeployWallet(client);
     const fb = await retry(() => client.getBalance(funder.wallet.address), 'balance:K');
-    console.log('K   ' + short(funder.wallet.address) + '  ' + fromNano(fb) + ' TON  (funder)');
+    console.log('K   ' + short(funder.wallet.address) + '  ' + fromNano(fb) + ' GRAM  (funder)');
     const ownerRow = readOwnerEntry();
     for (const w of ownerRow ? [...cast.wallets, ownerRow] : cast.wallets) {
         const bal = await retry(() => client.getBalance(Address.parse(w.address)), 'balance:' + w.name);
         console.log(
-            w.name.padEnd(3) + ' ' + w.address + '  ' + fromNano(bal) + ' TON  (float ' + w.float + ')  ' + w.why
+            w.name.padEnd(3) + ' ' + w.address + '  ' + fromNano(bal) + ' GRAM  (float ' + w.float + ')  ' + w.why
         );
     }
 }
@@ -323,7 +323,7 @@ async function cmdList() {
  * THE FLOAT COMES FROM `ROLES`, NOT FROM THE FILE. `.cast.json` stores the float
  * each wallet was created with, and it is created ONCE and then reused for the
  * rest of the set's life — so raising a role's float in the table above did
- * nothing, silently, forever. R1's float was raised from 2 to 8 TON for its
+ * nothing, silently, forever. R1's float was raised from 2 to 8 GRAM for its
  * three self-mints and R1 kept being funded to 2: its second mint failed in the
  * ACTION phase with result 37, which advances the seqno, sends nothing, and
  * leaves no error anywhere the harness looks (found by `txAudit.ts`, 2026-09-17).
@@ -333,16 +333,16 @@ async function cmdList() {
  * WHAT THE FUNDER KEEPS. `K` is not in `ROLES` because it "already holds the
  * budget" — but it is also the wallet the phase scripts MINT from, and this
  * function used to pay every float out of it with no floor, leaving whatever
- * happened to remain. On 2026-09-19 that was 0.54 TON, and phase 1's next mint
+ * happened to remain. On 2026-09-19 that was 0.54 GRAM, and phase 1's next mint
  * refused for want of 1.08. A funder that cannot afford a mint is not funded.
  *
  * 35, NOT 20, SINCE 2026-09-21. The figure above was sized for ONE mint, and
  * `run.ts` makes `K` send far more than one: `money.ts walk 20 K` alone is 20 ×
- * 1.08 = 21.6 TON, plus `money.ts referral`/`tribute` (~3-6), `tston.ts buffer 4
- * K` (4), two `timelock.ts queue`s and two `primes.ts send`s (~0.6) — ~30-33 TON
+ * 1.08 = 21.6 GRAM, plus `money.ts referral`/`tribute` (~3-6), `tston.ts buffer 4
+ * K` (4), two `timelock.ts queue`s and two `primes.ts send`s (~0.6) — ~30-33 GRAM
  * across the run. A reserve below that funds the cast and then strands the
  * funder halfway through phase 3. Budget consequence: `cast fund` now needs
- * ~15 TON more in `K` before it will pay the last float out (§4).
+ * ~15 GRAM more in `K` before it will pay the last float out (§4).
  */
 const FUNDER_RESERVE = toNano('35');
 
@@ -353,8 +353,8 @@ async function cmdFund() {
     const funderBalance = await retry(() => client.getBalance(funder.wallet.address), 'balance:K');
     let budget = funderBalance > FUNDER_RESERVE ? funderBalance - FUNDER_RESERVE : 0n;
     console.log(
-        `funder holds ${fromNano(funderBalance)} TON; ${fromNano(budget)} available after the ` +
-            `${fromNano(FUNDER_RESERVE)} TON it keeps to mint with`
+        `funder holds ${fromNano(funderBalance)} GRAM; ${fromNano(budget)} available after the ` +
+            `${fromNano(FUNDER_RESERVE)} GRAM it keeps to mint with`
     );
     const ownerRow = readOwnerEntry();
     for (const w of ownerRow ? [...cast.wallets, ownerRow] : cast.wallets) {
@@ -362,20 +362,20 @@ async function cmdFund() {
         const have = await retry(() => client.getBalance(addr), 'balance:' + w.name);
         const want = toNano(ROLES.find((r) => r.name === w.name)?.ton ?? w.float);   // `P` falls through to its own stored float
         if (have >= want) {
-            console.log(w.name.padEnd(3) + ' ok (' + fromNano(have) + ' TON >= ' + w.float + ')');
+            console.log(w.name.padEnd(3) + ' ok (' + fromNano(have) + ' GRAM >= ' + w.float + ')');
             continue;
         }
         const top = want - have;
         if (top > budget) {
             console.log(
                 w.name.padEnd(3) +
-                    ` SHORT: needs ${fromNano(top)} TON and only ${fromNano(budget)} is left above the ` +
+                    ` SHORT: needs ${fromNano(top)} GRAM and only ${fromNano(budget)} is left above the ` +
                     `funder's reserve. Lower a float in ROLES, or fund K, then re-run.`
             );
             continue;
         }
         budget -= top;
-        console.log(w.name.padEnd(3) + ' sending ' + fromNano(top) + ' TON -> ' + w.address);
+        console.log(w.name.padEnd(3) + ' sending ' + fromNano(top) + ' GRAM -> ' + w.address);
         // NON-BOUNCEABLE, and that is load-bearing: these wallets are
         // UNINITIALISED until their own first send, and a bounceable transfer to
         // an uninit account comes straight back to the funder.
@@ -385,7 +385,7 @@ async function cmdFund() {
 }
 
 /** Return what is left to the funder, best-effort; a wallet that fails is logged, not fatal. */
-/** `sweep` returns every cast wallet's TON to the funder; `sweep <handle>` returns one. */
+/** `sweep` returns every cast wallet's GRAM to the funder; `sweep <handle>` returns one. */
 async function cmdSweep() {
     const client = makeClient();
     const cast = load();
@@ -394,12 +394,12 @@ async function cmdSweep() {
     for (const w of cast.wallets.filter((x) => !only || x.name === only)) {
         const bal = await retry(() => client.getBalance(Address.parse(w.address)), 'balance:' + w.name);
         if (bal < toNano('0.1')) {
-            console.log(w.name.padEnd(3) + ' skip (' + fromNano(bal) + ' TON)');
+            console.log(w.name.padEnd(3) + ' skip (' + fromNano(bal) + ' GRAM)');
             continue;
         }
         const wallet = await openWallet(client, w.mnemonic);
         const back = bal - toNano('0.05');
-        console.log(w.name.padEnd(3) + ' returning ' + fromNano(back) + ' TON');
+        console.log(w.name.padEnd(3) + ' returning ' + fromNano(back) + ' GRAM');
         try {
             await wallet.sender.send({ to: funder.wallet.address, value: back, bounce: false });
         } catch (e: any) {

@@ -22,7 +22,7 @@ import { clockDivisorOf } from './PrimesMarket';
  * TON PRIMES — the LP POSITION CHILD, one per depositing wallet (CONCEPT §5.5,
  * DECISIONS D-100 points 4/5/9).
  *
- * It holds a wallet's LP positions and nothing else — no LP, no PRIMES, no TON
+ * It holds a wallet's LP positions and nothing else — no LP, no PRIMES, no GRAM
  * beyond its own rent. The assets sit in the treasury's jetton wallets; this is
  * the RECORD, sharded per owner because config 43's 65,536-cell account ceiling
  * kills a single positions dictionary around 20,000 entries.
@@ -36,7 +36,7 @@ import { clockDivisorOf } from './PrimesMarket';
  * `getPositionAddress`.
  */
 
-/** Nominal TON an owner message must forward: this hop plus the treasury's. */
+/** Nominal GRAM an owner message must forward: this hop plus the treasury's. */
 export const POSITION_MIN_FORWARD = 200000000n;
 
 export type LpPositionConfig = {
@@ -63,6 +63,8 @@ function positionConfigToCell(config: LpPositionConfig): Cell {
         .storeUint(0, 32) // positionCount
         .storeUint(0, 120) // voteWeight
         .storeDict(undefined) // voted (D-188 point 7)
+        .storeCoins(0) // foreverAmount (D-214)
+        .storeUint(0, 40) // foreverSince (D-214)
         .storeUint(clockDivisorOf(config.clockDivisor), 16) // D-139, inherited from the treasury
         .endCell();
 }
@@ -155,7 +157,7 @@ export class PrimesLpPosition implements Contract {
         await this.sendBody(provider, via, opts.value, body);
     }
 
-    /** Open a proposal on ONE named position's weight: transfer {TON | PRIMES | tsTON}. */
+    /** Open a proposal on ONE named position's weight: transfer {GRAM | PRIMES | tsTON}. */
     async sendPropose(
         provider: ContractProvider,
         via: Sender,
@@ -213,7 +215,21 @@ export class PrimesLpPosition implements Contract {
     }
 
     /**
-     * Σ `amount × voteMultiplier(tier)`, less what `expire` has retired. AN
+     * D-214: the LP this wallet locked forever through its own positions, the
+     * instant that total last grew, and the multiplier it votes with. It votes
+     * and proposes under `FOREVER_POSITION_ID`.
+     */
+    async getForever(provider: ContractProvider) {
+        const r = await provider.get('getForever', []);
+        return {
+            amount: r.stack.readBigNumber(),
+            since: r.stack.readNumber(),
+            multiplier: r.stack.readNumber(),
+        };
+    }
+
+    /**
+     * Σ `amount × voteMultiplier(tier)` plus the forever total's weight, less what `expire` has retired. AN
      * UPPER BOUND between a term's maturity and its `expire`, because nobody
      * sends a message at maturity — the same staleness the treasury's
      * `eligibleWeight` carries. The RULE is never approximate: `sendVote` names

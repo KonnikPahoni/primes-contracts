@@ -1,5 +1,5 @@
 /**
- * TON PRIMES — seed the PRIMES/TON DeDust pool and lock the LP receipt.
+ * TON PRIMES — seed the PRIMES/GRAM DeDust pool and lock the LP receipt.
  * RUN THIS AFTER GENESIS AND AFTER `donateFloor.ts`.
  *
  * This is D-100's "MANUAL STEPS AFTER THIS SCRIPT" runbook (step 2 and step 3
@@ -28,15 +28,15 @@
  * ON AN EMPTY POOL THE DEPOSIT RATIO SETS THE PRICE, AND D-140 SETS IT AT THE
  * FLOOR. Both target balances are taken in full because there is no existing
  * ratio to trim against, so the ratio this script posts IS the opening price:
- * `PRIMES_LP_PRIMES` PRIMES against `PRIMES_LP_PRIMES × p_f` TON, which opens
+ * `PRIMES_LP_PRIMES` PRIMES against `PRIMES_LP_PRIMES × p_f` GRAM, which opens
  * the market at `p_f = T/S` exactly — `market_over_floor_at_open = 1.0`.
  *
- * It used to quote the pair at `L` (10,000 PRIMES/TON), because that is the rate
+ * It used to quote the pair at `L` (10,000 PRIMES/GRAM), because that is the rate
  * `donate_floor` MINTS at and the donated PRIMES then paired exactly. That was
  * the bug: `L` is D-39's denomination knob and was never a price, and once
- * D-100 point 2 cut the donation from 240 TON to 4.20 the two stopped
+ * D-100 point 2 cut the donation from 240 GRAM to 4.20 the two stopped
  * coinciding — the book opened **286x above the floor**. Read D-140 for the
- * arithmetic; the short version is that a pair quoted at L offers the whole TON
+ * arithmetic; the short version is that a pair quoted at L offers the whole GRAM
  * side to the first mint's rebate, because that rebate (1,168,800 PRIMES,
  * `docs/audit/genesis-emission-curve.md`) is 28x the pair's entire PRIMES side.
  *
@@ -52,7 +52,7 @@
  *
  * THE FLOOR IS READ FROM THE LEDGER (G67), `getFloorNum/getFloorDen`. It used to be
  * `params.json`'s predicted genesis floor, which is only the live one when the donation
- * was the full genesis figure (200 TON, D-204); two 75-TON sets opened 1.886x above `p_f`. If the two disagree
+ * was the full genesis figure (200 GRAM, D-204); two 75-GRAM sets opened 1.886x above `p_f`. If the two disagree
  * the script refuses until `PRIMES_LP_FLOOR=live|params` says which.
  *
  * Env: PRIMES_LEDGER_ADDRESS, PRIMES_LP_FLOOR (only needed when the floors disagree),
@@ -185,12 +185,12 @@ async function waitFor<T>(label: string, read: () => Promise<T>, ok: (v: T) => b
  * `flush()` buys a market that is BELOW the floor (§4.3.1) and sizes its tranche from the
  * venue since D-143. This script decides the venue. Nothing connected the two, so the
  * operator posted a pair with no way to know whether a flush would ever fill against it —
- * and on testnet it did not: a 19.733 TON tranche met a pool holding 479,142 PRIMES in
+ * and on testnet it did not: a 19.733 GRAM tranche met a pool holding 479,142 PRIMES in
  * total and was refused, correctly, for two months.
  *
  * REPORTING, NOT SIZING. The pair itself is unchanged, D-140's ratio is unchanged, and no
  * figure printed here feeds a decision this script makes — changing the depth means minting
- * more PRIMES for the pair or committing more operator TON, which is an owner input the sim
+ * more PRIMES for the pair or committing more operator GRAM, which is an owner input the sim
  * did not produce (CLAUDE.md rule 3) and is parked as a `DECISIONS.md` brief.
  *
  * THE FIRST LINE IS THE ONE THAT MATTERS. At `market_over_floor_at_open = 1.0` the answer
@@ -224,7 +224,7 @@ function reportFlushDepth(lpTon: bigint, lpPrimes: bigint, nanotonPerPrimes: big
         const short = need.reservePrimesNano > lpPrimes ? `  (${Number(need.reservePrimesNano) / Number(lpPrimes) < 1000 ? (Number(need.reservePrimesNano) / Number(lpPrimes)).toFixed(1) : '>1000'}x this pair)` : '  (this pair already serves it)';
         console.log(
             `  at ${(Number(bps) / 100).toFixed(0)}% of p_f:    ` +
-                `${fromNano(need.reserveTonNanoton)} TON + ${need.reservePrimesNano / 1000000000n} PRIMES` +
+                `${fromNano(need.reserveTonNanoton)} GRAM + ${need.reservePrimesNano / 1000000000n} PRIMES` +
                 short
         );
     }
@@ -265,16 +265,16 @@ async function main() {
     };
 
     const genesis = JSON.parse(fs.readFileSync(path.join(REPO, 'shared', 'params.json'), 'utf8')).genesis;
-    // D-140 — THE PRIMES SIDE IS THE KNOB AND THE TON SIDE FALLS OUT OF THE FLOOR.
+    // D-140 — THE PRIMES SIDE IS THE KNOB AND THE GRAM SIDE FALLS OUT OF THE FLOOR.
     // That direction is the decision: at `p_f` every PRIMES posted buys only
-    // `p_f` TON of depth, so the pair is sized by the PRIMES the operator can
-    // actually reach at block one, not by how much TON they feel like risking.
+    // `p_f` GRAM of depth, so the pair is sized by the PRIMES the operator can
+    // actually reach at block one, not by how much GRAM they feel like risking.
     const lpPrimesStr = envValue(env, 'PRIMES_LP_PRIMES') ?? String(genesisPairingPrimes(genesis));
     const lpPrimes = toNano(lpPrimesStr); // whole PRIMES → nanoPRIMES, same 1e9
-    // `p_f` in nanoTON per whole PRIMES. Rounded DOWN, because the chain's
+    // `p_f` in nanoGRAM per whole PRIMES. Rounded DOWN, because the chain's
     // granularity has to land on one side and below the floor is the safe one:
-    // a book a nanoTON under `p_f` is a book `flush()` fills, and a book a
-    // nanoTON over is one it refuses.
+    // a book a nanoGRAM under `p_f` is a book `flush()` fills, and a book a
+    // nanoGRAM over is one it refuses.
     // G67: the LIVE floor, not the one params.json predicts — the two differ whenever the
     // donation was not D-154's figure, and the params one then opens the book above `p_f`.
     const ledgerAddr = envValue(env, 'PRIMES_LEDGER_ADDRESS');
@@ -291,8 +291,8 @@ async function main() {
     const lpTonStr = fromNano(lpTon);
     if (lpTon === 0n) {
         throw new Error(
-            `${lpPrimesStr} PRIMES at ${nanotonPerPrimes} nanoTON/PRIMES (${source} floor) ` +
-                'rounds to a zero TON side — DeDust would reject the deposit. ' +
+            `${lpPrimesStr} PRIMES at ${nanotonPerPrimes} nanoGRAM/PRIMES (${source} floor) ` +
+                'rounds to a zero GRAM side — DeDust would reject the deposit. ' +
                 'Raise PRIMES_LP_PRIMES.'
         );
     }
@@ -326,9 +326,9 @@ async function main() {
     console.log(`from:                ${fmt(me)}`);
     console.log(`PRIMES master:       ${fmt(master)}`);
     console.log(`pool:                ${fmt(pool)}`);
-    console.log(`native TON vault:    ${fmt(nativeVault)}`);
+    console.log(`native GRAM vault:    ${fmt(nativeVault)}`);
     console.log(`PRIMES jetton vault: ${fmt(jettonVault)}`);
-    console.log(`pairing:             ${lpTonStr} TON + ${lpPrimes / 1000000000n} PRIMES (at the ${source} floor)`);
+    console.log(`pairing:             ${lpTonStr} GRAM + ${lpPrimes / 1000000000n} PRIMES (at the ${source} floor)`);
     reportFlushDepth(lpTon, lpPrimes, nanotonPerPrimes);
 
     if (!(await retry429('isContractDeployed', () => client.isContractDeployed(pool)))) {
@@ -340,14 +340,14 @@ async function main() {
             `wallet holds ${primesHeld / 1000000000n} PRIMES, needs ${lpPrimes / 1000000000n}. ` +
                 'donateFloor.ts mints the default pairing inventory and must have landed first ' +
                 '(~1,972,333 PRIMES: X·L at T = 0, less D-156\'s supply taper; ' +
-                'D-166: there is no operator vest tranche to add). Or lower PRIMES_LP_PRIMES — the TON side ' +
+                'D-166: there is no operator vest tranche to add). Or lower PRIMES_LP_PRIMES — the GRAM side ' +
                 'follows it down at the floor rate, so a smaller pair is still priced at p_f.'
         );
     }
 
     // ---- 1. the PRIMES jetton vault -------------------------------------
     if (!(await retry429('isContractDeployed', () => client.isContractDeployed(jettonVault)))) {
-        console.log(`\ncreating the PRIMES jetton vault (${Number(CREATE_VAULT_VALUE) / 1e9} TON) ...`);
+        console.log(`\ncreating the PRIMES jetton vault (${Number(CREATE_VAULT_VALUE) / 1e9} GRAM) ...`);
         await send([
             internal({ to: DEDUST_FACTORY, value: CREATE_VAULT_VALUE, bounce: true, body: createVaultBody(primes) }),
         ]);

@@ -25,7 +25,7 @@ import { clockDivisorOf } from './PrimesMarket';
  * treasury's monthly `distribute()` budget pro rata to `amount × tierWeight`. Global
  * state here (the stream, the accumulator, the totals); each wallet's positions on a
  * `PrimesStakePosition` child whose address is the authentication. No admin, no owner,
- * no TON liability. See `primes_stake.tolk`'s header.
+ * no GRAM liability. See `primes_stake.tolk`'s header.
  */
 
 export { STAKE_ACTION_LOCK, STAKE_ACTION_BUDGET, STAKE_ACC_SCALE, STAKE_TIERS };

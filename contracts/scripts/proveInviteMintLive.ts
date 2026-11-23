@@ -1,12 +1,12 @@
 /**
  * TON PRIMES — live TESTNET mint with §4.1's SEVENTH LINE ON. **Testnet only, enforced.**
  *
- * DECISIONS.md D-202: mint the head with `inviteCount = <number of addresses>` (1..3) and
- * confirm each named address receives one 0.1 TON NoBounce transfer from the LEDGER carrying
+ * DECISIONS.md D-202, D-215: mint the head with `inviteCount = <number of addresses>` (1..the
+ * live count) and confirm each named address receives one transfer of the live value, whole, from the LEDGER carrying
  * the comment (`shared/invites.ts` `inviteCommentText(n, words)`, words read off the ledger — D-211). There is no signed list any
  * more: the minter names the recipients.
  *
- *   npx tsx scripts/proveInviteMintLive.ts <addr1> [addr2] [addr3]
+ *   npx tsx scripts/proveInviteMintLive.ts <addr1> [addr2 ...]
  *
  * Same testnet guard, sender and env handling as smokeMintLive.ts, which this is otherwise
  * a copy of; see it for D-95 and for why the message carries the price PLUS a margin.
@@ -75,8 +75,8 @@ function fromEnvFile(envFile: string, key: string): string | undefined {
 
 async function main() {
     const recipients = process.argv.slice(2);
-    if (recipients.length < 1 || recipients.length > 3) {
-        throw new Error('usage: tsx scripts/proveInviteMintLive.ts <addr1> [addr2] [addr3]');
+    if (recipients.length < 1) {
+        throw new Error('usage: tsx scripts/proveInviteMintLive.ts <addr1> [addr2 ...]');
     }
     const addresses = new Map(recipients.map((a, i) => [i + 1, Address.parse(a)]));
 
@@ -138,7 +138,11 @@ async function main() {
 
     const ledger = client.open(PrimesLedger.createFromAddress(Address.parse(ledgerAddr)));
     const terms = await retry(() => ledger.getInviteTerms(), 'getInviteTerms');
-    console.log(`invite terms: up to ${terms.maxCount} x ${terms.transferValue} nanoTON`);
+    console.log(`invite terms: up to ${terms.count} x ${terms.value} nanoGRAM (fee allowance ${terms.sendFee} each)`);
+    // Decide on the read before sending (CLAUDE.md): over the live count the ledger throws 221.
+    if (recipients.length > terms.count) {
+        throw new Error(`the ledger's live invite count is ${terms.count}; ${recipients.length} recipients would be refused (221). Nothing sent.`);
+    }
 
     const n = await retry(() => ledger.getHead(), 'getHead');
     const factors = factorize(n).map((f) => ({ ...f, s: isqrt(f.prime) }));
@@ -158,7 +162,7 @@ async function main() {
         beneficiary: null,
         invites: { count: addresses.size, addresses },
         // G58: the shared mint value, the same one the webapp's invite mint sends. The invite
-        // transfers are paid out of the all-in price (§4.1's invite line, `count × 0.1`), not
+        // transfers are paid out of the all-in price (§4.1's invite line, `count × (value + fee)`), not
         // on top of it, and the ledger keeps up to MINT_MARGIN of any excess.
         value: MINT_VALUE_NANOTON + FEE_MARGIN_NANOTON,
     });

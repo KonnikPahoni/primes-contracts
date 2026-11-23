@@ -43,7 +43,7 @@ tolk 1.4
 //    (primes_bounty_vault.tolk `PayProgramBounty`). The whole vault is already
 //    pre-counted into `S` at genesis (§3.3/§5), so every payout this contract
 //    ever causes moves tokens that the floor price has already accounted for:
-//    `p_f` cannot move. There is no route by which this contract pays TON.
+//    `p_f` cannot move. There is no route by which this contract pays GRAM.
 //
 // 3. THE CLAIMANT PAYS. `claim_voucher` must come from the wallet being paid —
 //    the signature covers the SENDER's address, not an address in the body — so
@@ -53,8 +53,8 @@ tolk 1.4
 //
 // ---- ADMIN SURFACE: the burn, and why it is not one ----
 //
-// §8 forbids an admin withdraw path on any TON balance and this contract has
-// none: no message here moves TON anywhere except as gas, and no message names a
+// §8 forbids an admin withdraw path on any GRAM balance and this contract has
+// none: no message here moves GRAM anywhere except as gas, and no message names a
 // destination for PRIMES other than the sender.
 //
 // `burn_signer` ends the program. It is NOT authenticated by an owner address —
@@ -103,7 +103,7 @@ const CLAIM_TAG: int = 0x434c414d;  // "CLAM"
 // TRANSFER_GAS jetton hop (0.1, which may deploy the claimant's PRIMES wallet)
 // as well as the inbox hop — the same 0.15 the vault's `ClaimDiscovery` charges.
 // Before this the voucher paid a flat 0.03 out of its own balance per claim.
-const CLAIM_MIN_VALUE: coins = 150000000; // 0.15 TON
+const CLAIM_MIN_VALUE: coins = 150000000; // 0.15 GRAM
 
 struct Storage {
     // §9.5's signing key. Set at deploy and NEVER written by any message: a
@@ -153,7 +153,7 @@ struct VoucherInit {
     // nano-PRIMES. Deploy data, never written. The receipt pays `total - paid` and
     // stores the total, so bounding the SIGNED total bounds a wallet's lifetime
     // payout: a stolen signing key can then drain a track only one capped wallet at
-    // a time, each paying its own >= 0.15 TON claim. From params.json at genesis
+    // a time, each paying its own >= 0.15 GRAM claim. From params.json at genesis
     // (contracts/scripts/genesisPipeline.ts): QSTS one board, PQST one board, SECU
     // the whole one-prize track (D-170).
     maxPerWallet: coins

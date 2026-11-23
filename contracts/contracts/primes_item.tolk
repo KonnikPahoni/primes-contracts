@@ -66,7 +66,7 @@ struct ItemMutable {
     // workchain 0), never a cell. 0 in the address-determining default.
     tributeTotal: coins
     // CONCEPT §9.11 / D-177 (GAUNTLET G89) — every §4.1 referral payout this number's key
-    // has relayed to its owner, in nanoTON as it ARRIVED here (the ledger's
+    // has relayed to its owner, in nanoGRAM as it ARRIVED here (the ledger's
     // `REFERRAL_AMOUNT` less that hop's forward fee). Only ever added to, in the
     // `ForwardToOwner` arm. Coins, so bits and never a cell. 0 in the
     // address-determining default.
@@ -246,7 +246,7 @@ struct (0x8b771735) ReportStaticData {
 // owner of NFT #key" *on-chain, at mint time*. TVM has no synchronous
 // cross-contract read, so the ledger cannot look up an item's `owner` field
 // inside the mint transaction. This item-side relay closes that gap: the
-// ledger forwards the referral TON to `ItemAddress(key)` (computable from the
+// ledger forwards the referral GRAM to `ItemAddress(key)` (computable from the
 // key alone, exactly like the tribute claim path) with this opcode, and the
 // item — which DOES know its own current owner synchronously — forwards the
 // value onward. This opcode does not appear in /shared/schemas/ledger.tlb (a
@@ -263,9 +263,9 @@ struct (0xc1000002) ForwardToOwner {
 // D-62/D9.1: a composite item is endowed exactly once, at deploy
 // (`ITEM_DEPLOY_VALUE`), and never topped up by any other message — a
 // composite is never cited as a tribute factor, so it never receives
-// `CreditTribute`'s gas either. Measured rent (~0.0025 TON/year, D9,
+// `CreditTribute`'s gas either. Measured rent (~0.0025 GRAM/year, D9,
 // `StorageRent.spec.ts`) against that one-time endowment gives a runway on
-// the order of a decade, after which TON freezes the contract for good: no
+// the order of a decade, after which GRAM freezes the contract for good: no
 // `Transfer`, no `get_nft_data`, no claim. The owner's call (D-62) was that
 // no item should ever be allowed to reach that cliff.
 //
@@ -311,12 +311,12 @@ type AllowedMessage = Populate | CreditTribute | CreditDividend | ClaimTribute |
 
 // D-212: the gas the fee carries from this item to the ratchet — the collection's
 // relay, the ledger's `royalty_to_ratchet` and its `RATCHET_HOP_GAS` hop. The
-// secondary royalty sends its ratchet half with 0.015 TON for the last two hops;
+// secondary royalty sends its ratchet half with 0.015 GRAM for the last two hops;
 // 0.03 adds the collection's. Measured in Naming.spec.ts at exactly this figure.
-const NAMING_PAID_GAS: coins = 30000000; // 0.03 TON
+const NAMING_PAID_GAS: coins = 30000000; // 0.03 GRAM
 // D-212: this item's own compute and the change send home. A naming carrying less
 // than `fee + NAMING_PAID_GAS + ITEM_NAME_GAS` is refunded whole.
-const ITEM_NAME_GAS: coins = 20000000;   // 0.02 TON
+const ITEM_NAME_GAS: coins = 20000000;   // 0.02 GRAM
 
 // GAUNTLET V10 precedent (`primes_ledger.tolk`'s `CLAIM_DIVIDEND_MIN_VALUE`):
 // the minimum a caller must fund `ClaimTribute` with. The item is endowed once
@@ -325,13 +325,13 @@ const ITEM_NAME_GAS: coins = 20000000;   // 0.02 TON
 // than the caller funded walks the item toward the freeze cliff D-62's
 // permissionless `TopUp` exists to relieve — one or two unfunded claims used
 // to exhaust it outright. Measured on `@ton/sandbox` (`StorageRent.spec.ts`'s
-// "GAUNTLET V10" case): attaching 0.03 TON left the item's own balance
-// ~0.0096 TON HIGHER after the claim than before it, i.e. real break-even is
-// ~0.0204 TON (the claim's own compute — one scalar zero, one `save` — plus
+// "GAUNTLET V10" case): attaching 0.03 GRAM left the item's own balance
+// ~0.0096 GRAM HIGHER after the claim than before it, i.e. real break-even is
+// ~0.0204 GRAM (the claim's own compute — one scalar zero, one `save` — plus
 // the `ton("0.02")` forwarded to `LedgerClaimTribute`). Rounded up to the
-// same 0.01 TON-scale margin `CLAIM_DIVIDEND_MIN_VALUE` uses over ITS
+// same 0.01 GRAM-scale margin `CLAIM_DIVIDEND_MIN_VALUE` uses over ITS
 // measured gap.
-const CLAIM_TRIBUTE_MIN_VALUE: coins = 30000000; // 0.03 TON
+const CLAIM_TRIBUTE_MIN_VALUE: coins = 30000000; // 0.03 GRAM
 
 // D-72 / GAUNTLET T4, for `getStorageRunway()` below. `BASECHAIN` (workchain 0)
 // comes from the stdlib. Items live there for the reason the whole ledger does:
@@ -403,7 +403,7 @@ fun onInternalMessage(in: InMessage) {
             // D-212 (§4.7.1). The collection is the only sender. EVERY refusal past
             // the sender check REFUNDS the whole value to the payer rather than
             // throwing: the relay is bounceable, but a bounce would land the fee on
-            // the collection, whose catch-all arm reads unknown TON as a royalty.
+            // the collection, whose catch-all arm reads unknown GRAM as a royalty.
             var storage = lazy Storage.load();
             assert (in.senderAddress == storage.collectionAddr) throw 100; // wrong_sender
             var m = storage.m.load();
@@ -596,10 +596,10 @@ fun onInternalMessage(in: InMessage) {
             // can overtake `Populate` (the V32 race), so an unpopulated item's
             // `owner` is the collection placeholder — relaying would pay the
             // collection's royalty split, half to the operator. Refuse: the bounce
-            // returns the TON to the ledger as surplus, and `sweep_ops` returns it
+            // returns the GRAM to the ledger as surplus, and `sweep_ops` returns it
             // to the pool (§4.1: an unresolvable line falls to the pool).
             assert (m.populated == 1) throw 307; // item_not_populated
-            // G89 / D-177: count it BEFORE the relay, so `getReferralPaid()` is the TON this
+            // G89 / D-177: count it BEFORE the relay, so `getReferralPaid()` is the GRAM this
             // key has paid. Recorded as received; the relay below carries it on less gas.
             m.referralPaidTotal += in.valueCoins;
             storage.m = m.toCell();
@@ -690,15 +690,15 @@ get fun getForfeited(): int {
 }
 
 // CONCEPT §3.2.1 / §9.1. Cumulative divisor tribute credited to this item, in
-// nanoTON. Never decremented — a claim moves `owed`, not this. The flat prime
+// nanoGRAM. Never decremented — a claim moves `owed`, not this. The flat prime
 // dividend is not in it: `CreditDividend` adds to `owed` only.
 get fun getTributeTotal(): int {
     val storage = lazy Storage.load();
     return storage.m.load().tributeTotal;
 }
 
-// CONCEPT §9.11 / D-177 (GAUNTLET G89). Cumulative §4.1 referral TON this number's key has
-// relayed to its owner, in nanoTON, as received from the ledger. Never decremented. The
+// CONCEPT §9.11 / D-177 (GAUNTLET G89). Cumulative §4.1 referral GRAM this number's key has
+// relayed to its owner, in nanoGRAM, as received from the ledger. Never decremented. The
 // referral board ranks keys by it; 0 for a key that has never been cited on a paid mint.
 get fun getReferralPaid(): int {
     val storage = lazy Storage.load();
@@ -736,7 +736,7 @@ get fun getAnnotation(): (int, cell) {
 // could show it and nobody knew when to top up. A composite is endowed once with
 // `ITEM_DEPLOY_VALUE` and never paid again — only primes are cited as tribute
 // factors, so no `credit_tribute` ever tops a composite up — and when it lapses
-// TON freezes the account. A frozen item answers NOTHING: no `Transfer`, no
+// GRAM freezes the account. A frozen item answers NOTHING: no `Transfer`, no
 // `get_nft_data`, no `ClaimTribute`, while §3.1 and §4.7.1 both say "permanent".
 //
 // Owner took the get-method over reading raw account state so §9.1 stays literal:

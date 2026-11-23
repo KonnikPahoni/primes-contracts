@@ -532,7 +532,7 @@ export class PrimesMarket implements Contract {
             // D-99 replaces `primeP0Min` in this slot. `PRIME_P0_MIN` existed to
             // make the prime lane EXIST when primality scored zero; the score
             // weighs primality itself now, so what the reader needs here is the
-            // CLAMP — it is what makes the 420 TON ceiling checkable, and with
+            // CLAMP — it is what makes the 420 GRAM ceiling checkable, and with
             // `scoreHalving` it also fixes the bid ladder's rung count.
             scoreMax: r.stack.readNumber(),
             primeP0MultPct: r.stack.readNumber(),

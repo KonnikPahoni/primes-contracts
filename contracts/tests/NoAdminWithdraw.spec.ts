@@ -1,4 +1,4 @@
-// TON PRIMES — §8: NO ADMIN WITHDRAW PATH ON ANY TON BALANCE, statically, over
+// TON PRIMES — §8: NO ADMIN WITHDRAW PATH ON ANY GRAM BALANCE, statically, over
 // every contract's outbound message set (GAUNTLET.md C9).
 //
 // WHY A STATIC PASS, WHEN I5 ALREADY EXISTS
@@ -10,7 +10,7 @@
 // thinks to point at, and §8's claim is about the whole surface — so widening
 // I5 to sixteen contracts would still be a spot check, just a bigger one.
 //
-// The static complement is exact, because the underlying fact is simple: **TON
+// The static complement is exact, because the underlying fact is simple: **GRAM
 // only ever leaves a contract through an outbound message.** So the set of ways
 // money can move IS the set of `createMessage` sites, and §8 reduces to a
 // property of that finite set. `tools/withdraw-surface.mjs` enumerates it and
@@ -78,7 +78,7 @@ describe('TON PRIMES — §8: no admin withdraw path, over the whole outbound su
         expect(after).toBe(before);
     }, 60_000);
 
-    it('covers every contract that can send TON at all', () => {
+    it('covers every contract that can send GRAM at all', () => {
         // The enumeration is only a proof of anything if it actually read every
         // contract. Any .tolk with a `createMessage` IN CODE must appear in the
         // table; one that does not is a file the pass skipped.
@@ -119,7 +119,7 @@ describe('TON PRIMES — §8: no admin withdraw path, over the whole outbound su
     it('§8: exactly THREE sends (D-117 moved the ops sweep to the pool) in the entire protocol reach an operator address', () => {
         // Enumerated by name and line-independent. Adding a fifth fails here.
         // D-90.2 removed one — the market's 10% release forfeit — with the
-        // release right itself, so the market can no longer send TON to an
+        // release right itself, so the market can no longer send GRAM to an
         // operator address at all and no longer stores one. D-128 added the two
         // royalty legs below; the test after next is the one that says why they
         // are fees rather than withdrawals.
@@ -410,7 +410,7 @@ describe('TON PRIMES — §8: no admin withdraw path, over the whole outbound su
         // D-196: the ledger's `mark_rejected` reply goes to the MARKET and nowhere
         // else — the authenticated sender of `mark_off_head`, or, relaying a lot
         // block's refusal, the market address fixed by the one-shot `set_peers`.
-        // It carries only what arrived (the opener's own open gas), never ledger TON.
+        // It carries only what arrived (the opener's own open gas), never ledger GRAM.
         const replyCallers = [...ledger.matchAll(/(?<!fun )\breplyMarkRejected\(([^,]+),/g)].map((m) => m[1].trim());
         expect([...new Set(replyCallers)].sort()).toEqual(['loadConfigD(storage).marketAddr', 'senderAddress']);
     });

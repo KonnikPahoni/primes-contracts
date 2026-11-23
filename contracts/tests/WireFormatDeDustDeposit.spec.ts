@@ -127,7 +127,7 @@ describe("GAUNTLET.md R13 — the DeDust deposit_liquidity body matches DeDust v
         expect(r.transactions).not.toHaveTransaction({ from: vault.address, to: depositor.address });
     });
 
-    it('REFUND (not a throw/bounce): under-filled deposit returns the TON gracefully — the documented DeDust behaviour, distinct from a swap slippage revert', async () => {
+    it('REFUND (not a throw/bounce): under-filled deposit returns the GRAM gracefully — the documented DeDust behaviour, distinct from a swap slippage revert', async () => {
         // lpNum/lpDen still 0/1 from beforeEach — every deposit "mints" 0 LP,
         // guaranteed below any positive min_lp_amount.
         const amount = toNano('3');

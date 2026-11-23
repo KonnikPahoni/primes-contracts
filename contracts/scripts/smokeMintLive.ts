@@ -187,7 +187,7 @@ async function main() {
     const pendingBefore = await retry(() => ratchet.getPending(), 'getPending');
     console.log(`before: T=${Tbefore} S=${Sbefore} pending=${pendingBefore}`);
 
-    console.log('sending mint (1 TON + margin)...');
+    console.log('sending mint (1 GRAM + margin)...');
     await ledger.sendMint(sender, {
         n,
         kind,

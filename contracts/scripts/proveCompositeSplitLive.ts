@@ -13,7 +13,7 @@
  *   - referral (10%): falls to the pool when no key is set (this run uses
  *     referralKey 0 deliberately, to exercise exactly that path).
  *   - the 5% line (`TREASURY_AMOUNT`): tracked both via the ledger's own
- *     cumulative `getOperatorTotals()` meter and the real TON balance of the
+ *     cumulative `getOperatorTotals()` meter and the real GRAM balance of the
  *     recipient. This line has been re-pointed twice — D-100 point 6 moved it
  *     from the treasury to the OPERATOR, and D-152 moved it back to the
  *     GOVERNED TREASURY CONTRACT — so the address it watches is
@@ -62,7 +62,7 @@ const RATCHET = need('PRIMES_RATCHET_ADDRESS');
 const TREASURY = process.env.PRIMES_TREASURY_ADDRESS ?? need('PRIMES_TREASURY_ADDR');
 
 // Split constants mirrored from contracts/contracts/primes_ledger.tolk (read-only
-// check here, not redefined behaviour) — §4.1: 1 TON all-in, 5% treasury.
+// check here, not redefined behaviour) — §4.1: 1 GRAM all-in, 5% treasury.
 const TREASURY_AMOUNT = 50_000_000n; // 5%
 
 function isPrime(n: bigint): boolean {
@@ -208,7 +208,7 @@ async function main() {
     }
 
     // --- MINT ---
-    console.log('sending composite mint (1 TON + margin, no referral key)...');
+    console.log('sending composite mint (1 GRAM + margin, no referral key)...');
     await ledger.sendMint(sender, {
         n,
         kind,
@@ -274,7 +274,7 @@ async function main() {
     console.log(
         `operatorTotals.operatorPaidTotal delta = ${operatorMeterDelta} (expect forfeit remainder ${expectOperatorMeter}, and ZERO on a mint whose cited factors all have owners)`
     );
-    console.log(`treasury contract TON balance delta = ${treasuryBalDelta} (same-tx forward, may lag/differ slightly due to incidental network fees/other loops touching the address)`);
+    console.log(`treasury contract GRAM balance delta = ${treasuryBalDelta} (same-tx forward, may lag/differ slightly due to incidental network fees/other loops touching the address)`);
     const ratchetTheoremHolds = Tafter * Sbefore > Tbefore * Safter;
     console.log(`ratchet theorem (T_after*S_before > T_before*S_after): ${ratchetTheoremHolds}`);
     console.log(`floor p_f strictly increased: ${Number(Tafter) / Number(Safter) > Number(Tbefore) / Number(Sbefore)}`);

@@ -108,7 +108,7 @@ export async function ignite(host: ScriptHost) {
             'Refusing to run: the floor p_f = T/S has nothing behind it (T = 0). D-93 — the ' +
                 'launch order is seed -> donate -> ignite, and the ledger throws 218 here too. ' +
                 'The seed writes S; only `donate_floor` writes T. Run scripts/donateFloor.ts ' +
-                'first (D-92: 240 TON on mainnet; tranches or a smaller sum on testnet).'
+                'first (D-92: 240 GRAM on mainnet; tranches or a smaller sum on testnet).'
         );
     }
 

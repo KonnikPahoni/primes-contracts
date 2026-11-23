@@ -50,7 +50,7 @@ const CONTRACTS_DIR = join(process.cwd(), 'contracts', 'contracts');
 const OUT = join(process.cwd(), 'docs', 'audit', 'money-arithmetic.md');
 
 /**
- * Names that hold TON or PRIMES. A subtraction on any of these can go negative
+ * Names that hold GRAM or PRIMES. A subtraction on any of these can go negative
  * and matters when it does; `i -= 1` in a loop counter cannot and does not.
  */
 const MONEY = [

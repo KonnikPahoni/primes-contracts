@@ -59,9 +59,9 @@ this project holds a key, which is why there is no hosted version.
 | `primes_open_lots` | Lots open now. |
 | `primes_portfolio` | The numbers a wallet holds — CANDIDATES; `primes_confirm_numbers` settles them. |
 | `primes_number` | Who owns one number, and what tribute stands to it. |
-| `primes_name` | Who may name a number (its owner), what it is called, and the TON the next naming costs. |
+| `primes_name` | Who may name a number (its owner), what it is called, and the GRAM the next naming costs. |
 | `primes_contracts` | The deployment manifest, by role. |
-| `primes_wallet` | One wallet in one call: TON, PRIMES, both rank ladders. |
+| `primes_wallet` | One wallet in one call: GRAM, PRIMES, both rank ladders. |
 | `primes_ratchet` | Whether `flush()` is worth calling: pending, swapped, floor, last outcome. |
 | `primes_lot_price` | What opening a lot would cost, and which lane — including "not openable". |
 | `primes_confirm_numbers` | Settle up to 24 numbers against their own items. Ownership, confirmed. |
@@ -77,14 +77,14 @@ for a program that wants them.
 
 | Tool | What it does |
 | --- | --- |
-| `primes_mint` | Mint the head for 1 TON. The factorization proof is computed for you. |
+| `primes_mint` | Mint the head for 1 GRAM. The factorization proof is computed for you. |
 | `primes_bid` | Bid on a lot. On a prime's descending lot the bid is the purchase. |
 | `primes_open_lot` | Open an ascending lot on a composite ahead of the head. |
 | `primes_open_head_lot` | Open a prime's descending lot. Gas only. |
 | `primes_close_lot` | Close an ascending lot whose clock has run. Permissionless. |
 | `primes_claim_tribute` | Claim the tribute owed to a number you own. |
-| `primes_name_number` | Name a number you own, for TON (D-212): `nameFee` first, `renameFee` after. The fee goes to the floor. |
-| `primes_annotate` | Engrave an era trophy (one of the eight primorials). The first engraving is free; later ones cost the registrar's rename fee in TON. |
+| `primes_name_number` | Name a number you own, for GRAM (D-212): `nameFee` first, `renameFee` after. The fee goes to the floor. |
+| `primes_annotate` | Engrave an era trophy (one of the eight primorials). The first engraving is free; later ones cost the registrar's rename fee in GRAM. |
 | `primes_flush` | Call `flush()`. Permissionless; TON has no scheduler. |
 
 **Every write tool quotes first and sends only on `confirm: true`.** The quote runs the
@@ -124,7 +124,7 @@ testnet and the published hosts.
 - **stdio only.** Signing is local (`DECISIONS.md` D-131.2). A hosted remote MCP would mean
   custody of a player's key, which is why there is not one.
 - **Every integer crosses as a decimal STRING**, in both directions. JSON has no bigint and
-  a nanoTON figure routinely exceeds 2⁵³, so `n`, `target` and every `*Nanoton` are strings.
+  a nanoGRAM figure routinely exceeds 2⁵³, so `n`, `target` and every `*Nanoton` are strings.
 - **`null` is not an error.** It is a route whose get-method is not on the deployed
   contract. Do not render it as zero.
 - **An error comes back as `isError: true`** with the message the SDK threw, which names

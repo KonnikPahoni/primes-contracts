@@ -10,10 +10,10 @@
 //
 //   1. **Which WAY does each truncation go?** Integer division can only round
 //      down, but WHOSE share it rounds down is the design question. §3.2 divides
-//      0.08 TON among the cited primes by `e·√p` weight; each share truncates,
+//      0.08 GRAM among the cited primes by `e·√p` weight; each share truncates,
 //      so the recipients are collectively short by a few nanoton. If that
 //      shortfall went anywhere but the pool, closure would still hold — the
-//      total would still be 1 TON — and the protocol would be quietly paying
+//      total would still be 1 GRAM — and the protocol would be quietly paying
 //      dust to the wrong party. Closure is blind to destination; this is not.
 //
 //   2. **How BIG can the dust get?** "It folds into the pool" is only reassuring
@@ -304,7 +304,7 @@ describe('TON PRIMES — D4: every rounding truncates toward the pool, and the d
         // The BOUND. Each share loses less than one nanoton to truncation, so
         // ω recipients lose less than ω nanoton in total. This is what makes
         // "it folds into the pool" a rounding note rather than a leak: the
-        // largest dust in the sweep is a handful of nanoton against a 0.08 TON
+        // largest dust in the sweep is a handful of nanoton against a 0.08 GRAM
         // line, i.e. one part in ten million.
         for (const r of rows) {
             expect({ n: r.n, dust: r.divisorDust >= 0n && r.divisorDust < BigInt(r.omega) }).toEqual({
@@ -317,13 +317,13 @@ describe('TON PRIMES — D4: every rounding truncates toward the pool, and the d
     });
 
     it('flat-dividend dust is strictly less than π(n) — the same bound, per prime', () => {
-        // §3.2's flat half divides 0.02 TON among π(n) primes. `floor(F/π)·π`
+        // §3.2's flat half divides 0.02 GRAM among π(n) primes. `floor(F/π)·π`
         // leaves `F mod π`, which is by definition < π.
         for (const r of rows) {
             expect({ n: r.n, dust: r.flatDust >= 0n }).toEqual({ n: r.n, dust: true });
         }
         // Non-vacuous: at least one mint in the sweep had a π that does not
-        // divide 0.02 TON evenly, so real dust was actually produced.
+        // divide 0.02 GRAM evenly, so real dust was actually produced.
         expect(rows.some((r) => r.flatDust > 0n)).toBe(true);
     });
 
@@ -332,7 +332,7 @@ describe('TON PRIMES — D4: every rounding truncates toward the pool, and the d
         // the floor rather than being paid to nobody or trapped", the same
         // treatment §3.1 gives an orphan referral.
         //
-        // ΔT is β plus BOTH dusts, exactly. Closure (C4) says the total is 1 TON
+        // ΔT is β plus BOTH dusts, exactly. Closure (C4) says the total is 1 GRAM
         // whatever happens to the remainders; this says where they went, which
         // closure cannot see.
         for (const r of rows) {

@@ -105,18 +105,18 @@ async function main() {
 
     console.log(`lot ${N}: mode=${lot.mode} p0=${fromNano(lot.p0)} standing=${fromNano(lot.standingPrice)} ` +
         `minPayment=${fromNano(lot.minPayment)} closesAt=${lot.closesAt} opener=${lot.highBidder?.toString?.() ?? 'n/a'}`);
-    console.log(`buyer ${wallet.address.toString()} balance ${fromNano(balBefore)} TON`);
+    console.log(`buyer ${wallet.address.toString()} balance ${fromNano(balBefore)} GRAM`);
     console.log(`before: head=${headBefore} T=${Tbefore} S=${Sbefore}`);
 
     // On-chain messages carry the nominal price PLUS a fee margin, never the exact price
     // (CLAUDE.md, and `minPayment` already folds in RES_GAS). Refusing here rather than
-    // sending an underfunded 138 TON message is the cheap half of that rule.
+    // sending an underfunded 138 GRAM message is the cheap half of that rule.
     const value = (lot.minPayment as bigint) + toNano('0.2');
     if (balBefore < value + toNano('0.5')) {
-        throw new Error(`buyer holds ${fromNano(balBefore)} TON, needs ${fromNano(value + toNano('0.5'))} — fund it first`);
+        throw new Error(`buyer holds ${fromNano(balBefore)} GRAM, needs ${fromNano(value + toNano('0.5'))} — fund it first`);
     }
 
-    console.log(`\nbidding ${fromNano(value)} TON — on the descending lane a bid IS the purchase (D-88 pt 1)`);
+    console.log(`\nbidding ${fromNano(value)} GRAM — on the descending lane a bid IS the purchase (D-88 pt 1)`);
     await market.sendBid(buyer.sender(keyPair.secretKey), {
         n: N,
         beneficiary: null,

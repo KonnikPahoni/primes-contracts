@@ -10,7 +10,7 @@
  * `propose` / `vote` / `execute` path and `GAUNTLET.md` R14/R15. This set has a
  * real DeDust v2 pool, so the lane is reachable for the first time.
  *
- *   npx tsx contracts/scripts/testnet/lpGovernance.ts deposit <handle> <TON> <tier>
+ *   npx tsx contracts/scripts/testnet/lpGovernance.ts deposit <handle> <GRAM> <tier>
  *   npx tsx contracts/scripts/testnet/lpGovernance.ts status
  *   npx tsx contracts/scripts/testnet/lpGovernance.ts propose <handle> <asset> <amount> <dest>
  *   npx tsx contracts/scripts/testnet/lpGovernance.ts vote|execute <handle> <seq | last>
@@ -320,8 +320,8 @@ async function deposit(client: TonClient, handle: string, tonSide: string, tier:
     const tonAmount = toNano(tonSide);
     const primesAmount = (tonAmount * primesRes) / tonRes;
     console.log(
-        `pool ${fromNano(tonRes)} TON / ${fromNano(primesRes)} PRIMES -> depositing ` +
-            `${fromNano(tonAmount)} TON + ${fromNano(primesAmount)} PRIMES from ${handle}`
+        `pool ${fromNano(tonRes)} GRAM / ${fromNano(primesRes)} PRIMES -> depositing ` +
+            `${fromNano(tonAmount)} GRAM + ${fromNano(primesAmount)} PRIMES from ${handle}`
     );
 
     // The pool IS the LP jetton master, so the depositor's LP wallet is derived
@@ -337,13 +337,13 @@ async function deposit(client: TonClient, handle: string, tonSide: string, tier:
     if (unforwarded === 0n && have < primesAmount) {
         throw new Refusal(
             `${handle} holds ${fromNano(have)} PRIMES, short of the ${fromNano(primesAmount)} this deposit needs. ` +
-                `Buy some first: pool.ts buy ${handle} <TON>`,
+                `Buy some first: pool.ts buy ${handle} <GRAM>`,
             'jettonWallet.get_wallet_data() + pool.get_reserves'
         );
     }
 
     if (unforwarded === 0n) {
-        console.log('depositing the TON leg ...');
+        console.log('depositing the GRAM leg ...');
         await w.sender.send({
             to: nativeVault,
             value: tonAmount + DEPOSIT_NATIVE_GAS,
@@ -493,13 +493,13 @@ async function positionOf(client: TonClient, w: Wallet) {
  * A proposal is opened BY THE POSITION, not by the wallet: the treasury
  * authenticates the child by re-deriving its address, which is what makes
  * "only a custody position may propose" structural rather than a check on a claimed
- * identity. `asset` is 0 TON / 1 PRIMES / 2 tsTON — the third added by
+ * identity. `asset` is 0 GRAM / 1 PRIMES / 2 tsTON — the third added by
  * D-151 (LP is not proposable, D-167), which lets the treasury hold and spend the ratchet's harvested yield.
  * A tsTON proposal has a balance to move only AFTER `tston.ts harvest` has run,
  * which is why phase 10 and not phase 5 is where it is sequenced.
  *
  * Asset 3 (D-194) is a VENUE CONFIRM, not a transfer: `amount` is the venue
- * timelock's record `seq` (a plain integer, not TON) and `dest` the timelock.
+ * timelock's record `seq` (a plain integer, not GRAM) and `dest` the timelock.
  */
 async function propose(client: TonClient, handle: string, asset: number, amount: string, dest: string) {
     const w = await walletFor(client, handle);
@@ -643,7 +643,7 @@ async function propose(client: TonClient, handle: string, asset: number, amount:
             after: `asset ${p.asset} amount ${p.amount} dest ${p.dest?.toString({ testOnly: true }) ?? 'null'}`,
             detail:
                 'what was asked for is what is on the ballot — the row voters read and `execute` ' +
-                'pays out of is the one the proposer signed, field for field (asset 0 TON / 1 PRIMES ' +
+                'pays out of is the one the proposer signed, field for field (asset 0 GRAM / 1 PRIMES ' +
                 '/ 2 tsTON)',
         },
     ];
@@ -908,7 +908,7 @@ async function execute(client: TonClient, handle: string, seq: number) {
     const row = await retry(() => treasury.getProposal(seq), 'getProposal-after');
     const exAfter = await retry(() => treasury.getExecutable(seq), 'getExecutable-after');
     const after = await retry(() => treasury.getTreasuryBalances(), 'getTreasuryBalances-after');
-    // ASSET 0 TON / 1 PRIMES / 2 tsTON, onto the balance each one is paid from.
+    // ASSET 0 GRAM / 1 PRIMES / 2 tsTON, onto the balance each one is paid from.
     const held = (b: typeof before) =>
         p.asset === 0 ? b.tonBalance : p.asset === 1 ? b.primesBalance : b.tstonBalance;
     const executedOnce: A.AssertResult = {
@@ -946,9 +946,9 @@ async function execute(client: TonClient, handle: string, seq: number) {
     const results: A.AssertResult[] = [
         executedOnce,
         {
-            // Asset 0 is paid from the same TON balance the execute message lands in, and
+            // Asset 0 is paid from the same GRAM balance the execute message lands in, and
             // the treasury keeps what the caller attached beyond the payout's gas, so the
-            // bound for TON is net of `execValue` (the 20260927 smoke: -0.1 paid, +0.3 in).
+            // bound for GRAM is net of `execValue` (the 20260927 smoke: -0.1 paid, +0.3 in).
             ok: held(after) <= held(before) - p.amount + (p.asset === 0 ? execValue : 0n),
             name: 'TREASURY_PAID_THE_AMOUNT',
             getMethod: `treasury.getTreasuryBalances() — asset ${p.asset}`,
@@ -956,7 +956,7 @@ async function execute(client: TonClient, handle: string, seq: number) {
             after: held(after).toString(),
             detail:
                 `the balance the proposal names fell by at least its ${p.amount}. "At least" because ` +
-                'asset 0 is the contract\'s own TON and also pays the gas of the message that moves ' +
+                'asset 0 is the contract\'s own GRAM and also pays the gas of the message that moves ' +
                 'it; an execution that marked the row and moved nothing is the failure this catches',
         },
     ];
@@ -1223,7 +1223,7 @@ async function main() {
     const [cmd, a, b, c, d] = process.argv.slice(2);
     if (!cmd || cmd === 'status') return status(client);
     if (cmd === 'deposit') {
-        if (!a || !b) throw new Error('usage: lpGovernance.ts deposit <handle> <TON> <tier>');
+        if (!a || !b) throw new Error('usage: lpGovernance.ts deposit <handle> <GRAM> <tier>');
         return deposit(client, a, b, Number(c ?? 0));
     }
     if (cmd === 'propose') {

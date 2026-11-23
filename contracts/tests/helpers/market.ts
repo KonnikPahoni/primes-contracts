@@ -60,7 +60,7 @@ export function testMarketConfig(opts: {
 // the next number anyone can build is 4, and 2 and 3 are already behind the head
 // and therefore already open in the market. Every prime from 2 onward is bought
 // from the market's `MODE_DUTCH_BUYNOW` lane — a descending price that decays to
-// THAT PRIME'S OWN resting price, `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` (D-88 point 1 deleted the universal-1-TON
+// THAT PRIME'S OWN resting price, `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` (D-88 point 1 deleted the universal-1-GRAM
 // floor; D-99 §1.2 replaced the tier lift with the P0/3 term),
 // and then sits there forever, where a "bid" IS the purchase and settles in the
 // same transaction. Read the floor with `getPrimeFloor(p)` / `getLotFloor(p)`;
@@ -115,7 +115,7 @@ export type AcquireOpts = {
     /**
      * Walk the chain clock to the end of the decay window first, so the purchase
      * happens at exactly this number's resting price (`getPrimeFloor(n)` since
-     * D-88 point 1 — NOT a universal 1 TON) and the premium is `margin` and
+     * D-88 point 1 — NOT a universal 1 GRAM) and the premium is `margin` and
      * nothing else. This MOVES `blockchain.now`, so a test that is also measuring
      * k(t) should either not use it or re-base its clock afterwards.
      */

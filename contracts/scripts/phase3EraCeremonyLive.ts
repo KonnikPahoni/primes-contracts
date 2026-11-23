@@ -191,7 +191,7 @@ async function main() {
     const aSender = makeSender(client, await mnemonicToPrivateKey(entry('A').mnemonic.trim().split(/\s+/)));
 
     console.log(`A (top recruiter) ${A.toString()}`);
-    console.log(`B (minter)        ${B.toString()}  ${fromNano(await retry(() => client.getBalance(B), 'bal(B)'))} TON`);
+    console.log(`B (minter)        ${B.toString()}  ${fromNano(await retry(() => client.getBalance(B), 'bal(B)'))} GRAM`);
     console.log(`C (next holder)   ${C.toString()}\n`);
 
     // ---- Stage 1: B mints the primorial --------------------------------------
@@ -293,8 +293,8 @@ async function main() {
         }
     }
 
-    console.log(`\nB left with ${fromNano(await retry(() => client.getBalance(B), 'bal(B)'))} TON`);
-    console.log(`A left with ${fromNano(await retry(() => client.getBalance(A), 'bal(A)'))} TON`);
+    console.log(`\nB left with ${fromNano(await retry(() => client.getBalance(B), 'bal(B)'))} GRAM`);
+    console.log(`A left with ${fromNano(await retry(() => client.getBalance(A), 'bal(A)'))} GRAM`);
 }
 
 main().catch((e) => {

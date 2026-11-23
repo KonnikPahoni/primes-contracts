@@ -34,13 +34,13 @@
 //     nothing from the real recipients;
 //   * but the tribute loop has no `if (share > 0)` guard before the send, so it
 //     still emits a full `credit_tribute` carrying `CREDIT_TRIBUTE_VALUE`
-//     (0.008 TON) of gas — which then bounces off the (possibly nonexistent)
+//     (0.008 GRAM) of gas — which then bounces off the (possibly nonexistent)
 //     item and costs the retry lane a second hop.
 //
-// Measured: each padding entry costs the ledger ~0.0012 TON and two extra
-// transactions. At 120 padding entries a mint that PAID ONE TON leaves the
+// Measured: each padding entry costs the ledger ~0.0012 GRAM and two extra
+// transactions. At 120 padding entries a mint that PAID ONE GRAM leaves the
 // ledger's balance NET NEGATIVE — the protocol loses money on a paid mint,
-// because the fan-out cost has run past §4.1's 0.10 TON gas-&-ops line. Past
+// because the fan-out cost has run past §4.1's 0.10 GRAM gas-&-ops line. Past
 // roughly 200 the transaction fails cleanly, so this is a deficit vector rather
 // than an unbounded drain, but a deficit on the mint path is exactly what the
 // gas-&-ops line exists to prevent.
@@ -105,8 +105,9 @@ describe('TON PRIMES — D8: no storage dict is ever walked, and the message-sup
             //   factors / msg.factors  §3.2's factor list, carried in the message
             //   bases                  the fixed Miller-Rabin witness list, a
             //                          compile-time constant of 13 entries
-            //   addresses              D-202's invite list, bounded by
-            //                          INVITE_MAX_COUNT (3) before the walk starts
+            //   addresses              D-202's invite list, bounded by the live
+            //                          Config.inviteCount (<= INVITE_COUNT_CEILING,
+            //                          100, D-215) before the walk starts
             //   w                      a literal weight array (the score block's)
             //   meters.forfeited       D-198's `flush_unsold`: a KEY-RANGE walk over
             //                          `unsoldPrimes` limited to ONE 256-number block
@@ -142,10 +143,10 @@ describe('TON PRIMES — D8: no storage dict is ever walked, and the message-sup
             // used to be before D-102 deleted the set line that published it.
             const ledger = readFileSync(join(CONTRACTS_DIR, 'primes_ledger.tolk'), 'utf8');
 
-            // the invite list: 3 (D-202), and the walk cannot start above it (221).
+            // the invite list: the live count, at most 100 (D-215), and the walk cannot start above it (221).
             // (D-202 deleted the registrar's contributor and input walks and the
             // generators collection's drop-table walk with the builds.)
-            expect(ledger).toMatch(/const INVITE_MAX_COUNT: int = 3;/);
+            expect(ledger).toMatch(/const INVITE_COUNT_CEILING: int = 100;/);
             expect(ledger).toMatch(/throw 221/);
             // D-200: the `lots` page walk stops at a declared row count, never at the dict's end.
             const market = readFileSync(join(CONTRACTS_DIR, 'primes_market.tolk'), 'utf8');
@@ -380,7 +381,7 @@ describe('TON PRIMES — D8: no storage dict is ever walked, and the message-sup
                 .storeUint(0, 1)
                 .storeDict(dict)
                 .storeUint(0, 32)
-                .storeUint(0, 3) // inviteCount
+                .storeUint(0, 7) // inviteCount (uint7, D-215)
                 .storeMaybeRef(null)
                 .endCell();
         }

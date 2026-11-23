@@ -7,12 +7,12 @@
 // `DecompositionSolvency.spec.ts` and `FeeLines.spec.ts` — and both prove
 // something real but adjacent: that each contract's DECLARED LIABILITY matches
 // what it custodies. Neither adds the lines of a single mint up and requires the
-// total to be exactly 1 TON, and neither varies the lines that can fail to
+// total to be exactly 1 GRAM, and neither varies the lines that can fail to
 // resolve. (The now-deleted `PatronageEndToEnd.spec.ts` said as much in its
 // D-23 block.)
 //
 // This suite is the direct statement. For one mint it measures every destination
-// a nanoTON of the mint price can reach, and requires them to sum to MINT_PRICE
+// a nanoGRAM of the mint price can reach, and requires them to sum to MINT_PRICE
 // with no slack — then repeats that across the matrix of lines that can fail to
 // resolve.
 //
@@ -49,7 +49,7 @@
 // term is read from a get-method, independently of this arithmetic. So the
 // residual is over-determined:
 // it is required to be REFERRAL_AMOUNT exactly when the key resolves and 0
-// exactly when it does not, and any nanoTON that went missing, was paid twice or
+// exactly when it does not, and any nanoGRAM that went missing, was paid twice or
 // was invented shows up here as a residual that matches neither. Reading the
 // referral leg off the receiving wallet instead would measure
 // `REFERRAL_AMOUNT - fwd_fee` and force a tolerance into the one assertion that
@@ -89,7 +89,10 @@ import { PrimesRegistrar } from '../wrappers/PrimesRegistrar';
 import { PrimesCollection } from '../wrappers/PrimesCollection';
 import { PrimesJettonMaster } from '../wrappers/PrimesJettonMaster';
 import { PrimesMarket } from '../wrappers/PrimesMarket';
-import { INVITE_TRANSFER_VALUE_NANOTON } from '../../shared/invites';
+import { INVITE_GENESIS_VALUE_NANOTON, INVITE_SEND_FEE_NANOTON } from '../../shared/invites';
+
+/** D-215: one sent invite costs the line its value plus the per-transfer fee allowance. */
+const INVITE_SLOT_COST = INVITE_GENESIS_VALUE_NANOTON + INVITE_SEND_FEE_NANOTON;
 import { testMarketConfig, acquirePrime, OPENING_HEAD } from './helpers/market';
 
 /** §4.1's lines, from `primes_ledger.tolk`. params.json economics.*. */
@@ -289,8 +292,9 @@ describe('TON PRIMES — §4.1: the split is closed at 100%, every unresolvable-
             feeLinesPaid: ops.operatorPaidTotal + ops.treasuryPaidTotal,
             forfeited,
             // D-101's invite line, as the ledger's own counter reports it:
-            // `count x ITEM_DEPLOY_VALUE` for the slots that were actually
-            // FILLED. A declared-but-unnamed slot never enters this figure,
+            // `filled x (value + INVITE_SEND_FEE)` for the slots that were actually
+            // FILLED (D-215; the fee part pays the transfers' own fees, and what it
+            // overstates stays on the ledger balance for `sweep_ops`). A declared-but-unnamed slot never enters this figure,
             // which is the whole of decision 4 -- an unspent slot is not
             // refunded, credited or carried, it is simply never deducted.
             inviteLinePaid: (await ledger.getInviteSpend()).linePaid,
@@ -517,7 +521,7 @@ describe('TON PRIMES — §4.1: the split is closed at 100%, every unresolvable-
 
     describe('no tribute recipient at all — the prime lane (§5.1, D-20)', () => {
         /**
-         * 2 rests far above the universal 1 TON clamp, and since D-99 for one
+         * 2 rests far above the universal 1 GRAM clamp, and since D-99 for one
          * reason rather than two: its NPV. It is the only even prime and earns
          * tribute for the whole life of the game, so `0.5 x NPV(2)` governs its
          * floor outright. The rarity TIER that used to lift it, and D-68's crown
@@ -660,14 +664,14 @@ describe('TON PRIMES — §4.1: the split is closed at 100%, every unresolvable-
     // The invite line is the only one whose SIZE the minter chooses, and the
     // only one where the interesting case is a subtraction that does NOT
     // happen. `count` is what the minter declares; the deduction is
-    // `filled x INVITE_TRANSFER_VALUE`, and a declared-but-unnamed slot is never
+    // `filled x (value + INVITE_SEND_FEE)`, and a declared-but-unnamed slot is never
     // deducted at all -- so it stays inside the residual, which is beta.
     //
     // The closure harness above is what makes that checkable rather than
-    // asserted: it accounts every destination the 1 TON can reach and requires
+    // asserted: it accounts every destination the 1 GRAM can reach and requires
     // the remainder to be exactly the referral line. If an unspent slot were
     // refunded, credited, held or paid to the operator, the referral residual
-    // would come out wrong by 0.1 TON per slot and every row below would fail.
+    // would come out wrong by 0.101 GRAM per slot and every row below would fail.
     // ------------------------------------------------------------------ //
     describe('the invite line, funded and short (D-202)', () => {
         async function mintInvited(
@@ -689,7 +693,7 @@ describe('TON PRIMES — §4.1: the split is closed at 100%, every unresolvable-
             });
         }
 
-        it('three declared and three named: the line is 0.30 TON and the split still closes', async () => {
+        it('three declared and three named: the line is 3 x (0.1 + fee) GRAM and the split still closes', async () => {
             await deployStack();
             const { n, factors, cited } = await headMint();
             await assertClosed(
@@ -705,12 +709,12 @@ describe('TON PRIMES — §4.1: the split is closed at 100%, every unresolvable-
                     // zero, the invite line is the ONLY thing standing
                     // between the injection and the named ones.
                     referral: 0n,
-                    inviteLine: 3n * INVITE_TRANSFER_VALUE_NANOTON,
+                    inviteLine: 3n * INVITE_SLOT_COST,
                 }
             );
         });
 
-        it('three declared and ONE named: the line is 0.1 TON — the other two stayed in β', async () => {
+        it('three declared and ONE named: the line is one slot — the other two stayed in β', async () => {
             await deployStack();
             const { n, factors, cited } = await headMint();
             await assertClosed(
@@ -720,7 +724,7 @@ describe('TON PRIMES — §4.1: the split is closed at 100%, every unresolvable-
                 {
                     label: 'invited 3 declared / 1 named',
                     referral: 0n,
-                    inviteLine: 1n * INVITE_TRANSFER_VALUE_NANOTON,
+                    inviteLine: 1n * INVITE_SLOT_COST,
                 }
             );
             // ...and the ledger says so in its own words: two slots to the
@@ -752,7 +756,7 @@ describe('TON PRIMES — §4.1: the split is closed at 100%, every unresolvable-
             // Two unspent slots, and `T` is larger by exactly their value.
             // Not "roughly", not "at least": the unspent slot has no other
             // destination in the contract, so the difference is exact.
-            expect(dTShort - dTFull).toBe(2n * INVITE_TRANSFER_VALUE_NANOTON);
+            expect(dTShort - dTFull).toBe(2n * INVITE_SLOT_COST);
         });
     });
 });

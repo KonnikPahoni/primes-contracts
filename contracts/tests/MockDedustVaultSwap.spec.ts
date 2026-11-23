@@ -199,7 +199,7 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
 
         const r = await ratchet.sendFlush(minter.getSender(), { value: FLUSH_VALUE });
         // A SLIPPAGE REFUSAL DOES NOT BOUNCE. The mock's own transaction
-        // SUCCEEDS and hands the TON back with `payout#474f86cf`, because that
+        // SUCCEEDS and hands the GRAM back with `payout#474f86cf`, because that
         // is what mainnet does — see DEDUST_PAYOUT_OP in primes_ratchet.tolk
         // for the traces. This assertion used to demand `exitCode: 1204` and a
         // bounced message, and it passing was the only reason the ratchet's
@@ -216,7 +216,7 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
         );
         expect(payout).toBeDefined();
         // NON-bounceable, and the ratchet must ACCEPT it rather than throw:
-        // a throw here would keep the TON (it is credited before compute) while
+        // a throw here would keep the GRAM (it is credited before compute) while
         // leaving the accounting half-reverted forever.
         expect((payout!.inMessage!.info as any).bounced).toBe(false);
         expect(payout!.description.type === 'generic' && payout!.description.aborted).toBe(false);
@@ -321,7 +321,7 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
         // The attack: while a flush is in flight, send the ratchet 1 nanoPRIMES.
         // Its own wallet notifies it honestly — the WALLET check passes — and the
         // tracker used to clear on that alone. DeDust's refusal then arrived with
-        // nothing in flight and its TON, a whole FLUSH_PCT tranche, was stranded
+        // nothing in flight and its GRAM, a whole FLUSH_PCT tranche, was stranded
         // in the gas buffer. `mockVault` is the ratchet's jetton wallet here, so a
         // notification FROM it naming someone else is exactly that transfer.
         const { inFlight, pendingBefore, swappedBefore } = await openSilentFlush();
@@ -363,7 +363,7 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
 
     it('a round trip that never settles expires after the flush stale window and stops blocking flush', async () => {
         // A flush the venue DROPPED, or one whose fill notification never ran (DeDust
-        // forwarding no TON with the payout), can never be answered, and 223 and 230
+        // forwarding no GRAM with the payout), can never be answered, and 223 and 230
         // would then refuse flush, stake and unstake. (A venue change mid-flight used
         // to be a third cause, and one anyone could force — audit R2-M1; the trip now
         // keeps the venue it was sent to, see the R2-M1 block below. What is left is a
@@ -394,12 +394,12 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
         expect(await ratchet.getPending()).toBe(pendingBefore - (await ratchet.getSwapped()) + swappedBefore);
     });
 
-    it('a fill notification carrying too little TON for the burn still closes the round trip', async () => {
+    it('a fill notification carrying too little GRAM for the burn still closes the round trip', async () => {
         // The clear and the burn share one transaction, and the burn rides only the
-        // TON DeDust forwarded. With too little left for the burn's forward fee the
+        // GRAM DeDust forwarded. With too little left for the burn's forward fee the
         // action phase used to fail and roll the clear back, so the flush stayed
         // "in flight" and 223/230 held until the stale window. Testnet forwards
-        // ~0.1566 TON on a fill; this sends just enough for compute and nothing more.
+        // ~0.1566 GRAM on a fill; this sends just enough for compute and nothing more.
         const { inFlight } = await openSilentFlush();
         const minOut = await ratchet.getLastMinOut();
         const fill = (value: bigint) =>
@@ -443,7 +443,7 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
     // authenticated against the CURRENT venue. So: `Flush` (20% of `pending`
     // leaves and will be refused), then the timelock's permissionless `Execute`.
     // The old vault's refund landed after the venue moved, threw 100 on a
-    // non-bounceable message — the TON stayed, in the gas buffer — and the stale
+    // non-bounceable message — the GRAM stayed, in the gas buffer — and the stale
     // window closed the trip as filled. Nobody profits; anyone could do it.
     //
     // NOT fixed by refusing `UpdateVenue` while a flush is open: a 1-nanoton flush
@@ -707,12 +707,12 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
     });
 
     it('a payout with no round trip open is ACCEPTED and credits nothing — it must not throw', async () => {
-        // `payout` is sent NON-bounceable, so a throw here would keep the TON
+        // `payout` is sent NON-bounceable, so a throw here would keep the GRAM
         // (it is credited in the credit phase, before compute) while reporting
         // the transaction as aborted — the exact half-state this handler exists
         // to prevent. And it must not invent backing either: `pending` is
         // mirrored by `T` on the LEDGER, which this contract cannot move, so
-        // crediting unattributable TON would break §5's identity rather than
+        // crediting unattributable GRAM would break §5's identity rather than
         // restore it.
         expect(await ratchet.getInFlightFlush()).toBe(0n);
         const pendingBefore = await ratchet.getPending();
@@ -820,7 +820,7 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
 
     /**
      * THE COOLDOWN IS CHARGED PRO RATA, and it has to be. `FLUSH_COOLDOWN` rate
-     * limits TON THROUGHPUT, not call count — key it to the call and a stranger
+     * limits GRAM THROUGHPUT, not call count — key it to the call and a stranger
      * asking for one nanoton spends the whole day's allowance and locks the
      * real flush out behind it. A quarter-size tranche locks a quarter of the
      * window.
@@ -864,7 +864,7 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
     //
     // Until D-146 these tests asserted the defect: a one-nanoton FILL incurred
     // zero cooldown (D-143's pro-rata arithmetic truncates) and every call spent
-    // 0.20 TON of the ratchet's own gas buffer. The owner signed CALLER PAYS
+    // 0.20 GRAM of the ratchet's own gas buffer. The owner signed CALLER PAYS
     // (2026-09-22): the pro-rata cooldown stays exactly as it was, and the cost
     // moves to the caller, so the one-nanoton loop is now the caller's own
     // money and the buffer — `balance − pending` — cannot move down on any call.
@@ -908,7 +908,7 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
         expect(await buffer()).toBeGreaterThanOrEqual(mid);
     });
 
-    /** The change comes back: a caller who attaches 10 TON pays what the call costs and no
+    /** The change comes back: a caller who attaches 10 GRAM pays what the call costs and no
      *  more, and the buffer still does not move. */
     it('D-146: an over-funded flush returns the change to the caller', async () => {
         const T = await ledger.getFloorNum();

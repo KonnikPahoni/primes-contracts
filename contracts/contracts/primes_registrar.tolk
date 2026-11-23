@@ -4,7 +4,7 @@ tolk 1.4
 // TON PRIMES — Registrar.
 //
 // CONCEPT §3.4's fourth contract: the era trophies and the paid-annotation
-// door. **It holds no protocol TON at all** — that is the entire reason it is
+// door. **It holds no protocol GRAM at all** — that is the entire reason it is
 // separate, and it is what makes its `getSolvency` the trivial one of the four:
 // declared liability is structurally zero, so any balance it carries is its own
 // storage rent and nothing else.
@@ -49,7 +49,7 @@ struct RegistrarConfig {
     // The MAIN collection, which a trophy re-engraving's fee goes through on its
     // way to the floor (`naming_paid`, D-212). One-shot from `set_collection`.
     collectionAddr: address
-    // D-212 (§4.7.1): what a trophy's SECOND and later engravings cost, in TON —
+    // D-212 (§4.7.1): what a trophy's SECOND and later engravings cost, in GRAM —
     // the same figure as the collection's `renameFee`, from the same genesis input
     // (the pipeline asserts the two match). Deploy data, no setter.
     renameFee: coins
@@ -57,7 +57,7 @@ struct RegistrarConfig {
 
 // §4.7.1's era-trophy engraving. D-179 / D-212: the FIRST engraving on an ERA
 // TROPHY is FREE and is written by whoever holds it; every later one costs
-// `renameFee` in TON, paid to the ratchet floor through the collection.
+// `renameFee` in GRAM, paid to the ratchet floor through the collection.
 //
 // The text is an OPAQUE cell. This contract does not parse it and asserts
 // nothing about its content: an annotation is a cosmetic, and validating prose
@@ -142,7 +142,7 @@ struct (0xb000006b) AwardEraTrophy {
 // since D-188 point 6 the two do not even share a contract: a prime's namer is
 // written once on its item at Populate, and nothing can move it.
 //
-// NO TON MOVES AND NONE IS HELD. Whatever the trophy sold for was settled off
+// NO GRAM MOVES AND NONE IS HELD. Whatever the trophy sold for was settled off
 // this contract, exactly as the naming right itself has no price here.
 struct (0xb0000070) TransferTrophy {
     queryId: uint64
@@ -175,8 +175,8 @@ struct (0xc000000a) NamingPaid {
 // D-212: the gas a paid re-engraving needs on top of the fee — the fee's trip to
 // the ratchet (primes_item.tolk's NAMING_PAID_GAS, 0.03) plus this contract's
 // compute and the change send (0.02).
-const NAMING_PAID_GAS: coins = 30000000;  // 0.03 TON
-const REG_RENAME_GAS: coins = 50000000;   // 0.05 TON
+const NAMING_PAID_GAS: coins = 30000000;  // 0.03 GRAM
+const REG_RENAME_GAS: coins = 50000000;   // 0.05 GRAM
 
 type AllowedMessage = SetLedger | SetCollection | AwardEraTrophy | TransferTrophy
     | Annotate;
@@ -201,7 +201,7 @@ fun onInternalMessage(in: InMessage) {
     match (msg) {
         AwardEraTrophy => {
             // D-36 (§4.7, §7). One dictionary write, on a contract that holds
-            // no TON — which is why the trophy survived the review that dropped
+            // no GRAM — which is why the trophy survived the review that dropped
             // the era dividend.
             var storage = lazy Storage.load();
             val cfg = storage.cfg.load();
@@ -273,7 +273,7 @@ fun onInternalMessage(in: InMessage) {
         Annotate => {
             // §4.7.1. Permissionless in shape, but the holder check makes it
             // single-holder in effect. EVERY REFUSAL REFUNDS the whole value
-            // rather than throwing (D-212): a re-engraving carries 200 TON, and a
+            // rather than throwing (D-212): a re-engraving carries 200 GRAM, and a
             // throw on a non-bounceable send would leave it here for ever.
             var storage = lazy Storage.load();
             val cfg = storage.cfg.load();
@@ -353,7 +353,7 @@ get fun getTrophy(n: int): (slice, int) {
 }
 
 // §3.4's load-bearing property, in ONE get-call: (balance, declared liability,
-// delta). This contract custodies no protocol TON — every message it accepts
+// delta). This contract custodies no protocol GRAM — every message it accepts
 // either moves nothing or forwards the caller's own value — so its declared
 // liability is structurally zero and its balance is its own storage rent.
 get fun getSolvency(): (int, int, int) {

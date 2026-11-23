@@ -248,7 +248,7 @@ describe('TON PRIMES — §9.5 signed vouchers', () => {
             expect((await vault.getVaultPayouts()).paidTotalPrimes).toBe(total);
         });
 
-        it('§9.5 the claimant pays: under 0.15 TON throws 103 and moves nothing; a funded claim costs the voucher nothing', async () => {
+        it('§9.5 the claimant pays: under 0.15 GRAM throws 103 and moves nothing; a funded claim costs the voucher nothing', async () => {
             const short = await redeem(alice, 1_000_000_000n, { value: toNano('0.1') });
             expect(short.transactions).toHaveTransaction({ to: voucher.address, success: false, exitCode: 103 });
             expect(await voucher.getPaid(alice.address)).toBe(0n);
@@ -789,7 +789,7 @@ describe('TON PRIMES — §9.5 signed vouchers', () => {
             expect(r2.transactions).not.toHaveTransaction({ aborted: true });
             const repeat = measure(r2.transactions);
             console.log(
-                `V26.3 claim at 0.15 TON: reaches the vault with ${Number(first.arrived) / 1e9} TON on the first ` +
+                `V26.3 claim at 0.15 GRAM: reaches the vault with ${Number(first.arrived) / 1e9} GRAM on the first ` +
                     `(receipt deploy) and ${Number(repeat.arrived) / 1e9} on a repeat; vault compute ${Number(first.vaultFees) / 1e9}`
             );
             expect(first.arrived).toBeGreaterThanOrEqual(toNano('0.1') + first.vaultFees);

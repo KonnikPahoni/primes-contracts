@@ -29,8 +29,8 @@
  *                               script deploys and nobody supplies its address.
  *   PRIMES_PROPOSER_ADDR      — the venue-timelock proposer key (the one
  *                               standing credential in the system)
- *   PRIMES_DEDUST_VAULT_ADDR  — DeDust native (TON) vault
- *   PRIMES_DEDUST_POOL_ADDR   — DeDust PRIMES/TON pool
+ *   PRIMES_DEDUST_VAULT_ADDR  — DeDust native (GRAM) vault
+ *   PRIMES_DEDUST_POOL_ADDR   — DeDust PRIMES/GRAM pool
  *   PRIMES_DEDUST_JETTON_VAULT_ADDR — DeDust PRIMES jetton vault
  *   PRIMES_DEDUST_LP_STANDIN  — optional, "1", TESTNET ONLY (GAUNTLET.md R17):
  *                               when the pool above is a stand-in wallet with
@@ -45,7 +45,7 @@
  *   PRIMES_TONSTAKERS_POOL_ADDR        — Tonstakers' liquid-staking pool
  *   PRIMES_DEDUST_TSTON_VAULT_ADDR     — DeDust's tsTON JETTON vault (leg 2's
  *                                        transfer destination)
- *   PRIMES_DEDUST_TSTON_POOL_ADDR      — DeDust's tsTON/TON pool
+ *   PRIMES_DEDUST_TSTON_POOL_ADDR      — DeDust's tsTON/GRAM pool
  *   PRIMES_RATCHET_TSTON_WALLET_ADDR   — the ratchet's own tsTON wallet
  *   PRIMES_TREASURY_TSTON_WALLET_ADDR  — the treasury's own tsTON wallet
  *
@@ -57,9 +57,9 @@
  * there is no LP leg in this pipeline any more. The three DeDust addresses
  * above are still required — they're baked into the ratchet's deploy-time
  * storage and queued on the venue timelock, deterministic and known before
- * anyone has added liquidity — but no TON or PRIMES is deposited into them by
+ * anyone has added liquidity — but no GRAM or PRIMES is deposited into them by
  * this script, and there is nothing to burn here. The operator pairs the
- * PRIMES its genesis floor donation mints with its own TON into the DeDust
+ * PRIMES its genesis floor donation mints with its own GRAM into the DeDust
  * pool directly (DeDust's own permissionless deposit flow — anyone can add
  * liquidity). D-166: the operator has no genesis PRIMES allocation at all.
  *
@@ -72,7 +72,7 @@
  *                               deposited) with a
  *                               smaller figure, so a full genesis can be
  *                               exercised end to end without requiring a real
- *                               200 TON balance on the genesis wallet.
+ *                               200 GRAM balance on the genesis wallet.
  *
  * It is refused on any network but `testnet`, and it is NOT a free knob: see
  * `resolveSeedTon` below for exactly which economic figures it distorts and
@@ -199,7 +199,7 @@ export type StakingVenueAddresses = Pick<
  * network decides where they come from.
  *
  * MAINNET: all five are env inputs. The tsTON master is Tonstakers' and the
- * tsTON/TON pool is DeDust's, so nothing this repo deploys can derive any of
+ * tsTON/GRAM pool is DeDust's, so nothing this repo deploys can derive any of
  * them, and `validateStakingVenue` (genesisPipeline.ts) refuses the placeholders
  * an omission would otherwise leave behind.
  *
@@ -275,7 +275,7 @@ export async function resolveStakingVenue(host: ScriptHost): Promise<StakingVenu
  *   - THE OPENING FLOOR MOVES WITH IT, and D-100 point 2 is why this bullet
  *     changed. `completeGenesis` still seeds `T = 0`, but `donate_floor` follows
  *     immediately (D-93's seed → donate → ignite), and the donation is now an
- *     OWNER-SET 132.50 TON (D-154) that no longer tracks the seed. The floor an overridden
+ *     OWNER-SET 132.50 GRAM (D-154) that no longer tracks the seed. The floor an overridden
  *     run opens at is `donation / (S0 + donation·L)` with a SMALLER `S0` — i.e.
  *     HIGHER than spec, not equal to it. Before D-100 the two moved together
  *     (D-92 chose the donation to reproduce `seed/S0`) and this bullet could say
@@ -286,8 +286,8 @@ export async function resolveStakingVenue(host: ScriptHost): Promise<StakingVenu
  *     lock, not a smaller pool (there is no pool yet).
  *
  *   - The VAULT'S SHARE OF S0 moves inversely, since V is fixed: at the
- *     specified 200 TON nominal seed, S0 = 200·10 000/2 + 10 000 000 =
- *     11 000 000, so the vault is ~91% of S0; at a 10 TON override,
+ *     specified 200 GRAM nominal seed, S0 = 200·10 000/2 + 10 000 000 =
+ *     11 000 000, so the vault is ~91% of S0; at a 10 GRAM override,
  *     S0 = 10 050 000 and the vault is ~99.5% of S0. (The ratio is structural:
  *     DENOMINATION_PLAN §1.1 measured `L` to be a pure denomination knob, so
  *     D-29's L = 1 000 -> 10 000 moved every PRIMES figure here together and
@@ -299,26 +299,26 @@ export async function resolveStakingVenue(host: ScriptHost): Promise<StakingVenu
  * supply share. Those must be read from the sim, not from the deployment.
  *
  * V is deliberately NOT scaled along with the seed: the era bounty schedule
- * pays out of it against a TON-denominated value (`era_bounty_schedule`, and
+ * pays out of it against a GRAM-denominated value (`era_bounty_schedule`, and
  * DENOMINATION_PLAN P4), so shrinking the vault would silently underfund eras
  * rather than merely distorting a ratio.
  */
 /**
- * D-212 (§4.7.1) — the two naming fees, in nanoTON.
+ * D-212 (§4.7.1) — the two naming fees, in nanoGRAM.
  *
  * `PRIMES_NAME_FEE_TON` is REQUIRED and has no default: the owner set the first naming at
- * about 50 EUR, and a contract cannot read EUR, so the TON figure is chosen from the TON/EUR
+ * about 50 EUR, and a contract cannot read EUR, so the GRAM figure is chosen from the GRAM/EUR
  * rate on the genesis day and typed in then. A genesis that forgot it must fail here, not
  * ship a guessed price into deploy data nobody can change.
  *
- * The rename fee is the owner's 200 TON (`shared/params.json` `naming.rename_fee_ton`).
+ * The rename fee is the owner's 200 GRAM (`shared/params.json` `naming.rename_fee_ton`).
  * `PRIMES_RENAME_FEE_TON` may lower it on TESTNET only, so a rehearsal can afford a rename.
  */
 export function resolveNamingFees(network: string): { nameFee: bigint; renameFee: bigint } {
     const rawName = process.env.PRIMES_NAME_FEE_TON;
     if (!rawName) {
         throw new Error(
-            'PRIMES_NAME_FEE_TON is not set. D-212: the first naming costs ~50 EUR in TON at the ' +
+            'PRIMES_NAME_FEE_TON is not set. D-212: the first naming costs ~50 EUR in GRAM at the ' +
                 "genesis-day rate — set it to that day's figure (testnet: any small value, e.g. 0.5)."
         );
     }
@@ -328,7 +328,7 @@ export function resolveNamingFees(network: string): { nameFee: bigint; renameFee
     if (rawRename && network !== 'testnet') {
         throw new Error(
             `PRIMES_RENAME_FEE_TON is set but the target network is "${network}". The rename fee is ` +
-                `the owner's ${params.naming.rename_fee_ton} TON (D-212); it may only be lowered for a testnet rehearsal.`
+                `the owner's ${params.naming.rename_fee_ton} GRAM (D-212); it may only be lowered for a testnet rehearsal.`
         );
     }
     const renameFee = rawRename ? toNano(rawRename) : spec;
@@ -354,15 +354,15 @@ export function resolveSeedTon(provider: Pick<NetworkProvider, 'network' | 'ui'>
     if (seed <= 0n) throw new Error(`PRIMES_TESTNET_SEED_TON must be positive, got "${raw}"`);
     if (seed > spec) {
         throw new Error(
-            `PRIMES_TESTNET_SEED_TON (${raw} TON) exceeds the specified seed ` +
-                `(${params.genesis.genesis_seed_ton} TON). The override exists to make genesis ` +
+            `PRIMES_TESTNET_SEED_TON (${raw} GRAM) exceeds the specified seed ` +
+                `(${params.genesis.genesis_seed_ton} GRAM). The override exists to make genesis ` +
                 'affordable on testnet, not to change the economics upward.'
         );
     }
 
     const L = params.genesis.genesis_lp_ratio_primes_per_ton;
     const V = BigInt(Math.round(params.genesis.bounty_vault_size_primes * 1e9));
-    // p_f = T0/S0 reported as its reciprocal (PRIMES per TON), which is the
+    // p_f = T0/S0 reported as its reciprocal (PRIMES per GRAM), which is the
     // direction the UI quotes and the easier one to eyeball against L.
     // D-166: the vested allocation is the treasury's half of `seed·L`, so S0 = seed·L/2 + V.
     const s0At = (t: bigint) => (t * BigInt(Math.round(L * 1000))) / 1000n / 2n + V;
@@ -373,15 +373,15 @@ export function resolveSeedTon(provider: Pick<NetworkProvider, 'network' | 'ui'>
     ui.write('!!! ==================================================================');
     ui.write('!!!  NOMINAL SEED OVERRIDDEN — THIS IS NOT A v5 GENESIS SIZING');
     ui.write('!!! ==================================================================');
-    ui.write(`!!!  CONCEPT §6 nominal seed : ${params.genesis.genesis_seed_ton} TON`);
-    ui.write(`!!!  this run                : ${raw} TON  (${(Number(seed) / Number(spec)) * 100}% of spec)`);
+    ui.write(`!!!  CONCEPT §6 nominal seed : ${params.genesis.genesis_seed_ton} GRAM`);
+    ui.write(`!!!  this run                : ${raw} GRAM  (${(Number(seed) / Number(spec)) * 100}% of spec)`);
     ui.write('!!!');
     ui.write(`!!!  PRESERVED  seeded T     : 0 (D-46: no real deposit at genesis, seed or not)`);
-    ui.write(`!!!  DISTORTED  opening floor: the D-100 donation is ${params.genesis.genesis_donation_ton} TON`);
+    ui.write(`!!!  DISTORTED  opening floor: the D-100 donation is ${params.genesis.genesis_donation_ton} GRAM`);
     ui.write(`!!!                          : either way, so a smaller S0 opens a HIGHER floor`);
     ui.write('!!!');
-    ui.write(`!!!  DISTORTED  S0 per seed TON: 1 TON = ${primesPerTonAt(seed).toFixed(1)} PRIMES`);
-    ui.write(`!!!                       spec: 1 TON = ${primesPerTonAt(spec).toFixed(1)} PRIMES`);
+    ui.write(`!!!  DISTORTED  S0 per seed GRAM: 1 GRAM = ${primesPerTonAt(seed).toFixed(1)} PRIMES`);
+    ui.write(`!!!                       spec: 1 GRAM = ${primesPerTonAt(spec).toFixed(1)} PRIMES`);
     ui.write(
         `!!!  DISTORTED  vault share  : ${((Number(V) / Number(s0At(seed))) * 100).toFixed(1)}% of S0` +
             ` (spec: ${((Number(V) / Number(s0At(spec))) * 100).toFixed(1)}%)`
@@ -523,7 +523,7 @@ export async function deployGenesis(host: ScriptHost) {
             } catch (e) {
                 throw new Error(
                     `genesis: could not read get_wallet_address(${owner}) from the DeDust pool ` +
-                        `${dedustPool}. The PRIMES/TON pool must exist before genesis runs — the LP ` +
+                        `${dedustPool}. The PRIMES/GRAM pool must exist before genesis runs — the LP ` +
                         'sink and the treasury both bake an LP jetton wallet address into a one-shot ' +
                         `bootstrap and neither can be repaired afterwards. Underlying: ${String(e)}`
                 );
@@ -540,7 +540,7 @@ export async function deployGenesis(host: ScriptHost) {
     // first thing in the run that sends a message (the mock pool's deploy), and
     // it has to be, because its address is a `GenesisParams` field and the params
     // object is built below. It therefore runs BEFORE the gas-floor preflight, so
-    // a run that the preflight then refuses has spent 0.5 TON on a mock — a
+    // a run that the preflight then refuses has spent 0.5 GRAM on a mock — a
     // testnet nuisance and nothing more: the mock strands no one-shot bootstrap
     // and the next attempt simply deploys another one.
     // G17: before the first send (the testnet mock just below), refuse if
@@ -565,13 +565,13 @@ export async function deployGenesis(host: ScriptHost) {
         // resting price `max(NPV(n)/2, P0(n)/3, MINT_PRICE)`.
         eraSchedule: params.genesis.era_bounty_schedule.era_bounty_schedule.map((e) => ({
             eraBoundary: BigInt(e.era_boundary_n),
-            // DENOMINATION_PLAN P4: the schedule is TON-denominated. `bountyTon`
+            // DENOMINATION_PLAN P4: the schedule is GRAM-denominated. `bountyTon`
             // is the ceremony's fixed value; `maxPrimes` is what it buys at the
             // genesis floor and is the cap the vault can never exceed.
             bountyTon: BigInt(Math.round(e.bounty_ton * 1e9)),
             maxPrimes: BigInt(Math.round(e.max_primes * 1e9)),
         })),
-        // D-99 §1.5 — the two-entry rebate schedule, TON-denominated exactly like
+        // D-99 §1.5 — the two-entry rebate schedule, GRAM-denominated exactly like
         // the era schedule above. Kind 0's figures are PER POINT of D(n): the
         // vault multiplies by the points the ledger reports, so what is stored
         // here is one point's worth and never a whole number's rebate.
@@ -656,7 +656,7 @@ export async function deployGenesis(host: ScriptHost) {
     };
 
     // Preflight. `GenesisEnv.genesisBalance` has existed since the pipeline was
-    // written and nothing ever called it, so a genesis that ran out of TON
+    // written and nothing ever called it, so a genesis that ran out of GRAM
     // partway through would strand the set: every bootstrap link (collection
     // `ledgerSet`, the jetton authority seal, the ledger's `genesisSeeded`) is
     // one-shot, and the item addresses derive from the ledger address, so a
@@ -683,24 +683,24 @@ export async function deployGenesis(host: ScriptHost) {
     //   D-100 adds: 0.5 LP sink deploy, 0.6 treasury deploy, 0.6 the SECOND
     //        vesting lock, 0.05 the LP sink's SetWallet, 0.05 the treasury's
     //        SetWallets, 0.05 the second lock's SetWallet  = +1.85
-    //   ≈ 10.00 TON, plus forward fees. 13 TON leaves >2 TON of headroom; the
+    //   ≈ 10.00 GRAM, plus forward fees. 13 GRAM leaves >2 GRAM of headroom; the
     // deploy values largely remain as balance on the deployed contracts rather
     // than being burned. D-46: unlike the old founder seed, none of this is
-    // spent as pool backing — the genesis wallet never sends TON anywhere but
+    // spent as pool backing — the genesis wallet never sends GRAM anywhere but
     // gas for its own messages.
     const PIPELINE_GAS_FLOOR = toNano('13');
     const balance = await env.genesisBalance();
     if (balance < PIPELINE_GAS_FLOOR) {
         throw new Error(
-            `Refusing to run: genesis wallet ${genesisAddress} holds ${Number(balance) / 1e9} TON, ` +
-                `but this run needs ${Number(PIPELINE_GAS_FLOOR) / 1e9} TON of pipeline gas. ` +
+            `Refusing to run: genesis wallet ${genesisAddress} holds ${Number(balance) / 1e9} GRAM, ` +
+                `but this run needs ${Number(PIPELINE_GAS_FLOOR) / 1e9} GRAM of pipeline gas. ` +
                 'Every bootstrap link in the genesis is one-shot, so a run that stops halfway ' +
                 'cannot be resumed — the whole set would have to be redeployed at fresh addresses.'
         );
     }
     host.write(
-        `preflight ok: ${Number(balance) / 1e9} TON available, ` +
-            `${Number(PIPELINE_GAS_FLOOR) / 1e9} TON pipeline gas required (no seed deposit — D-46)`
+        `preflight ok: ${Number(balance) / 1e9} GRAM available, ` +
+            `${Number(PIPELINE_GAS_FLOOR) / 1e9} GRAM pipeline gas required (no seed deposit — D-46)`
     );
 
     const genesis = await runGenesis(env, code, genesisParams, {

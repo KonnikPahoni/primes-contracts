@@ -24,7 +24,7 @@ tolk 1.4
 // config value: `deployGenesis.ts`'s `resolveStakingVenue` only constructs it
 // when the host network is testnet, and its `--skew-safe` sender refuses
 // to run at all off its hardwired testnet endpoint. Its knobs are unauthenticated
-// (see below) and it would take real TON out of `pending` and never give it back.
+// (see below) and it would take real GRAM out of `pending` and never give it back.
 //
 // It stands in for THREE upstream contracts at once:
 //
@@ -53,14 +53,16 @@ tolk 1.4
 // @ main on 2026-09-20 — file and line are on each entry there. The three
 // behaviours below mirror, in order:
 //
-//   - DEPOSIT, `pool.func:288-301` — flat `DEPOSIT_FEE`, mint at the pool rate,
-//     reply with a `transfer_notification` AND an `excesses`. The ratchet learns
+//   - DEPOSIT, `pool.func:288-301` — credit `value - DEPOSIT_FEE`, mint at the
+//     pool rate, reply with a `transfer_notification` (0.1) AND an `excesses`
+//     carrying the rest of the 1 GRAM reserve back (~0.89; mainnet traces show
+//     0.887-0.897). The ratchet learns
 //     the tsTON rate from this leg and from nothing else (D-151), so the notified
 //     `amount` is the one number in this mock that matters most.
 //   - BURN, `pool.func:190-240` — the three withdrawal outcomes: an immediate
-//     fill out of the pool's free-TON buffer, a `fill_or_kill` bounce-back that
+//     fill out of the pool's free-GRAM buffer, a `fill_or_kill` bounce-back that
 //     RE-MINTS the jettons, and a payout-bill NFT for the ~36 h round-end exit.
-//   - BILL SETTLEMENT, `payout_nft/nft-collection.func:262-268` — the bill's TON
+//   - BILL SETTLEMENT, `payout_nft/nft-collection.func:262-268` — the bill's GRAM
 //     share, arriving as `payout_distributed_asset`.
 //
 //   - NON-OPTIMISTIC DEPOSITS, `pool.func:291-301` with `optimistic_deposit`
@@ -79,31 +81,27 @@ tolk 1.4
 // here as a pattern for a real contract.
 // ============================================================================
 
-// `pool.func:79`. A FLAT fee off the top of every deposit, not a percentage —
-// which is why the ratchet's stake minimum is an economic parameter and not a
-// dust guard.
-const DEPOSIT_FEE: coins = 1000000000;                 // 1 TON
+// `pool.func:79`. NOT a fee the pool keeps: a GAS RESERVE. `pool.func:288-289`
+// reserves `balance - DEPOSIT_FEE` and credits `msg_value - DEPOSIT_FEE`, then
+// mints with CARRY_ALL_BALANCE (`pool_mint_helpers.func:19-23`), so whatever the
+// mint chain does not burn comes back to the depositor as `excesses`. This
+// mock kept it until 2026-11-23 (MISTAKES.md), which burned ~1.15 GRAM of the
+// keeper's money per testnet stake.
+const DEPOSIT_FEE: coins = 1000000000;                 // 1 GRAM
 
 // `pool.func:288-301`'s `TRANSFER_NOTIFICATION_AMOUNT`.
-const TRANSFER_NOTIFICATION_AMOUNT: coins = 100000000; // 0.1 TON
-
-// The slice of the deposit fee this mock leaves unreserved so the trailing
-// `excesses` has something to carry. Upstream's own `excesses` carries whatever
-// its `raw_reserve` left, which is dust of an unpredictable size; pinning a
-// figure here keeps a sandbox assertion reproducible without changing the shape
-// (reserve, then CARRY_ALL_BALANCE) the ratchet has to survive.
-const EXCESSES_BUDGET: coins = 50000000;               // 0.05 TON
+const TRANSFER_NOTIFICATION_AMOUNT: coins = 100000000; // 0.1 GRAM
 
 // `payout_nft/nft-collection.func:19`, `jetton_transfer_notification_value`:
 // the forward a bill payout's transfer carries, so the notification the
 // ratchet's tsTON handler runs on has exactly this much gas.
-const BILL_NOTIFICATION_VALUE: coins = 10000000;       // 0.01 TON
+const BILL_NOTIFICATION_VALUE: coins = 10000000;       // 0.01 GRAM
 // `payout_nft/op-codes.func:15`, `op::distributed_asset`.
 const PAYOUT_DISTRIBUTED_ASSET_OP: int = 0xdb3b8abd;
 
 // D-151 leg 2. The mock stands in for ONE MORE upstream contract than its header
 // originally listed: DeDust's tsTON jetton vault and the native vault that pays
-// a jetton -> TON swap out. It has to, because the ratchet's leg-2 swap is a
+// a jetton -> GRAM swap out. It has to, because the ratchet's leg-2 swap is a
 // TEP-74 `transfer` sent to its OWN tsTON wallet — and this contract IS that
 // wallet, so the swap cannot reach a separate DeDust double without a wallet hop
 // that does not exist here. Same collapse, same reason as the other three.
@@ -115,8 +113,8 @@ const DEDUST_SWAP_JETTON_OP: int = 0xe3a0d482;
 // a test double for no gain.
 @overflow1023_policy("suppress")
 struct Storage {
-    // tsTON per TON, as a fraction: `rateNum` TON buys `rateDen` tsTON.
-    // "1 tsTON = 1.05 TON" is rateNum = 1.05 TON, rateDen = 1 TON.
+    // tsTON per GRAM, as a fraction: `rateNum` GRAM buys `rateDen` tsTON.
+    // "1 tsTON = 1.05 GRAM" is rateNum = 1.05 GRAM, rateDen = 1 GRAM.
     //
     // Seeded 0/1 by the wrapper's default so this mock CANNOT MINT BY ACCIDENT —
     // the same idea as `mock_dedust_vault.tolk`'s price: a test that forgets to
@@ -132,7 +130,7 @@ struct Storage {
     // path asserts against it, so a test cannot withdraw a position it never
     // opened.
     tstonSupplyOwed: coins
-    // TON owed on an unfilled withdrawal — 0 when there is no bill outstanding.
+    // GRAM owed on an unfilled withdrawal — 0 when there is no bill outstanding.
     // Upstream this is an NFT with its own address; here it is two fields,
     // because the ratchet only ever sees the two messages a bill sends.
     pendingBill: coins
@@ -145,7 +143,7 @@ struct Storage {
     // `pool.func:291` `optimistic_deposit`. The wrapper defaults it ON, which is
     // the live pool's setting and what every spec before audit H2 assumed.
     optimistic: bool
-    // A non-optimistic deposit's bill: TON credited, awaiting round end. One
+    // A non-optimistic deposit's bill: GRAM credited, awaiting round end. One
     // slot — no spec holds two deposit bills open at once.
     depositBill: coins
     depositBillOwner: any_address
@@ -179,7 +177,7 @@ struct (0x595f07bc) TstonBurn {
 }
 
 // `contracts/op-codes.func:43`. NOTE THE SHAPE: the body carries NO amount. The
-// filled TON appears only as the message VALUE, mixed with whatever is left of
+// filled GRAM appears only as the message VALUE, mixed with whatever is left of
 // the burner's own attached gas. That is the single most important fact this
 // mock exists to reproduce — a ratchet that tries to read an amount out of this
 // body underflows, and a ratchet that treats the value as pure withdrawal
@@ -228,7 +226,7 @@ struct (0x05138d91) PayoutOwnershipAssigned {
     forwardPayload: uint1
 }
 
-// `payout_nft/nft-collection.func:262-268`: the bill's TON share at round end.
+// `payout_nft/nft-collection.func:262-268`: the bill's GRAM share at round end.
 struct (0xdb3b8abd) PayoutDistributedAsset {
     queryId: uint64
 }
@@ -290,8 +288,8 @@ struct (0x0f8a7ea5) Transfer {
 // below the reserve, which is the only way `unstake` ever becomes callable) and
 // leg 2's payout, whose sender check is that same address.
 //
-// IT SWALLOWS THE TON AND REPLIES WITH NOTHING, which is what a FILLED swap looks
-// like from the ratchet's side: the TON leaves for the venue and the PRIMES come
+// IT SWALLOWS THE GRAM AND REPLIES WITH NOTHING, which is what a FILLED swap looks
+// like from the ratchet's side: the GRAM leaves for the venue and the PRIMES come
 // back later, from the ratchet's PRIMES wallet, as the `transfer_notification`
 // that is the only fill signal there is (GAUNTLET B2.1). A spec drives that half
 // itself, from whatever address it wired as the burn wallet.
@@ -300,8 +298,8 @@ struct (0xea06185d) DedustSwap {
     rest: RemainingBitsAndRefs
 }
 
-// `payout#474f86cf` as DeDust's NATIVE vault pays a filled jetton -> TON swap:
-// the TON is the message value and `payload` is the sender's own
+// `payout#474f86cf` as DeDust's NATIVE vault pays a filled jetton -> GRAM swap:
+// the GRAM is the message value and `payload` is the sender's own
 // `reject_payload` echoed back, which the ratchet sends as `none`.
 struct (0x474f86cf) DedustPayout {
     queryId: uint64
@@ -382,7 +380,7 @@ fun onInternalMessage(in: InMessage) {
             storage.save();
 
             // `nft-collection.func:239-258`: a jetton TRANSFER from the
-            // collection's wallet with forward_ton 0.01 TON
+            // collection's wallet with forward_ton 0.01 GRAM
             // (`jetton_transfer_notification_value`, :19/:253) and response =
             // the burner, i.e. the bill's owner (:250-251).
             createMessage({
@@ -501,7 +499,9 @@ fun onInternalMessage(in: InMessage) {
                 storage.depositBill += credited;
                 storage.depositBillOwner = in.senderAddress as any_address;
                 storage.save();
-                reserveToncoinsOnBalance(contract.getOriginalBalance() - EXCESSES_BUDGET, RESERVE_MODE_AT_MOST);
+                // Upstream's reserve: everything but the 1 GRAM gas reserve, which
+                // rides the carry-all reply.
+                reserveToncoinsOnBalance(contract.getOriginalBalance() - DEPOSIT_FEE, RESERVE_MODE_AT_MOST);
                 createMessage({
                     bounce: BounceMode.NoBounce,
                     value: 0,
@@ -514,9 +514,9 @@ fun onInternalMessage(in: InMessage) {
                 }).send(SEND_MODE_CARRY_ALL_BALANCE | SEND_MODE_IGNORE_ERRORS);
                 return;
             }
-            // DIRECTION: `rateNum` TON buys `rateDen` tsTON, so TON in is
+            // DIRECTION: `rateNum` GRAM buys `rateDen` tsTON, so GRAM in is
             // MULTIPLIED by `rateDen` and DIVIDED by `rateNum`. At "1 tsTON =
-            // 1.05 TON" (rateNum = 1.05e9, rateDen = 1e9) a 10.5 TON credit
+            // 1.05 GRAM" (rateNum = 1.05e9, rateDen = 1e9) a 10.5 GRAM credit
             // mints 10 tsTON, not 11.025.
             assert (storage.rateNum > 0) throw 1302;            // rate_unset
             val minted = (credited * storage.rateDen / storage.rateNum) as coins;
@@ -526,10 +526,10 @@ fun onInternalMessage(in: InMessage) {
             storage.tstonSupplyOwed += minted;
             storage.save();
 
-            // Keep the credited TON and the fee; the fee is what pays for the
-            // two replies below.
+            // Keep the credited GRAM, as upstream's `raw_reserve` does; the 1 GRAM
+            // reserve pays the notification and the rest rides the `excesses`.
             sendMintPair(msg.queryId, in.senderAddress, minted,
-                         contract.getOriginalBalance() - TRANSFER_NOTIFICATION_AMOUNT - EXCESSES_BUDGET, null);
+                         contract.getOriginalBalance() - DEPOSIT_FEE, null);
         }
 
         TstonBurn => {
@@ -586,13 +586,13 @@ fun onInternalMessage(in: InMessage) {
 
             if (fillOrKill == 1) {
                 // LEG 2 — cannot fill and the burner said all-or-nothing, so the
-                // position is restored exactly as it was and no TON leaves
+                // position is restored exactly as it was and no GRAM leaves
                 // beyond gas. `tstonSupplyOwed` deliberately unchanged.
                 sendMintPair(msg.queryId, in.senderAddress, msg.amount, balanceBefore, null);
                 return;
             }
 
-            // LEG 3 — the ~36 h exit. The position converts to a bill; the TON
+            // LEG 3 — the ~36 h exit. The position converts to a bill; the GRAM
             // arrives later, on `SettleBill`.
             storage.tstonSupplyOwed -= msg.amount;
             storage.pendingBill = tonOut;

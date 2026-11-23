@@ -202,8 +202,8 @@ async function main() {
 
     console.log(`ledger ${ledger.address.toString()}`);
     console.log(`head   ${await retry(() => ledger.getHead(), 'head')}   NEWCOMER_WINDOW=${NEWCOMER_TOTAL}`);
-    console.log(`A  ${A.toString()}  ${fromNano(await retry(() => client.getBalance(A), 'bal(A)'))} TON`);
-    console.log(`R1 ${R1.toString()}  ${fromNano(await retry(() => client.getBalance(R1), 'bal(R1)'))} TON\n`);
+    console.log(`A  ${A.toString()}  ${fromNano(await retry(() => client.getBalance(A), 'bal(A)'))} GRAM`);
+    console.log(`R1 ${R1.toString()}  ${fromNano(await retry(() => client.getBalance(R1), 'bal(R1)'))} GRAM\n`);
 
     // ---- Stage 1: six gift mints, A -> R1..R6 --------------------------------
     console.log('=== stage 1: the recruit cohort (six §4.5 gift mints from A) ===');
@@ -288,8 +288,8 @@ async function main() {
         const w = await retry(() => ledger.getNewcomerWindow(addrOf(h)), `getNewcomerWindow(${h})`);
         console.log(`  ${h} newcomer window=${w.left}/${w.total} uplift=${w.uplift}`);
     }
-    console.log(`\nA  left with ${fromNano(await retry(() => client.getBalance(A), 'bal(A)'))} TON`);
-    console.log(`R1 left with ${fromNano(await retry(() => client.getBalance(R1), 'bal(R1)'))} TON`);
+    console.log(`\nA  left with ${fromNano(await retry(() => client.getBalance(A), 'bal(A)'))} GRAM`);
+    console.log(`R1 left with ${fromNano(await retry(() => client.getBalance(R1), 'bal(R1)'))} GRAM`);
 }
 
 main().catch((e) => {

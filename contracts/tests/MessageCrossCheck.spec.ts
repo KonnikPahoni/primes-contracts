@@ -2,7 +2,7 @@
 //
 // `AGENTS_PLAN.md` A1 / D-131.3. Until 2026-09-16 the webapp's `chain/messages.ts` and
 // these wrappers each transcribed the same mint / lot / build bodies: every sandbox proof
-// ran against the wrapper's bytes while every real 1 TON mint spent through the webapp's,
+// ran against the wrapper's bytes while every real 1 GRAM mint spent through the webapp's,
 // and a headless client had to pick one or write a third. Both now call
 // `shared/messages.ts`. Same shape as `FactorCrossCheck.spec.ts`: identity of the export,
 // byte-identity of the wrapper's send body against the builder, and a scan that refuses
@@ -52,7 +52,7 @@ describe('TON PRIMES — one message builder (A1)', () => {
         expect(shared.RATCHET_CALLER_COMPUTE_NANOTON).toBe(compute);
         expect(shared.DEDUST_SWAP_GAS_NANOTON).toBe(c('DEDUST_SWAP_GAS'));
         expect(shared.FLUSH_CALLER_GAS_NANOTON).toBe(c('DEDUST_SWAP_GAS') + compute);
-        expect(shared.STAKE_CALLER_GAS_NANOTON).toBe(c('TONSTAKERS_DEPOSIT_FEE') + c('STAKE_GAS') + compute);
+        expect(shared.STAKE_CALLER_GAS_NANOTON).toBe(c('TONSTAKERS_DEPOSIT_FEE') + c('STAKE_CREDIT_MARGIN') + compute);
         expect(shared.UNSTAKE_CALLER_GAS_NANOTON).toBe(
             2n * c('TSTON_EXIT_GAS') + c('DEDUST_JETTON_SWAP_GAS') + compute);
         expect(shared.HARVEST_CALLER_GAS_NANOTON).toBe(c('HARVEST_GAS') + compute);
@@ -105,13 +105,14 @@ describe('TON PRIMES — one message builder (A1)', () => {
     });
 
     it('the wrapper bytes are unchanged by the move — golden mint body hash', () => {
+        // D-215 widened `inviteCount` from 3 bits to 7.
         // Measured from the wrapper's own transcription at HEAD before A1 (same inputs).
         // D-191 point 1 dropped the `beneficiary` field (the 2-bit addr_none that stood here):
         // the card the body is sent to IS the beneficiary's.
         const { body } = shared.buildMintMessage({ ledger: addr, payer: addr, n: 12n, kind: 0, factors, referralKey: 42, beneficiary: null, queryId: 9n });
         const golden = beginCell()
             .storeUint(0xb0000002, 32).storeUint(9, 64).storeUint(12n, 256).storeUint(0, 1)
-            .storeDict(shared.encodeFactors(factors)).storeUint(42, 32).storeUint(0, 3).storeMaybeRef(null)
+            .storeDict(shared.encodeFactors(factors)).storeUint(42, 32).storeUint(0, 7).storeMaybeRef(null)
             .endCell();
         expect(body.hash()).toEqual(golden.hash());
         void SendMode;
@@ -170,9 +171,9 @@ describe('TON PRIMES — one message builder (A1)', () => {
         const pool = { reserveTonNanoton: 1000n, reservePrimesNano: 4000n, lpTotalSupplyRaw: 2000n };
         // Balanced: both sides give 200.
         expect(shared.quoteDedustLpMinted({ amountNanoton: 100n, amountPrimes: 400n, ...pool })).toBe(200n);
-        // PRIMES-heavy: the TON side is the binding one, and the excess is refunded.
+        // PRIMES-heavy: the GRAM side is the binding one, and the excess is refunded.
         expect(shared.quoteDedustLpMinted({ amountNanoton: 100n, amountPrimes: 4000n, ...pool })).toBe(200n);
-        // TON-heavy: the PRIMES side binds.
+        // GRAM-heavy: the PRIMES side binds.
         expect(shared.quoteDedustLpMinted({ amountNanoton: 900n, amountPrimes: 400n, ...pool })).toBe(200n);
         // An empty pool has no ratio to join — a null, never a zero.
         expect(shared.quoteDedustLpMinted({ amountNanoton: 1n, amountPrimes: 1n, ...pool, lpTotalSupplyRaw: 0n })).toBeNull();

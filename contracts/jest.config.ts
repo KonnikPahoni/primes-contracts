@@ -6,7 +6,7 @@ const config: Config = {
     testTimeout: 60000,
     // THE GATE MUST NOT UNDER-REPORT. jest-worker's default transport is
     // child_process IPC, which serializes results with JSON — and
-    // `JSON.stringify(1n)` throws. In a repo where every TON amount and every `n`
+    // `JSON.stringify(1n)` throws. In a repo where every GRAM amount and every `n`
     // is a bigint, that threw in the *reporting* path and jest recorded four
     // suites as "failed to run" while discarding 23 real failures, so the
     // headline count read 3 when the truth was 27.

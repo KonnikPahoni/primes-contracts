@@ -1,7 +1,7 @@
 /**
  * TON PRIMES — GAUNTLET H17: the deferred bounty payout, the whole round trip, on chain.
  *
- * `DECISIONS.md` D-129 option A: when the vault cannot afford the 0.1 TON jetton hop, the
+ * `DECISIONS.md` D-129 option A: when the vault cannot afford the 0.1 GRAM jetton hop, the
  * payout is **journalled without being sent** — no paid flag, no `paidTotal`, no
  * `payoutCount`, no message — so the already-existing `RetryBountyPayout` can finish it
  * from that row unmodified once the vault is funded again. Before it, three real payouts
@@ -12,7 +12,7 @@
  * **WHY THIS DEPLOYS A COPY.** H17 names two ways to starve a vault and only one of them
  * still works. "Triggering payouts until it is short" does not: `GAUNTLET.md` H11 corrected
  * `payOut`'s `responseAddr` to name the vault, so TEP-74's excess comes home and each payout
- * is measured at **+0.0124 TON** — the live vault gains TON with every bounty it pays and
+ * is measured at **+0.0124 GRAM** — the live vault gains GRAM with every bounty it pays and
  * can no longer drain itself. So this deploys a second instance of the SAME compiled
  * bytecode with a thin balance, names this wallet as its `ledgerAddr` so the payout can be
  * triggered, and drives the round trip against it. Nothing on the live set is touched: the
@@ -20,7 +20,7 @@
  *
  * THE ROUND TRIP, and each assertion is one of the four D-129 names:
  *
- *   1. deploy the copy below `TRANSFER_GAS + STORAGE_FLOOR` (0.1 + 0.05 TON);
+ *   1. deploy the copy below `TRANSFER_GAS + STORAGE_FLOOR` (0.1 + 0.05 GRAM);
  *   2. wire its jetton wallet and send it the PRIMES the payout will move;
  *   3. `PayEraBounty` -> **journalled, not sent**: `deferredCount` 1, `payoutCount`
  *      UNMOVED, the era's paid flag CLEAR;
@@ -208,7 +208,7 @@ async function main() {
     await waitForSeqno(wallet, seqno, 'set_wallet');
 
     console.log(`--- 2b. sending it ${amount} nanoPRIMES ---`);
-    // `forwardTonAmount: 0` on purpose: no `transfer_notification`, so the copy's own TON
+    // `forwardTonAmount: 0` on purpose: no `transfer_notification`, so the copy's own GRAM
     // balance does not move and step 3 still faces the shortfall this test is about.
     seqno = await retry(() => wallet.getSeqno(), 'seqno');
     await wallet.sendTransfer({
@@ -237,7 +237,7 @@ async function main() {
     await sleep(20000);
 
     const vaultBalanceBefore = await retry(() => client.getBalance(vault.address), 'copy balance');
-    console.log(`copy TON balance: ${vaultBalanceBefore} nanoton (needs < ${TRANSFER_GAS + STORAGE_FLOOR} to defer)`);
+    console.log(`copy GRAM balance: ${vaultBalanceBefore} nanoton (needs < ${TRANSFER_GAS + STORAGE_FLOOR} to defer)`);
     if (vaultBalanceBefore >= TRANSFER_GAS + STORAGE_FLOOR) {
         throw new Error(
             `the copy is at ${vaultBalanceBefore} nanoton, at or above the hop floor, so the payout ` +

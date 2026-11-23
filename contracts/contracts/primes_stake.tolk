@@ -12,7 +12,7 @@ tolk 1.4
 // treasury's permissionless `distribute()` (§5.5.3) and STREAMED to stakers over
 // the following epoch through an accumulator, pro rata to `amount × tierWeight`.
 // Its purpose is a SUPPLY LOCK (D-168 Q1), not a rebate: nothing here touches
-// `k`, `S`, `T`, the split or any TON pool.
+// `k`, `S`, `T`, the split or any GRAM pool.
 //
 // WHY TWO CONTRACTS. Config 43's 65,536-cell account ceiling kills a positions
 // dictionary on one account around 20,000 positions — the finding that put
@@ -70,7 +70,7 @@ tolk 1.4
 //     this handshake is deliberately biased in.
 //   * a REWARD transfer bounces: the child's debt already advanced; the PRIMES
 //     go back to `streamRemaining` and are re-streamed to every staker. The
-//     claimer loses that claim; nobody is paid twice. Reachable only if 0.1 TON
+//     claimer loses that claim; nobody is paid twice. Reachable only if 0.1 GRAM
 //     cannot deploy the owner's jetton wallet.
 //   * a WITHDRAW transfer bounces: principal and reward come home; the forward
 //     payload carries (positionId, tier, principal) so `restore_stake` puts the
@@ -78,13 +78,13 @@ tolk 1.4
 //     the owner retries.
 //
 // ---------------------------------------------------------------------------
-// NO ADMIN, NO OWNER, NO TON LIABILITY (§3.4, §8)
+// NO ADMIN, NO OWNER, NO GRAM LIABILITY (§3.4, §8)
 // ---------------------------------------------------------------------------
 // PRIMES leave this contract by three routes and no fourth: (a) a position's own
 // reward to its own owner, (b) a matured position's principal to its own owner
 // (ST-3), (c) a refund of an unrecognised deposit to whoever sent it. No message
 // names a recipient. The only one-shot is `set_wallet`, the D21-family
-// bootstrap. It holds no TON anybody is owed; the only TON here is the gas
+// bootstrap. It holds no GRAM anybody is owed; the only GRAM here is the gas
 // riding the message that asked it to act.
 //
 // Every figure a UI shows maps to a get-method below (§9.1). ST-1 is
@@ -95,16 +95,16 @@ tolk 1.4
 // Gas
 // ---------------------------------------------------------------------------
 
-// 0.1 TON: one jetton-wallet transfer hop plus the destination wallet's deploy,
+// 0.1 GRAM: one jetton-wallet transfer hop plus the destination wallet's deploy,
 // the figure every jetton-custody contract in this repo sizes the same send at.
 const TRANSFER_GAS: coins = 100000000;
-// 0.05 TON: one hop to a position child, including its deploy on a first stake
+// 0.05 GRAM: one hop to a position child, including its deploy on a first stake
 // (the credit carries the child's code as state-init).
 const CHILD_GAS: coins = 50000000;
 // What a STAKE's notification must carry: the worst of its outcomes — a credit
 // that deploys the child, or a refund transfer — published as one figure, the
 // `TREASURY_MIN_FORWARD` precedent. A real sender adds a margin (CLAUDE.md).
-const STAKE_MIN_FORWARD: coins = TRANSFER_GAS + CHILD_GAS;   // 0.15 TON
+const STAKE_MIN_FORWARD: coins = TRANSFER_GAS + CHILD_GAS;   // 0.15 GRAM
 
 // ---------------------------------------------------------------------------
 // Parameters — shared/params.json `staking` (DECISIONS.md D-168)
@@ -772,7 +772,7 @@ get fun getStakePositionAddress(owner: address): address {
     return positionAddress(storage.cfg.load(), owner);
 }
 
-// The nominal TON a stake's notification must carry (`forward_ton_amount`).
+// The nominal GRAM a stake's notification must carry (`forward_ton_amount`).
 get fun getStakeMinForward(): int {
     return STAKE_MIN_FORWARD;
 }

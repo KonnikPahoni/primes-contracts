@@ -3,7 +3,7 @@
  *
  * Reads `/.env` (the same line regex every `*Live.ts` script uses — no dotenv) and prints:
  *   - the deploy SUBWALLET address for `PRIMES_DEPLOY_SUBWALLET_ID` and its live balance,
- *     against the 13 TON pipeline floor (gotcha 10 in docs/testnet-deployment.md) — this is
+ *     against the 13 GRAM pipeline floor (gotcha 10 in docs/testnet-deployment.md) — this is
  *     the address to fund before the run;
  *   - every deploy-time env var the runner `requireAddr`s, and whether it is set;
  *   - whether `PRIMES_PROPOSER_ADDR` IS the subwallet (gotcha 8 — the venue timelock bakes
@@ -42,8 +42,8 @@ const REPO = path.resolve(__dirname, '..', '..');
 const PIPELINE_GAS_FLOOR_TON = 13;
 /**
  * With `PRIMES_DEDUST_LP_STANDIN=0` the run does not stop at genesis: it is
- * followed by `donateFloor.ts` (the D-154 donation, 132.50 TON) and
- * `seedDedustLiquidity.ts` (the same figure again as the pool's TON side, plus
+ * followed by `donateFloor.ts` (the D-154 donation, 132.50 GRAM) and
+ * `seedDedustLiquidity.ts` (the same figure again as the pool's GRAM side, plus
  * the jetton vault and the deposit/transfer hops). Those come out of this same
  * wallet, so the floor has to cover them or the run dies halfway with the pool
  * half-seeded and the LP receipt unforwarded.
@@ -84,7 +84,7 @@ async function main() {
     const standIn = env.get('PRIMES_DEDUST_LP_STANDIN') === '1';
     const floorTon = standIn ? PIPELINE_GAS_FLOOR_TON : PIPELINE_GAS_FLOOR_TON + SEEDING_BUDGET_TON;
     console.log(
-        `balance:             ${balance} TON (floor ${floorTon}` +
+        `balance:             ${balance} GRAM (floor ${floorTon}` +
             (standIn ? '' : ` = ${PIPELINE_GAS_FLOOR_TON} pipeline + ${SEEDING_BUDGET_TON} donate/seed`) +
             ')'
     );
@@ -129,7 +129,7 @@ async function main() {
     if (deployed) {
         console.log('  note this subwallet has sent transactions before (expected: createDedustPool.ts).');
     }
-    if (balance < floorTon) console.log(`  -> FUND IT: send >= ${floorTon} TON to the address above, then re-run this script`);
+    if (balance < floorTon) console.log(`  -> FUND IT: send >= ${floorTon} GRAM to the address above, then re-run this script`);
 
     // GOTCHA 6, ENFORCED — a FRESH subwallet id per genesis.
     //
@@ -140,7 +140,7 @@ async function main() {
     // so a brand-new master address sat on top of a fully reused set. Three contracts
     // whose code had NOT changed — the collection, the venue timelock, the (since
     // deleted) generators collection — re-derive to the LIVE set's addresses on a reused id, and the deploy
-    // then "deploys" onto already-active contracts: TON ignores the stateInit, the money
+    // then "deploys" onto already-active contracts: GRAM ignores the stateInit, the money
     // is credited as a plain top-up, the log says `deploy:collection`, and the run walks
     // into one-shot links that are already spent. Nothing announces it.
     //
@@ -177,10 +177,10 @@ async function main() {
     // printed, not the requested one, because the divisor is rounded.
     const stake = resolveStakeMin(env);
     console.log(
-        `stake minimum:       ${stake.effectiveTon} TON (divisor ${stake.divisor})` +
+        `stake minimum:       ${stake.effectiveTon} GRAM (divisor ${stake.divisor})` +
             (stake.divisor === 1
-                ? '  — MAINNET, and `stake` needs `pending` above 625 TON'
-                : `  — \`stake\` needs \`pending\` above ${(stake.effectiveTon / 0.8).toFixed(4)} TON`)
+                ? `  — MAINNET, and \`stake\` needs \`pending\` above ${stake.effectiveTon / 0.8} GRAM`
+                : `  — \`stake\` needs \`pending\` above ${(stake.effectiveTon / 0.8).toFixed(4)} GRAM`)
     );
 
     console.log('deploy-time env:');
@@ -224,8 +224,8 @@ async function main() {
     // DeDust v2 IS deployed on TON testnet, at the SAME factory address as mainnet
     // (EQBfBWT7…J67 — mainnet's code has since been upgraded, testnet still runs the
     // original, which is why the two code hashes differ at one address). Vault and pool
-    // creation there is permissionless and cheap (create_vault#21cfe02b 0.1 TON,
-    // create_volatile_pool#97d51f2f 0.3 TON). So `PRIMES_DEDUST_LP_STANDIN=1` is no
+    // creation there is permissionless and cheap (create_vault#21cfe02b 0.1 GRAM,
+    // create_volatile_pool#97d51f2f 0.3 GRAM). So `PRIMES_DEDUST_LP_STANDIN=1` is no
     // longer the only legal testnet setting, and the old unconditional refusal here
     // ("no real DeDust pool exists there") was simply false.
     //
@@ -270,7 +270,7 @@ async function main() {
         } catch (e) {
             refuse(
                 `PRIMES_DEDUST_LP_STANDIN is not 1, so the pool must be live, but ` +
-                    `${pool} does not answer get_wallet_address. Create the PRIMES/TON pool ` +
+                    `${pool} does not answer get_wallet_address. Create the PRIMES/GRAM pool ` +
                     `first (npx tsx scripts/dryRunGenesisAddresses.ts -> create_volatile_pool ` +
                     `on the factory), or set PRIMES_DEDUST_LP_STANDIN=1 to run without one. ` +
                     `Underlying: ${String(e)}`

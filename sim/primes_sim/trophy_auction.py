@@ -82,7 +82,7 @@ class TrophyConstants:
     #: arithmetic on TVM (one shift, one lookup, one multiply, one divide).
     SCORE_HALVING: int = 10
 
-    #: The bottom of the lane, in TON. **DERIVED, not declared**: under D-30
+    #: The bottom of the lane, in GRAM. **DERIVED, not declared**: under D-30
     #: there is no second lane for it to bound, so it is simply the cheapest
     #: opening price a lot can carry, and `gas.res_gas_derivation` fixes it at
     #: `MINT_PRICE + RES_GAS` exactly. `reserve_floor_identity` checks it.
@@ -92,12 +92,12 @@ class TrophyConstants:
     #: Nothing replaces it -- there is no threshold left in the design.
     RESERVE_FLOOR_TON: float = 1.07  # D-113: MINT_PRICE + RES_GAS, RES_GAS 0.06 -> 0.07
 
-    #: `PRIME_P0_MIN_TON` (D12, 5 TON) SAT HERE and is **deleted by D-99**. It
+    #: `PRIME_P0_MIN_TON` (D12, 5 GRAM) SAT HERE and is **deleted by D-99**. It
     #: existed because the old score gave a plain deep prime `D(n) = 0`, so both
     #: price branches collapsed to `RESERVE_FLOOR`. Under D-99 primality is a
     #: category worth 15 points on its own (plus twin/Sophie Germain/safe/emirp
     #: on top), so the ladder alone opens a plain prime at `2^(15/10)` = 2.83
-    #: TON and there is no collapse left for a floor to prevent.
+    #: GRAM and there is no collapse left for a floor to prevent.
 
     #: Inherited verbatim from CONCEPT.md SS6, which anchors a genesis lot's start
     #: price at 1.5x the contest/reference fair value.
@@ -119,8 +119,8 @@ class TrophyConstants:
     #: ladder is evaluated over `[0, SCORE_MAX]` and the two must not drift --
     #: `test_trophy_auction.py` asserts they are equal. 87, not the pre-D-99
     #: 120, and the number is load-bearing twice over: it puts the top of the
-    #: ladder at `MINT_PRICE * 2^(87/10)` = 415.9 TON, just under owner answer
-    #: 9's declared 420 TON ceiling, and `87 // 10 + 1 = 9` makes the
+    #: ladder at `MINT_PRICE * 2^(87/10)` = 415.9 GRAM, just under owner answer
+    #: 9's declared 420 GRAM ceiling, and `87 // 10 + 1 = 9` makes the
     #: bid-increment ladder nine rungs instead of thirteen.
     SCORE_MAX: int = 87
 
@@ -216,7 +216,7 @@ def frac_table_error(frac: list[int] | None = None,
             "The FRAC table rounds 2^(j/10) to 16 fractional bits, so the shipped "
             "ladder differs from the true exponential by at most 2^-17 relative "
             "(~7.6e-6). At the SCORE_MAX rung that is a few tens of milliTON on a "
-            "4,096 TON opening bid. Stated rather than absorbed into a tolerance: "
+            "4,096 GRAM opening bid. Stated rather than absorbed into a tolerance: "
             "the contract and the sim agree to the nanoton on the SHIPPED "
             "expression, and the shipped expression is this close to 2^(D/10)."
         ),
@@ -228,7 +228,7 @@ def frac_table_error(frac: list[int] | None = None,
 # --------------------------------------------------------------------------- #
 
 #: SS7's era boundaries. Neither reservable nor auctionable -- every argument
-#: applies with more force at 128 TON than at 0.075.
+#: applies with more force at 128 GRAM than at 0.075.
 PRIMORIALS = (2, 6, 30, 210, 2310, 30030, 510510, 9699690, 223092870,
               6469693230, 200560490130, 7420738134810, 304250263527210,
               13082761331670030, 614889782588491410)
@@ -296,7 +296,7 @@ def lane(n: int, d_score: int = 0, *, prime: bool | None = None,
 
 def p0_nanoton(d_score: int, *, prime: bool = False, npv_ton: float | None = None,
                c: TrophyConstants = C, frac: list[int] | None = None) -> int:
-    """`P0(n)` in nanoTON -- the opening bid, not a ceiling.
+    """`P0(n)` in nanoGRAM -- the opening bid, not a ceiling.
 
     The `max` of three branches under D-99 SS1.2 -- the ladder, the lane floor,
     and `1.5 * NPV(n)` for a prime. The fourth, `PRIME_P0_MIN`, is deleted.
@@ -354,11 +354,11 @@ def ladder_bounds(c: TrophyConstants = C, frac: list[int] | None = None) -> dict
             "branch is a constant floor under a strictly increasing ladder), and "
             "strictly monotone above the score at which the ladder clears the "
             "floor. Under D-99 the SCORE_MAX rung is not a guard but THE STATED "
-            "CEILING: 2^(87/10) = 415.9 TON, which is owner answer 9's 420 TON "
+            "CEILING: 2^(87/10) = 415.9 GRAM, which is owner answer 9's 420 GRAM "
             "cap expressed as a clamp on the score rather than as a second rule. "
             "`declared_band_at_score_max_ton` is that ceiling with the FRAC "
             "table's rounding allowance, and it is what "
-            "FuzzInvariants.spec.ts's `ladder(87) <= 420.5 TON` asserts."
+            "FuzzInvariants.spec.ts's `ladder(87) <= 420.5 GRAM` asserts."
         ),
     }
 
@@ -508,7 +508,7 @@ def npv_ladder(*, horizon: int, mints_per_year: float, exponent: float = 0.5,
         "_binding_rule": (
             "1.5 * NPV(p) > max(LOT_FLOOR, MINT_PRICE * 2^(D(p)/SCORE_HALVING)), "
             "evaluated per prime. D-99 deletes PRIME_P0_MIN, so the old flat "
-            "threshold_ton = PRIME_P0_MIN / PRIME_P0_MULTIPLE (10/3 TON) is "
+            "threshold_ton = PRIME_P0_MIN / PRIME_P0_MULTIPLE (10/3 GRAM) is "
             "gone with it."
         ),
         "horizon": horizon,
@@ -642,8 +642,8 @@ def trophy_auction_block(*, mint_price_ton: float, res_gas_ton: float,
             ),
             "SCORE_MAX": (
                 "87 (D-99, owner-declared). The ONE clamp on the summed "
-                "categories, and it IS owner answer 9's 420 TON ceiling: the "
-                "ladder tops out at 2^(87/10) = 415.9 TON."
+                "categories, and it IS owner answer 9's 420 GRAM ceiling: the "
+                "ladder tops out at 2^(87/10) = 415.9 GRAM."
             ),
             "PRIME_P0_MULTIPLE": "1.5, inherited verbatim from CONCEPT.md SS6.",
             "AUCTION_WINDOW_SECONDS": (
@@ -673,7 +673,7 @@ def trophy_auction_block(*, mint_price_ton: float, res_gas_ton: float,
                 "round(2^(j/SCORE_HALVING) * 2^16). One shift, one lookup, one "
                 "multiply, one floor-divide -- exact integer arithmetic on TVM. "
                 "It runs on the AUCTION contract, not on reserve(), so it does "
-                "not touch SS4.4 point 1's 0.0002 TON scoring headroom."
+                "not touch SS4.4 point 1's 0.0002 GRAM scoring headroom."
             ),
             "frac_table": FRAC,
             "frac_scale_bits": FRAC_SCALE_BITS,
@@ -755,7 +755,7 @@ def trophy_auction_block(*, mint_price_ton: float, res_gas_ton: float,
                 "Beyond the dictionary the contract falls back to the ladder and "
                 "quotes exactly the same price it would have quoted with the "
                 "entry present. PRIME_P0_MIN, the old third branch and the old "
-                "flat 10/3 TON threshold, is deleted."
+                "flat 10/3 GRAM threshold, is deleted."
             ),
             "npv_ton_by_prime": {str(p): npv[p] for p in sorted(npv)},
         },
@@ -778,13 +778,13 @@ def trophy_auction_block(*, mint_price_ton: float, res_gas_ton: float,
             "D(n) = 0 case the plan wanted to illustrate: primality alone scores "
             "15, so it prices off the ladder and PRIME_P0_MIN -- the floor that "
             "case existed to motivate -- is deleted.",
-            "SS3.1's prime table gives D(1009) = 68 and a 111 TON ladder rung. "
+            "SS3.1's prime table gives D(1009) = 68 and a 111 GRAM ladder rung. "
             "That table was written against the pre-D-99 score and neither "
             "number survives it: the plan is superseded by D-99 SS1.4, whose "
             "worked examples are regenerated in the `score` block rather than "
             "transcribed anywhere.",
-            "SS3.1's composite table gives 340 TON at D = 84. The shipped map "
-            "gives 337.789 TON there (2^8.4 = 337.794); 340 is a rounding, not a "
+            "SS3.1's composite table gives 340 GRAM at D = 84. The shipped map "
+            "gives 337.789 GRAM there (2^8.4 = 337.794); 340 is a rounding, not a "
             "different rule.",
             "SS3.1 calls 84 the 'widest realised score' while CONCEPT.md SS4.4 "
             "gives 88 as the widest ACHIEVABLE score. Both are right and they are "
@@ -802,7 +802,7 @@ def trophy_auction_block(*, mint_price_ton: float, res_gas_ton: float,
         ],
         "money": {
             "_rule": (
-                "C = 1 TON mint leg (splits per SS4.1 IN THE CLOSE, D-90) + "
+                "C = 1 GRAM mint leg (splits per SS4.1 IN THE CLOSE, D-90) + "
                 f"RES_GAS {res_gas_ton} (carved BEFORE the premium, funds that "
                 "settlement) + premium (C - 1 - RES_GAS). RES_PRIORITY_BASE does "
                 "not exist (D-30/D-37): it was the price of a place in a book "
@@ -844,7 +844,7 @@ def trophy_auction_block(*, mint_price_ton: float, res_gas_ton: float,
         ),
         "derivation": (
             "TROPHY_AUCTION_PLAN.md SS3.1. The auction assigns the RIGHT TO BUY, "
-            "not the number: the mint is 1 TON at the head for anyone who waits, "
+            "not the number: the mint is 1 GRAM at the head for anyone who waits, "
             "and the auction prices the position ahead of the head. Every price "
             "here is therefore bounded above by the value of certainty plus the "
             "value of timing, never by the value of the number, and the bypass is "

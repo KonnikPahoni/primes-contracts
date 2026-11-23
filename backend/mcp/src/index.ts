@@ -12,7 +12,7 @@
  *
  * **A write tool refuses without `confirm: true`**, and says what it will spend first.
  * That is not a protocol requirement; it is the one guard worth having between a model's
- * plan and a real 1 TON, and it makes the dry run the default.
+ * plan and a real 1 GRAM, and it makes the dry run the default.
  */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -119,7 +119,7 @@ read("primes_head", "The next integer to be minted (the head). Backed by the led
 read("primes_floor", "The internal floor price p_f = T / S, as its raw numerator and denominator. It is strictly increasing on every mint (CONCEPT.md §5).", {},
   async () => await agent.read.floor());
 
-read("primes_route", "How a given number can be acquired right now, read live off the chain: at the head for 1 TON, as a lot ahead of the head, already claimed by a lot, or already minted.",
+read("primes_route", "How a given number can be acquired right now, read live off the chain: at the head for 1 GRAM, as a lot ahead of the head, already claimed by a lot, or already minted.",
   { n: decimal().describe("The integer, as a decimal string.") },
   async (a) => await agent.routeFor(BigInt(a.n)));
 
@@ -139,7 +139,7 @@ read("primes_number", "Who owns one number and what tribute stands to it, read o
   { n: decimal() },
   async (a) => await agent.read.number(BigInt(a.n)));
 
-read("primes_name", "Who may name one number — its CURRENT OWNER (CONCEPT.md §4.7.1, D-212) — what name stands on it, and the TON the next naming costs (nameFee first, renameFee after). A primorial also carries its era-trophy engraving.",
+read("primes_name", "Who may name one number — its CURRENT OWNER (CONCEPT.md §4.7.1, D-212) — what name stands on it, and the GRAM the next naming costs (nameFee first, renameFee after). A primorial also carries its era-trophy engraving.",
   { n: decimal() },
   async (a) => await agent.read.name(BigInt(a.n)));
 
@@ -156,7 +156,7 @@ read("primes_contracts", "The deployment manifest: which address holds which CON
  * of the five below answers one in a single call.
  */
 
-read("primes_wallet", "Everything one wallet holds and has earned: its TON balance, its PRIMES balance and both CONCEPT.md §4.7 rank ladders. Defaults to this server's own wallet when no address is given.",
+read("primes_wallet", "Everything one wallet holds and has earned: its GRAM balance, its PRIMES balance and both CONCEPT.md §4.7 rank ladders. Defaults to this server's own wallet when no address is given.",
   { address: z.string().optional().describe("Defaults to the configured signing wallet.") },
   async (a) => {
     const who = a.address ?? (await agent.address()).toString();
@@ -171,7 +171,7 @@ read("primes_wallet", "Everything one wallet holds and has earned: its TON balan
     return { address: who, balanceNanoton: balance, seqno, primes, ranks };
   });
 
-read("primes_ratchet", "Whether flush() is worth calling right now: the TON pending, the TON already swapped, the floor it must fill at or below, the venue pool's CURRENT price, and when the last attempt ran and what it did. `outcome: bounced` is a venue refusing, which looks identical to an idle one without this field.", {},
+read("primes_ratchet", "Whether flush() is worth calling right now: the GRAM pending, the GRAM already swapped, the floor it must fill at or below, the venue pool's CURRENT price, and when the last attempt ran and what it did. `outcome: bounced` is a venue refusing, which looks identical to an idle one without this field.", {},
   async () => {
     // `market` is the term this tool was missing. The floor guard (§4.3.1) fills only at or
     // below `p_f`, so "is flush worth calling" is a comparison between the pool price and the
@@ -205,7 +205,7 @@ read("primes_audit", "The two auditor surfaces in one call: supply (S, and what 
 
 // ---------------------------------------------------------------- writes
 
-write("primes_mint", "Mint the number at the head for a flat 1 TON. The factorization proof is computed for you; the head is re-read from the chain first and the call refuses if it has moved.",
+write("primes_mint", "Mint the number at the head for a flat 1 GRAM. The factorization proof is computed for you; the head is re-read from the chain first and the call refuses if it has moved.",
   { n: decimal().optional().describe("Defaults to the current head."), beneficiary: z.string().optional().describe("Gift the number to this address (CONCEPT.md §4.5)."), referralKey: z.number().int().optional() },
   async (a) => {
     const { n } = a;
@@ -217,7 +217,7 @@ write("primes_mint", "Mint the number at the head for a flat 1 TON. The factoriz
     // credited — the two fields injected third-party text would most want to set.
     const key = a.referralKey ?? configuredReferralKey ?? 0;
     const owner = a.beneficiary ? `GIFTED to ${a.beneficiary}, not this wallet` : "to this wallet";
-    return `mint ${target} for 1 TON plus a fee margin, ${owner}, referral key ${key === 0 ? "none" : key}`;
+    return `mint ${target} for 1 GRAM plus a fee margin, ${owner}, referral key ${key === 0 ? "none" : key}`;
   },
   async (a) => {
     const { n, beneficiary, referralKey } = a;
@@ -259,7 +259,7 @@ write("primes_open_head_lot", "Open a prime's descending lot. Gas only: the buye
   async (a) => `open a descending lot on ${a.n} (gas only)`,
   async (a) => await agent.openHeadLot(BigInt(a.n)));
 
-write("primes_flush", "Call flush() on the ratchet. Permissionless and gas-only: TON has no scheduler, so pending TON becomes a bid at or below the floor only when somebody sends this. Refused when nothing is pending, and inside the 24h cooldown.",
+write("primes_flush", "Call flush() on the ratchet. Permissionless and gas-only: TON has no scheduler, so pending GRAM becomes a bid at or below the floor only when somebody sends this. Refused when nothing is pending, and inside the 24h cooldown.",
   {},
   async () => {
     const chain = await agent.chain();
@@ -295,7 +295,7 @@ write("primes_claim_tribute", "Claim the tribute owed to one number you own — 
   },
   async (a) => await agent.claimTribute(BigInt(a.n)));
 
-write("primes_name_number", "Name a number this wallet OWNS, for TON (CONCEPT.md §4.7.1, D-212). The first naming costs the collection's nameFee, every later one renameFee; the fee goes to the ratchet floor. Owner and fee are read live; a refusal is refunded whole.",
+write("primes_name_number", "Name a number this wallet OWNS, for GRAM (CONCEPT.md §4.7.1, D-212). The first naming costs the collection's nameFee, every later one renameFee; the fee goes to the ratchet floor. Owner and fee are read live; a refusal is refunded whole.",
   { n: decimal(), text: z.string().max(48) },
   async (a) => {
     const { n, text } = a;
@@ -315,7 +315,7 @@ write("primes_name_number", "Name a number this wallet OWNS, for TON (CONCEPT.md
     return await agent.name({ n: BigInt(n), text });
   });
 
-write("primes_annotate", "Engrave an era trophy — one of §7's eight primorials (CONCEPT.md §4.7.1, D-212), by the trophy's holder. The first engraving is free (gas only); every later one costs the registrar's trophy rename fee in TON. The number's own name is primes_name_number.",
+write("primes_annotate", "Engrave an era trophy — one of §7's eight primorials (CONCEPT.md §4.7.1, D-212), by the trophy's holder. The first engraving is free (gas only); every later one costs the registrar's trophy rename fee in GRAM. The number's own name is primes_name_number.",
   { n: decimal(), text: z.string().max(48) },
   async (a) => {
     const { n, text } = a;

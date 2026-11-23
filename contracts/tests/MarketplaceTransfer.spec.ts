@@ -22,7 +22,7 @@ import { compileAll, deployStack, factorize, Stack } from './helpers/stack';
  *   3. `excesses#d53276db` returns the change to `response_destination`.
  */
 describe('TEP-62 marketplace transfer', () => {
-    const N = 4n; // the first composite, minted at the head for 1 TON
+    const N = 4n; // the first composite, minted at the head for 1 GRAM
 
     let s: Stack;
     let item: ReturnType<Stack['blockchain']['openContract']> extends never ? never : any;

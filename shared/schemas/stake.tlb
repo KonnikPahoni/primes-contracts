@@ -12,7 +12,7 @@
 ;; governed treasury's PRIMES, sent once per epoch by its permissionless
 ;; `distribute()` (treasury.tlb) and STREAMED over the following epoch. Earning
 ;; stops at `matures_at`; principal returns only at or after it (ST-3). A SUPPLY
-;; LOCK, not a rebate: nothing here touches `k`, `S`, `T`, the split or any TON.
+;; LOCK, not a rebate: nothing here touches `k`, `S`, `T`, the split or any GRAM.
 ;;
 ;; WHY TWO CONTRACTS. Config 43's 65,536-cell account ceiling: a positions
 ;; dictionary on the master dies around 20,000 positions, so each wallet's
@@ -29,7 +29,7 @@
 ;;   - expire: ANY sender. It moves no PRIMES and names no destination.
 ;;   - set_wallet: sender MUST equal the genesis script; one-shot.
 ;;
-;; NO ADMIN, NO OWNER FIELD, NO TON LIABILITY. PRIMES leave the master by three
+;; NO ADMIN, NO OWNER FIELD, NO GRAM LIABILITY. PRIMES leave the master by three
 ;; routes and no fourth: a position's reward to its owner, a matured position's
 ;; principal to its owner, a refund of an unrecognised deposit to its sender.
 ;;
@@ -157,10 +157,10 @@ transfer_notification#7362d09c
 ;; A BUDGET (sender = treasury, SBGT): accrue, then stream_remaining += amount,
 ;;   stream_rate = stream_remaining / interval, stream_end = now + interval
 ;;   (interval = `staking.epoch_seconds` / clock_divisor). No gas floor.
-;; A STAKE (STKL + tier <= 3, sender != treasury): needs forward TON >=
-;;   STAKE_MIN_FORWARD = 0.15 TON (103 otherwise); accrue, weight in, then
+;; A STAKE (STKL + tier <= 3, sender != treasury): needs forward GRAM >=
+;;   STAKE_MIN_FORWARD = 0.15 GRAM (103 otherwise); accrue, weight in, then
 ;;   `stake_credit` to the child (deploying it).
-;; ANYTHING ELSE: refunded to `sender` (same 0.15 TON floor). Nothing recorded.
+;; ANYTHING ELSE: refunded to `sender` (same 0.15 GRAM floor). Nothing recorded.
 ;; Throws 1100 (stake_wallet_unset), 1102 (stake_wrong_wallet), 1103 (stake_overflow).
 
 ;; Settle one position. From the owner's OWN child only.
@@ -177,7 +177,7 @@ transfer_notification#7362d09c
 ;; now >= matures_at and not expired, paid = full · (matures_at − last_settle_time)
 ;; / (now − last_settle_time) (0 if last_settle_time >= matures_at), the excess
 ;; returns to stream_remaining and the weight leaves total_weight; else paid = full.
-;; Value floor: 0.15 TON (a transfer + the reply), 0.05 TON for mode 3.
+;; Value floor: 0.15 GRAM (a transfer + the reply), 0.05 GRAM for mode 3.
 ;; 32+64+267+32+124+8+40+256+40+8+124+8+8 = 1011 bits.
 settle#91000002
     query_id:uint64
@@ -239,9 +239,9 @@ claim#91000021       query_id:uint64 position_id:uint32            = InternalMsg
 relock#91000022      query_id:uint64 position_id:uint32 tier:uint8 = InternalMsgBody;
 withdraw#91000023    query_id:uint64 position_id:uint32            = InternalMsgBody;
 expire#91000024      query_id:uint64 position_id:uint32            = InternalMsgBody;
-;; claim / relock / withdraw: owner only (1104), forward >= 0.20 TON
+;; claim / relock / withdraw: owner only (1104), forward >= 0.20 GRAM
 ;;   (POSITION_MIN_FORWARD = 0.05 child + 0.15 master; 103).
-;; expire: ANYONE, forward >= 0.10 TON (EXPIRE_MIN_FORWARD); an already-expired
+;; expire: ANYONE, forward >= 0.10 GRAM (EXPIRE_MIN_FORWARD); an already-expired
 ;;   position RETURNS rather than throwing (a keeper may double-send).
 ;; Common refusals: 1105 (stake_position_missing), 1108 (stake_in_flight),
 ;;   1106 (stake_term_running: withdraw/expire before matures_at),
@@ -281,7 +281,7 @@ stake_withdraw_note$_
 ;;   getTierTerms() -> 4 terms, divided by clock_divisor
 ;;   getTierWeights() -> (5, 6, 7, 8)
 ;;   getStakePositionAddress(owner) -> address
-;;   getStakeMinForward() -> STAKE_MIN_FORWARD (0.15 TON)
+;;   getStakeMinForward() -> STAKE_MIN_FORWARD (0.15 GRAM)
 ;;   getStakeConfig() -> (jetton_master_addr, jetton_wallet_addr, treasury_addr,
 ;;                        wallet_set, clock_divisor, interval)
 ;; child:

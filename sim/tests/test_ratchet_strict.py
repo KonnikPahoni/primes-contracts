@@ -7,7 +7,7 @@ every single one:
 
   * §5 theorem: `p_f' > p_f` STRICTLY on every mint, with `k` pinned at the `K_CEIL`
     clamp (every uplift saturated), all three §4.1 invite transfers on every mint (β at
-    its 0.25 worst case on a referred composite), and the D-156 taper both slack and
+    its 0.247 worst case on a referred composite, D-215), and the D-156 taper both slack and
     binding. The slack case is the hard one: the taper only ever shrinks `k`.
   * D-156 cap with `s_max = S0 * 1.001`: the taper drives every composite `k` below
     `k_min` (the ordering that stops the floor defeating the cap), `S < s_max` after every
@@ -86,7 +86,7 @@ def test_floor_rises_strictly_on_every_mint(taper, primes_skip_head):
     comps = [ev for ev in evs if ev.kind == "composite"]
     taper_at = lambda ev: econ.supply_taper(ev.S_after - ev.rebate_primes, e.p.s_max)
     assert any(ev.k == pytest.approx(K_CEIL * taper_at(ev), rel=1e-12) for ev in comps)
-    assert min(ev.beta for ev in comps) == pytest.approx(0.25, abs=1e-9), "β worst case not reached"
+    assert min(ev.beta for ev in comps) == pytest.approx(0.247, abs=1e-9), "β worst case not reached"
     if taper == "binding":
         assert max(taper_at(ev) for ev in comps) < 0.6
 

@@ -29,7 +29,7 @@
 //                   reserved composite rather than ever collide with one, so a
 //                   lot cannot stall the sequential line. `PrimesMarket.spec.ts`
 //                   proves the deleted gates stay gone. The remaining half —
-//                   that anyone can buy a permanent storage entry for ~0.02 TON
+//                   that anyone can buy a permanent storage entry for ~0.02 GRAM
 //                   of gas — is escalated as **D-50** and is a storage-growth
 //                   question, not a liveness one.
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';

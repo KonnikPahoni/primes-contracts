@@ -17,7 +17,7 @@
  *      return (); }` — the "just accept coins on deploy" arm);
  *   2. the SELLER sends a TEP-62 `transfer` of the number into it, and its `ownership_assigned`
  *      is what records who the seller is;
- *   3. the BUYER sends `op = 2` with at least `full_price + 0.1 TON`.
+ *   3. the BUYER sends `op = 2` with at least `full_price + 0.1 GRAM`.
  *
  * What it does NOT prove is that the sale appears ON getgems.io. Their indexer only follows sale
  * contracts whose `marketplace_address` is their own marketplace contract, and that contract
@@ -74,7 +74,7 @@ const OP_TRANSFER = 0x5fcc3d14;
 
 const N = BigInt(process.env.PRIMES_RESALE_N ?? '899809363');
 const PRICE = toNano(process.env.PRIMES_RESALE_PRICE_TON ?? '2');
-/** The buyer attaches `full_price + this`; the contract's own floor is `min_gas_amount` 0.1 TON
+/** The buyer attaches `full_price + this`; the contract's own floor is `min_gas_amount` 0.1 GRAM
  *  (`throw_unless(450, msg_value >= full_price + min_gas_amount())`). Lower it only when the
  *  buyer's float is the binding constraint, which on a swept testnet set it often is. */
 const BUY_MARGIN = toNano(process.env.PRIMES_RESALE_BUY_MARGIN_TON ?? '0.15');
@@ -228,7 +228,7 @@ async function main() {
     console.log(`marketplace  ${market.wallet.address.toString()} (us — see the header)`);
     console.log(`sale         ${saleAddress.toString()}  code hash ${code.hash().toString('hex').slice(0, 16)}`);
     console.log(
-        `price ${fromNano(PRICE)} TON = seller ${fromNano(PRICE - fee - royalty)} + fee ${fromNano(fee)} ` +
+        `price ${fromNano(PRICE)} GRAM = seller ${fromNano(PRICE - fee - royalty)} + fee ${fromNano(fee)} ` +
             `+ royalty ${fromNano(royalty)} (${rp.numerator}/${rp.denominator} to the collection)\n`
     );
 
@@ -311,7 +311,7 @@ async function main() {
             `now a contract with no claim path.`
     );
 
-    // 3. The purchase. `throw_unless(450, msg_value >= full_price + min_gas_amount())` — 0.1 TON.
+    // 3. The purchase. `throw_unless(450, msg_value >= full_price + min_gas_amount())` — 0.1 GRAM.
     console.log('\n[3] buyer buys');
     await retry(
         () =>
@@ -341,7 +341,7 @@ async function main() {
     console.log(`
 --- what moved ---`);
     console.log(`forwards  ${before.split.forwards} -> ${after.split.forwards}`);
-    console.log(`ratchet leg +${fromNano(dRatchet)} TON      operator leg +${fromNano(dOperator)} TON`);
+    console.log(`ratchet leg +${fromNano(dRatchet)} GRAM      operator leg +${fromNano(dOperator)} GRAM`);
     if (minted) {
         console.log(
             `head      ${before.head} -> ${after.head}  MOVED — a third party MINTED during this window. ` +

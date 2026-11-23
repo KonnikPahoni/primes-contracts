@@ -29,7 +29,7 @@ async function main() {
     console.log('head        ', await retry(() => ledger.getHead(), 'getHead'));
     console.log('T           ', T.toString());
     console.log('S           ', S.toString());
-    console.log('p_f         ', (Number(T) / Number(S)).toExponential(4), 'TON/PRIMES');
+    console.log('p_f         ', (Number(T) / Number(S)).toExponential(4), 'GRAM/PRIMES');
     console.log('pending     ', (await retry(() => ratchet.getPending(), 'getPending')).toString());
     console.log('floorCache  ', await retry(() => ratchet.getFloorCache(), 'getFloorCache'));
     console.log('flushStatus ', await retry(() => ratchet.getFlushStatus(), 'getFlushStatus'));

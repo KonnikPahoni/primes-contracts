@@ -285,7 +285,7 @@ describe('TON PRIMES — D-26 seedT and D-36 the era trophy', () => {
         it('records the genesis seed in its own field, readable by getSeedT', async () => {
             expect(await ledger.getSeedT()).toBe(SEED_T);
             // The seed is credited into T as well — the field is a RECORD of the
-            // same TON, not a second pool. `ignite` has already run, so T has
+            // same GRAM, not a second pool. `ignite` has already run, so T has
             // moved past the seed by Unity's injection; the seed itself has not.
             expect(await ledger.getFloorNum()).toBeGreaterThanOrEqual(SEED_T);
         });
@@ -355,7 +355,7 @@ describe('TON PRIMES — D-26 seedT and D-36 the era trophy', () => {
 
             // `minterState` has seen this address now, so the second gift is a
             // present and not a recruit. A recruit costs a FRESH address plus a
-            // full 1 TON mint, which is the whole of the guard. (Past EDGE_HOLD:
+            // full 1 GRAM mint, which is the whole of the guard. (Past EDGE_HOLD:
             // inside it the card would refuse the gift outright.)
             blockchain.now! += 300;
             await mintHead(recruiterA, gifteeA1);

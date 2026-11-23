@@ -204,7 +204,7 @@ def main() -> None:
     md.append("\n`*` = curated: the complete set known to mathematics, not a sweep.\n")
 
     md.append("\n## Top 40 by reserve price\n")
-    md.append("| p | reserve (TON) | NPV | bits | vanity | tags |")
+    md.append("| p | reserve (GRAM) | NPV | bits | vanity | tags |")
     md.append("|---:|---:|---:|---:|---:|---|")
     for r in by_price[:40]:
         md.append(f"| {r['p']} | {r['reserve_ton']:,.2f} | {r['npv_ton']:,.2f} | "
@@ -212,20 +212,20 @@ def main() -> None:
                   f"{', '.join(r['tags'][:6])} |")
 
     md.append("\n## Rarest 25 primes in the table\n")
-    md.append("| p | bits | reserve (TON) | tags |")
+    md.append("| p | bits | reserve (GRAM) | tags |")
     md.append("|---:|---:|---:|---|")
     for r in by_rarity[:25]:
         md.append(f"| {r['p']} | {r['rarity_bits']:.1f} | {r['reserve_ton']:,.2f} | "
                   f"{', '.join(r['tags'][:8])} |")
 
     md.append(f"\n## Distribution\n")
-    md.append(f"- total reserve value of the whole table: **{total_reserve:,.0f} TON**")
-    md.append(f"- reserve percentiles (TON): " + ", ".join(
+    md.append(f"- total reserve value of the whole table: **{total_reserve:,.0f} GRAM**")
+    md.append(f"- reserve percentiles (GRAM): " + ", ".join(
         f"{k}={v:,.2f}" for k, v in doc['aggregates']['percentiles_ton'].items()))
-    md.append(f"- below 2 TON: {doc['aggregates']['below_2_ton']:,} primes "
+    md.append(f"- below 2 GRAM: {doc['aggregates']['below_2_ton']:,} primes "
               f"({doc['aggregates']['below_2_ton'] / len(rows):.1%})")
-    md.append(f"- above 10 TON: {doc['aggregates']['above_10_ton']:,}")
-    md.append(f"- above 100 TON: {doc['aggregates']['above_100_ton']:,}")
+    md.append(f"- above 10 GRAM: {doc['aggregates']['above_10_ton']:,}")
+    md.append(f"- above 100 GRAM: {doc['aggregates']['above_100_ton']:,}")
 
     md_path = os.path.join(SHARED, f"{args.out_prefix}_summary.md")
     with open(md_path, "w", encoding="utf-8") as fh:

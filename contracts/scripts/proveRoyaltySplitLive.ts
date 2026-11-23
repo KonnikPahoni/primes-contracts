@@ -30,10 +30,10 @@
  *   5. re-reads `getRoyaltySplit()` and `T`, and asserts BOTH legs moved — `toRatchet`
  *      and `toOperator` up, `forwards` up by one, and `T` up by exactly the ratchet leg.
  *
- * The collection reserves `ROYALTY_STORAGE_FLOOR` (0.5 TON, its genesis endowment) and
- * splits the BALANCE ABOVE it less `ROYALTY_FORWARD_GAS` (0.02 TON), so the payment has
- * to clear 0.02 TON of delivery to forward anything at all. 1 TON is the default and
- * leaves ~0.49 TON per leg.
+ * The collection reserves `ROYALTY_STORAGE_FLOOR` (0.5 GRAM, its genesis endowment) and
+ * splits the BALANCE ABOVE it less `ROYALTY_FORWARD_GAS` (0.02 GRAM), so the payment has
+ * to clear 0.02 GRAM of delivery to forward anything at all. 1 GRAM is the default and
+ * leaves ~0.49 GRAM per leg.
  *
  *   npx tsx contracts/scripts/proveRoyaltySplitLive.ts
  *   PRIMES_ROYALTY_TON=2 npx tsx contracts/scripts/proveRoyaltySplitLive.ts
@@ -164,7 +164,7 @@ async function main() {
     const royaltyTon = process.env.PRIMES_ROYALTY_TON ?? '1';
     const comment = `H16: TEP-66 secondary royalty, ${new Date().toISOString()}`;
     seqno = await retry(() => wallet.getSeqno(), 'seqno');
-    console.log(`\n--- royalty payment: ${royaltyTon} TON, body = text comment ---`);
+    console.log(`\n--- royalty payment: ${royaltyTon} GRAM, body = text comment ---`);
     console.log(`    "${comment}"`);
     await wallet.sendTransfer({
         seqno,

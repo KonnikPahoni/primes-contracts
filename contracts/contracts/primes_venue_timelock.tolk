@@ -249,7 +249,7 @@ struct (0xb0000010) UpdateVenue {
 
 type AllowedMessage = Queue | Cancel | Execute | RetryUpdateVenue | SetRatchet | ConfirmVenue;
 
-const UPDATE_VENUE_GAS: coins = 30000000; // 0.03 TON, gas for the ratchet's UpdateVenue handler
+const UPDATE_VENUE_GAS: coins = 30000000; // 0.03 GRAM, gas for the ratchet's UpdateVenue handler
 
 // `value`/`mode`: `execute` pays the hop from this balance (one-shot, `fired`);
 // `retry_update_venue` is repeatable by anyone, so it carries the caller's own

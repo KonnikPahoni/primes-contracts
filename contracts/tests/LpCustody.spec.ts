@@ -29,6 +29,7 @@ import {
     depositPayload,
 } from '../wrappers/PrimesTreasury';
 import { PrimesLpPosition } from '../wrappers/PrimesLpPosition';
+import { FOREVER_POSITION_ID, FOREVER_VOTE_MULTIPLIER } from '../../shared/opcodes';
 import params from '../../shared/params.json';
 import { internal as sandboxInternal } from '@ton/sandbox';
 import { buildPositionWithdrawMessage } from '../../shared/messages';
@@ -60,6 +61,7 @@ function jettonSentTo(result: { transactions: any[] }, wallet: Address): JettonO
 }
 
 const mult = (tier: number) => BigInt(TREASURY_TIERS[tier].voteMultiplier);
+const FOREVER = BigInt(FOREVER_VOTE_MULTIPLIER);
 
 describe('LP custody (§5.5.3, D-100 points 4/9, D-147, D-168)', () => {
     let blockchain: Blockchain;
@@ -411,8 +413,113 @@ describe('LP custody (§5.5.3, D-100 points 4/9, D-147, D-168)', () => {
         expect(jettonSentTo(r, primesWallet.address)).toHaveLength(0);
 
         expect((await treasury.getTreasuryBalances()).lpHeld).toEqual(0n);
-        expect((await treasury.getGov()).eligibleWeight).toEqual(0n);
+        // D-214: the row is gone, but the LP votes on as the forever total.
         expect((await child.getPositions()).positionCount).toEqual(0);
+        expect(await child.getForever()).toEqual({
+            amount: toNano('100'),
+            since: 1800000100 + 86400,
+            multiplier: FOREVER_VOTE_MULTIPLIER,
+        });
+        expect(await treasury.getForeverVoteMultiplier()).toEqual(FOREVER_VOTE_MULTIPLIER);
+        expect((await treasury.getGov()).eligibleWeight).toEqual(toNano('100') * FOREVER);
+        expect(await child.getVoteWeight()).toEqual(toNano('100') * FOREVER);
+    });
+
+    it('D-214: many sinks are ONE total — the account does not grow, and each credit restamps since', async () => {
+        const child = childOf(alice.address);
+        for (let i = 0; i < 5; i++) {
+            blockchain.now = 1800000100 + i * 1000;
+            await deposit(alice, 1n, 0); // dust, the spam an attacker would send
+            const r = await child.sendToSink(alice.getSender(), { positionId: i, value: FORWARD });
+            expect(r.transactions).not.toHaveTransaction({ aborted: true });
+        }
+        const f = await child.getForever();
+        expect(f.amount).toEqual(5n);
+        expect(f.since).toEqual(1800000100 + 4000);
+        expect((await child.getPositions()).positionCount).toEqual(0);
+        // The positions map is empty again: five sinks left one coins field behind.
+        const state = (await blockchain.getContract(child.address)).accountState;
+        if (state?.type !== 'active' || !state.state.data) throw new Error('child not active');
+        // No refs: the positions and vote dictionaries are both empty again.
+        expect(state.state.data.refs).toHaveLength(0);
+        expect((await treasury.getGov()).eligibleWeight).toEqual(5n * FOREVER);
+    });
+
+    it('D-214: the forever total proposes and votes under FOREVER_POSITION_ID, and cannot be moved', async () => {
+        blockchain.now = 1800000100;
+        await deposit(alice, toNano('100'), 3);
+        const child = childOf(alice.address);
+        await child.sendToSink(alice.getSender(), { positionId: 0, value: FORWARD });
+
+        // Not a position: no withdraw, relock, sink or expire can name it.
+        for (const send of [
+            () => child.sendWithdraw(alice.getSender(), { positionId: FOREVER_POSITION_ID, value: FORWARD }),
+            () => child.sendRelock(alice.getSender(), { positionId: FOREVER_POSITION_ID, tier: 3, value: FORWARD }),
+            () => child.sendToSink(alice.getSender(), { positionId: FOREVER_POSITION_ID, value: FORWARD }),
+        ]) {
+            const r = await send();
+            expect(r.transactions).toHaveTransaction({ to: child.address, exitCode: 1165 });
+        }
+
+        blockchain.now = 1800000100 + 10;
+        const p = await child.sendPropose(alice.getSender(), {
+            asset: 0,
+            amount: 1n,
+            dest: bob.address,
+            positionId: FOREVER_POSITION_ID,
+            value: FORWARD,
+        });
+        expect(p.transactions).not.toHaveTransaction({ aborted: true });
+        const prop = await treasury.getProposal(0);
+        expect(prop.proposer?.toString()).toEqual(alice.address.toString());
+
+        blockchain.now = prop.opens;
+        const v = await child.sendVote(alice.getSender(), {
+            seq: 0,
+            support: true,
+            positionId: FOREVER_POSITION_ID,
+            value: FORWARD,
+        });
+        expect(v.transactions).not.toHaveTransaction({ aborted: true });
+        expect((await treasury.getProposal(0)).yes).toEqual(toNano('100') * FOREVER);
+        expect(await child.getHasVoted(0, FOREVER_POSITION_ID)).toBe(true);
+
+        // A second vote from the same total is refused by the child's own record (1155).
+        const again = await child.sendVote(alice.getSender(), {
+            seq: 0,
+            support: true,
+            positionId: FOREVER_POSITION_ID,
+            value: FORWARD,
+        });
+        expect(again.transactions).toHaveTransaction({ to: child.address, exitCode: 1155 });
+    });
+
+    it('D-214: LP sunk after a proposal opened cannot vote yes on it — the credit restamps since', async () => {
+        blockchain.now = 1800000100;
+        await deposit(alice, toNano('100'), 3);
+        await deposit(bob, toNano('100'), 3);
+        const alices = childOf(alice.address);
+        const bobs = childOf(bob.address);
+        await alices.sendPropose(alice.getSender(), {
+            asset: 0,
+            amount: 1n,
+            dest: bob.address,
+            positionId: 0,
+            value: FORWARD,
+        });
+        const prop = await treasury.getProposal(0);
+        blockchain.now = prop.opens;
+        // Bob votes with the TERM, then sinks it and tries again as forever weight.
+        await bobs.sendVote(bob.getSender(), { seq: 0, support: true, positionId: 0, value: FORWARD });
+        await bobs.sendToSink(bob.getSender(), { positionId: 0, value: FORWARD });
+        const r = await bobs.sendVote(bob.getSender(), {
+            seq: 0,
+            support: true,
+            positionId: FOREVER_POSITION_ID,
+            value: FORWARD,
+        });
+        expect(r.transactions).toHaveTransaction({ to: treasury.address, exitCode: 1202 });
+        expect((await treasury.getProposal(0)).yes).toEqual(toNano('100') * mult(3));
     });
 
     it('publishes its own (owner, treasuryAddr) pair and the nominal forward, matching deploy config', async () => {
@@ -624,6 +731,11 @@ describe('LP custody (§5.5.3, D-100 points 4/9, D-147, D-168)', () => {
             expect((await dead.getTreasuryBalances()).lpHeld).toEqual(amount);
             expect((await child.getPosition(0)).amount).toEqual(amount);
             expect((await child.getPosition(0)).tier).toEqual(2);
+            // D-214: the LP never reached the sink, so no forever weight survives on
+            // EITHER side — the bounce is the one path that could mint votes from nothing.
+            expect((await child.getForever()).amount).toEqual(0n);
+            expect(await child.getVoteWeight()).toEqual(0n);
+            expect((await dead.getGov()).eligibleWeight).toEqual(0n);
         });
 
         it('a relock brings a bounce-restored position back into the electorate exactly once', async () => {

@@ -25,7 +25,7 @@
 //          nobody reaches in testing."
 //   MKT-3  For any record created by a lot settlement, resPriority == 0 and
 //          resPremium == 0, and lotPremiumTotal (router) and totalPremium
-//          (shard) never count the same TON.
+//          (shard) never count the same GRAM.
 //   MKT-4  DELETED with its subject: D-168 removed `set_stake_uplift` and the
 //          ledger's stake leg. The block below is the tripwire that it stays gone.
 //
@@ -60,7 +60,7 @@ import { FactorValue } from '../../shared/factors';
 
 const MINT_PRICE = toNano('1');
 // `PRIME_P0_MIN` is DELETED (DECISIONS.md D-99, PRICING_MODEL_PLAN.md §1.2). It
-// was a flat 5 TON floor under a prime's OPENING price, and it existed because
+// was a flat 5 GRAM floor under a prime's OPENING price, and it existed because
 // the tier model had nothing else to say about a prime the finite NPV table
 // misses. D-99's additive score prices every number from `n` alone, so the
 // opening price on the deep line is `MINT_PRICE · 2^(D(n)/10)` and no separate
@@ -80,7 +80,7 @@ const scoreBit = (key: (typeof SCORE_BITS)[number]['key']) =>
 const flagKeys = (flags: bigint) => SCORE_BITS.filter((b) => (flags >> BigInt(b.bit)) & 1n).map((b) => b.key);
 /**
  * D-99's ceiling, in money. `SCORE_MAX = 87` and the ladder is
- * `MINT_PRICE · 2^(D/10)`, so 2^8.7 = 416.6 TON is the most any number can ever
+ * `MINT_PRICE · 2^(D/10)`, so 2^8.7 = 416.6 GRAM is the most any number can ever
  * open at — the single clamp on the summed score IS the price ceiling, the same
  * one-clamp-over-the-sum discipline §5 gives `K_CEIL`. 420.5 is the stated
  * owner ceiling the clamp was chosen to sit under.
@@ -309,7 +309,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
     // payload was written once at `open_lot` and never touched again: an
     // ascending lot minted to whoever OPENED it, however many times they had
     // been outbid. Found on live testnet — `K` opened 123456792 at the floor,
-    // `C` outbid it and won at 1.2279 TON, and the close put the NFT in `K`'s
+    // `C` outbid it and won at 1.2279 GRAM, and the close put the NFT in `K`'s
     // hands. It breaks §4.4/D-90 ("winning MINTS the number") and §4.5 ("every
     // minted number has a real owner from the transaction that minted it") at
     // once, on the ONLY route to a number ahead of the head.
@@ -429,7 +429,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
     // STORAGE CEILING — config 43 caps an account at 65,536 cells. The lot
     // stores the factor entries `open_lot` CHECKED, never the caller's map:
     // a key lookup walks only its own path, so a branch past the first gap
-    // could carry thousands of unread cells, and eight such opens (~10 TON,
+    // could carry thousands of unread cells, and eight such opens (~10 GRAM,
     // refunded when outbid) used to brick every auction.
     // =====================================================================
     describe('storage ceiling · open_lot stores only what it verified', () => {
@@ -801,20 +801,20 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
         });
 
         // ---------------------------------------------------------------- //
-        // GAUNTLET C6 — originally §12's "no lane terminates above 1 TON",
+        // GAUNTLET C6 — originally §12's "no lane terminates above 1 GRAM",
         // with the §9.6 / D-47 special-prime parked price as the SINGLE named
         // exception. DECISIONS.md D-88 point 1 DELETED that invariant (MKT-1)
         // and the exception with it: every prime's lane now rests at
         // getPrimeFloor(n) = max(MINT_PRICE, p0(n)/3, NPV(n)/2) — D-99 §1.2
         // added the middle term — so a scored prime terminates well above
-        // 1 TON by design. See the `C6 (D-88)` test below, which is
+        // 1 GRAM by design. See the `C6 (D-88)` test below, which is
         // the one that pins the current rule across the lanes.
         //
         // These tests survive as the MINT_PRICE *lower bound* case: ORDINARY_PRIME
         // (541) is past the finite NPV table, so its resting price IS exactly
         // MINT_PRICE and the assertions below still say something true and
         // load-bearing — that the ramp LANDS on its floor and parks there
-        // forever. Do not read them as asserting a universal 1 TON terminus.
+        // forever. Do not read them as asserting a universal 1 GRAM terminus.
         // ---------------------------------------------------------------- //
 
         /**
@@ -916,7 +916,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             // MINT_PRICE, because `restingPriceOf` was `max(NPV/2, MINT_PRICE)`
             // and the table miss left only the clamp. D-99 adds an `open / 3`
             // term, so the 3x open-to-rest spread now holds for EVERY prime and
-            // 541 rests at a third of its own opening price instead of at 1 TON.
+            // 541 rests at a third of its own opening price instead of at 1 GRAM.
             // What survives unchanged, and is what this test is really about, is
             // the SHAPE: a real ramp, landing exactly on the floor, parked there
             // for ever. So the floor is read off `getPrimeFloor` rather than
@@ -982,7 +982,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
         it('C6: the floor is a STORED field now, so its value is a test obligation, not a structural one', async () => {
             // CONCEPT.md §4.4 USED to say the floor was "derived rather than
             // stored... precisely so that no field exists for anyone to set to
-            // something other than 1 TON". SS3/D-47 added `Lot.priceFloor` for
+            // something other than 1 GRAM". SS3/D-47 added `Lot.priceFloor` for
             // the special lane and `floorOf` returns it for all three descending
             // modes, so the "no field exists" half stopped being true; §4.4 now
             // reads "stored, but never settable" and names this test as what
@@ -1045,7 +1045,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
 
         it('C6.1: `priceFloor` is WRITE-ONCE — no update path can move a lot off its floor', async () => {
             // What replaced "no field exists for anyone to set to something other
-            // than 1 TON". SS3/D-47 made the floor a stored field, so the
+            // than 1 GRAM". SS3/D-47 made the floor a stored field, so the
             // structural claim is narrower now and this is its literal form: the
             // value is written at open, by contract code, from `n` alone, and
             // none of the three paths that later touch a lot can move it.
@@ -1062,7 +1062,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             const { decaySeconds } = await m.getPrimeDutchTerms();
             const t0 = blockchain.now!;
 
-            // 3 clamps at SCORE_MAX, so its floor is STRICTLY above 1 TON and
+            // 3 clamps at SCORE_MAX, so its floor is STRICTLY above 1 GRAM and
             // far above it. That is deliberate: a bug that reset `priceFloor`
             // to MINT_PRICE — or dropped it to a zero-initialised field and
             // fell back — is only visible on a lot whose floor differs from the
@@ -1121,11 +1121,11 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
         });
 
         it('C6 (D-88): every prime lane rests at getPrimeFloor(n), and PARKS there', async () => {
-            // D-88 point 1 REPLACES §12's "no lane terminates above 1 TON" and
+            // D-88 point 1 REPLACES §12's "no lane terminates above 1 GRAM" and
             // D-47's one narrow exception to it. What is asserted now is the
             // rule that took their place: a descending lot terminates at
             // `getPrimeFloor(n)`, which D-99 §1.2 widens to
-            // `max(MINT_PRICE, p0(n)/3, NPV(n)/2)` — at or above 1 TON, never
+            // `max(MINT_PRICE, p0(n)/3, NPV(n)/2)` — at or above 1 GRAM, never
             // below — and then STAYS there for as long as nobody buys it, with no
             // expiry (D-50's sweep is deleted).
             //
@@ -1220,7 +1220,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
          * came out at 3 termwise. But that argument only ever covered the ~930
          * primes the finite NPV ladder carries. Everywhere else the opening
          * price came from a clamp and the resting price collapsed to exactly
-         * 1 TON, so a prime quoted at 300 TON rested at 1 — which is not a
+         * 1 GRAM, so a prime quoted at 300 GRAM rested at 1 — which is not a
          * descent, it is a giveaway.
          *
          * PRICING_MODEL_PLAN.md §1.2 closes that: `restingPriceOf` is now
@@ -1231,7 +1231,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
          *
          * BOTH branches are asserted below, because they fail independently:
          * a regression that dropped `open / 3` would leave branch A (table hit)
-         * green and branch B (table miss) resting at 1 TON.
+         * green and branch B (table miss) resting at 1 GRAM.
          */
         it('D-99 §1.2: the open-to-rest spread is exactly 3x, whether or not NPV binds', async () => {
             // BRANCH A — the NPV table BINDS. `testMarketConfig` ships no table,
@@ -1240,8 +1240,8 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             // table can only ever exercise branch B and the old version of this
             // test was silently vacuous for exactly that reason.
             //
-            // 100 TON of NPV on 541 puts `1.5 x NPV = 150 TON` well above its
-            // ladder price (score 57, so `1 TON · 2^5.7` ≈ 52 TON), which is
+            // 100 GRAM of NPV on 541 puts `1.5 x NPV = 150 GRAM` well above its
+            // ladder price (score 57, so `1 GRAM · 2^5.7` ≈ 52 GRAM), which is
             // what makes NPV demonstrably the term that wins the max.
             const npvTable = Dictionary.empty(Dictionary.Keys.BigUint(64), Dictionary.Values.BigVarUint(4));
             npvTable.set(ORDINARY_PRIME, toNano('100'));
@@ -1271,7 +1271,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             // BRANCH B — the table MISSES, which is the common case on the deep
             // number line and was the broken one before D-99. The ladder sets
             // the opening price and `open / 3` sets the rest, so the spread is
-            // the same 3x and the resting price is nowhere near the 1 TON clamp.
+            // the same 3x and the resting price is nowhere near the 1 GRAM clamp.
             const m = await marketPastOrdinaryPrimes();
             for (const p of [3n, ORDINARY_PRIME, 547n, 557n, 577n]) {
                 expect({ p: p.toString(), npv: await m.getNpv(p) }).toEqual({ p: p.toString(), npv: 0n });
@@ -1383,7 +1383,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             // bid at is `getPrimeFloor(3)` — a third of 3's own opening price,
             // and 3 is a heavily scored number (Mersenne, twin, Sophie Germain,
             // Fibonacci, triangular... it CLAMPS at SCORE_MAX), so this is a
-            // large floor rather than 1 TON. The point of the test is unchanged
+            // large floor rather than 1 GRAM. The point of the test is unchanged
             // and is if anything sharper for it: a bid at the resting price must
             // be accepted however high that price is, or an unsold prime is
             // permanently unsellable.
@@ -1639,8 +1639,8 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
                 // ...and the opener is made whole, minus only their own gas.
                 expect(opened.transactions).toHaveTransaction({ from: market.address, to: buyer.address });
                 const afterBalance = await buyer.getBalance();
-                // A generous bound: lost nothing close to the bid itself (>1 TON
-                // of the ~1.06+0.5 TON attached came back), only gas.
+                // A generous bound: lost nothing close to the bid itself (>1 GRAM
+                // of the ~1.06+0.5 GRAM attached came back), only gas.
                 expect(afterBalance).toBeGreaterThan(beforeBalance - toNano('0.2'));
             });
 
@@ -2423,7 +2423,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             // LEN is continuous and has no bit at all (§8.3: a scale is not a
             // category), TZ_CAP bounds the one bit whose contribution is
             // per-zero, and SCORE_MAX is the single clamp on the SUM — the
-            // price ceiling in disguise, since 1 TON · 2^(87/10) ≈ 416 TON.
+            // price ceiling in disguise, since 1 GRAM · 2^(87/10) ≈ 416 GRAM.
             expect({
                 LEN_REF: weights.LEN_REF,
                 LEN_W: weights.LEN_W,
@@ -2432,11 +2432,11 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             }).toEqual(SCORE_TERMS);
         });
 
-        it('D-99: no number can open above the 420 TON ceiling the clamp encodes', async () => {
+        it('D-99: no number can open above the 420 GRAM ceiling the clamp encodes', async () => {
             // PRICING_MODEL_PLAN.md §1.3 / DECISIONS.md D-99: `SCORE_MAX = 87`
             // is not a tuning knob, it IS the price ceiling — the ladder is
             // `MINT_PRICE · 2^(D/10)`, so a clamped score prices at
-            // `2^8.7 ≈ 416.6 TON` and nothing on the number line can go higher.
+            // `2^8.7 ≈ 416.6 GRAM` and nothing on the number line can go higher.
             // There is no second ceiling anywhere, which is the same
             // one-clamp-over-the-sum discipline §5 gives `K_CEIL`, and this test
             // is what makes that claim checkable rather than asserted in a
@@ -2517,7 +2517,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
     // =====================================================================
     // GAUNTLET A3.2 — `RetryPremiumForward` (0xf2000012) had zero test
     // coverage despite being a live, permissionless, money-moving message
-    // (it recovers TON stranded here by a bounced `ClearingCleared`, and
+    // (it recovers GRAM stranded here by a bounced `ClearingCleared`, and
     // `genesisPipeline.ts` tells the operator to send it). A genuine bounce
     // is not deterministically reproducible in the sandbox — same reasoning
     // `RetryCredit.spec.ts` gives for `retry_credit` — so this reaches the
@@ -2615,7 +2615,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
                     marketCode
                 )
             );
-            // Deploy value must actually cover the stuck TON the retry re-sends —
+            // Deploy value must actually cover the stuck GRAM the retry re-sends —
             // a real bounce would have left it holding at least that much.
             await seededMarket.sendDeploy(seededDeployer.getSender(), toNano('5'));
 
@@ -2911,34 +2911,34 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
     // =====================================================================
     // GAUNTLET V8 (2026-09-09) — the market's own gas float, closed lot by
     // closed lot. `closeLot`'s comment block claims a composite close nets
-    // +0.005 TON (RES_GAS 0.06 carved off, SETTLE_GAS 0.025 + PREMIUM_HOP_GAS
+    // +0.005 GRAM (RES_GAS 0.06 carved off, SETTLE_GAS 0.025 + PREMIUM_HOP_GAS
     // 0.03 sent back out) while a prime close nets −0.06 (two PREMIUM_HOP_GAS
     // hops, 0.03 each, and no RES_GAS is ever carved off a prime sale because
     // `minPaymentOn`'s BUYNOW branch already prices RES_GAS INTO what the
     // buyer pays before `closeLot` ever runs — the two legs both leave, none
     // comes back). That accounting is real but partial: a COMPOSITE lot also
-    // pays `OPEN_RESERVE_GAS` (0.02 TON, `MarkOffHead` to the ledger) the
+    // pays `OPEN_RESERVE_GAS` (0.02 GRAM, `MarkOffHead` to the ledger) the
     // moment it opens, which the item's own +0.005 never nets against. A full
     // composite lifecycle is therefore -0.02 (open) + 0.005 (close) = -0.015
-    // TON, not a surplus — EVERY closed lot on EVERY lane drains this
+    // GRAM, not a surplus — EVERY closed lot on EVERY lane drains this
     // contract's own balance, and there is no lane, mix or volume of the two
     // that offsets the other. This block proves that arithmetic against a
     // live sandbox balance rather than the comment's claim, which is the
     // finding written up as `DECISIONS.md` D-113.
     // =====================================================================
-    describe('V8/V8b · the market no longer drains its own TON balance, lane by lane (D-113)', () => {
+    describe('V8/V8b · the market no longer drains its own GRAM balance, lane by lane (D-113)', () => {
         const OPEN_HEAD_VALUE = toNano('0.1'); // primes_market.tolk, = shared/messages.ts OPEN_HEAD_LOT_GAS_NANOTON
         // `CloseLot` and the BUYNOW `Bid` both carry NO `in.valueCoins` assert
         // at all (they run entirely off the contract's own, already-held
         // balance — the opening bid stays in storage as `highBid` until close
         // spends it). `winLot`'s and `acquirePrimeAhead`'s fixed
-        // `CLOSE_LOT_GAS` (0.3 TON) is therefore a caller-side gas MARGIN, not
+        // `CLOSE_LOT_GAS` (0.3 GRAM) is therefore a caller-side gas MARGIN, not
         // a contract-required fee — and margin nobody asked back is never
         // refunded, so it becomes float that hides the real per-lot deficit.
         // These tests fund every write with the smallest value that still
         // clears the contract's own asserts, so the balance delta they
         // measure is the deficit itself, not a test-fixture subsidy.
-        const DUST = 1000000n; // 0.001 TON — enough for the tx's own forward fee, no more
+        const DUST = 1000000n; // 0.001 GRAM — enough for the tx's own forward fee, no more
 
         async function closedComposite(n: bigint, factors: { prime: bigint; exponent: number; s: bigint }[]) {
             const quote = await market.getLotPriceFrom(n, factors);
@@ -2979,10 +2979,10 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             await closedComposite(RESERVABLE_12.n, RESERVABLE_12.factors);
             const after = (await blockchain.getContract(market.address)).balance;
             const drained = before - after;
-            // D-113: the ascending lane's OPEN_RESERVE_GAS leak (0.02 TON,
+            // D-113: the ascending lane's OPEN_RESERVE_GAS leak (0.02 GRAM,
             // paid at open, from this contract's own float) is now covered by
             // the raised RES_GAS's close-time surplus, with a thin measured
-            // margin (~0.0037 TON) rather than the wide margin `RES_GAS`
+            // margin (~0.0037 GRAM) rather than the wide margin `RES_GAS`
             // theoretically implies — real TVM forward-fee mechanics do not
             // reduce cleanly to the declared-constant arithmetic. Non-negative
             // is the invariant; the exact margin is not.
@@ -3007,7 +3007,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
 
         it('V23: a raise costs the market nothing — the raiser funds its own compute', async () => {
             // `bid_lot` used to book the whole `in.valueCoins` as the bid, so each
-            // raise's compute came out of the float (~0.00084 TON on a 2-factor
+            // raise's compute came out of the float (~0.00084 GRAM on a 2-factor
             // lot) and RES_GAS only covers a one-bid lifecycle. BID_GAS is now
             // priced into `minPayment` and kept. The 12-factor lot is the largest
             // payload a raise rewrites.
@@ -3082,7 +3082,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
                 expect(balances[i]).toBeGreaterThanOrEqual(balances[i - 1]);
             }
             const totalDrained = balances[0] - balances[balances.length - 1];
-            // 3 composites (~0.0037 each) + 1 prime (~0.0335) ≈ a 0.045 TON
+            // 3 composites (~0.0037 each) + 1 prime (~0.0335) ≈ a 0.045 GRAM
             // net GAIN, wide band for forward-fee dust across four lifecycles.
             expect(totalDrained).toBeLessThanOrEqual(0n);
             expect(totalDrained).toBeGreaterThan(-toNano('0.1'));
@@ -3091,7 +3091,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
         it('open_head_lot is caller-funded: a never-bought head lot costs the market nothing, even at the cap', async () => {
             // A head lot holds no bid and may rest for ever, so no RES_GAS ever
             // repays its open. Each minimum-value open used to cost the float
-            // ~0.012 TON (the open's compute plus a fixed 0.02 hop). Worst case
+            // ~0.012 GRAM (the open's compute plus a fixed 0.02 hop). Worst case
             // is the priciest score at the cap: the largest primes below
             // AUCTIONABLE_MAX, a twin near it, a Sophie Germain prime and V34's
             // five-pass prime (out of gas before V34; under 700k after).
@@ -3240,9 +3240,9 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
     // G81 — a forfeit leg too small to pay its receiver's gas is HELD, never sent.
     //
     // Found on testnet (`20260929`): a lot on `2 × 899810617` cited unsold 2 beside
-    // a sold large prime, forfeiting 2's ~2,666-nanoTON share; both legs landed
+    // a sold large prime, forfeiting 2's ~2,666-nanoGRAM share; both legs landed
     // `compute skipped (no_gas)`, aborted — red. Here 2 × 30011: 2's share is
-    // 0.08/(1+173), its 42% is ~0.00019 TON, below `RATCHET_HOP_GAS`, so the
+    // 0.08/(1+173), its 42% is ~0.00019 GRAM, below `RATCHET_HOP_GAS`, so the
     // operator leg is held and the treasury's 58% rides the 5% send.
     // =====================================================================
     describe('G81: dust fee legs are held, and the trace stays green', () => {

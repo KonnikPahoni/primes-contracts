@@ -17,7 +17,7 @@ const VAULT_PRIMES = 1_327_374_997_252_625n;
 /**
  * The ledger's (T, S) these tests price against, and the floor it implies.
  *
- * DENOMINATION_PLAN P4: the schedule is TON-denominated and the vault pays
+ * DENOMINATION_PLAN P4: the schedule is GRAM-denominated and the vault pays
  * `bountyTon * S / T`, so every expected amount below is a function of this pair
  * rather than a constant. `S/T = 20,000` is the genesis floor at `L = 10,000`,
  * which makes `maxPrimes` exactly reachable — the cap binds at the opening floor
@@ -49,7 +49,7 @@ async function journalRows(blockchain: Blockchain, addr: Address): Promise<numbe
     return b.loadDict(Dictionary.Keys.BigUint(64), { serialize: () => {}, parse: () => 0 }).size;
 }
 
-/** PRIMES per TON at the genesis floor — `S₀ / T₀`. */
+/** PRIMES per GRAM at the genesis floor — `S₀ / T₀`. */
 const GENESIS_PRIMES_PER_TON = S_AT_GENESIS / T_AT_GENESIS;
 
 /**
@@ -191,15 +191,15 @@ describe('TON PRIMES — bounty vault', () => {
         expect((await winnerWallet.getWalletData()).balance).toBe(payout(SCHEDULE[0].bountyTon, SCHEDULE[0].maxPrimes));
     });
 
-    // H11 (GAUNTLET, found on testnet 2026-09-14). The vault has exactly one TON
-    // income — the 0.015 TON leg the ledger forwards with the payout — and it
-    // spends `TRANSFER_GAS` (0.1 TON) of its OWN balance on the jetton hop. It
+    // H11 (GAUNTLET, found on testnet 2026-09-14). The vault has exactly one GRAM
+    // income — the 0.015 GRAM leg the ledger forwards with the payout — and it
+    // spends `TRANSFER_GAS` (0.1 GRAM) of its OWN balance on the jetton hop. It
     // stays solvent only because TEP-74's excess comes home, which it does only
     // while `responseAddr` names the vault and not the beneficiary. Point it at
-    // the beneficiary again and the vault bleeds ~0.085 TON per payout until its
+    // the beneficiary again and the vault bleeds ~0.085 GRAM per payout until its
     // ACTION phase fails (result 37) and the boundary is forfeit in silence —
     // three real payouts were lost that way before this was caught. So the check
-    // is the sign of the balance delta, at the real 0.015 TON the ledger sends.
+    // is the sign of the balance delta, at the real 0.015 GRAM the ledger sends.
     it('H11: a payout leaves the vault SOLVENT — the jetton hop’s excess comes back', async () => {
         const balanceOf = async () => (await blockchain.getContract(vault.address)).balance;
 
@@ -230,14 +230,14 @@ describe('TON PRIMES — bounty vault', () => {
     //
     // H11 above established that `responseAddr` must name the VAULT so the
     // jetton hop's change comes home. It does come home — the wallet sends
-    // `excesses#d53276db` NoBounce, so the credit phase lands the TON here
+    // `excesses#d53276db` NoBounce, so the credit phase lands the GRAM here
     // whatever happens next — but until 2026-09-17 the vault had no arm for that
     // opcode, so the message fell into `else => assert (in.body.isEmpty())` and
     // ABORTED with exit 101 on every single payout.
     //
     // Nothing was lost, which is why H11's own balance assertions above pass
     // either way and why this went unnoticed for three days. What it cost is the
-    // trace: measured on testnet 2026-09-17, trace `8c354845…d724a`, a 1 TON mint
+    // trace: measured on testnet 2026-09-17, trace `8c354845…d724a`, a 1 GRAM mint
     // with every economic leg at exit 0 reads FAILED in Tonviewer, because a
     // trace is red if any transaction in it aborted. The bounty-readiness gate
     // says the audience checks with Tonviewer.
@@ -310,8 +310,8 @@ describe('TON PRIMES — bounty vault', () => {
     // without sending, so the forfeit becomes a deferral anyone can finish.
     it('H12: a payout the vault cannot afford is JOURNALLED, not forfeited, and a later retry pays it', async () => {
         const vaultAcct = await blockchain.getContract(vault.address);
-        // Below `TRANSFER_GAS + STORAGE_FLOOR` (0.1 + 0.05 TON) even after the
-        // ledger's own 0.015 TON leg is credited. This is the state H11 found on
+        // Below `TRANSFER_GAS + STORAGE_FLOOR` (0.1 + 0.05 GRAM) even after the
+        // ledger's own 0.015 GRAM leg is credited. This is the state H11 found on
         // chain, reached here by fiat rather than by 24 bleeding payouts.
         vaultAcct.balance = toNano('0.05');
 
@@ -512,16 +512,16 @@ describe('TON PRIMES — bounty vault', () => {
         expect((await vault.getEraSchedule(2310n)).scheduled).toBe(0);
     });
 
-    // ---- DENOMINATION_PLAN P4: the schedule is TON-denominated ----
+    // ---- DENOMINATION_PLAN P4: the schedule is GRAM-denominated ----
 
-    it('pays the PRIMES that the era’s TON buys AT THE FLOOR, so a risen floor pays fewer', async () => {
+    it('pays the PRIMES that the era’s GRAM buys AT THE FLOOR, so a risen floor pays fewer', async () => {
         // The whole reason the schedule stopped being nominal. `p_f` rises ~45x
         // over year one at baseline demand, so a fixed 79,642-PRIMES bounty would
         // be worth 45x its designed value by the time era 30 lands — out of a
         // vault sized once, at genesis, for eight ceremonies.
         //
         // Here the floor has quadrupled (S/T is a quarter of genesis), so the same
-        // 6.64 TON ceremony pays a quarter of the PRIMES.
+        // 6.64 GRAM ceremony pays a quarter of the PRIMES.
         const t = T_AT_GENESIS * 4n;
         await vault.sendPayEraBounty(bankStandIn.getSender(), {
             eraBoundary: 6n,
@@ -998,7 +998,7 @@ describe('TON PRIMES — bounty vault V26.7: an exhausted vault cheap-fails, jou
     let master: SandboxContract<PrimesJettonMaster>;
     let vault: SandboxContract<PrimesBountyVault>;
 
-    // Per point of D(n): 1 TON buys 20,000 PRIMES at the genesis floor below.
+    // Per point of D(n): 1 GRAM buys 20,000 PRIMES at the genesis floor below.
     const PER_POINT = { tier: 0, bountyTon: toNano('1'), maxPrimes: 20_000n * 1_000_000_000n };
     const ONE_REBATE = payout(PER_POINT.bountyTon, PER_POINT.maxPrimes);
     const FUNDED = ONE_REBATE * 5n / 2n; // two rebates fit, the third does not

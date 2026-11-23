@@ -230,7 +230,7 @@ describe('TON PRIMES — D5: attached value cannot half-apply an arm, nor inflat
             expect(await snapshot()).toEqual(before);
         });
 
-        it('an under-funded ledger→ratchet hop cannot credit `pending` without the TON', async () => {
+        it('an under-funded ledger→ratchet hop cannot credit `pending` without the GRAM', async () => {
             // The clearing handler asserts `valueCoins >= amount + RATCHET_HOP_GAS`
             // precisely so a message that did not carry its money cannot inflate
             // the floor. Fired from a wrong sender it fails on that gate first,
@@ -272,7 +272,7 @@ describe('TON PRIMES — D5: attached value cannot half-apply an arm, nor inflat
             };
         }
 
-        it('a mint at 1 TON and a mint at 50 TON move the protocol identically', async () => {
+        it('a mint at 1 GRAM and a mint at 50 GRAM move the protocol identically', async () => {
             // THE assertion of this file. A split computed from `in.valueCoins`
             // rather than from `MINT_PRICE` would pass every closure test in the
             // repo — the total would still reconcile — while letting anyone
@@ -323,16 +323,16 @@ describe('TON PRIMES — D5: attached value cannot half-apply an arm, nor inflat
             expect(cheap.dFeeLines - cheapForfeited).toBe(TREASURY_AMOUNT);
             // And the pool's step is bounded by the mint price's share, not by
             // what was attached: β plus at most the whole tribute line in dust
-            // and folds — never the 49 TON of margin.
+            // and folds — never the 49 GRAM of margin.
             expect(rich.dT).toBeLessThanOrEqual(BETA + TRIBUTE_AMOUNT);
             expect(rich.dPending).toBe(rich.dT);
         });
 
-        it('D-109: the 49 TON of margin reaches neither the pool nor the ledger — it comes straight back to the sender', async () => {
+        it('D-109: the 49 GRAM of margin reaches neither the pool nor the ledger — it comes straight back to the sender', async () => {
             // Where the excess goes is a real design fact and worth pinning
             // rather than leaving to be discovered. The ledger prices from the
             // constant `MINT_PRICE`; anything sent past `MINT_PRICE +
-            // MINT_MARGIN` (1.5 TON) is refunded whole, so a fat-fingered 50 TON
+            // MINT_MARGIN` (1.5 GRAM) is refunded whole, so a fat-fingered 50 GRAM
             // mint funds nobody — not the pool, not the ledger's own gas-&-ops
             // line via the sweep, and not the operator.
             //
@@ -352,11 +352,11 @@ describe('TON PRIMES — D5: attached value cannot half-apply an arm, nor inflat
             expect(BigInt(after.T) - BigInt(before.T)).toBeLessThanOrEqual(BETA + TRIBUTE_AMOUNT);
             // Nor did the ledger's own balance — it grew by roughly what an
             // ordinary MINT_PRICE mint leaves behind (the gas-&-ops line, minus
-            // this transaction's own hop fees), not by tens of TON.
+            // this transaction's own hop fees), not by tens of GRAM.
             expect(balAfter - balBefore).toBeLessThan(toNano('1'));
             // The refund landed on the sender: a real outbound message, and the
             // sender is out only MINT_PRICE + MINT_MARGIN plus dust, not the
-            // full 50 TON attached.
+            // full 50 GRAM attached.
             expect(r.transactions).toHaveTransaction({ from: ledger.address, to: player.address, success: true });
             const netCost = playerBefore - playerAfter;
             expect(netCost).toBeGreaterThanOrEqual(MINT_PRICE);
@@ -391,7 +391,7 @@ describe('TON PRIMES — D5: attached value cannot half-apply an arm, nor inflat
             // Neither sweep may have paid out the caller's own margin. Both are
             // below the reserve here, so both are zero — and the assertion that
             // matters is that the FAT one did not become non-zero because of the
-            // 20 TON attached to it.
+            // 20 GRAM attached to it.
             expect(sweptFat).toBe(sweptSmall);
         });
     });

@@ -20,7 +20,7 @@
  * does the lazy thing that actually closes the gap: it reads the SIGNATURES out
  * of `contracts/contracts/*.tolk` and calls every one of them, supplying an
  * argument per parameter NAME. A method that throws is the finding; a method
- * that answers is coverage. It sends nothing, costs 0 TON, and is safe to run at
+ * that answers is coverage. It sends nothing, costs 0 GRAM, and is safe to run at
  * any point in a run — including immediately after genesis, which is when the
  * answer "this contract does not answer its own surface" is cheapest to fix.
  *

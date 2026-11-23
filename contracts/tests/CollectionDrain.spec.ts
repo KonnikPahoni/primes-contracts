@@ -19,18 +19,18 @@ const MINT_PRICE = toNano('1.05');
  * collection funded this transaction's compute gas AND the deploy message's forward
  * fee (which carries the item's entire code cell in `stateInit`, so it is not small)
  * from its OWN balance, on every mint, with no income on any path. Measured here at
- * 549,869-589,602 nanoton per mint against the 0.5 TON genesis endowment
+ * 549,869-589,602 nanoton per mint against the 0.5 GRAM genesis endowment
  * (`genesisPipeline.ts:822`): empty at roughly 900 mints, and from that point EVERY
  * `MintItem` bounces.
  *
  * That matters because of what a bounced `MintItem` costs. Since V1 the ledger
  * correctly does not roll `head` back (no value is safe against the race with other
  * players' mints), so the number is orphaned behind the head permanently, and the
- * minter's 1 TON has already gone out through the split. V1.1 filed that as a rare
+ * minter's 1 GRAM has already gone out through the split. V1.1 filed that as a rare
  * event worth a new reclaim mechanic. It was not rare — it was scheduled, and this is
  * its cause.
  *
- * The fix is a send mode, not a new constant and not more TON: carry the incoming
+ * The fix is a send mode, not a new constant and not more GRAM: carry the incoming
  * value, so gas and forward fee come out of what the ledger already attached and the
  * item is endowed with the remainder. This suite is the regression — it asserts the
  * collection's balance is EXACTLY unchanged across consecutive head mints, which is
@@ -55,7 +55,7 @@ describe("GAUNTLET V1.2 — the collection does not fund mints from its own bala
         const collection = blockchain.openContract(PrimesCollection.createFromConfig(
             { nextIndex: 2n, itemCode: codes['PrimesItem'], ledgerAddr: deployer.address, genesisScriptAddr: genesisScript.address },
             codes['PrimesCollection']));
-        // The REAL genesis endowment (genesisPipeline.ts:822), not a test-fixture 5 TON.
+        // The REAL genesis endowment (genesisPipeline.ts:822), not a test-fixture 5 GRAM.
         await collection.sendDeploy(deployer.getSender(), toNano('0.5'));
 
         const master = blockchain.openContract(PrimesJettonMaster.createFromConfig(

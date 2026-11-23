@@ -23,7 +23,7 @@
 // WHAT THIS FILE DELIBERATELY DOES NOT ASSERT: anything relating locked depth to
 // `T`, `S` or `p_f`. There is no relation — that is D-100 point 4's copy
 // constraint, and the reason it is a constraint rather than a comment is that a
-// pool's TON/PRIMES composition moves with every trade, so an LP-derived term is
+// pool's GRAM/PRIMES composition moves with every trade, so an LP-derived term is
 // non-monotonic and would void §5's ratchet theorem. The floor and liquidity are
 // two guarantees on two panels. A test tying them together would be the bug.
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
@@ -271,7 +271,7 @@ describe('U4 — the LP sink (D-100 points 4 and 9, TR-6)', () => {
             exitCode: 101, // wrong_opcode
         });
 
-        // TON with an empty body is accepted — and, exactly like the LP, it can
+        // GRAM with an empty body is accepted — and, exactly like the LP, it can
         // never leave. That is rent, not a liability: the contract declares none
         // and appears in no §3.4 reconciliation row.
         const rent = await deployer.send({

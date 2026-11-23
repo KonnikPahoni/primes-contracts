@@ -21,7 +21,7 @@
 //   the RATCHET has NO sender assert on the arm — its own comment says so —
 //              and instead gates the EFFECT: the burn counters move only when
 //              the sender is the configured wallet. An unsolicited notification
-//              is accepted, counted nowhere, and its TON carried straight back
+//              is accepted, counted nowhere, and its GRAM carried straight back
 //              out to whoever sent it.
 //
 // The ratchet's shape is the more interesting of the two: it is safe not because
@@ -193,7 +193,7 @@ describe('TON PRIMES — D10: a forged jetton message is believed by nobody who 
 
         it("does NOT count a holder's own transfer to the real wallet — it chose the burn's gas (2026-11-08 audit)", async () => {
             // An honest notification from our own wallet, for PRIMES a holder sent with
-            // too little TON for the burn to land: counting it published a burn that
+            // too little GRAM for the burn to land: counting it published a burn that
             // IGNORE_ERRORS then dropped.
             await ratchet.sendSetJettonWallet(genesisScript.getSender(), {
                 jettonWalletAddr: realWallet.address,
@@ -210,12 +210,12 @@ describe('TON PRIMES — D10: a forged jetton message is believed by nobody who 
             expect(after.burnEvents).toBe(0);
         });
 
-        it('accepts the forged message without throwing, and hands the TON straight back', async () => {
+        it('accepts the forged message without throwing, and hands the GRAM straight back', async () => {
             // The ratchet's arm deliberately has no sender assert — its own
             // comment says so. That is safe here because believing the message
             // costs nothing: nothing is counted, and the handler replies to
             // `in.senderAddress` with CARRY_ALL_REMAINING, so the attacker's own
-            // TON leaves again. Worth pinning because a reader checking only for
+            // GRAM leaves again. Worth pinning because a reader checking only for
             // a `throw` would mark this arm unprotected, and a future edit that
             // "fixed" it by adding an assert would break the real burn path's
             // reply.

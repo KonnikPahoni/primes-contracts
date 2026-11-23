@@ -8,7 +8,7 @@ import { DEFAULT_RENAME_FEE } from './PrimesCollection';
  *
  * Era trophies and their engravings (a number's name lives on its item since D-188
  * point 6, written through the collection's `name_number`, D-212). Holds no protocol
- * TON, which is why its declared liability is structurally zero.
+ * GRAM, which is why its declared liability is structurally zero.
  */
 export const RegistrarOpcodes = {
     SetLedger: REGISTRAR.set_ledger,
@@ -33,7 +33,7 @@ export type RegistrarConfig = {
     /** Bootstrapped post-deploy via SetCollection, for the same reason. */
     collectionAddr?: Address;
     /**
-     * D-212: a trophy re-engraving's fee, in nanoTON — deploy data, no setter, and the same
+     * D-212: a trophy re-engraving's fee, in nanoGRAM — deploy data, no setter, and the same
      * value as the collection's `renameFee` (genesis asserts they match). Tests default to
      * `DEFAULT_RENAME_FEE`.
      */

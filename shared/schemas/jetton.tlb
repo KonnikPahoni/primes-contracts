@@ -59,15 +59,15 @@ set_ledger#d0000004
 ;; --- TEP-74 excesses: the master is on the RECEIVING end of one ------------
 ;; Not redefined (see the header: the standard opcodes are reused verbatim), but
 ;; recorded because `mint`/`mint_genesis` name THE MASTER as the new wallet's
-;; `response_destination` — it funds the 0.012 TON wallet deploy out of the value
+;; `response_destination` — it funds the 0.012 GRAM wallet deploy out of the value
 ;; the ledger attached, so the change is its own and must come home or the mint
 ;; path bleeds gas into every wallet it deploys.
 ;;
 ;; Until 2026-09-17 the master had no handler for the reply and aborted with exit
 ;; 101 on EVERY mint. Nothing was at risk (the wallet sends it non-bounceable, so
-;; the credit phase had landed the TON before the compute phase threw), but the
+;; the credit phase had landed the GRAM before the compute phase threw), but the
 ;; whole mint trace reads FAILED in an explorer when any transaction in it aborts
-;; — testnet trace 8c354845...d724a, a 1 TON mint with every economic leg at exit
+;; — testnet trace 8c354845...d724a, a 1 GRAM mint with every economic leg at exit
 ;; 0. Accepted permissionlessly: nothing moves, so there is nothing to gate.
 
 ;; --- TEP-89: on-chain jetton wallet discovery -------------------------------

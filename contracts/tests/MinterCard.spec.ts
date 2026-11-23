@@ -226,7 +226,7 @@ describe('D-191 point 1: the minter card', () => {
         expect(await s.ledger.getHead()).toBeGreaterThan(n2);
     });
 
-    it('a lost race gives the window back and the TON to the payer', async () => {
+    it('a lost race gives the window back and the GRAM to the payer', async () => {
         await seedMinterCard(bc, s.ledger.address, { owner: carol.address, window: 3 });
         const stale = (await s.ledger.getHead()) - 2n;
         const before = await carol.getBalance();
@@ -297,7 +297,7 @@ describe('D-191 point 1: the minter card', () => {
         );
         expect(((await edge.next()).value as any).description.aborted).toBe(false); // the edge is out
         const held = await mintHead(dave, carol.address);
-        expect(held.transactions).toHaveTransaction({ to, exitCode: 104 }); // held, TON bounces to dave
+        expect(held.transactions).toHaveTransaction({ to, exitCode: 104 }); // held, GRAM bounces to dave
         expect(held.transactions).not.toHaveTransaction({ to: s.ledger.address });
         for await (const tx of edge) expect((tx as any).description.aborted).toBe(false); // refunded: hold cleared
 

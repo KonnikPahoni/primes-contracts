@@ -4,7 +4,7 @@ Four properties, and they are the four the ratchet theorem rests on:
 
   * `T = seeded + swapped + liquid + staked_cost + exiting` at the end of a run
     (the engine asserts it at every step; this pins the ends);
-  * staking moves TON between terms of `T` and NEVER changes `T` itself, so a
+  * staking moves GRAM between terms of `T` and NEVER changes `T` itself, so a
     staked run's floor is identical to an unstaked one's -- the flat pool fees
     are paid from the gas buffer and the yield lands outside `T` (D-151 point 2
     and point 4). A leg-2 haircut is the ONE exception and it is a realized
@@ -63,8 +63,9 @@ def test_staking_does_not_move_T(staked, unstaked):
 
 
 def test_fees_and_yield_are_off_book(staked):
-    assert staked.staking_fees_paid == pytest.approx(staked.stake_events * 1.0
-                                                     + staked.exit_events * 0.8)
+    stk = staked.p.staking
+    assert staked.staking_fees_paid == pytest.approx(staked.stake_events * stk.deposit_fee_ton
+                                                     + staked.exit_events * stk.exit_fee_ton)
     assert staked.accrued_yield + staked.harvested_tston > 0
     # Neither term is inside `pending`, which is what "never enters T" means
     # once it is written as arithmetic.
@@ -120,7 +121,7 @@ def test_an_exit_that_cannot_fill_instantly_is_unmet():
     assert e.exit_leg_counts[3] == 1
     e._assert_t_identity()
     # The exit is sized to restore the RESERVE, not merely the shortfall: at the
-    # default 3 reserve-days the target is 3 * 0.2 * 1000 = 600 TON, so 500 is
+    # default 3 reserve-days the target is 3 * 0.2 * 1000 = 600 GRAM, so 500 is
     # brought back and the next consecutive flush day pays no withdrawal fee.
     assert e.exiting == pytest.approx(500.0)
     # ... and it lands after the latency, at the exact rate.

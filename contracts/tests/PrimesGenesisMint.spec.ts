@@ -21,8 +21,8 @@ function gasUsedOf(tx: Transaction): bigint {
 
 const MINT_PRICE = toNano('1');
 // primes_ratchet.tolk's own FLUSH_PCT/FLUSH_MIN literals — see the identical helper's
-// comment in DecompositionSolvency.spec.ts. 541+547's combined premium (~29.87 TON) sits
-// above the current 5 TON FLUSH_MIN, so this suite computes which branch it lands on
+// comment in DecompositionSolvency.spec.ts. 541+547's combined premium (~29.87 GRAM) sits
+// above the current 5 GRAM FLUSH_MIN, so this suite computes which branch it lands on
 // instead of assuming full-drain.
 const FLUSH_PCT = 200_000_000n; // 0.2, fixed-point
 const K_SCALE = 1_000_000_000n;
@@ -181,8 +181,8 @@ describe('TON PRIMES — genesis + mint flow (Phase 3)', () => {
         await market.sendDeploy(deployer.getSender(), toNano('5'));
 
         // Genesis seed: T/S per shared/params.json's genesis floor ratio.
-        // DENOMINATION_PLAN P1 + D-42 — 20,000 PRIMES per TON at L = 10,000 with a
-        // 50% bounty vault, so 1000 TON of seed is 15M PRIMES. Must move with `deploy_floor_primes_per_ton` and
+        // DENOMINATION_PLAN P1 + D-42 — 20,000 PRIMES per GRAM at L = 10,000 with a
+        // 50% bounty vault, so 1000 GRAM of seed is 15M PRIMES. Must move with `deploy_floor_primes_per_ton` and
         // with export_trace.py's `--seed-s` (SimCrossCheck replays this fixture).
         //
         // D-20: `seedHead` is the FIRST COMPOSITE. The walk to it marks 2 and 3
@@ -302,7 +302,7 @@ describe('TON PRIMES — genesis + mint flow (Phase 3)', () => {
         expect(await ledger.getClaimableDividend(5n)).toBe(0n); // G79: crossed by this mint, stamped after it
         expect(await ledger.getClaimableDividend(4n)).toBe(0n); // composites never share the flat line
 
-        // referral: referral key 2 -> owner of item(2) is minter1 -> should have received ~0.1 TON
+        // referral: referral key 2 -> owner of item(2) is minter1 -> should have received ~0.1 GRAM
         const minter1BalanceTx = r4.transactions.find(
             (t) => t.inMessage?.info.type === 'internal' && t.inMessage.info.dest?.toString() === minter1.address.toString()
         );
@@ -329,7 +329,7 @@ describe('TON PRIMES — genesis + mint flow (Phase 3)', () => {
      * GAUNTLET G89 / D-177 / CONCEPT §9.11 — the item records every referral payout its key
      * relays. Two referred mints cite key 2 (4 = 2², then 6 = 2·3), so item(2) must read back
      * exactly the two `forward_to_owner` values the trace delivered to it: each is §4.1's
-     * 0.1 TON referral line less the ledger → item hop's forward fee, which is why the figure
+     * 0.1 GRAM referral line less the ledger → item hop's forward fee, which is why the figure
      * is read off the trace rather than hardcoded. An uncited key, item(3), reads 0.
      */
     it('G89: getReferralPaid sums every referral a key relays, and an uncited key reads 0', async () => {
@@ -446,17 +446,17 @@ describe('TON PRIMES — genesis + mint flow (Phase 3)', () => {
         // head must NOT have advanced past 6 from this refunded mint
         expect(await ledger.getHead()).toBe(6n);
         const balanceAfter = await minter2.getBalance();
-        // refund = the full MINT_PRICE minus gas; within ~0.05 TON of whole
+        // refund = the full MINT_PRICE minus gas; within ~0.05 GRAM of whole
         const netCost = balanceBefore - balanceAfter;
         expect(netCost).toBeLessThan(toNano('0.05'));
     });
 
     it('flush() respects cooldown/pct/min guards and preserves T = swapped + pending', async () => {
         // 541 and 547, not 2 and 3: D-68's crown curve prices 2 and 3 at 2500 and
-        // 1666 TON — their D-7 premium alone would put pending FOUR orders of
-        // magnitude over the guard. 541/547's combined premium (~29.87 TON) is
-        // still above the current 5 TON FLUSH_MIN (owner directive, down from
-        // 50 TON), so `flushAmount` below computes whichever of the guard's two
+        // 1666 GRAM — their D-7 premium alone would put pending FOUR orders of
+        // magnitude over the guard. 541/547's combined premium (~29.87 GRAM) is
+        // still above the current 5 GRAM FLUSH_MIN (owner directive, down from
+        // 50 GRAM), so `flushAmount` below computes whichever of the guard's two
         // branches that actually lands on, rather than assuming full-drain.
         await acquire(minter1, 541n);
         blockchain.now! += 3600;
@@ -516,10 +516,10 @@ describe('TON PRIMES — genesis + mint flow (Phase 3)', () => {
         expect(await item2.getTributeTotal()).toBe(owedBefore);
 
         const balanceAfter = await minter1.getBalance();
-        // net change = -0.05 TON attached to the claim call + 0.08 TON divisor-line
-        // payout from the ledger - gas, so roughly +0.03 TON (the attached call
+        // net change = -0.05 GRAM attached to the claim call + 0.08 GRAM divisor-line
+        // payout from the ledger - gas, so roughly +0.03 GRAM (the attached call
         // value is not fully forwarded back — see item.tolk's ClaimTribute
-        // handler, which forwards a fixed 0.02 TON on to the ledger).
+        // handler, which forwards a fixed 0.02 GRAM on to the ledger).
         expect(balanceAfter - balanceBefore).toBeGreaterThan(toNano('0.02'));
     });
 
@@ -612,7 +612,7 @@ describe('TON PRIMES — genesis + mint flow (Phase 3)', () => {
 
         // Without the guard this re-stamps the entry, bounces off a nonexistent
         // item, and files the amount under `p = 0` where `retry_credit` can
-        // never route it — the TON would sit in `unroutedHeld` forever.
+        // never route it — the GRAM would sit in `unroutedHeld` forever.
         const early = await ledger.sendClaimDividend(minter2.getSender(), { p: 2n, value: toNano('0.05') });
         expect(early.transactions).toHaveTransaction({ to: ledger.address, success: false, exitCode: 219 });
         expect(await ledger.getClaimableDividend(2n)).toBe(accrued); // untouched, not lost
@@ -637,7 +637,7 @@ describe('TON PRIMES — genesis + mint flow (Phase 3)', () => {
         await mintNumber(minter2, { n: 4n, kind: 0, factors: [{ prime: 2n, exponent: 2 }] });
         expect(await ledger.getClaimableDividend(2n)).toBeGreaterThan(0n);
 
-        // Below CLAIM_DIVIDEND_MIN_VALUE (0.01 TON): refused before any state changes,
+        // Below CLAIM_DIVIDEND_MIN_VALUE (0.01 GRAM): refused before any state changes,
         // never a partial drain of the ledger's own balance.
         const underfunded = await ledger.sendClaimDividend(minter2.getSender(), { p: 2n, value: toNano('0.004') });
         expect(underfunded.transactions).toHaveTransaction({ to: ledger.address, success: false, exitCode: 103 });

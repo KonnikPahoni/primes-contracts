@@ -25,11 +25,11 @@ import {
 /**
  * TON PRIMES — the GOVERNED TREASURY (CONCEPT §5.5, DECISIONS D-100).
  *
- * The team's money under holder control: PRIMES (its vesting lock, D-166), TON
+ * The team's money under holder control: PRIMES (its vesting lock, D-166), GRAM
  * (58% of the unsold-prime forfeits, D-166), tsTON (D-151) and depositors' LP. LP
  * custody in four lock terms buys a VOTE and nothing else (D-168 deleted the miner).
  *
- * It holds NO protocol TON: `pending` is the ratchet's and `owed` is the prime
+ * It holds NO protocol GRAM: `pending` is the ratchet's and `owed` is the prime
  * owners', both in their own accounts (§3.4). It has no owner, no admin opcode,
  * no pause and no upgrade — it spends only by a passed proposal or by
  * `distribute()` (PRIMES to the stake master, once per epoch, by formula), and
@@ -62,7 +62,7 @@ export const TreasuryOpcodes = {
     LpCredit: TREASURY.lp_credit,
     ConfirmWithdraw: TREASURY.confirm_withdraw,
     RestorePosition: TREASURY.restore_position,
-    /** outbound TON payout on `execute` of an asset-0 proposal */
+    /** outbound GRAM payout on `execute` of an asset-0 proposal */
     TonPayout: TREASURY.ton_payout,
     /** outbound, D-194: `execute` of a passed venue-confirm proposal, to the timelock */
     ConfirmVenue: TREASURY.confirm_venue,
@@ -78,7 +78,7 @@ export { TREASURY_ACTION_DEPOSIT };
  * (D-167). `VENUE` (D-194) is a venue-confirm proposal: `amount` = the timelock record's
  * `seq`, `dest` = the timelock; `execute` must attach `TREASURY_VENUE_CONFIRM_GAS`.
  */
-export const TreasuryAsset = { TON: 0, PRIMES: 1, TSTON: 2, VENUE: 3 } as const;
+export const TreasuryAsset = { GRAM: 0, PRIMES: 1, TSTON: 2, VENUE: 3 } as const;
 export const TREASURY_VENUE_CONFIRM_GAS = TREASURY_VENUE_CONFIRM_GAS_NANOTON;
 
 /**
@@ -89,7 +89,7 @@ export const TREASURY_VENUE_CONFIRM_GAS = TREASURY_VENUE_CONFIRM_GAS_NANOTON;
  */
 export const TREASURY_TIERS = REGISTRY_TREASURY_TIERS;
 
-/** Nominal TON a treasury-bound message must forward. A real sender adds a margin. */
+/** Nominal GRAM a treasury-bound message must forward. A real sender adds a margin. */
 export const TREASURY_MIN_FORWARD = 150000000n;
 
 export type TreasuryConfig = {
@@ -190,7 +190,7 @@ export class PrimesTreasury implements Contract {
     }
 
     /**
-     * Plain TON in — the 58% forfeit share (§4.1, §6 point 2, D-166). Nothing to
+     * Plain GRAM in — the 58% forfeit share (§4.1, §6 point 2, D-166). Nothing to
      * record: the balance is the counter.
      */
     async sendTon(provider: ContractProvider, via: Sender, value: bigint) {
@@ -425,6 +425,12 @@ export class PrimesTreasury implements Contract {
     async getVoteMultipliers(provider: ContractProvider): Promise<number[]> {
         const r = await provider.get('getVoteMultipliers', []);
         return Array.from({ length: 4 }, () => r.stack.readNumber());
+    }
+
+    /** D-214: what LP locked forever through a position votes with. Not a tier. */
+    async getForeverVoteMultiplier(provider: ContractProvider): Promise<number> {
+        const r = await provider.get('getForeverVoteMultiplier', []);
+        return r.stack.readNumber();
     }
 
     /**

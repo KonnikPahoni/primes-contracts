@@ -19,7 +19,7 @@ commit `7e7bfe4` on 2026-08-30, not assumed from memory of a prior pass.
 
 `git clone https://github.com/KonnikPahoni/primes-contracts` into an empty directory (no copied `node_modules`, no copied
 `.venv`, no copied `.env`) followed only by the steps below. `.env` itself is not
-required for any gate — every suite that would otherwise need a real TON endpoint stubs
+required for any gate — every suite that would otherwise need a real GRAM endpoint stubs
 it (contracts run against `@ton/sandbox`, the webapp's e2e specs stub `read-proxy` at
 `page.route`, backend services test against fakes). `.env` is only needed for the
 one-off deploy/verification scripts under `contracts/scripts/` that talk to a live

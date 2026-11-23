@@ -265,7 +265,7 @@ describe('k_max(n) — the decay curve the ledger actually emits against', () =>
 
     describe('§5.1: PRIME_UPLIFT · PRIME_WINDOW < k_max(n), swept across the line', () => {
         it('holds strictly across every decade the head can realistically reach', async () => {
-            // The head advances by one per composite mint at 1 TON, so this range
+            // The head advances by one per composite mint at 1 GRAM, so this range
             // covers every n the sequential lane reaches short of a billion mints.
             // Dense enough to catch a boundary that moves by a decade, and it
             // walks the leading digits so the interpolated interior is included

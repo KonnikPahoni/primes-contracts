@@ -50,13 +50,13 @@ card_mint_refunded#9b000005
     state:MinterState
     fresh:Bool
   = InternalMsgBody;
-;; Ledger -> card on a lost race, carry-all: same give-back, then the TON to `payer`.
+;; Ledger -> card on a lost race, carry-all: same give-back, then the GRAM to `payer`.
 
 card_add_recruit#9b000002
     query_id:uint64
     era_seq:uint8
   = InternalMsgBody;
-;; Ledger -> the PAYER's card on a recruit edge (StateInit attached, 0.02 TON):
+;; Ledger -> the PAYER's card on a recruit edge (StateInit attached, 0.02 GRAM):
 ;; recruits += 1; era_recruits restarts at 0 if era_seq moved, then += 1; seen = 1.
 
 card_recruit_counted#9b000003
@@ -73,7 +73,7 @@ card_prime_minted#9b000004
     query_id:uint64
   = InternalMsgBody;
 ;; Ledger -> the beneficiary's card on every prime sale (StateInit attached, 0.005
-;; TON, kept as the card's reserve): primes_minted += 1, window = PRIME_WINDOW, seen = 1.
+;; GRAM, kept as the card's reserve): primes_minted += 1, window = PRIME_WINDOW, seen = 1.
 
 ;; ---- get-methods (a never-deployed card is zero standing) ----
 ;; get_minter_state()    -> (primes_minted, tier, tier_uplift, window)

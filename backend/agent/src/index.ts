@@ -15,7 +15,7 @@
  *    come from `shared/primality.ts` + `shared/factors.ts`, the same modules the contract
  *    tests use, so a mint cannot be built with a factorization the ledger will reject.
  * 3. **Nominal price plus a fee margin, never the exact price.** The builders already do
- *    this; it is restated here because it is the one mistake that costs a real 1 TON.
+ *    this; it is restated here because it is the one mistake that costs a real 1 GRAM.
  *
  * What it does NOT do: hold a key anywhere but this process, promise a return, or read a
  * money-critical figure from an indexer.
@@ -101,7 +101,7 @@ export const NAME_MAX_CHARS: number = SHARED_NAME_MAX_CHARS;
 
 /**
  * §4.1's invite line (D-202), as `GET /api/invitees?count=` on the keeper serves it: the
- * ADDRESSES the mint sends a plain 0.1 TON transfer to, one per slot. Nothing is signed —
+ * ADDRESSES the mint sends a plain 0.1 GRAM transfer to, one per slot. Nothing is signed —
  * the minter chooses the recipients, and may replace the keeper's default list with any
  * addresses at all, its own included.
  *
@@ -110,10 +110,11 @@ export const NAME_MAX_CHARS: number = SHARED_NAME_MAX_CHARS;
  * installs it, and `@ton-primes/shared` is bundled into `dist/` rather than published.
  */
 export interface MintInvites {
-  /** The minter's DECLARED count, 0..3 (`params.invites.max_count`). A slot with no address
-   *  sends nothing, and its 0.1 TON falls to β, not to the team. */
+  /** The minter's DECLARED count, 0..the ledger's live invite count (`getInviteTerms`; genesis
+   *  3, never above 100 — D-215). Over the live count the ledger refuses the mint (221). A slot
+   *  with no address sends nothing, and its share falls to β, not to the team. */
   count: number;
-  /** Keyed BY SLOT, 1..3, never 0. */
+  /** Keyed BY SLOT, 1..count, never 0. */
   addresses: { slot: number; address: string }[];
 }
 /**
@@ -259,7 +260,7 @@ export class PrimesAgent {
   /**
    * Which route `n` is on right now, read live.
    *
-   * §4.4 and D-45: at its turn a composite mints for 1 TON; ahead of the head every number
+   * §4.4 and D-45: at its turn a composite mints for 1 GRAM; ahead of the head every number
    * is a paid lot, prime or composite; behind the head it is already someone's. An
    * auctioned number is marked off its sequential line permanently, so "wait for the head
    * to reach it" is never the answer for one.
@@ -278,7 +279,7 @@ export class PrimesAgent {
   }
 
   /**
-   * §4.1's core loop: mint the number at the head for a flat 1 TON.
+   * §4.1's core loop: mint the number at the head for a flat 1 GRAM.
    *
    * The head is re-read from the ledger first (§9.1) and the call refuses if `n` has moved
    * on — the ledger would refund minus gas, but a refund is not a result. The factorization
@@ -378,12 +379,12 @@ export class PrimesAgent {
 
   /**
    * `flush()` on the ratchet — permissionless, and CALLER-PAID (D-146): the message carries
-   * DeDust's 0.25 TON swap gas plus the ratchet's compute (`buildFlushMessage`'s value,
-   * 0.27 TON with the fee margin); below 0.26 the contract refuses 225, and the change
+   * DeDust's 0.25 GRAM swap gas plus the ratchet's compute (`buildFlushMessage`'s value,
+   * 0.27 GRAM with the fee margin); below 0.26 the contract refuses 225, and the change
    * above what the call costs comes back as `excesses`.
    *
    * §4.3: TON has no scheduler, so a contract cannot wake itself and this call is how
-   * pending TON becomes a bid at or below `p_f`. Anyone may send it.
+   * pending GRAM becomes a bid at or below `p_f`. Anyone may send it.
    *
    * THE TRANCHE IS SIZED TO THE VENUE, not to `pending`. The contract's own rule
    * (`min(pending, max(pending·FLUSH_PCT, FLUSH_MIN))`) knows nothing about the pool, while
@@ -415,7 +416,7 @@ export class PrimesAgent {
       // `null` — the reads SUCCEEDED and say the market is at or above the floor, so no
       // tranche of any size clears the guard. Refusing is the honest answer and costs the
       // caller nothing; sending anyway buys one `payout#474f86cf` refusal on the caller's own
-      // 0.25 TON of swap gas (D-146). `undefined` — the venue could not be read at all, which
+      // 0.25 GRAM of swap gas (D-146). `undefined` — the venue could not be read at all, which
       // is not the same claim: fall through to 0 and let the contract size it.
       if (sized === null) {
         throw new Error(
@@ -487,13 +488,13 @@ export class PrimesAgent {
    * the whole system that anybody may make on ANY number, including one they do not own. A
    * composite item is endowed once at deploy and never topped up again — only primes are
    * cited as tribute factors, so no `credit_tribute` reaches a composite — and when the
-   * endowment runs out TON freezes the account. A frozen item answers nothing: no
+   * endowment runs out GRAM freezes the account. A frozen item answers nothing: no
    * `Transfer`, no `get_nft_data`, no claim, while §3.1 says "permanent".
    *
    * `multiples` sends that many `ITEM_DEPLOY_VALUE` endowments. One is what the mint gave
    * the item once, so one multiple buys another of whatever the first bought, at whatever
    * config-18 charges that day — which is why this takes a count of endowments and not a
-   * figure in TON. `runway(n)` is the read that says whether it is worth making.
+   * figure in GRAM. `runway(n)` is the read that says whether it is worth making.
    */
   async topUp(n: bigint, multiples = 1) {
     this.assertSignable();
@@ -513,7 +514,7 @@ export class PrimesAgent {
    * an observer. The venue is not a third party — `getVenue()` names it and `flush()` trades
    * through it — so a swap is no more exotic here than a mint.
    *
-   * `side: "buy"` sends TON to DeDust's native vault; `"sell"` sends a TEP-74 transfer from
+   * `side: "buy"` sends GRAM to DeDust's native vault; `"sell"` sends a TEP-74 transfer from
    * this wallet's OWN PRIMES jetton wallet, addressed to the jetton vault. Both addresses are
    * read from `getVenue()` and `/primes/wallet/:address`; neither is ever guessed.
    *
@@ -580,7 +581,7 @@ export class PrimesAgent {
   }
 
   /**
-   * D-212 (§4.7.1): NAME A NUMBER THIS WALLET OWNS, for TON, through the collection. The
+   * D-212 (§4.7.1): NAME A NUMBER THIS WALLET OWNS, for GRAM, through the collection. The
    * first naming costs the collection's `nameFee`, every later one `renameFee`; the fee goes
    * to the ratchet floor. Owner, count and fees are read live — the contract refunds a
    * refusal whole, but a refusal still costs the forward fees.
@@ -607,7 +608,7 @@ export class PrimesAgent {
   /**
    * An era trophy's engraving (§4.7.1): the trophy's holder engraves one of §7's eight
    * primorials. The FIRST is free (gas only); every later one costs the registrar's
-   * `getTrophyRenameFee()` in TON (D-212). This is the trophy, not the number — the number's
+   * `getTrophyRenameFee()` in GRAM (D-212). This is the trophy, not the number — the number's
    * own name is `name()`. Every condition is read live.
    */
   async annotate(opts: { n: bigint; text: string }) {

@@ -4,7 +4,7 @@
 ;; CONCEPT v5 §3.4's fourth contract: the era trophies and their engravings. A
 ;; number's name lives on its item (D-188 point 6, D-212) and the prime rank on
 ;; the ledger, which also bounds every map this contract keeps. **It holds
-;; no protocol TON at all** — that is why it is separate, and why its declared
+;; no protocol GRAM at all** — that is why it is separate, and why its declared
 ;; liability is structurally zero.
 ;;
 ;; Its only outbound messages are a paid re-engraving's fee to the collection
@@ -78,8 +78,8 @@ transfer_trophy#b0000070
 ;; either: it issues a trophy and has no say in where it goes afterwards.
 ;;
 ;; ZERO LIABILITY IS PRESERVED. This is one row rewritten in place (the engraving
-;; travels with the trophy). No TON is attached beyond gas, none is held, none is
-;; escrowed, and there is no fee — the registrar holds no protocol TON at all
+;; travels with the trophy). No GRAM is attached beyond gas, none is held, none is
+;; escrowed, and there is no fee — the registrar holds no protocol GRAM at all
 ;; (§3.4) and that is the property that justifies it being a separate contract. A
 ;; trophy sale is settled between the parties off this contract.
 
@@ -133,7 +133,7 @@ transfer_trophy#b0000070
 ;; Trust edges:
 ;;   - annotate: PERMISSIONLESS in shape; only the trophy's holder passes. The
 ;;     FIRST engraving is free; every later one must carry rename_fee (deploy
-;;     data, `get_trophy_rename_fee`) + REG_RENAME_GAS (0.05 TON), and the fee
+;;     data, `get_trophy_rename_fee`) + REG_RENAME_GAS (0.05 GRAM), and the fee
 ;;     goes to the floor as `naming_paid` through the collection. EVERY refusal
 ;;     refunds the whole value rather than throwing.
 ;; ===========================================================================

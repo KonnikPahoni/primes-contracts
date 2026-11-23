@@ -2,8 +2,8 @@
 //
 // THE BUG THIS PINS. `executeMint` used to walk past every prime and every
 // auctioned composite after `n` in ONE transaction, with no bound. Opening a lot
-// costs ~1.07 TON and nothing limits how many consecutive numbers can be
-// auctioned, so ~55 lots in a row (~60 TON) pushed the one head mint that
+// costs ~1.07 GRAM and nothing limits how many consecutive numbers can be
+// auctioned, so ~55 lots in a row (~60 GRAM) pushed the one head mint that
 // crossed them past the 1,000,000-gas basechain cap. It aborted, every retry
 // walked the same run, the off-head bits are permanent and the ledger has no
 // upgrade path: the core loop was frozen for good.

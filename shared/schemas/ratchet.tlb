@@ -17,11 +17,11 @@
 ;;      reserve, D-151), amount = the message value, which the contract sizes
 ;;      itself from `reserve_target` — no message below lets a sender name it;
 ;;   4. burn#595f07bc again, destination = this contract's OWN tsTON wallet,
-;;      carrying §4.3.2's withdrawal payload — the redeemed TON returns here and
+;;      carrying §4.3.2's withdrawal payload — the redeemed GRAM returns here and
 ;;      can return nowhere else, because the pool pays the burner;
 ;;   5. nothing else.
 ;; No withdraw, no sweep, no owner field, and no message any sender can send
-;; that moves TON to an address of the sender's choosing. `flush` is
+;; that moves GRAM to an address of the sender's choosing. `flush` is
 ;; permissionless precisely because it cannot be aimed, and the three staking
 ;; triggers keep that property in a stronger form: they carry no size field at
 ;; all.
@@ -40,7 +40,7 @@
 ;;   - transfer_notification: deliberately UNCHECKED sender — the only reply is
 ;;     a burn aimed back at that same sender for the notified amount, riding
 ;;     the notification's own attached gas, so a forged notification can only
-;;     burn the forger's own tokens and moves no protocol TON. Since §4.3.2 this
+;;     burn the forger's own tokens and moves no protocol GRAM. Since §4.3.2 this
 ;;     message arrives from TWO wallets and the handler branches on which stored
 ;;     address the sender matches — see the tsTON block below.
 ;;   - stake / unstake / harvest: permissionless, any sender, and unlike `flush`
@@ -250,7 +250,7 @@ swap_params#_
 
 dedust_swap#ea06185d
     query_id:uint64
-    amount:Coins                         ;; the TON side of the swap; equals the message value
+    amount:Coins                         ;; the GRAM side of the swap; equals the message value
     step:SwapStep                        ;; inline, not a ref — matches DeDust's `_:SwapStep`
     swap_params:^SwapParams
   = InternalMsgBody;
@@ -278,7 +278,7 @@ dedust_swap#ea06185d
 ;; parses the real outbound cell field-by-field against this schema instead.
 ;;
 ;; The message is sent with BounceMode.RichBounce. When the venue cannot fill at
-;; or above min_out the TON comes back and `pending` is restored unchanged — but
+;; or above min_out the GRAM comes back and `pending` is restored unchanged — but
 ;; by TWO different routes, and this file used to name only one of them. The
 ;; guard adds no parallel path either way, which is why a would-be-above-floor
 ;; flush and a sandwiched one are indistinguishable at contract level, and why
@@ -326,7 +326,7 @@ dedust_payout#474f86cf
 ;; governor-settable storage and can change under us with no redeploy and no
 ;; notice. The WIRE values below (opcodes, field order, bit order) are baked into
 ;; the deployed code and cannot. So: read a FIGURE quoted in these comments (the
-;; 1 TON DEPOSIT_FEE) as storage as it stood on the fetch date; read an OPCODE as
+;; 1 GRAM DEPOSIT_FEE) as storage as it stood on the fetch date; read an OPCODE as
 ;; fixed for the life of that deployment.
 
 ;; ---- inbound: the three permissionless staking triggers (§4.3.2) ----
@@ -411,12 +411,12 @@ deposit#47d54391
     query_id:uint64
   = InternalMsgBody;
 ;; The staked amount is the MESSAGE VALUE — the body has no amount field. The
-;; pool subtracts a flat DEPOSIT_FEE = 1 TON from the value and credits the
+;; pool subtracts a flat DEPOSIT_FEE = 1 GRAM from the value and credits the
 ;; remainder (contracts/pool.func:79, :288-290), then
 ;; `throw_unless(error::deposit_amount_too_low, deposit_amount > 0)`. A deposit
-;; of 1 TON or less therefore THROWS rather than doing nothing, so `stake` must
+;; of 1 GRAM or less therefore THROWS rather than doing nothing, so `stake` must
 ;; size its tranche clear of the fee, and the fee is a real cost of the leg, not
-;; a rounding artefact: it is spent TON that never reaches `tston_held`.
+;; a rounding artefact: it is spent GRAM that never reaches `tston_held`.
 
 ;; ---- outbound: the withdrawal, as a TEP-74 burn of our own tsTON ----
 ;;
@@ -452,7 +452,7 @@ withdraw#319b0cdc
 ;; try/catch; an absent or short payload underflows, the catch fires, and the
 ;; pool RE-MINTS the jettons back to us. A burn with no payload is a ROUND TRIP,
 ;; not a withdrawal — no throw we can see, no bounce, the tsTON back in the
-;; wallet and no TON coming. Any check that reads "the burn succeeded" as "the
+;; wallet and no GRAM coming. Any check that reads "the burn succeeded" as "the
 ;; withdrawal started" is wrong in exactly that case.
 
 ;; ---- inbound: the filled withdrawal, from the pool ----
@@ -462,11 +462,11 @@ withdrawal#0a77535c
     query_id:uint64
   = InternalMsgBody;
 ;; Non-bounceable, sent CARRY_ALL_BALANCE. THE BODY CARRIES NO AMOUNT: the filled
-;; TON is the message value, and it arrives mixed with whatever is left of the
+;; GRAM is the message value, and it arrives mixed with whatever is left of the
 ;; gas we attached to our own burn. So this message can never tell us what rate
 ;; we exited at — the received value is a payout plus change, and the two are not
 ;; separable at arrival. That is precisely why the tsTON rate is learned from a
-;; DEPOSIT's transfer_notification, where TON sent and jettons minted are both
+;; DEPOSIT's transfer_notification, where GRAM sent and jettons minted are both
 ;; known exactly, and never from a withdrawal.
 
 ;; ---- inbound: the payout bill, when the withdrawal cannot be filled ----
@@ -487,7 +487,7 @@ ownership_assigned#05138d91
 distributed_asset#db3b8abd
     query_id:uint64
   = InternalMsgBody;
-;; Non-bounceable, CARRY_ALL_REMAINING_MESSAGE_VALUE, our TON share = the message
+;; Non-bounceable, CARRY_ALL_REMAINING_MESSAGE_VALUE, our GRAM share = the message
 ;; value. Again no amount field: the money IS the message.
 ;;
 ;; WHY NEITHER OF THE LAST TWO IS AUTHENTICATED, AND WHY THAT IS SAFE. The payout
@@ -504,10 +504,10 @@ distributed_asset#db3b8abd
 ;;     arrival of an NFT anyone can send us. A forged one changes no number.
 ;;   - distributed_asset credits `pending` and draws `exiting` down by the same
 ;;     value. BOTH ARE TERMS OF `T`, they move in the directions a real payout
-;;     moves them, and the TON backing the credit is really in this contract's
+;;     moves them, and the GRAM backing the credit is really in this contract's
 ;;     balance because it is the message value itself. A forged one is therefore
 ;;     a stranger paying into the pool on a bill's behalf: it mints no PRIMES,
-;;     aims no TON, cannot be replayed for value the sender did not attach, and
+;;     aims no GRAM, cannot be replayed for value the sender did not attach, and
 ;;     cannot push `pending` above the balance that backs it. The attack costs
 ;;     the attacker the exact amount it gives the ratchet.
 ;; This is the same argument as the unchecked transfer_notification at the top of
@@ -522,7 +522,7 @@ distributed_asset#db3b8abd
 ;; notification is declared at the top of this file); what changes is that the
 ;; notification handler MUST branch on which stored address the sender matches:
 ;;   - tsTON wallet, exact match -> §4.3.2's deposit fill. Credit `tston_held`,
-;;     update the learned rate from (TON sent, jettons minted) ONLY when the
+;;     update the learned rate from (GRAM sent, jettons minted) ONLY when the
 ;;     TEP-74 `from` is addr_none (the pool's optimistic mint). Any other tsTON
 ;;     that is not an exit leg's answer — a NON-OPTIMISTIC fill, which arrives
 ;;     as a transfer from the salted payout collection, or a stranger's

@@ -5,13 +5,14 @@
  *
  * Every test of the invite text so far was a transfer from a wallet; the ledger is not a
  * wallet. This deploys `invite_probe.tolk` (a few lines: on its deploy message it sends
- * 0.1 TON, NoBounce, mode REGULAR, carrying the comment it was deployed with — the same
- * shape `primes_ledger.tolk`'s invite line sends) and has it send that transfer, ONCE, to
+ * 0.1 GRAM, NoBounce, mode REGULAR | PAY_FEES_SEPARATELY, carrying the comment it was
+ * deployed with — the same shape `primes_ledger.tolk`'s invite line sends since D-215;
+ * PROBE_EXACT=0 takes the fee out of the value, as it did before) and has it send that transfer, ONCE, to
  * the address you name. The comment is built by `shared/invites.ts` `inviteCommentCell(n)`,
  * the builder `InviteTransfers.spec.ts` pins to the ledger's own bytes.
  *
- * Cost: 0.2 TON attached to the deploy. 0.1 reaches the target; the rest is fees and the
- * probe's own balance, which stays on it (about 0.09 TON — it has no withdraw arm).
+ * Cost: the transfer (0.1 GRAM, or PROBE_TRANSFER_TON) + 0.005 attached, plus ~0.002 wallet fees; the rest is fees and the
+ * probe's own balance, which stays on it (under 0.01 GRAM — it has no withdraw arm).
  *
  * HOW TO RUN (from `contracts/`):
  *
@@ -37,7 +38,10 @@ import { mnemonicToPrivateKey } from '@ton/crypto';
 import { inviteCommentCell, inviteCommentText } from '../../../shared/invites';
 
 const MAINNET_ENDPOINT = 'https://toncenter.com/api/v2/jsonRPC';
-const DEPLOY_VALUE = 200_000_000n; // 0.2 TON: the 0.1 transfer, its fees, and the probe's rent
+// The transfer defaults to the ledger's 0.1 GRAM; PROBE_TRANSFER_TON overrides it to test whether
+// Telegram Wallet filters small transfers. 0.005 GRAM on top pays the probe's compute (~0.002).
+const TRANSFER_VALUE = BigInt(Math.round(Number(process.env.PROBE_TRANSFER_TON ?? '0.1') * 1e9));
+const DEPLOY_VALUE = TRANSFER_VALUE + 5_000_000n;
 
 /** `@ton/tolk-js` is a dependency of `@ton/blueprint`, not of this package, so resolve it from there. */
 async function compileProbe(): Promise<Cell> {
@@ -71,16 +75,19 @@ async function main() {
             : WalletContractV5R1.create({ publicKey: key.publicKey });
 
     const code = await compileProbe();
-    const comment = inviteCommentCell(n);
-    const data = beginCell().storeAddress(target).storeRef(comment).storeUint(0, 1).endCell();
+    // PROBE_COMMENT overrides the ledger's comment: any text, or '' for no comment at all.
+    const custom = process.env.PROBE_COMMENT;
+    const comment = custom === undefined ? inviteCommentCell(n) : custom ? beginCell().storeUint(0, 32).storeStringTail(custom).endCell() : beginCell().endCell();
+    const commentText = custom === undefined ? inviteCommentText(n) : custom;
+    const data = beginCell().storeAddress(target).storeRef(comment).storeCoins(TRANSFER_VALUE).storeUint((process.env.PROBE_EXACT ?? '1') === '1' ? 1 : 0, 1).storeUint(0, 1).endCell();
     const init: StateInit = { code, data };
     const probe = contractAddress(0, init);
 
     console.log(`sender wallet (${version}): ${wallet.address.toString({ bounceable: false })}`);
     console.log(`probe contract:            ${probe.toString({ bounceable: false })}`);
     console.log(`target:                    ${target.toString({ bounceable: false })}`);
-    console.log(`comment:                   "${inviteCommentText(n)}"`);
-    console.log(`attached:                  ${Number(DEPLOY_VALUE) / 1e9} TON (0.1 of it reaches the target)`);
+    console.log(`comment:                   "${commentText}"`);
+    console.log(`attached:                  ${Number(DEPLOY_VALUE) / 1e9} GRAM (${Number(TRANSFER_VALUE) / 1e9} of it reaches the target)`);
     if (!send) {
         console.log('\ndry run — nothing sent. Re-run with --send to deploy the probe on MAINNET.');
         return;
@@ -89,8 +96,8 @@ async function main() {
     const client = new TonClient({ endpoint: MAINNET_ENDPOINT, apiKey: process.env.TONCENTER_API_KEY || undefined });
     const opened = client.open(wallet);
     const balance = await opened.getBalance();
-    if (balance < DEPLOY_VALUE + 50_000_000n) {
-        throw new Error(`the sender wallet holds ${Number(balance) / 1e9} TON; it needs at least 0.25. Nothing sent.`);
+    if (balance < DEPLOY_VALUE + 10_000_000n) {
+        throw new Error(`the sender wallet holds ${Number(balance) / 1e9} GRAM; it needs at least ${Number(DEPLOY_VALUE + 10_000_000n) / 1e9}. Nothing sent.`);
     }
     if ((await client.getContractState(probe)).state === 'active') {
         throw new Error('the probe for this (target, n) is already deployed and has already sent. Nothing sent.');

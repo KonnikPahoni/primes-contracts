@@ -3,7 +3,7 @@
  * REFERRAL, TRIBUTE and the FLAT DIVIDEND.
  *
  * What was already proven before this file: a resolvable `referralKey = 4` paid
- * 0.0996 TON and an unresolvable `= 1` paid nothing (the since-deleted `proveReferralLive.ts`,
+ * 0.0996 GRAM and an unresolvable `= 1` paid nothing (the since-deleted `proveReferralLive.ts`,
  * which prints and asserts nothing but the head), and the five-way split
  * reconciled against the fee meters (`proveCompositeSplitLive.ts`).
  *
@@ -12,7 +12,7 @@
  *  - **An excluded referral key is indistinguishable from no key.** GAUNTLET V7
  *    added two exclusions — a key naming a MARKED-BUT-UNSOLD prime, and a key
  *    naming a RESERVED (auctioned) composite — precisely because both used to
- *    forward 0.1 TON to an address with no contract on it. Neither has ever
+ *    forward 0.1 GRAM to an address with no contract on it. Neither has ever
  *    been fired on chain. Nor has a key AHEAD of the head.
  *  - **The excluded line folds into the pool** rather than to the team (§3.1,
  *    §4.1). Measured as the closure quantity below, not asserted by eye.
@@ -99,7 +99,7 @@ const ton = (v: bigint) => (Number(v) / 1e9).toFixed(9);
  * THE FIRST TERM IS `T`, NOT `pending`, AND THAT IS THE WHOLE POINT OF THIS
  * COMMENT. It read `pending` until 2026-09-20, when the wave-4 run reported
  * `REFERRAL_EXCLUDED_1009` broken: a mint carrying a key AHEAD OF THE HEAD
- * injected 0.006216431 TON less than a no-key mint, with every other term
+ * injected 0.006216431 GRAM less than a no-key mint, with every other term
  * identical. It had not. The ledger's `pool_inject#b0000050` for that mint
  * declared the full 750000003 nanoton, exactly as its neighbours did — and
  * nineteen seconds later, INSIDE this function's own 30s settle window, the
@@ -166,7 +166,7 @@ async function mintHead(c: Contracts, w: Wallet, referralKey: number, label: str
     if (headAfter <= n) throw new Error(`[${label}] head did not advance — still ${headAfter}`);
     const closure = after.total - before.total;
     console.log(
-        `[${label}] closure ${ton(closure)} TON  (ΔT ${ton(after.snap.T - before.snap.T)} · ` +
+        `[${label}] closure ${ton(closure)} GRAM  (ΔT ${ton(after.snap.T - before.snap.T)} · ` +
             `Δpending ${ton(after.pending - before.pending)}${
                 after.snap.T - before.snap.T !== after.pending - before.pending
                     ? ' — a flush moved pending mid-window; ΔT is the honest one'
@@ -238,7 +238,7 @@ async function cmdReferral(c: Contracts, handle: string) {
             detail:
                 `${e.why}: closure ${ton(run.closure)} vs baseline ${ton(base.closure)} — ` +
                 (run.closure === base.closure
-                    ? 'indistinguishable from no key, so the 0.1 TON folded to the pool'
+                    ? 'indistinguishable from no key, so the 0.1 GRAM folded to the pool'
                     : `DIFFERS by ${ton(run.closure - base.closure)}`),
         });
         if (refereeBefore) {
@@ -277,7 +277,7 @@ async function cmdReferral(c: Contracts, handle: string) {
                 ok: paid > REFERRAL_AMOUNT - toNano('0.002') && paid <= REFERRAL_AMOUNT,
                 name: 'REFERRAL_ARRIVED',
                 getMethod: `item(${resolvable}).getNumberData().owner balance`,
-                detail: `owner received ${ton(paid)} TON (0.1 less two forward fees)`,
+                detail: `owner received ${ton(paid)} GRAM (0.1 less two forward fees)`,
             });
         } else if (owner) {
             // NOT a failure and NOT silence: the payment is already proved by
@@ -306,9 +306,9 @@ async function firstResolvableKey(c: Contracts, head: bigint, payer?: Address): 
     // cannot be measured at all: that balance moves by `-mint + referral` and the
     // referral is invisible inside it. On a fresh set every number below the head
     // is owned by the deploy wallet, which is also the minter, so the naive first
-    // match is always the unmeasurable one (2026-09-19: read `-0.976 TON` and
+    // match is always the unmeasurable one (2026-09-19: read `-0.976 GRAM` and
     // called it a failed payout, on a run where the closure assert had just proved
-    // the 0.1 TON left the pool exactly).
+    // the 0.1 GRAM left the pool exactly).
     const candidates: bigint[] = [];
     for (let n = 2n; n < head; n++) {
         if (isPrime(n)) {
@@ -426,7 +426,7 @@ async function cmdDividend(c: Contracts, p: bigint, handle: string) {
     const owedBefore = await retry(() => item.getOwed(), 'getOwed');
     const before = await snapshot(c);
     console.log(
-        `claiming the dividend of prime ${p} from ${handle} (who owns nothing) — claimable ${ton(claimableBefore)} TON`
+        `claiming the dividend of prime ${p} from ${handle} (who owns nothing) — claimable ${ton(claimableBefore)} GRAM`
     );
     // Decide on the read: a prime minted after the last head mint has accrued nothing, and a
     // claim of 0 proves no sweep (the G93 run sent one straight after the lot closed).
@@ -525,7 +525,7 @@ async function cmdClaim(c: Contracts, p: bigint, handle: string) {
         }
         throw new Error(`${p} owes its owner nothing (getOwed 0) — a claim would move nothing; nothing sent`);
     }
-    console.log(`claiming ${ton(owedBefore)} TON of tribute on ${p} from ${handle} (the owner)`);
+    console.log(`claiming ${ton(owedBefore)} GRAM of tribute on ${p} from ${handle} (the owner)`);
     await item.sendClaimTribute(w.sender, { value: toNano('0.12') });
     await new Promise((r) => setTimeout(r, SETTLE_MS));
     const owedAfter = await retry(() => item.getOwed(), 'getOwed(after)');

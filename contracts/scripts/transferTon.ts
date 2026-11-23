@@ -1,12 +1,12 @@
 /**
- * TON PRIMES — testnet utility: move TON between subwallets of the keeper
+ * TON PRIMES — testnet utility: move GRAM between subwallets of the keeper
  * mnemonic (skew-safe signing, same pattern as scriptHost.ts).
  * Used to fund a fresh deploy subwallet per genesis cycle — see the walletId
  * note in scriptHost.ts for why each cycle wants a fresh one.
  *
  * Env:
  *   PRIMES_TRANSFER_TO_SUBWALLET_ID — destination subwallet id (required)
- *   PRIMES_TRANSFER_TON             — amount in TON (required)
+ *   PRIMES_TRANSFER_TON             — amount in GRAM (required)
  *   PRIMES_FROM_SUBWALLET_ID        — source subwallet id (default: wallet v4 default)
  *
  *   ../bot/node_modules/.bin/tsx scripts/transferTon.ts
@@ -51,8 +51,8 @@ async function main() {
     const balance = await client.getBalance(from.address);
     if (balance < toNano(amountTon) + toNano('0.05')) {
         throw new Error(
-            `${from.address.toString({ testOnly: true })} holds ${Number(balance) / 1e9} TON, ` +
-                `short of ${amountTon} TON plus fees. A transfer it cannot afford fails in the ` +
+            `${from.address.toString({ testOnly: true })} holds ${Number(balance) / 1e9} GRAM, ` +
+                `short of ${amountTon} GRAM plus fees. A transfer it cannot afford fails in the ` +
                 `action phase while the seqno still advances, so this would report success.`
         );
     }
@@ -73,7 +73,7 @@ async function main() {
         cur = await wc.getSeqno();
     }
     if (cur === seqno) throw new Error('transfer not confirmed');
-    console.log(`sent ${amountTon} TON, seqno ${seqno} -> ${cur}`);
+    console.log(`sent ${amountTon} GRAM, seqno ${seqno} -> ${cur}`);
 }
 
 main().catch((e) => {

@@ -17,10 +17,10 @@ submitted factorization and are set only by `score_from_flags`/
 `factored_scores_range` -- see `FACTOR_BITS` below), every
 category adds its points (only the six DIGIT patterns take a max, because they
 imply one another), and the ONE
-clamp is `SCORE_MAX = 87` -- which IS owner answer 9's 420 TON ceiling:
-`MINT_PRICE * 2^(87/10)` = 415.9 TON, just under the declared cap. (D-99 SS1.1
+clamp is `SCORE_MAX = 87` -- which IS owner answer 9's 420 GRAM ceiling:
+`MINT_PRICE * 2^(87/10)` = 415.9 GRAM, just under the declared cap. (D-99 SS1.1
 writes `2^(87/10) = 420.4`; that is 2^8.716. The clamp is the ceiling either
-way, and 415.9 TON is what the shipped integer ladder quotes at the top rung.)
+way, and 415.9 GRAM is what the shipped integer ladder quotes at the top rung.)
 
 **CLAUDE.md rule 3.** The 39 weights are **OWNER-DECLARED** (D-99 SS1.3, owner
 answers 3/6/10), not sim output, and this module refuses to retype them: they
@@ -1009,8 +1009,8 @@ def histogram(lo: int = WINDOW_LO, hi: int = WINDOW_HI, *,
         "counts_by_score": {str(k): counts[k] for k in sorted(counts)},
         "_max_score_note": (
             "REALISED maximum over this window, not the clamp. The clamp is "
-            f"SCORE_MAX = {W.SCORE_MAX}, which IS owner answer 9's 420 TON "
-            "ceiling: MINT_PRICE * 2^(87/10) = 415.9 TON on the shipped ladder. "
+            f"SCORE_MAX = {W.SCORE_MAX}, which IS owner answer 9's 420 GRAM "
+            "ceiling: MINT_PRICE * 2^(87/10) = 415.9 GRAM on the shipped ladder. "
             "Only a number that is rare in three ways at once reaches it, which "
             "is answer 9 as a measurement rather than a claim."
         ),
@@ -1045,8 +1045,8 @@ def desirability_block(*, lo: int = WINDOW_LO, hi: int = WINDOW_HI) -> dict:
             "POSITION, 0, SCORE_MAX). LEN pays LEN_W*(LEN_REF - digits) while "
             "digits < LEN_REF; the six DIGIT patterns take a MAX because they "
             "imply one another; everything else sums. SCORE_MAX = 87 IS owner "
-            "answer 9's 420 TON ceiling: the ladder tops out at "
-            "MINT_PRICE * 2^(87/10) = 415.9 TON."
+            "answer 9's 420 GRAM ceiling: the ladder tops out at "
+            "MINT_PRICE * 2^(87/10) = 415.9 GRAM."
         ),
         "weights": {
             "LEN_REF": W.LEN_REF, "LEN_W": W.LEN_W, "TZ_CAP": W.TZ_CAP,

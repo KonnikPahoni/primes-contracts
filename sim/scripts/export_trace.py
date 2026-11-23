@@ -135,9 +135,9 @@ def main():
     ap.add_argument("--mode", choices=["full", "chain-replay"], default="chain-replay")
     ap.add_argument("--mints", type=int, default=10_000)
     ap.add_argument("--seed", type=int, default=20260813)
-    ap.add_argument("--seed-t", type=float, default=1000.0, help="chain-replay only: matches PrimesGenesisMint.spec.ts's GenesisSeed T (1000 TON)")
+    ap.add_argument("--seed-t", type=float, default=1000.0, help="chain-replay only: matches PrimesGenesisMint.spec.ts's GenesisSeed T (1000 GRAM)")
     # DENOMINATION_PLAN P1: the fixture seeds at the DEPLOY floor, 1/(L * 1.2)
-    # TON per PRIMES. At L = 10,000 that is 12,000 PRIMES per TON, so 1000 TON
+    # GRAM per PRIMES. At L = 10,000 that is 12,000 PRIMES per GRAM, so 1000 GRAM
     # of seed is 12M PRIMES. Must move with PrimesGenesisMint.spec.ts's `seedS`.
     ap.add_argument("--seed-s", type=float, default=15_000_000.0, help="chain-replay only: matches PrimesGenesisMint.spec.ts's GenesisSeed S (15M PRIMES at L=10,000, D-41)")
     ap.add_argument("--out", default=None)

@@ -52,7 +52,7 @@ describe('X6 — what breaks when a key is lost is written down', () => {
         // deleted the invite signer); the operator wallet is the one that is replaceable, and
         // it must be distinguishable rather than lumped in with it.
         expect((d.match(/without a redeploy: NO/g) ?? []).length).toBeGreaterThanOrEqual(1);
-        expect(d).toContain('move TON to a new wallet');
+        expect(d).toContain('move GRAM to a new wallet');
     });
 
     it('records the coupling between the gas wallet and the venue proposer', () => {

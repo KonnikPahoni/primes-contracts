@@ -45,7 +45,7 @@ class SplitParams:
     flat_dividend_f: float = 0.20     # `f`: share of the tribute line paid flat
     divisor_exponent: float = 0.5     # the exponent on p in w(p) = e * p**exponent
     # D-106 DELETED SS4.1's patron line (phi1 = 0.25 on a recruit's activation
-    # mint, phi2 = 0.075 after, to a cumulative PATRON_CAP = 1.00 TON). It is not
+    # mint, phi2 = 0.075 after, to a cumulative PATRON_CAP = 1.00 GRAM). It is not
     # a rate that went to zero -- it is a line that no longer exists, which is
     # why there is no `patron_rate` argument left to pass anywhere below.
 
@@ -55,11 +55,30 @@ class SplitParams:
 # --------------------------------------------------------------------------- #
 
 # OWNER-SET, not the sim's to choose (CLAUDE.md rule 3 is not engaged): each
-# invite is a plain non-bounceable 0.1 TON transfer with a fixed text comment,
+# invite is a plain non-bounceable 0.1 GRAM transfer with a fixed text comment,
 # sent by the ledger to an address the minter supplies. It replaced D-101's
-# 0.025 TON PRIME GENERATOR item deploy, which reached no wallet. The contract's
+# 0.025 GRAM PRIME GENERATOR item deploy, which reached no wallet. The contract's
 # per-transfer value must equal this one.
+#
+# D-215 (owner, 2026-11-22): count and value became OPERATOR-SET on chain
+# (`set_invite_terms`), so these two are now the GENESIS terms the ledger deploys
+# with, and this sim models the game at them. The three numbers below are the
+# fixed bounds any terms must sit inside; the contract literals must equal them.
 INVITE_TRANSFER_VALUE_TON: float = 0.1
+
+# D-215 -- OWNER-SET bounds. The ledger sends each invite PAY_FEES_SEPARATELY, so the
+# value arrives whole (a Telegram wallet pushes for 0.1 GRAM received, not 0.0999 --
+# measured on mainnet 2026-11-22), and the line pays its own fee: SEND_FEE per
+# transfer, deducted from the residual with the value. MEASURED, not chosen, as an
+# upper bound: InviteTransfers.spec.ts reads 0.00040 GRAM per transfer at 3 invites
+# and 0.00031 at 100 (86-byte words); 0.001 leaves 2.5x headroom, and what it
+# overstates stays on the ledger, where sweep_ops returns it to the ratchet pool.
+# LINE_CAP bounds count * (value + SEND_FEE) for ANY terms the operator sets, so the
+# worst residual is base_beta - LINE_CAP whatever is on chain. COUNT_CEILING is TON's
+# 255-action transaction limit with room for the mint's own sends.
+INVITE_SEND_FEE_TON: float = 0.001
+INVITE_LINE_CAP_TON: float = 0.31
+INVITE_COUNT_CEILING: int = 100
 
 # D-114 -- OWNER-SET, not the sim's to choose: an auction lot's premium above
 # MINT_PRICE + RES_GAS splits this share (basis points) to the governed treasury;
@@ -67,7 +86,8 @@ INVITE_TRANSFER_VALUE_TON: float = 0.1
 PREMIUM_TREASURY_BPS: int = 5000
 
 # OWNER-SET (TELEGRAM_INVITES_PLAN.md, 2026-11-07, like D-101 call 2): the minter
-# supplies 0..3 recipient addresses in the mint message.
+# supplies 0..3 recipient addresses in the mint message. Since D-215 this is the
+# GENESIS count; the operator may move it up to INVITE_COUNT_CEILING on chain.
 INVITE_MAX_COUNT: int = 3
 
 # ASSUMED, NOT MEASURED. The webapp checkout has no invite toggle: it declares
@@ -89,20 +109,20 @@ INVITE_OPTIN_RATE_LABEL: str = (
 
 @dataclass
 class SplitResult:
-    tribute_paid: float          # TON actually paid out of the tribute line (divisor line only)
-    tribute_to_pool: float       # tribute TON with no recipient -> pool
-    flat_dividend: float         # TON accrued to `div_acc` (flat prime dividend)
+    tribute_paid: float          # GRAM actually paid out of the tribute line (divisor line only)
+    tribute_to_pool: float       # tribute GRAM with no recipient -> pool
+    flat_dividend: float         # GRAM accrued to `div_acc` (flat prime dividend)
     referral_paid: float
     referral_to_pool: float
     treasury: float
     gas_ops: float
     pool_injection: float        # beta * P
     recipient_shares: dict       # {owner_id: ton} over the divisor line
-    invite_paid: float = 0.0     # TON leaving as invite transfers (SS4.1)
+    invite_paid: float = 0.0     # GRAM leaving as invite transfers (SS4.1)
     invite_to_pool: float = 0.0  # unspent invite slots -> pool (D-101 call 3)
     # D-117: the unspent gas & ops line, swept back into the pool with NO emission.
     # A part of `gas_ops`, not of `pool_injection`: the rebate is k * beta * P and
-    # this TON never enters beta, so it raises T without raising S.
+    # this GRAM never enters beta, so it raises T without raising S.
     ops_surplus_to_pool: float = 0.0
 
 
@@ -147,7 +167,7 @@ def split_mint(
     either, since the mint's own number is not yet minted when the line is
     computed and SS4.2.1's worked example books the whole 0.10 to the pool.
     `invite_count`: SS4.1's seventh line -- `0..3` invite transfers at
-    `INVITE_TRANSFER_VALUE_TON` each, an ABSOLUTE TON amount deducted ahead of the
+    `INVITE_TRANSFER_VALUE_TON` each, an ABSOLUTE GRAM amount deducted ahead of the
     residual, not a percentage of the price. Defaults to 0, so an uninvited mint
     splits exactly as it did before the line existed.
     `invitees_served`: how many of those slots the minter's recipient list
@@ -159,7 +179,7 @@ def split_mint(
     """
     # `invite_count` is the number of recipient addresses in the mint message,
     # so a non-integer is not a value the contract can be handed -- type-checked
-    # here rather than silently deducting 2.5 slots' worth of TON.
+    # here rather than silently deducting 2.5 slots' worth of GRAM.
     if isinstance(invite_count, bool) or not isinstance(invite_count, int):
         raise TypeError(
             f"invite_count is a count of addresses, not a {type(invite_count).__name__}"
@@ -169,8 +189,11 @@ def split_mint(
             f"invite_count must be 0..{INVITE_MAX_COUNT} (SS4.1), got {invite_count}"
         )
     served = invite_count if invitees_served is None else min(max(invitees_served, 0), invite_count)
-    invite_paid = served * INVITE_TRANSFER_VALUE_TON
-    invite_to_pool = (invite_count - served) * INVITE_TRANSFER_VALUE_TON
+    # D-215: a sent invite costs the residual its value AND the per-transfer fee
+    # allowance. The allowance's unspent part is swept back to the pool by
+    # sweep_ops; it is not credited here, so this is the conservative reading.
+    invite_paid = served * (INVITE_TRANSFER_VALUE_TON + INVITE_SEND_FEE_TON)
+    invite_to_pool = (invite_count - served) * (INVITE_TRANSFER_VALUE_TON + INVITE_SEND_FEE_TON)
 
     tribute_line = params.tribute_pct * price_ton
     referral_line = params.referral_pct * price_ton
@@ -215,14 +238,14 @@ def split_mint(
     # `I = beta*P > 0` is the one premise docs/math-note.md's ratchet theorem still
     # needs ("as long as the split's leftover residual stays positive"). Every line
     # but the seventh is a RATE, so the residual is price-independent -- the invite
-    # line is an ABSOLUTE 0.1 TON per slot, so at a low enough price it eats past
+    # line is an ABSOLUTE 0.1 GRAM per slot, so at a low enough price it eats past
     # the residual and the pool would fund the invitations. Unreachable in the
-    # shipped game (MINT_PRICE is a flat 1 TON and a prime's lane rests at
+    # shipped game (MINT_PRICE is a flat 1 GRAM and a prime's lane rests at
     # max(NPV(p)/2, P0(p)/3, MINT_PRICE)), which is exactly why it is an assert: this
     # function is the reference phase 2's ledger is written from, and this is the
     # line that fails if a future price change makes it reachable.
     assert pool_injection > 0.0, (
-        f"SS4.1 residual is not positive ({pool_injection:.6f} TON at price "
+        f"SS4.1 residual is not positive ({pool_injection:.6f} GRAM at price "
         f"{price_ton}, invite_count {invite_count}): the ratchet theorem's I > 0 "
         f"premise fails and the pool would be funding the deducted lines"
     )
@@ -262,7 +285,7 @@ def beta(
     seventh is a rate, so they are price-free; SS4.1's seventh line is an
     absolute `invite_count * INVITE_TRANSFER_VALUE_TON` (D-101 call 1), so it needs
     the price to be expressed as a fraction -- `price_ton` defaults to the flat
-    all-in 1 TON mint of SS4, which is the price the table is stated for.
+    all-in 1 GRAM mint of SS4, which is the price the table is stated for.
     `invite_count` defaults to 0, so the base values are unchanged for anyone who
     does not opt in.
     """
@@ -271,8 +294,20 @@ def beta(
         b -= params.tribute_pct
     if referred:
         b -= params.referral_pct
-    b -= invite_count * INVITE_TRANSFER_VALUE_TON / price_ton
+    b -= invite_count * (INVITE_TRANSFER_VALUE_TON + INVITE_SEND_FEE_TON) / price_ton
     return b
+
+
+def beta_at_line_cap(
+    is_prime_mint: bool,
+    referred: bool,
+    params: SplitParams = SplitParams(),
+    price_ton: float = 1.0,
+) -> float:
+    """The lowest beta ANY operator-set invite terms can produce (D-215): the ledger
+    refuses terms -- and any mint -- whose count * (value + SEND_FEE) exceeds
+    INVITE_LINE_CAP_TON, so the line can take at most that much off the residual."""
+    return beta(is_prime_mint, referred, params, 0, price_ton) - INVITE_LINE_CAP_TON / price_ton
 
 
 def beta_expected(
@@ -466,7 +501,7 @@ def x_star(k_max: float, beta_: float, c: float = 0.10) -> float:
 
     `c` is the cash a self-referred loop recovers outside the rebate: 0.10 for
     self-referral alone, 0.40 for a minter who also sends its own invite
-    transfers to itself (3 x 0.1 TON, TELEGRAM_INVITES_PLAN.md) -- in which case
+    transfers to itself (3 x 0.1 GRAM, TELEGRAM_INVITES_PLAN.md) -- in which case
     `beta_` must be the invited row (0.25 referred composite), not the plain one.
     """
     denom = k_max * beta_
@@ -506,7 +541,7 @@ def asset_share_row(
 
     `rebate_value_at_x_star_ton` is the same rebate valued at SS8.1's ceiling
     and is the honest counterweight to the whole section: at `x = x*` the
-    rebate is worth `1 - c` TON **for every n**, because `x*` divides out the
+    rebate is worth `1 - c` GRAM **for every n**, because `x*` divides out the
     very `k_max(n)` the rotation is made of. The rotation is a
     floor-denominated statement and SS5.4 must say so.
     """

@@ -55,7 +55,7 @@ export class PrimesChain {
    * `getLot(n)` on the market, reduced to what a bid has to decide on.
    *
    * `minPayment` is the figure a bid must clear, and it is read HERE rather than computed:
-   * on the ascending lane it is `high + max(1 TON, 5% · high)` and on the descending one it
+   * on the ascending lane it is `high + max(1 GRAM, 5% · high)` and on the descending one it
    * is the standing price plus `RES_GAS`, both moving without a message.
    */
   async lot(n: bigint): Promise<LotState> {
@@ -114,7 +114,7 @@ export class PrimesChain {
     };
   }
 
-  /** `getOwed()` on one item — the §4.1 divisor share standing to its owner, in nanoTON. */
+  /** `getOwed()` on one item — the §4.1 divisor share standing to its owner, in nanoGRAM. */
   async owed(itemAddress: string): Promise<bigint> {
     const res = await this.client.runMethod(Address.parse(itemAddress), "getOwed");
     return res.stack.readBigNumber();
@@ -133,7 +133,7 @@ export class PrimesChain {
     return res ? res.stack.readNumber() : 0;
   }
 
-  /** `getNaming()` on the collection — D-212's first-naming and rename fees, nanoTON. */
+  /** `getNaming()` on the collection — D-212's first-naming and rename fees, nanoGRAM. */
   async namingFees(): Promise<{ nameFee: bigint; renameFee: bigint }> {
     if (!this.addresses.collection) throw new Error("no collection address; pass addresses.collection");
     const res = await this.client.runMethod(Address.parse(this.addresses.collection), "getNaming");
@@ -148,7 +148,7 @@ export class PrimesChain {
     return res.stack.readNumber();
   }
 
-  /** `getTrophyRenameFee()` on the registrar — what every engraving after the first costs, nanoTON. */
+  /** `getTrophyRenameFee()` on the registrar — what every engraving after the first costs, nanoGRAM. */
   async trophyRenameFee(): Promise<bigint> {
     const res = await this.client.runMethod(Address.parse(this.addresses.registrar), "getTrophyRenameFee");
     return res.stack.readBigNumber();
@@ -174,7 +174,7 @@ export class PrimesChain {
     return { holder: holder ? holder.toString() : null, transferable: res.stack.readNumber() !== 0 };
   }
 
-  /** `getPending()` on the ratchet — TON waiting for the next `flush()` (§4.3). */
+  /** `getPending()` on the ratchet — GRAM waiting for the next `flush()` (§4.3). */
   async pending(): Promise<bigint> {
     const res = await this.client.runMethod(Address.parse(this.addresses.ratchet), "getPending");
     return res.stack.readBigNumber();

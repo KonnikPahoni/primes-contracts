@@ -637,7 +637,7 @@ describe('D-196: far-ahead lot marks live on lot blocks', () => {
         const f = await ledger.sendFlushUnsold(keeper.getSender(), { value: FLUSH_VALUE });
         expect(f.transactions).not.toHaveTransaction({ aborted: true });
         // Block 0 is the densest block there is (54 primes): the lot block's merge must
-        // stay well inside the hop's fixed 0.06 TON, with room for a bounce.
+        // stay well inside the hop's fixed 0.06 GRAM, with room for a bounce.
         const merge = f.transactions.find(
             (t) => t.inMessage?.info.type === 'internal' && t.inMessage.info.dest.equals(lotBlockAddress(ledger.address, 0n))
         )!;

@@ -22,7 +22,7 @@ Runs, in order:
   9. the kill criteria;
  10. charts;
  10b. the genesis emission curve (DECISIONS.md D-100 point 2, D-154) -- the
-     first 100 mints after the 132.5 TON genesis donation, written to
+     first 100 mints after the 132.5 GRAM genesis donation, written to
      /docs/audit/genesis-emission-curve.md as a dated measurement record;
  11. /shared/params.json at schema_version 2.0.0 -- which since D-100 also
      carries the top-level `treasury` block (the LP-custody vote ladder and
@@ -95,7 +95,7 @@ SCHEMA_VERSION = "2.0.0"
 #
 # `invites` (SS4.1's seventh line) is NOT foreign: THIS script owns it. The block
 # is beta arithmetic -- the SS4.1 table re-derived with
-# `invite_count * INVITE_TRANSFER_VALUE_TON` deducted ahead of the residual -- and
+# `invite_count * (INVITE_TRANSFER_VALUE_TON + INVITE_SEND_FEE_TON)` deducted ahead of the residual -- and
 # beta is this script's output everywhere else in the file (`mint`, `rebate`,
 # `genesis.quest_rewards` all quote it).
 #
@@ -137,36 +137,36 @@ BASELINE_KWARGS = dict(
     # prime opens a Dutch lot as the head passes it, and the lot's sale rate and
     # premium are the lane outcome run_determinations.py measured. Until
     # 2026-09-24 this baseline ran the legacy model (the head minted primes at
-    # 1 TON and could park on one), and every block below was generated under it.
+    # 1 GRAM and could park on one), and every block below was generated under it.
     primes_skip_head=True,
     **_prime_lane_from_determinations(),
     genesis_lp_primes_per_ton=10_000.0,   # DENOMINATION_PLAN P1 (L = 10,000; owner 2026-08-19)
     # D-43 (owner 2026-08-20): the bounty vault is 10,000,000 PRIMES -- 500% of the
     # seeded LP, up from D-42's 100%, to fund the puzzle campaign (CONCEPT.md SS9.6):
     # 3 riddles at genesis plus one per week for 3 years (159 riddles), each worth
-    # 1 TON at claim time. The vault is minted, not bought, so its TON worth is
+    # 1 GRAM at claim time. The vault is minted, not bought, so its GRAM worth is
     # `T0 * pct / (1 + pct)`: raising the fraction raises the growth budget
-    # (100 -> 166.67 TON) but the price is paid entirely in the opening floor,
-    # 20,000 -> 60,000 PRIMES per TON -- every SS6 number keyed to 20,000 moves with
+    # (100 -> 166.67 GRAM) but the price is paid entirely in the opening floor,
+    # 20,000 -> 60,000 PRIMES per GRAM -- every SS6 number keyed to 20,000 moves with
     # this line. Every further doubling still buys less than the last (D-42 1a's
-    # point stands): 500% -> 1000% would move the vault's worth from 166.67 TON to
-    # only 181.8 TON. Past here the lever is the founder seed, not the vault
+    # point stands): 500% -> 1000% would move the vault's worth from 166.67 GRAM to
+    # only 181.8 GRAM. Past here the lever is the founder seed, not the vault
     # fraction, same as D-42 concluded at 100%.
     # D-204 (owner, 2026-11-11): 5.00 -> 7.80, a 15,600,000 PRIMES vault. The extra
-    # 5,600,000 is what the donation's 132.50 -> 200 TON raise backs at the floor the
+    # 5,600,000 is what the donation's 132.50 -> 200 GRAM raise backs at the floor the
     # game already opened at (1.0761e-5 -> 1.0769e-5), and ALL of it goes to the
     # `prime_quests` track (era_bounty_report); no other track moves.
     bounty_vault_pct_of_lp=7.80,
     genesis_seed_ton=200.0,  # SS6 point 3, owner decision 2026-08-15
     # GAUNTLET.md X14. Unset in every committed run, so `shared/params.json` is
     # regenerated from the same inputs it always was. Setting both seeds the MODELLED
-    # POOL at the real D-140 pair (292000 PRIMES / 0.1022 TON) while leaving S0 alone,
+    # POOL at the real D-140 pair (292000 PRIMES / 0.1022 GRAM) while leaving S0 alone,
     # which is the measurement the item asks for:
     #   PRIMES_SIM_POOL_PRIMES=292000 PRIMES_SIM_POOL_TON=0.1022 python scripts/run_phase1.py
     modelled_pool_ton=_env_float("PRIMES_SIM_POOL_TON"),
     modelled_pool_primes=_env_float("PRIMES_SIM_POOL_PRIMES"),
     # D-154 (owner, 2026-09-21), amending D-100 point 2: the operator funds
-    # 132.5 TON at genesis -- D-100 point 3's whole 150 TON commitment,
+    # 132.5 GRAM at genesis -- D-100 point 3's whole 150 GRAM commitment,
     # front-loaded, rather than 4.20 now and up to 150 incrementally later. This
     # is `T0`; `genesis_seed_ton` above keeps only its other job, sizing
     # S0 = seed * L * (1/2 + vault_pct) = 11,000,000 PRIMES (D-166: the vault's
@@ -176,16 +176,16 @@ BASELINE_KWARGS = dict(
     # donor's own `donate_floor` mint (D-100 point 1), which S0 does not include.
     #
     # WHY THIS FIGURE AND NOT ANOTHER: D-140 pins the DeDust pair at the floor,
-    # so the TON side is not a free choice -- it is `pairing_primes * p_f`, and
+    # so the GRAM side is not a free choice -- it is `pairing_primes * p_f`, and
     # both factors rise with this field. Opening depth is therefore QUADRATIC in
-    # it: `m * X / (S0 + m)` TON, `m` the donation's own tapered mint (D-166 took
+    # it: `m * X / (S0 + m)` GRAM, `m` the donation's own tapered mint (D-166 took
     # the operator's 250,000-PRIMES vest tranche out of the pair), 14.13 at X = 132.5.
     # D-154 sized X so that donated + paired = 150.0 with the tranche in; without
     # it the total posted is 146.63, and the figure is left where the owner set it.
     #
-    # D-204 (owner, 2026-11-11) takes it to 200 TON, the same figure as the nominal
+    # D-204 (owner, 2026-11-11) takes it to 200 GRAM, the same figure as the nominal
     # seed again, and grows the vault with it (above) so the floor does not move.
-    # The pair is then ~21.2 TON on top of the donation.
+    # The pair is then ~21.2 GRAM on top of the donation.
     genesis_donation_ton=200.0,
     horizon_days=3 * 365.0,
     n_max=2_000_000,
@@ -218,10 +218,10 @@ def emission_curve(e, n_mints: int = EMISSION_CURVE_MINTS) -> dict:
 
     **Why this needs publishing at all.** The rebate a mint emits is
     `R = k * I * S / T` PRIMES (CONCEPT.md SS5) -- `S/T` is `1/p_f`, so the
-    SMALLER the floor, the MORE PRIMES one TON of injection buys. That is what
-    made this curve worth publishing when the donation was 4.20 TON: `p_f0` at
-    3.5e-7 is 48x below D-92's 240 TON genesis, so each of the first mints
-    emitted 48x the PRIMES it would have. D-154's 132.5 TON donation puts `p_f0`
+    SMALLER the floor, the MORE PRIMES one GRAM of injection buys. That is what
+    made this curve worth publishing when the donation was 4.20 GRAM: `p_f0` at
+    3.5e-7 is 48x below D-92's 240 GRAM genesis, so each of the first mints
+    emitted 48x the PRIMES it would have. D-154's 132.5 GRAM donation puts `p_f0`
     at 1.104e-5 and takes ~32x of that back -- the front-loading buys opening
     depth AND cuts the front-loaded emission, which is the trade the decision
     names. The ratchet theorem is untouched either way -- `k < 1` still makes
@@ -239,8 +239,8 @@ def emission_curve(e, n_mints: int = EMISSION_CURVE_MINTS) -> dict:
     donation, the only thing in `seedT` after D-100 point 1) and
     `S0 = 16,600,000` (the 15,600,000-PRIMES bounty vault plus the 1,000,000 the
     treasury's lock vests; D-166 deleted the operator's). The run is on the D-20
-    model, so `mint_log` holds composite head mints only: a prime lot's TON (its
-    1 TON split and the ratchet's half of the premium) raises `T` with zero
+    model, so `mint_log` holds composite head mints only: a prime lot's GRAM (its
+    1 GRAM split and the ratchet's half of the premium) raises `T` with zero
     emission and is left out of the replay. That understates the floor and so
     OVERSTATES emission -- the conservative direction for this file.
 
@@ -346,7 +346,7 @@ def write_emission_curve_doc(curve: dict, e) -> str:
         corrected = "**NO**"
 
     lines = [
-        "# Genesis emission curve \u2014 the first 100 mints after a %.2f TON donation" % curve["genesis_donation_ton"],
+        "# Genesis emission curve \u2014 the first 100 mints after a %.2f GRAM donation" % curve["genesis_donation_ton"],
         "",
         "**Measured** " + time.strftime("%Y-%m-%d", time.gmtime()) + " \u00b7 "
         "**generator** `sim/scripts/run_phase1.py` (seed " + str(SEED) + ") \u00b7 "
@@ -357,13 +357,13 @@ def write_emission_curve_doc(curve: dict, e) -> str:
         "",
         "## Why this file exists",
         "",
-        "D-100 point 2 replaced D-92's 240 TON genesis donation with 4.20 TON, and",
-        "D-154 and then D-204 raised it to **%.2f TON**. The derivation method is unchanged through" % curve["genesis_donation_ton"],
+        "D-100 point 2 replaced D-92's 240 GRAM genesis donation with 4.20 GRAM, and",
+        "D-154 and then D-204 raised it to **%.2f GRAM**. The derivation method is unchanged through" % curve["genesis_donation_ton"],
         "both; only its input moves. The consequence the decision commits to",
         "publishing *before deploy* is this one:",
         "",
         "> a mint's rebate is `R = k \u00b7 I \u00b7 S / T` PRIMES (\u00a75), and `S / T` is `1 / p_f`.",
-        "> A smaller genesis floor makes every TON of injection buy proportionally",
+        "> A smaller genesis floor makes every GRAM of injection buy proportionally",
         "> more PRIMES, so the donation also sizes the front-loaded emission below.",
         "",
         "The **ratchet theorem is untouched** \u2014 `k < 1` still makes `p_f = T/S` strictly",
@@ -375,10 +375,10 @@ def write_emission_curve_doc(curve: dict, e) -> str:
         "",
         "| quantity | value | where it comes from |",
         "|---|---|---|",
-        "| `T\u2080` (`seedT`) | **%.2f TON** | D-100 point 2, owner-set. After D-100 point 1 a donation is the *only* thing that lands in `seedT`. |" % curve["genesis_donation_ton"],
+        "| `T\u2080` (`seedT`) | **%.2f GRAM** | D-100 point 2, owner-set. After D-100 point 1 a donation is the *only* thing that lands in `seedT`. |" % curve["genesis_donation_ton"],
         "| `S\u2080` | **{:,.0f} PRIMES** | 15,600,000 bounty vault (D-204) + 1,000,000 vested to the treasury (D-100 point 6; D-166 deleted the operator's 1 M) + the donor's `donate_floor` mint, `T₀ · L` tapered by D-156 (D-100 point 1). |".format(curve["genesis_supply_primes"]),
-        "| `p_f0` | **%.6e TON/PRIMES** | `T\u2080 / S\u2080`. D-92's figure was 1.667e-5 \u2014 this is %.2f\u00d7 lower. |" % (curve["p_f0_ton_per_primes"], 1.6666666666666667e-05 / curve["p_f0_ton_per_primes"]),
-        "| `L` | 10,000 PRIMES/TON | D-39, untouched: a denomination knob, not a price. |",
+        "| `p_f0` | **%.6e GRAM/PRIMES** | `T\u2080 / S\u2080`. D-92's figure was 1.667e-5 \u2014 this is %.2f\u00d7 lower. |" % (curve["p_f0_ton_per_primes"], 1.6666666666666667e-05 / curve["p_f0_ton_per_primes"]),
+        "| `L` | 10,000 PRIMES/GRAM | D-39, untouched: a denomination knob, not a price. |",
         "",
         "## Method",
         "",
@@ -390,7 +390,7 @@ def write_emission_curve_doc(curve: dict, e) -> str:
         "",
         "The run is on the **D-20** model: primes are not head mints, so the table lists",
         "composites only and opens at **n = 4**. A prime's Dutch lot raises `T` with zero",
-        "emission (§5.1, D-7); the replay leaves that TON out, which understates the floor",
+        "emission (§5.1, D-7); the replay leaves that GRAM out, which understates the floor",
         "and so overstates emission — the conservative direction for this file.",
         "",
         "## What the curve shows",
@@ -408,15 +408,15 @@ def write_emission_curve_doc(curve: dict, e) -> str:
         "## The honest reading",
         "",
         "The per-mint emission does fall fast. It is a `k\u00b7\u03b2 / T` term and `T` grows by `\u03b2`",
-        "every mint from a base of only %.2f TON, so the denominator runs away from the" % curve["genesis_donation_ton"],
+        "every mint from a base of only %.2f GRAM, so the denominator runs away from the" % curve["genesis_donation_ton"],
         "numerator almost immediately. Over the first 100 mints:",
         "",
-        "- `T` grows **{:.1f}\u00d7**, to {:,.2f} TON;".format(
+        "- `T` grows **{:.1f}\u00d7**, to {:,.2f} GRAM;".format(
             curve["T_multiple_after_curve"], rows[-1]["T_ton"]),
         "- `S` grows **{:.2f}\u00d7**, to {:,.0f} PRIMES \u2014 a cumulative emission of **{:,.1f}".format(
             s_mult, rows[-1]["S_primes"], curve["cumulative_emission_pct_of_S0"])
         + "% of `S\u2080`**;",
-        "- `p_f` rises **%.2f\u00d7**, to %.6e TON/PRIMES;" % (pf_mult, rows[-1]["p_f_ton_per_primes"]),
+        "- `p_f` rises **%.2f\u00d7**, to %.6e GRAM/PRIMES;" % (pf_mult, rows[-1]["p_f_ton_per_primes"]),
         "- mint 100 emits %.4f%% of `S\u2080`." % at100,
         "",
         "What that costs, and what it does not. It is **not a solvency problem**: nothing",
@@ -436,7 +436,7 @@ def write_emission_curve_doc(curve: dict, e) -> str:
         "",
         "`k = 0` rows are prime mints (\u00a75.1: primes emit nothing and ratchet ~11\u00d7 harder).",
         "",
-        "| # | n | kind | k | \u03b2 (TON) | rebate (PRIMES) | % of `S\u2080` | T (TON) | S (PRIMES) | `p_f` | `p_f/p_f0` |",
+        "| # | n | kind | k | \u03b2 (GRAM) | rebate (PRIMES) | % of `S\u2080` | T (GRAM) | S (PRIMES) | `p_f` | `p_f/p_f0` |",
         "|--:|--:|---|--:|--:|--:|--:|--:|--:|--:|--:|",
     ]
     for r in rows:
@@ -488,7 +488,7 @@ FEE_SHARE_OF_YIELD_MAX = 0.10
 #: A row extrapolates only if it staked at least this often. The 1/x reading
 #: assumes the stake count is the staked flow over the minimum; a row that stakes
 #: once or twice, late, measures WHEN it staked, not the minimum. The D-180 run's
-#: 200,000 TON row staked once and extrapolated to 2,548 TON against 206-219 from
+#: 200,000 GRAM row staked once and extrapolated to 2,548 GRAM against 206-219 from
 #: every row with 21+ stakes -- a 10x false minimum.
 MIN_STAKES_TO_EXTRAPOLATE = 10
 #: Constraint 1: unmet flush demand must be zero in the base run and under this
@@ -594,7 +594,7 @@ def staking_report(stress_kwargs: dict, gas_baseline: dict) -> dict:
         stress_rows.append(_staking_row(_run(n, probe_stake_min, **stress_kwargs)))
         b, s = base_rows[-1], stress_rows[-1]
         print(f"  reserve_days={n:>2}: staked {b['staked_share_of_pending']*100:5.1f}% of pending, "
-              f"unmet base {b['unmet_flush_ton']:.1f} TON, stress "
+              f"unmet base {b['unmet_flush_ton']:.1f} GRAM, stress "
               f"{s['unmet_share_of_demand']*100:.2f}% of demand, "
               f"exits {b['exit_events']}")
 
@@ -613,7 +613,7 @@ def staking_report(stress_kwargs: dict, gas_baseline: dict) -> dict:
         range_note = (
             f"NO N in {RESERVE_DAYS_SWEEP[0]}..{RESERVE_DAYS_SWEEP[-1]} meets the rule. "
             f"Emitting the best row in range (N={chosen_n:g}) with unmet "
-            f"{base_rows[best]['unmet_flush_ton']:.3f} TON in the base run and "
+            f"{base_rows[best]['unmet_flush_ton']:.3f} GRAM in the base run and "
             f"{stress_rows[best]['unmet_share_of_demand']*100:.3f}% of demand in the "
             "stress run. The range was NOT widened -- widening it is an owner call."
         )
@@ -624,8 +624,8 @@ def staking_report(stress_kwargs: dict, gas_baseline: dict) -> dict:
     for m in STAKE_MIN_SWEEP:
         min_rows.append(_staking_row(_run(chosen_n, m)))
         r = min_rows[-1]
-        print(f"  stake_min={m:>9,.0f} TON: {r['stake_events']:>5} stakes, fees "
-              f"{r['staking_fees_paid_ton']:8.1f} TON = "
+        print(f"  stake_min={m:>9,.0f} GRAM: {r['stake_events']:>5} stakes, fees "
+              f"{r['staking_fees_paid_ton']:8.1f} GRAM = "
               f"{(r['fee_share_of_yield'] or 0)*100:6.2f}% of yield")
 
     # The constraint is 1/x in the minimum -- a stake fires once the excess
@@ -719,10 +719,10 @@ def staking_report(stress_kwargs: dict, gas_baseline: dict) -> dict:
         "deposit_fee_ton": StakingParams().deposit_fee_ton,
         "exit_fee_ton": StakingParams().exit_fee_ton,
         "_source": (
-            "The RATCHET's TON reserve staked as tsTON (CONCEPT.md SS4.3.2, DECISIONS.md "
+            "The RATCHET's GRAM reserve staked as tsTON (CONCEPT.md SS4.3.2, DECISIONS.md "
             "D-151) -- UNRELATED to the top-level `staking` block, which is D-168's PRIMES "
             "staking paid from the treasury vest. Different "
-            "asset (TON, not PRIMES), different actor (the ratchet contract, not a player), "
+            "asset (GRAM, not PRIMES), different actor (the ratchet contract, not a player), "
             "different section. "
             "sim/scripts/run_phase1.py staking_report, seed=%d, STAKING_PLAN.md P1. "
             "`staked_fraction` comes from the SMALLEST N in %d..%d with zero unmet flush "
@@ -753,7 +753,7 @@ def staking_report(stress_kwargs: dict, gas_baseline: dict) -> dict:
             "DERIVED, not picked: 20 x the gas cost of ONE jetton transfer at basechain "
             "config 21. `jetton_wallet.transfer` (%d) + `jetton_wallet.internal_transfer` (%d) "
             "= %d gas units over 2 transactions, from contracts/gas-baseline.json, priced by "
-            "sim/primes_sim/gas.py's `gas_to_ton` at %.9f TON; x20 = %.9f. Below this a "
+            "sim/primes_sim/gas.py's `gas_to_ton` at %.9f GRAM; x20 = %.9f. Below this a "
             "harvest costs more gas than it moves value, so it is skipped (D-151 point 4). "
             "Every run in the sweeps below harvests on this threshold, and none of them is "
             "affected by it: a month's accrual at the modelled stake sizes is three orders of "
@@ -799,7 +799,7 @@ def staking_report(stress_kwargs: dict, gas_baseline: dict) -> dict:
                 "accrual (RATCHET_HOP_GAS) -- was DELETED by D-146 (2026-09-22): the pool's "
                 "flat fees are paid by the caller of `stake`/`unstake`, not out of that "
                 "accrual, so there is nothing for it to bound. It never bound: fee share "
-                "implied 289.4 TON against its 117.6."
+                "implied 289.4 GRAM against its 117.6."
                 % (FEE_SHARE_OF_YIELD_MAX * 100, MIN_STAKES_TO_EXTRAPOLATE)
             ),
             "min_stakes_to_extrapolate": MIN_STAKES_TO_EXTRAPOLATE,
@@ -1033,8 +1033,8 @@ def main(params_path: str = PARAMS_PATH, write_docs: bool = True):
                          horizon_days=365.0, history_every_n_mints=1000)
     pending_above_floor = an.pending_growth_report(e_healthy)
     pending_above_floor["amm_vs_floor"] = an.amm_vs_floor_detachment(e_healthy)
-    print(f"  above-floor market (400 TON/day external demand): pending "
-          f"{pending_above_floor['final_pending_ton']:.1f} TON after "
+    print(f"  above-floor market (400 GRAM/day external demand): pending "
+          f"{pending_above_floor['final_pending_ton']:.1f} GRAM after "
           f"{pending_above_floor['days_simulated']:.0f} days, fill rate "
           f"{pending_above_floor['fill_rate']}")
     # ------------------------------------------------------------------ #
@@ -1059,19 +1059,19 @@ def main(params_path: str = PARAMS_PATH, write_docs: bool = True):
 
     # D-168 / STAKING_PLAN.md SS3.3: the LP miner is deleted, so the only depth
     # certain to exist is the operator's genesis pair (D-154: L*X PRIMES against
-    # L*X^2/S0 TON). Re-run the base case with the pool seeded there.
+    # L*X^2/S0 GRAM). Re-run the base case with the pool seeded there.
     pair_primes = e2.genesis_donation_primes
     pair_ton = pair_primes * e2.floor_price_deploy
     e_pair = run_pass(modelled_pool_ton=pair_ton,
                       modelled_pool_primes=pair_primes)
     lp_depth = _lp_depth_without_miner(e2, e_pair)
     print(f"  LP depth without miner: {lp_depth['verdict']} "
-          f"(operator pair {pair_ton:.2f} TON / {pair_primes:,.0f} PRIMES; fills "
+          f"(operator pair {pair_ton:.2f} GRAM / {pair_primes:,.0f} PRIMES; fills "
           f"{e_pair.flush_fills}/{e_pair.flush_attempts})")
-    print(f"  guarded: net sandwich PnL {sandwich_guarded['sandwich_net_pnl_ton']:.2f} TON over "
+    print(f"  guarded: net sandwich PnL {sandwich_guarded['sandwich_net_pnl_ton']:.2f} GRAM over "
           f"{sandwich_guarded['sandwich_events']} events; fills {e2.flush_fills}/{e2.flush_attempts}")
-    print(f"  unguarded (1yr control): net {sandwich_unguarded['sandwich_net_pnl_ton']:.2f} TON")
-    print(f"  pending: final {pending['final_pending_ton']:.1f} TON "
+    print(f"  unguarded (1yr control): net {sandwich_unguarded['sandwich_net_pnl_ton']:.2f} GRAM")
+    print(f"  pending: final {pending['final_pending_ton']:.1f} GRAM "
           f"({(pending['pending_share_of_T'] or 0)*100:.1f}% of T), peak {pending['peak_pending_ton']:.1f}")
 
     # ------------------------------------------------------------------ #
@@ -1116,8 +1116,8 @@ def main(params_path: str = PARAMS_PATH, write_docs: bool = True):
     # from the same run that writes params.json, so the two cannot disagree.
     curve = emission_curve(e2)
     print("\n=== 10b. Genesis emission curve (D-100 point 2) ===")
-    print(f"  p_f0 = {curve['p_f0_ton_per_primes']:.6e} TON/PRIMES "
-          f"(T0 = {curve['genesis_donation_ton']:.2f} TON / S0 = "
+    print(f"  p_f0 = {curve['p_f0_ton_per_primes']:.6e} GRAM/PRIMES "
+          f"(T0 = {curve['genesis_donation_ton']:.2f} GRAM / S0 = "
           f"{curve['genesis_supply_primes']:,.0f} PRIMES)")
     print(f"  mint 1 emits {curve['first_mint_emission_pct_of_S0']:.2f}% of S0; "
           f"mint 10 {curve['mint_10_emission_pct_of_S0']:.2f}%; "
@@ -1230,11 +1230,11 @@ def era_bounty_report(e: Engine) -> dict:
         remaining - PUZZLES_TRACK_PRIMES - QUESTS_TRACK_PRIMES - SECURITY_BOUNTY_PRIMES
     )
     assert prime_quests_primes > 0, "the vault no longer covers its own tracks"
-    # DENOMINATION_PLAN P4 -- the era schedule is TON-DENOMINATED.
+    # DENOMINATION_PLAN P4 -- the era schedule is GRAM-DENOMINATED.
     #
     # A fixed nominal PRIMES bounty inflates with the floor: `p_f` rises ~45x over
-    # year one at baseline demand, so an era ceremony sized to be worth 2 TON at
-    # open would be worth ~90 TON at day 365. What the design fixes is the
+    # year one at baseline demand, so an era ceremony sized to be worth 2 GRAM at
+    # open would be worth ~90 GRAM at day 365. What the design fixes is the
     # ceremony's VALUE, so that is what the schedule carries. `max_primes` is the
     # PRIMES that value buys at the GENESIS floor and is therefore the largest the
     # boundary can ever pay -- the ratchet only raises `p_f`, so in normal
@@ -1248,7 +1248,7 @@ def era_bounty_report(e: Engine) -> dict:
         "eras_pool_frac_of_vault": eras_pool_frac,
         "eras_pool_primes": eras_pool,
         "era_bounty_schedule_denomination": (
-            "TON. `bounty_ton` is the ceremony's fixed value; the vault pays "
+            "GRAM. `bounty_ton` is the ceremony's fixed value; the vault pays "
             "min(bounty_ton * S / T, max_primes) nano-PRIMES. `max_primes` is "
             "bounty_ton / genesis_floor_price_ton_per_primes and is a cap, not an "
             "amount. DENOMINATION_PLAN P4; CONCEPT.md SS7."
@@ -1306,7 +1306,7 @@ def era_bounty_report(e: Engine) -> dict:
                     # unallocated 30% remainder. CONCEPT.md SS9.4's social quests
                     # are the acquisition funnel and they draw on this track and
                     # no other; at 0.05 the track held 14,000 PRIMES, which is
-                    # ~1.2 TON at the genesis floor and funds a two-digit number
+                    # ~1.2 GRAM at the genesis floor and funds a two-digit number
                     # of players. See `quest_rewards` below for the arithmetic
                     # that sizes it, and note the hard ceiling: the vault is
                     # pre-counted in S with no T behind it (SS3.3), so the WHOLE
@@ -1347,7 +1347,7 @@ def era_bounty_report(e: Engine) -> dict:
             "converts a permanent understatement of backing into a growth budget. That "
             "reallocation does not by itself move p_f0; the vault fraction separately "
             "does (D-41 -> D-42 -> D-43, 20% -> 100% -> 500% of seeded LP) -- the floor "
-            "now opens at 60,000 PRIMES per TON, and every SS6 number keyed to the "
+            "now opens at 60,000 PRIMES per GRAM, and every SS6 number keyed to the "
             "opening floor moves with it. See `score_rebate` for what D-43's raise "
             "now funds (D-47 supersedes D-43's puzzle campaign). EARN_PLAN E2's "
             "voucher program draws on `quests` only."
@@ -1382,7 +1382,7 @@ Was `SPECIAL_NUMBER_HORIZON_N`. D-99 deletes the special-number TIERS
 curated-year list; what survives is this horizon and the two rebate rates below.
 """
 
-#: D-99 SS1.5, owner answer 16, SIGNED: 0.005 TON of PRIMES per point of D(n) on
+#: D-99 SS1.5, owner answer 16, SIGNED: 0.005 GRAM of PRIMES per point of D(n) on
 #: a head-minted composite. A TARGET, not the shipped figure -- `score_rebate_report`
 #: clamps it if the projection overruns the vault's `puzzles` track, and the
 #: emitted block says which happened.
@@ -1502,7 +1502,7 @@ def score_rebate_report(e: Engine, era_report: dict) -> dict:
     clamped = scale < 1.0
     applied = min(scale, 1.0)
 
-    # Rounded DOWN to the nanoTON-legible 1e-6 quantum, never to nearest: a
+    # Rounded DOWN to the nanoGRAM-legible 1e-6 quantum, never to nearest: a
     # rate rounded up would put the projection back over the 50% budget the
     # scale was solved for, which is the one thing the clamp exists to prevent.
     quantum = 1e-6
@@ -1562,7 +1562,7 @@ def score_rebate_report(e: Engine, era_report: dict) -> dict:
             "prime_family": SIGNED_PRIME_FAMILY_TON,
             "_provenance": (
                 "OWNER-DECLARED (D-99 answer 16 for the per-point rate; SS1.5 for "
-                "the family's starting figure, today's shipped 0.132 TON). The "
+                "the family's starting figure, today's shipped 0.132 GRAM). The "
                 "sim does not choose them -- it checks whether the vault can "
                 "afford them and clamps the PAIR, ratio preserved, if it cannot."
             ),
@@ -1670,12 +1670,12 @@ def quest_reward_report(e: Engine, era_report: dict, beta: float) -> dict:
     failure this block exists to prevent.
 
     `reward_primes` is the OFFER, and as of D-42 it is denominated in PRIMES, not
-    in TON. Every player who finishes the board gets the same number of PRIMES
+    in GRAM. Every player who finishes the board gets the same number of PRIMES
     whenever they finish it. This is the reverse of D-41 and it is the whole point
     of the decision: the owner wants a fixed HEADCOUNT (10,000 players), and a
     fixed headcount out of a track whose size is fixed in PRIMES is only possible
-    if the per-player draw is fixed in PRIMES too. Under D-41's TON denomination
-    the early players were the expensive ones -- 0.25 TON cost 3,750 PRIMES at the
+    if the per-player draw is fixed in PRIMES too. Under D-41's GRAM denomination
+    the early players were the expensive ones -- 0.25 GRAM cost 3,750 PRIMES at the
     opening floor and about 10 PRIMES at the sim's end state -- so the track funded
     65 players in the first months and the rest only years later. Fixing the PRIMES
     inverts that: the count is guaranteed on day one and the VALUE is what grows.
@@ -1684,10 +1684,10 @@ def quest_reward_report(e: Engine, era_report: dict, beta: float) -> dict:
     may never earn more from quests, over its whole life, than the ratchet
     injection of the mint that unlocks the reward -- `beta * MINT_PRICE`. That is
     what makes the program self-funding in the only sense SS5 cares about: the
-    gating mint adds `beta` TON to `T` while the vault payout leaves `S` untouched
+    gating mint adds `beta` GRAM to `T` while the vault payout leaves `S` untouched
     (SS3.3 pre-counts the vault), so every quest-paid wallet strictly RAISES `p_f`.
 
-    Under D-41 the cap could be checked once, here, because the reward's TON value
+    Under D-41 the cap could be checked once, here, because the reward's GRAM value
     never moved. Under D-42 it CANNOT, and this is the load-bearing consequence of
     the switch: a fixed PRIMES reward appreciates with the floor, so it eventually
     crosses the cap on its own. `cap_binds_at_floor_price` below is exactly where.
@@ -1700,17 +1700,17 @@ def quest_reward_report(e: Engine, era_report: dict, beta: float) -> dict:
     `target_wallets` is the owner's headcount, and under D-42 it is an INPUT rather
     than a quotient. The reward falls out of `track / target_wallets`.
 
-    What bounds all of this is the vault's TON worth, and that is the piece easiest
+    What bounds all of this is the vault's GRAM worth, and that is the piece easiest
     to get backwards. The vault is pre-counted into `S` with no `T` behind it, so
     its value at the opening floor is `V * p_f0 = T0 * V / S0` (10/11 of `T0` since
     D-166; `T0 * vault_pct / (1 + vault_pct)` before it deleted the operator lock).
     Raising `vault_pct` DOES raise that value -- D-42's 50% -> 100% takes it from 67
-    to 100 TON -- and the whole increase is paid for by a lower `p_f0`, the same
+    to 100 GRAM -- and the whole increase is paid for by a lower `p_f0`, the same
     `T0` backing more PRIMES. What no amount of minting can do is push it past `T0`:
     the limit of `pct / (1 + pct)` is 1. A vault-funded growth programme is bounded
-    by the founder seed, and at 200 TON that bound is the binding one. It is why
-    10,000 players cannot each be paid 0.5 TON at opening prices -- that is 5,000
-    TON, twenty-five times the entire founder capital -- and why D-42 buys the
+    by the founder seed, and at 200 GRAM that bound is the binding one. It is why
+    10,000 players cannot each be paid 0.5 GRAM at opening prices -- that is 5,000
+    GRAM, twenty-five times the entire founder capital -- and why D-42 buys the
     headcount with time instead of with money.
     """
     p_f0 = e.floor_price_genesis
@@ -1718,7 +1718,7 @@ def quest_reward_report(e: Engine, era_report: dict, beta: float) -> dict:
     track_primes = track["primes"]
     track_ton_at_genesis_floor = track_primes * p_f0
 
-    ceiling_ton = beta * 1.0  # beta * MINT_PRICE; MINT_PRICE is 1 TON (SS4.1).
+    ceiling_ton = beta * 1.0  # beta * MINT_PRICE; MINT_PRICE is 1 GRAM (SS4.1).
 
     # D-42: the HEADCOUNT is the input. The owner wants the programme to reach
     # 10,000 wallets, and wants that guaranteed rather than hoped for, so it is set
@@ -1742,7 +1742,7 @@ def quest_reward_report(e: Engine, era_report: dict, beta: float) -> dict:
         "final_floor_price": e.floor_price,
         "floor_multiple_at_horizon": (e.floor_price / p_f0) if p_f0 > 0 else None,
         "_note": (
-            "The reward is fixed in PRIMES, so its TON value IS the floor path. It "
+            "The reward is fixed in PRIMES, so its GRAM value IS the floor path. It "
             "opens small on purpose -- that is the price of guaranteeing the "
             "headcount on day one instead of funding it out of a seed that does not "
             "have the money (D-42)."
@@ -1754,7 +1754,7 @@ def quest_reward_report(e: Engine, era_report: dict, beta: float) -> dict:
     # independently.
     #
     # D-41 deleted `social-invite-minter` and D-42 keeps it deleted. Recruiting is
-    # already paid, in TON and forever, by SS4.1's 10% referral line, which is
+    # already paid, in GRAM and forever, by SS4.1's 10% referral line, which is
     # funded by the FLOW of mints rather than by this fixed stock -- so a
     # vault-funded bonus on top spends the scarcest budget in the system
     # duplicating the one reward that scales without it.
@@ -1766,7 +1766,7 @@ def quest_reward_report(e: Engine, era_report: dict, beta: float) -> dict:
     # here measures what one quest is worth against another.
     #
     # D-118 amended 2026-11-20 (owner): SS9.4's `story-verified-reach` is a FIFTH share, and
-    # the five split in equal fifths. It was priced off a legacy TON figure outside this file
+    # the five split in equal fifths. It was priced off a legacy GRAM figure outside this file
     # (~6,191 PRIMES at the genesis floor), unbudgeted in the track, and the per-wallet voucher
     # cap (audit R2-M2, `reward_nanoprimes`) would have stranded it. Reward, track and
     # headcount are untouched.
@@ -1822,7 +1822,7 @@ def quest_reward_report(e: Engine, era_report: dict, beta: float) -> dict:
             "with the floor -- still holds for the era ceremonies, where the point "
             "is that a ceremony is worth a stated amount. It does not hold here, "
             "where the point is that a stated NUMBER OF PLAYERS gets paid. Inflating "
-            "with the floor is the feature: it is how a 100 TON vault reaches its "
+            "with the floor is the feature: it is how a 100 GRAM vault reaches its "
             "headcount at all (10,000 under D-42; 1,000 since D-204)."
         ),
         "target_wallets": target_wallets,
@@ -1856,13 +1856,13 @@ def quest_reward_report(e: Engine, era_report: dict, beta: float) -> dict:
         "quests_track_ton_at_genesis_floor": track_ton_at_genesis_floor,
         "beta": beta,
         "vault_ton_ceiling_note": (
-            "The whole bounty vault is worth T0 * V / S0 TON (10/11 of T0 since D-166) at "
+            "The whole bounty vault is worth T0 * V / S0 GRAM (10/11 of T0 since D-166) at "
             "the opening floor, because SS3.3 pre-counts it into S with no T behind "
             "it. Raising vault_pct raises that value and pays for it with a lower "
             "p_f0 -- the same T0 backing more PRIMES. It can never exceed T0, so a "
             "vault-funded growth budget is bounded by the founder seed. This is why "
-            "10,000 players cannot be paid 0.5 TON each at opening prices: that is "
-            "5,000 TON against a 200 TON seed (D-42)."
+            "10,000 players cannot be paid 0.5 GRAM each at opening prices: that is "
+            "5,000 GRAM against a 200 GRAM seed (D-42)."
         ),
         "_rounding_note": (
             "`reward_primes` per quest is a WHOLE number, allocated by largest "
@@ -1873,7 +1873,7 @@ def quest_reward_report(e: Engine, era_report: dict, beta: float) -> dict:
         "_shares_source": (
             "OWNER-SET (DECISIONS.md D-118, 2026-09-22; amended 2026-11-20): equal fifths "
             "across social-join-channel / social-join-group / social-stay-7d / connect / "
-            "story-verified-reach. Was equal quarters (the story quest priced in TON outside "
+            "story-verified-reach. Was equal quarters (the story quest priced in GRAM outside "
             "this file), before that 30/30/40; the reward and the track are unchanged."
         ),
         "rewards": [
@@ -1928,8 +1928,8 @@ def prime_quest_reward_report(e: Engine, era_report: dict, social: dict) -> dict
     Sized exactly as D-42 sizes the social board, because the track is the same kind of
     stock: PRIMES fixed at genesis, divided by the owner's headcount (the same 1,000, D-204), the
     per-wallet reward split across the twelve quests by `PRIME_QUEST_WEIGHTS`. Before this
-    the twelve were hardcoded TON amounts summing to 1.02 TON per wallet -- above the
-    0.46 TON self-funding ceiling on their own, and enough to exhaust the track after ~9
+    the twelve were hardcoded GRAM amounts summing to 1.02 GRAM per wallet -- above the
+    0.46 GRAM self-funding ceiling on their own, and enough to exhaust the track after ~9
     wallets -- and nothing paid them.
 
     ONE CEILING, BOTH BOARDS. `lifetime_cap_ton` bounds everything one wallet earns from
@@ -1967,7 +1967,7 @@ def prime_quest_reward_report(e: Engine, era_report: dict, social: dict) -> dict
         "combined_cap_binds_at_floor_multiple": (cap_ton / combined) / p_f0 if p_f0 > 0 else None,
         "_shares_source": (
             "PRIME_QUEST_WEIGHTS in sim/scripts/run_phase1.py: the ratios quests.ts carried as "
-            "TON amounts since EARN_PLAN, kept as weights (G78b)."
+            "GRAM amounts since EARN_PLAN, kept as weights (G78b)."
         ),
         "rewards": [
             {
@@ -2008,6 +2008,9 @@ TIER_LABELS = ["30 d", "3 m", "6 m", "1 y"]
 # D-100 point 9 as extended by D-147, owner-set: governance, not economics. Every
 # remaining LP rung votes, LIVE ONLY WHILE THE TERM RUNS.
 VOTE_MULTIPLIERS = [1, 3, 10, 30]
+# D-214, owner-set 2026-11-23: what LP locked forever through a position votes
+# with. Not a tier -- it has no term -- so not an entry of VOTE_MULTIPLIERS.
+FOREVER_VOTE_MULTIPLIER = 100
 # D-168 (Q8), owner-set: the stake weights are the old LP mining ladder's top
 # four rungs (D-147's `2 + i` at i = 3..6), carried to PRIMES staking unchanged.
 STAKE_TIER_WEIGHTS = [5, 6, 7, 8]
@@ -2127,14 +2130,14 @@ def _lp_depth_without_miner(e, e_real_pair):
          the miner moves none of them.
       2. **The unfunded floor.** With nobody paid to add LP, the depth that is
          certain to exist is the operator's genesis pair (D-140/D-154:
-         `L * X` PRIMES against `L * X^2 / S0` TON, priced at `p_f0`). The same
+         `L * X` PRIMES against `L * X^2 / S0` GRAM, priced at `p_f0`). The same
          three-year run is repeated with the pool seeded at exactly that pair
          -- GAUNTLET.md X14's override -- so the flush is measured at the depth
-         a miner-less market is guaranteed, not at the 200 TON nominal.
+         a miner-less market is guaranteed, not at the 200 GRAM nominal.
 
     "The band" is SS4.3.1's: the flush fills only at or below `p_f`, so it
     defends `x = 1` and nothing above it. It can still defend it when, at the
-    worst sampled detachment, `pending` covers the TON needed to lift the pool
+    worst sampled detachment, `pending` covers the GRAM needed to lift the pool
     back to the floor.
     """
     def row(run, pool_ton0, pool_primes0):
@@ -2152,7 +2155,7 @@ def _lp_depth_without_miner(e, e_real_pair):
             "swapped_ton": run.swapped,
             "mean_fill_ton": mean_fill,
             # Price impact of the mean tranche on the pool it started from: the
-            # fraction by which a constant-product swap of `a` TON into `R_t`
+            # fraction by which a constant-product swap of `a` GRAM into `R_t`
             # moves the spot price is `(1 + a/R_t)^2 - 1`.
             "mean_fill_price_impact_at_genesis_depth": (
                 (1.0 + mean_fill / pool_ton0) ** 2 - 1.0 if pool_ton0 > 0 else None
@@ -2190,13 +2193,13 @@ def _lp_depth_without_miner(e, e_real_pair):
         "operator_genesis_pair_only": real,
         "_operator_genesis_pair_only_note": (
             "The same run with the pool seeded at the operator's D-154 pair "
-            "(L*X PRIMES against L*X^2/S0 TON, priced at p_f0) -- the only depth that "
+            "(L*X PRIMES against L*X^2/S0 GRAM, priced at p_f0) -- the only depth that "
             "exists when nobody is paid to add LP."
         ),
         "verdict": "FLUSH DEFENDS ITS BAND" if ok else "FLUSH CANNOT DEFEND ITS BAND -- ESCALATE",
         "_verdict_reasoning": (
             "A thinner pool makes the floor CHEAPER to defend, not dearer: lifting a "
-            "constant-product pool back to p_f costs `sqrt(k * p_f) - R_t` TON, which "
+            "constant-product pool back to p_f costs `sqrt(k * p_f) - R_t` GRAM, which "
             "shrinks with depth, while `pending` is set by mint volume and does not. "
             "What thin depth costs is fill SIZE -- `max_in_at_floor` shrinks with the "
             "pool, so tranches are smaller and more of `pending` waits as the "
@@ -2313,6 +2316,18 @@ def _treasury_block(e):
         "tier_labels": TIER_LABELS,
         "vote_multipliers": VOTE_MULTIPLIERS,
         "vote_eligible_min_tier_index": 0,
+        "forever_vote_multiplier": FOREVER_VOTE_MULTIPLIER,
+        "_forever_note": (
+            "DECISIONS.md D-214, OWNER-SET 2026-11-23 (chosen over 60 and 300): LP "
+            "locked forever through a position's `to_sink` keeps voting as ONE "
+            "per-wallet total on the child, weighted `amount * "
+            "forever_vote_multiplier`, never maturing -- the ladder's ~3x step past "
+            "the 1-year term's 30. NOT a tier (no term, no deposit, no relock), so "
+            "it is not an entry of `vote_multipliers`. It counts in "
+            "`eligibleWeight` and so in the 1% propose bar (owner-accepted). Every "
+            "credit restamps the total's `weightSince`. LP sent to the sink any "
+            "other way, the genesis seed included, carries no vote."
+        ),
         "_vote_note": (
             "D-100 point 9 as amended by D-147 and D-168: the electorate is LP "
             "custody whose TERM IS STILL RUNNING, weighted `amount * voteMultiplier`; "
@@ -2341,7 +2356,7 @@ def _treasury_block(e):
         ),
         "_governance_note": (
             "D-100 point 8 as amended by D-167, D-194 and D-173's 2026-11-19 "
-            "and 2026-11-21 amendments: a proposal transfers {TON | PRIMES | tsTON} to an address "
+            "and 2026-11-21 amendments: a proposal transfers {GRAM | PRIMES | tsTON} to an address "
             "(LP is NOT proposable, D-167) or confirms a queued venue change "
             "(D-194, moves no value). A transfer is capped at `proposal_cap_bps` of"
             " THAT asset's balance at EXECUTE time, not at propose time. One open "
@@ -2493,6 +2508,8 @@ def invite_line_report(e, up) -> dict:
             "beta_full_invite": b5,
             "beta_expected_at_assumed_optin": bx,
             "delta_full_invite": b5 - b0,
+            # D-215: the floor no operator-set terms can push it under.
+            "beta_at_line_cap": econ.beta_at_line_cap(is_prime, referred, sp, P),
         })
 
     worst = min(rows, key=lambda r: r["beta_full_invite"])
@@ -2507,17 +2524,17 @@ def invite_line_report(e, up) -> dict:
     horizon_mints = len(e.mint_log)
     invited_mints = sum(1 for ev in e.mint_log if ev.invite_count > 0)
     slots = sum(ev.invite_count for ev in e.mint_log)
-    ton_deducted = slots * econ.INVITE_TRANSFER_VALUE_TON
-    # NOT a beta: `pool_injection` is `beta * price`, so this is TON, and it
+    ton_deducted = slots * (econ.INVITE_TRANSFER_VALUE_TON + econ.INVITE_SEND_FEE_TON)
+    # NOT a beta: `pool_injection` is `beta * price`, so this is GRAM, and it
     # only coincides with mean beta because every mint in this run prices at
-    # exactly MINT_PRICE = 1 TON (the Dutch lane's premium is credited to
+    # exactly MINT_PRICE = 1 GRAM (the Dutch lane's premium is credited to
     # `pending` separately and never passes through `pool_injection`). Named for
     # what it measures so the key does not silently mislabel itself if a lane
     # ever routes a residual at another price.
     mean_injection_ton = (sum(ev.pool_injection for ev in e.mint_log) / horizon_mints
                           if horizon_mints else None)
     line_at_optin = (econ.INVITE_OPTIN_RATE_ASSUMED * econ.INVITE_MAX_COUNT
-                     * econ.INVITE_TRANSFER_VALUE_TON)
+                     * (econ.INVITE_TRANSFER_VALUE_TON + econ.INVITE_SEND_FEE_TON))
     simulated = {
         "optin_rate_drawn": e.p.invite_optin_rate,
         "optin_rate_realised": (invited_mints / horizon_mints) if horizon_mints else None,
@@ -2541,12 +2558,12 @@ def invite_line_report(e, up) -> dict:
             "the draw actually produced and is a measurement; "
             "`optin_rate_drawn` is the ASSUMPTION it was drawn from and is not. "
             "`ton_deducted_over_the_horizon` is the summed seventh line over the "
-            "run, and it is TON that left the residual -- so `final_state`, the "
+            "run, and it is GRAM that left the residual -- so `final_state`, the "
             "floor appreciation, the kill criteria and the genesis blocks are now "
             "measured WITH the line, not above it. "
-            "`mean_pool_injection_ton_measured` is the mean residual in TON, not a "
+            "`mean_pool_injection_ton_measured` is the mean residual in GRAM, not a "
             "rate: it equals mean beta only because every mint in this run prices "
-            "at MINT_PRICE = 1 TON, which is why it is comparable against "
+            "at MINT_PRICE = 1 GRAM, which is why it is comparable against "
             "`beta_table`'s rows at all."
         ),
         "_source": (
@@ -2582,6 +2599,18 @@ def invite_line_report(e, up) -> dict:
             "floor_rises": bool((e.T + inj) / (e.S + emitted) > p_f),
         })
 
+    # D-215: the same check at the line cap, the worst any operator terms can reach.
+    b_cap = econ.beta_at_line_cap(worst["is_prime_mint"], worst["referred"], sp, P)
+    inj_cap = b_cap * P
+    emitted_cap = econ.rebate_primes(inj_cap, k_worst, p_f)
+    at_cap = {
+        "line_ton": econ.INVITE_LINE_CAP_TON,
+        "beta": b_cap,
+        "injection_ton": inj_cap,
+        "emitted_value_below_injection": bool(emitted_cap * p_f < inj_cap),
+        "floor_rises": bool((e.T + inj_cap) / (e.S + emitted_cap) > p_f),
+    }
+
     return {
         "_source": (
             "sim/scripts/run_phase1.py invite_line_report, over "
@@ -2608,12 +2637,30 @@ def invite_line_report(e, up) -> dict:
             "OWNER-SET, not derived (TELEGRAM_INVITES_PLAN.md, 2026-11-07): each "
             "invite is one plain non-bounceable transfer of this value carrying the "
             "ledger's fixed text comment. The ledger's per-transfer value must equal "
-            "it. It replaced D-101's 0.025 TON generator item deploy."
+            "it. It replaced D-101's 0.025 GRAM generator item deploy."
         ),
         # round(): 3 * 0.1 is 0.30000000000000004 in binary, and the app prints it.
-        "line_ton_at_max_count": round(econ.INVITE_MAX_COUNT * econ.INVITE_TRANSFER_VALUE_TON, 9),
+        "line_ton_at_max_count": round(econ.INVITE_MAX_COUNT * (econ.INVITE_TRANSFER_VALUE_TON + econ.INVITE_SEND_FEE_TON), 9),
         "share_of_mint_price_at_max_count":
-            round(econ.INVITE_MAX_COUNT * econ.INVITE_TRANSFER_VALUE_TON / P, 9),
+            round(econ.INVITE_MAX_COUNT * (econ.INVITE_TRANSFER_VALUE_TON + econ.INVITE_SEND_FEE_TON) / P, 9),
+        "count_ceiling": econ.INVITE_COUNT_CEILING,
+        "line_cap_ton": econ.INVITE_LINE_CAP_TON,
+        "send_fee_allowance_ton": econ.INVITE_SEND_FEE_TON,
+        "_bounds_source": (
+            "OWNER-SET (DECISIONS.md D-215, 2026-11-22). The operator sets count and "
+            "value on chain with `set_invite_terms`; `max_count` / `transfer_value_ton` "
+            "are the GENESIS terms this run models, and the ledger publishes the "
+            "live ones on `getInviteTerms`. These three bound every terms the ledger "
+            "accepts: count <= count_ceiling and count * (value + send_fee_allowance) "
+            "<= line_cap, checked at the setter and at every invite mint. "
+            "`send_fee_allowance_ton` is an upper bound on a MEASURED cost (0.00040 GRAM "
+            "per transfer at 3 invites, 0.00031 at 100, InviteTransfers.spec.ts); the "
+            "transfer is sent PAY_FEES_SEPARATELY so the value arrives whole, and what "
+            "the allowance overstates is swept to the ratchet pool by sweep_ops -- "
+            "this sim does not credit it back, so its floor is the conservative one. "
+            "`line_ton_at_max_count` includes the allowance (3 x 0.101)."
+        ),
+        "worst_beta_at_line_cap": min(r["beta_at_line_cap"] for r in rows),
         "optin_rate_assumed": econ.INVITE_OPTIN_RATE_ASSUMED,
         "_optin_rate_source": econ.INVITE_OPTIN_RATE_LABEL,
         "beta_table": rows,
@@ -2642,8 +2689,11 @@ def invite_line_report(e, up) -> dict:
             "S_primes": e.S,
             "worst_row": worst["row"],
             "by_invite_count": counts,
-            "k_lt_1_holds": all(c["emitted_value_below_injection"] for c in counts),
-            "floor_rises_at_every_count": all(c["floor_rises"] for c in counts),
+            "at_line_cap": at_cap,
+            "k_lt_1_holds": all(c["emitted_value_below_injection"] for c in counts)
+                            and at_cap["emitted_value_below_injection"],
+            "floor_rises_at_every_count": all(c["floor_rises"] for c in counts)
+                                          and at_cap["floor_rises"],
             "emission_tracks_injection": all(
                 c["emission_ratio_to_count_0"] is None
                 or abs(c["emission_ratio_to_count_0"] - c["injection_ratio_to_count_0"]) < 1e-12
@@ -2715,7 +2765,7 @@ def floor_appreciation_report(e) -> dict:
             "uninvited upper bound the block used to carry. The opt-in rate it was "
             "drawn at is ASSUMED, not measured -- see "
             "`invites._horizon_simulated`, which reports the realised share and the "
-            "TON the line took out of the residual over the horizon. Nothing in the "
+            "GRAM the line took out of the residual over the horizon. Nothing in the "
             "ratchet moved: a smaller beta shrinks injection and emission in the "
             "same ratio, which `invites.k_lt_1_check` verifies numerically."
         ),
@@ -2807,7 +2857,7 @@ def build_params_json(e, ref_prices, yields, kills, all_passed, up, sizing,
     # contract with its own entrypoints, its own gas rows and its own money
     # path, and nesting it would imply the reservation book owns a price map it
     # never evaluates (the 2^(D/10) map runs on the auction contract, which is
-    # exactly what keeps SS4.4 point 1's 0.0002 TON scoring headroom untouched).
+    # exactly what keeps SS4.4 point 1's 0.0002 GRAM scoring headroom untouched).
     # It reads three things back out of the blocks above -- RES_GAS,
     # RES_PRIORITY_BASE and the published histogram -- and the RESERVE_FLOOR
     # identity check is what stops those three drifting apart silently.
@@ -2872,14 +2922,14 @@ def build_params_json(e, ref_prices, yields, kills, all_passed, up, sizing,
                 "example -- but the constant is now the measured worst case, not 10%. The "
                 "old 10% was reconciled against a hand-kept list of attached hops that "
                 "missed the special-number rebate, the era trophy, the ratchet hop and the "
-                "fee legs' forward fees; the ledger really spent 0.110 TON on the omega=3 "
+                "fee legs' forward fees; the ledger really spent 0.110 GRAM on the omega=3 "
                 "primorial. See `fees.gas_ops_line` for the rows and the headroom. What a mint "
                 "does not spend is swept back into the ratchet pool, emission-free (D-117), so "
-                "the line's size moves TON through the pool rather than out of it: "
+                "the line's size moves GRAM through the pool rather than out of it: "
                 "`fees.effective_beta_referred_composite`."
             ),
         },
-        # SS4.1's seventh line: the TON the line costs a mint is a split concern,
+        # SS4.1's seventh line: the GRAM the line costs a mint is a split concern,
         # and the split is written in this file.
         "invites": invite_line_report(e, up),
         "tribute": {
@@ -2967,7 +3017,7 @@ def build_params_json(e, ref_prices, yields, kills, all_passed, up, sizing,
                 "D-190 (2026-09-26): the attacker is now also the flush CALLER -- it "
                 "pumps up to 8x the flush, then sizes the tranche to the pumped pool "
                 "(D-143), which the earlier model (flush sized before the pump, pump "
-                "capped at 0.5x) could not do and so read 0.00 TON. The PnL here is "
+                "capped at 0.5x) could not do and so read 0.00 GRAM. The PnL here is "
                 "BURN EFFICIENCY lost while the market is under the floor: the "
                 "ratchet still never averages above p_f, and T, S and p_f do not move."
             ),
@@ -3108,7 +3158,7 @@ def build_params_json(e, ref_prices, yields, kills, all_passed, up, sizing,
             # two-pass reserve calibration went with the genesis auction
             # (2026-09-24): the NPVs above come from the one D-20 baseline pass.
             "genesis_lp_ratio_primes_per_ton": e.p.genesis_lp_primes_per_ton,
-            # DECISIONS.md D-100 point 2: the operator funds 4.20 TON at genesis,
+            # DECISIONS.md D-100 point 2: the operator funds 4.20 GRAM at genesis,
             # not D-92's 240. D-92's derivation stands as a METHOD -- `X = S0 /
             # (1/p_f - L)` -- but it is now run the other way round: the donation
             # is the owner-set INPUT and `genesis_floor_price_ton_per_primes` is
@@ -3123,16 +3173,16 @@ def build_params_json(e, ref_prices, yields, kills, all_passed, up, sizing,
             "genesis_floor_price_ton_per_primes": e.floor_price_genesis,
             "_genesis_donation_source": (
                 "DECISIONS.md D-154, amending D-100 point 2 -- OWNER-SET, not "
-                "sim-selected. The operator will not fund D-92's 480 TON (240 donated + "
-                "240 paired). D-100 point 2 set 4.20 TON at genesis with up to 150 TON "
+                "sim-selected. The operator will not fund D-92's 480 GRAM (240 donated + "
+                "240 paired). D-100 point 2 set 4.20 GRAM at genesis with up to 150 GRAM "
                 "incrementally afterwards (point 3); D-154 FRONT-LOADS that whole "
-                "commitment to 132.50 TON at genesis, because D-140 pins the pair at "
+                "commitment to 132.50 GRAM at genesis, because D-140 pins the pair at "
                 "the floor and so makes opening depth quadratic in this figure -- `(L*X "
-                "+ 250,000) * X / S0` TON at the time, 17.39 at X = 132.50, and 132.50 + "
+                "+ 250,000) * X / S0` GRAM at the time, 17.39 at X = 132.50, and 132.50 + "
                 "17.39 = 149.89 was the commitment. D-166 deleted the operator lock and "
-                "its tranche with it: the pair is now `m * X / (S0 + m)` = 14.13 TON, `m` "
+                "its tranche with it: the pair is now `m * X / (S0 + m)` = 14.13 GRAM, `m` "
                 "= 1,312,854 the donation's own D-156-tapered mint, at S0 = 11,000,000, and the donation is left where the owner set it. "
-                "D-204 (owner, 2026-11-11) SUPERSEDES THE FIGURE: the donation is 200 TON, "
+                "D-204 (owner, 2026-11-11) SUPERSEDES THE FIGURE: the donation is 200 GRAM, "
                 "and the vault grows 10,000,000 -> 15,600,000 with it so the floor it "
                 "buys is the one the game already opened at; every 132.50-era number in "
                 "this note is history. `donate_floor` "
@@ -3146,18 +3196,18 @@ def build_params_json(e, ref_prices, yields, kills, all_passed, up, sizing,
                 "HONEST MODELLING GAP, flagged rather than buried. `genesis_seed_ton` "
                 "(200) is a NOMINAL that sizes S0 = seed * L * (1/2 + vault_pct) = "
                 "11,000,000 PRIMES (D-166) and the depth of the DeDust pair the agent loop "
-                "trades against; `genesis_donation_ton` (132.50) is the TON actually "
+                "trades against; `genesis_donation_ton` (132.50) is the GRAM actually "
                 "credited into `T`. Before D-100 these were the same number by "
                 "construction (D-92 chose the donation to reproduce `seed / S0`), so "
                 "the modelled pool and `T` coincided. They no longer do, and D-140 "
                 "moved the real pair AGAIN, and D-154 resized it a third time: it is "
                 "now 1,312,854 PRIMES, all minted by the donation (D-166 took the "
                 "operator's 250,000 first vest tranche out with the operator lock), "
-                "against 14.13 TON, priced at "
-                "`primes * p_f`. D-154 NARROWS this gap without closing it -- 14.13 TON "
-                "of real pair against depth sized off a 200 TON nominal is the same "
+                "against 14.13 GRAM, priced at "
+                "`primes * p_f`. D-154 NARROWS this gap without closing it -- 14.13 GRAM "
+                "of real pair against depth sized off a 200 GRAM nominal is the same "
                 "order of magnitude for the first time, where D-100 point 2's 0.1022 "
-                "TON was three orders below it. Neither number is the point: what D-140 "
+                "GRAM was three orders below it. Neither number is the point: what D-140 "
                 "fixed is the RATIO, which is the only thing about the pair the "
                 "protocol can see. Re-sizing the modelled pool is still NOT done, "
                 "because pool depth feeds k_max calibration, the reserves and the kill "
@@ -3202,8 +3252,8 @@ def build_params_json(e, ref_prices, yields, kills, all_passed, up, sizing,
             # the rate `donate_floor` MINTS at (a denomination knob, D-39) and
             # was never a price; quoting it here is what produced the 286x open.
             # The deposit ratio on an empty pool IS the price, so the operator
-            # posts `primes * p_f` TON against whatever PRIMES they hold, and the
-            # market opens at `1 / p_f` PRIMES per TON.
+            # posts `primes * p_f` GRAM against whatever PRIMES they hold, and the
+            # market opens at `1 / p_f` PRIMES per GRAM.
             "market_open_primes_per_ton": (
                 1.0 / e.floor_price_genesis if e.floor_price_genesis > 0 else None
             ),
@@ -3242,7 +3292,7 @@ def build_params_json(e, ref_prices, yields, kills, all_passed, up, sizing,
                 "genesis: `T0` is the donation alone. Auction premiums arrive later, "
                 "per lot, and only half reaches the ratchet (D-114); the run models "
                 "that on the D-20 prime lane (`prime_head.prime_lot_premium_to_ratchet_ton`). "
-                "Until 2026-09-24 the sim credited ~1,375 TON of genesis clearings here "
+                "Until 2026-09-24 the sim credited ~1,375 GRAM of genesis clearings here "
                 "and every floor figure in this file was inflated by it."
             ),
             # D-77 (amends D-46 points 1 and 3), as amended by D-100 point 6 and

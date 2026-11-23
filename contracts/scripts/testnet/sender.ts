@@ -90,7 +90,7 @@ export type Wallet = {
  * holding a W5 seed would be DRIVEN AT THE WRONG ADDRESS: the harness funds and sends from
  * the v4 account while the human, connected through their wallet app, watches the W5 one
  * and sees nothing happen. Silent on both sides — both are real accounts and both accept
- * TON — which is why the version travels with the entry instead of being inferred.
+ * GRAM — which is why the version travels with the entry instead of being inferred.
  */
 export type WalletVersion = 'v4r2' | 'v5r1';
 
@@ -135,12 +135,12 @@ export async function openWallet(
             // `external not confirmed` — a clock-skew/network symptom — for five minutes of
             // waiting. That misdiagnosis cost a run this session (MISTAKES.md 2026-09-17)
             // twice: once on `transferTon.ts`, once on `proveReferralLive.ts`, whose
-            // sender wallet held 0.32 TON against a 1.05 TON mint.
+            // sender wallet held 0.32 GRAM against a 1.05 GRAM mint.
             const balance = await retry(() => client.getBalance(wallet.address), 'getBalance');
             if (balance < args.value + 50_000_000n) {
                 throw new Error(
-                    `${wallet.address.toString({ testOnly: true })} holds ${Number(balance) / 1e9} TON, ` +
-                        `short of the ${Number(args.value) / 1e9} TON this send attaches plus fees. ` +
+                    `${wallet.address.toString({ testOnly: true })} holds ${Number(balance) / 1e9} GRAM, ` +
+                        `short of the ${Number(args.value) / 1e9} GRAM this send attaches plus fees. ` +
                         `Fund it (contracts/scripts/fundLive.ts <address> <ton>) and re-run.`
                 );
             }

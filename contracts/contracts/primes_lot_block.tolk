@@ -22,7 +22,7 @@ tolk 1.4
 // `LotBlockInit` in primes_ledger.tolk mirrors this `Storage` byte for byte, and
 // `LotBlock.spec.ts` asserts the two derivations agree.
 //
-// ORDER IS THE WHOLE CONCURRENCY ARGUMENT. Only the ledger writes here, and TON
+// ORDER IS THE WHOLE CONCURRENCY ARGUMENT. Only the ledger writes here, and GRAM
 // delivers the messages of one sender to one receiver in the order they were
 // sent. So every mark the ledger routed here before it asked for the words is
 // in the words it gets back, and after it asks it routes none here.
@@ -79,10 +79,10 @@ const RELEASED: coins = 0xffffffffffffffffffffffffffffff;
 
 // LOW-4: what a hop from the ledger leaves here once the head has passed the
 // block. Such a block is never imported again, so this floor is its rent
-// (~0.007 TON/year at 55 rows) until the next `lot_block_release`, which pays the
+// (~0.007 GRAM/year at 55 rows) until the next `lot_block_release`, which pays the
 // debt, tops the floor back up and returns the rest. Everything above the floor
 // goes back to the ledger's gas float, which `sweep_ops` pools.
-const LOT_BLOCK_RENT_FLOOR: coins = 10000000; // 0.01 TON
+const LOT_BLOCK_RENT_FLOOR: coins = 10000000; // 0.01 GRAM
 
 // Keep the rent floor, send the rest to the ledger. IGNORE_ERRORS: change too small
 // to pay its own forward fee stays here, and never rolls the caller's write back.
@@ -233,7 +233,7 @@ fun onInternalMessage(in: InMessage) {
             // has already taken the rent debt out of the hop, so the hop's whole
             // remainder may exceed the balance. No IGNORE_ERRORS: an answer that
             // cannot go rolls the release back, so the row is never marked released
-            // without its bookmark leaving. The 0.1 hop covers ~0.08 TON of debt, a
+            // without its bookmark leaving. The 0.1 hop covers ~0.08 GRAM of debt, a
             // dozen idle years at 55 rows.
             reserveToncoinsOnBalance(LOT_BLOCK_RENT_FLOOR, RESERVE_MODE_AT_MOST);
             createMessage({

@@ -5,7 +5,7 @@
  * WHY THIS EXISTS. `flush()` is the only swap the protocol performs, and §4.3.1's
  * floor guard means it fills ONLY at or below `p_f = T/S`. At a fresh genesis the
  * pool opens ~287x ABOVE `p_f` — `S` carries the 12,000,000-PRIMES bounty vault
- * against a single 4.2 TON donation — so the first flush REFUSES, by design and
+ * against a single 4.2 GRAM donation — so the first flush REFUSES, by design and
  * as the sim measured. Testing the FILL branch therefore means making the pool
  * genuinely cheap first, and the honest way to do that is to trade into it: one
  * early mint's rebate is ~1.9M PRIMES against the pool's 42,000, so selling a
@@ -13,7 +13,7 @@
  *
  *   npx tsx contracts/scripts/testnet/pool.ts report
  *   npx tsx contracts/scripts/testnet/pool.ts sell <handle|K> <PRIMES>   # price DOWN
- *   npx tsx contracts/scripts/testnet/pool.ts buy  <handle|K> <TON>      # price UP
+ *   npx tsx contracts/scripts/testnet/pool.ts buy  <handle|K> <GRAM>      # price UP
  *
  * `report` is the one to read before and after everything: it prints the pool's
  * reserves, the price they imply, `p_f`, the ratio between them, and — the line
@@ -64,7 +64,7 @@ function swapParams(recipient: Address): Cell {
         .endCell();
 }
 
-/** The pool's two reserves, TON first. `get_reserves` returns them in asset order. */
+/** The pool's two reserves, GRAM first. `get_reserves` returns them in asset order. */
 async function reserves(client: TonClient, pool: Address): Promise<{ ton: bigint; primes: bigint }> {
     const r = await retry(() => client.runMethod(pool, 'get_reserves', []), 'get_reserves');
     return { ton: r.stack.readBigNumber(), primes: r.stack.readBigNumber() };
@@ -139,7 +139,7 @@ async function report(client: TonClient) {
             ok: ton > 0n && primes > 0n && T > 0n && S > 0n,
             name: 'POOL_HAS_BOTH_SIDES',
             getMethod: 'pool.get_reserves + ledger.getFloorNum/getFloorDen',
-            after: `${fromNano(ton)} TON / ${fromNano(primes)} PRIMES, T ${T} S ${S}`,
+            after: `${fromNano(ton)} GRAM / ${fromNano(primes)} PRIMES, T ${T} S ${S}`,
             detail:
                 'the verdict below predicts NOTHING over a pool with an empty side, and on ' +
                 '2026-09-19 it printed "the next flush() can FILL" over a PRIMES side of 292,000 ' +
@@ -148,9 +148,9 @@ async function report(client: TonClient) {
     ];
 
     console.log(`pool     ${pool.toString({ testOnly: true })}`);
-    console.log(`reserves ${fromNano(ton)} TON  /  ${fromNano(primes)} PRIMES`);
-    console.log(`price    ${poolPrice.toExponential(4)} TON per PRIMES`);
-    console.log(`p_f      ${pf.toExponential(4)} TON per PRIMES   (T=${T} S=${S})`);
+    console.log(`reserves ${fromNano(ton)} GRAM  /  ${fromNano(primes)} PRIMES`);
+    console.log(`price    ${poolPrice.toExponential(4)} GRAM per PRIMES`);
+    console.log(`p_f      ${pf.toExponential(4)} GRAM per PRIMES   (T=${T} S=${S})`);
     if (pf > 0) {
         const ratio = poolPrice / pf;
         console.log(`ratio    ${ratio.toFixed(4)}x the floor`);
@@ -164,10 +164,10 @@ async function report(client: TonClient) {
         //
         //     P*a/(X+a) >= a/p_f   <=>   P*p_f - X >= a
         //
-        // i.e. THE POOL'S PRIMES VALUED AT THE FLOOR MUST EXCEED ITS TON BY AT LEAST THE
+        // i.e. THE POOL'S PRIMES VALUED AT THE FLOOR MUST EXCEED ITS GRAM BY AT LEAST THE
         // FLUSH AMOUNT. At exactly the floor the left side is `X*(1 - 1) = 0` and a flush
         // can never fill, however deep the pool — the discount has to pay for the slippage
-        // the flush itself causes. Printed as headroom in TON so "how much further do I
+        // the flush itself causes. Printed as headroom in GRAM so "how much further do I
         // have to sell" has a number rather than a direction.
         const ratchet = client.open(PrimesRatchet.createFromAddress(Address.parse(env('PRIMES_RATCHET_ADDRESS'))));
         const pending = (await retry(() => ratchet.getPending(), 'getPending')) as bigint;
@@ -182,9 +182,9 @@ async function report(client: TonClient) {
         // DeDust volatile pools take 0.25% on the input leg.
         const out = pending === 0n ? 0n : (primes * ((a * 9975n) / 10000n)) / (ton + (a * 9975n) / 10000n);
         const headroom = (primes * T) / S - ton - a;
-        console.log(`pending  ${fromNano(pending)} TON  -> flush() would send ${fromNano(a)} TON`);
+        console.log(`pending  ${fromNano(pending)} GRAM  -> flush() would send ${fromNano(a)} GRAM`);
         console.log(`min_out  ${fromNano(minOut)} PRIMES   vs pool would pay ${fromNano(out)} PRIMES`);
-        console.log(`headroom ${fromNano(headroom)} TON   (P*p_f - X - amount; must be positive)`);
+        console.log(`headroom ${fromNano(headroom)} GRAM   (P*p_f - X - amount; must be positive)`);
         console.log(
             out >= minOut
                 ? '  -> the next flush() FILLS.'
@@ -196,7 +196,7 @@ async function report(client: TonClient) {
             ok: !(out >= minOut) || headroom >= 0n,
             name: 'FILL_IMPLIES_HEADROOM',
             getMethod: 'pool.get_reserves + ratchet.getPending + ledger.getFloorNum/getFloorDen',
-            after: `verdict ${out >= minOut ? 'FILLS' : 'REFUSES'}, headroom ${fromNano(headroom)} TON`,
+            after: `verdict ${out >= minOut ? 'FILLS' : 'REFUSES'}, headroom ${fromNano(headroom)} GRAM`,
             detail:
                 '§4.3.1 solved two ways over the same four reads: constant product pays P·a/(X+a) ' +
                 'and the guard demands a·S/T, so a quote that clears min_out forces ' +
@@ -228,13 +228,13 @@ async function primesWalletOf(client: TonClient, owner: Address): Promise<Addres
     return r.stack.readAddress();
 }
 
-/** PRIMES -> TON. Pushes the price DOWN, which is what makes a flush fillable. */
+/** PRIMES -> GRAM. Pushes the price DOWN, which is what makes a flush fillable. */
 async function sell(client: TonClient, handle: string, primesAmount: string) {
     const pool = Address.parse(env('PRIMES_DEDUST_POOL_ADDR'));
     const jettonVault = Address.parse(env('PRIMES_DEDUST_JETTON_VAULT_ADDR'));
     const w = await walletFor(client, handle);
     const myJetton = await primesWalletOf(client, w.wallet.address);
-    const amount = toNano(primesAmount); // PRIMES has 9 decimals, same as TON
+    const amount = toNano(primesAmount); // PRIMES has 9 decimals, same as GRAM
 
     const balance = await retry(
         () => client.runMethod(myJetton, 'get_wallet_data', []).then((r) => r.stack.readBigNumber()),
@@ -280,10 +280,10 @@ async function sell(client: TonClient, handle: string, primesAmount: string) {
             ok: after.ton * before.primes < before.ton * after.primes,
             name: 'POOL_PRICE_DOWN',
             getMethod: 'pool.get_reserves',
-            before: `${fromNano(before.ton)} TON / ${fromNano(before.primes)} PRIMES`,
-            after: `${fromNano(after.ton)} TON / ${fromNano(after.primes)} PRIMES`,
+            before: `${fromNano(before.ton)} GRAM / ${fromNano(before.primes)} PRIMES`,
+            after: `${fromNano(after.ton)} GRAM / ${fromNano(after.primes)} PRIMES`,
             detail:
-                'the lever pulled in the direction the step claims: PRIMES in, TON out, price DOWN ' +
+                'the lever pulled in the direction the step claims: PRIMES in, GRAM out, price DOWN ' +
                 'and towards p_f, which is the only way §4.3.1\'s FILL branch is reachable at all — ' +
                 'a fresh genesis opens the pair well above the floor and refuses by construction',
         },
@@ -293,7 +293,7 @@ async function sell(client: TonClient, handle: string, primesAmount: string) {
     A.requireAll(results);
 }
 
-/** TON -> PRIMES. Pushes the price UP, which is what makes a flush refuse. */
+/** GRAM -> PRIMES. Pushes the price UP, which is what makes a flush refuse. */
 async function buy(client: TonClient, handle: string, tonAmount: string) {
     const pool = Address.parse(env('PRIMES_DEDUST_POOL_ADDR'));
     const nativeVault = Address.parse(
@@ -314,7 +314,7 @@ async function buy(client: TonClient, handle: string, tonAmount: string) {
         .storeRef(swapParams(w.wallet.address))
         .endCell();
 
-    console.log(`${handle} buying PRIMES with ${tonAmount} TON through ${nativeVault.toString({ testOnly: true })}`);
+    console.log(`${handle} buying PRIMES with ${tonAmount} GRAM through ${nativeVault.toString({ testOnly: true })}`);
     const before = await poolFloor(client);
     await w.sender.send({ to: nativeVault, value: amount + toNano('0.25'), bounce: true, body });
     console.log('sent. Waiting for the swap to settle into the reserves ...');
@@ -324,10 +324,10 @@ async function buy(client: TonClient, handle: string, tonAmount: string) {
             ok: after.ton * before.primes > before.ton * after.primes,
             name: 'POOL_PRICE_UP',
             getMethod: 'pool.get_reserves',
-            before: `${fromNano(before.ton)} TON / ${fromNano(before.primes)} PRIMES`,
-            after: `${fromNano(after.ton)} TON / ${fromNano(after.primes)} PRIMES`,
+            before: `${fromNano(before.ton)} GRAM / ${fromNano(before.primes)} PRIMES`,
+            after: `${fromNano(after.ton)} GRAM / ${fromNano(after.primes)} PRIMES`,
             detail:
-                'TON in, PRIMES out, price UP and back over the floor guard — the REFUSE branch of ' +
+                'GRAM in, PRIMES out, price UP and back over the floor guard — the REFUSE branch of ' +
                 '§4.3.1 is only exercised on purpose if the pool is put above p_f on purpose first',
         },
         floorUnmoved(before, after),
@@ -346,7 +346,7 @@ async function main() {
         return report(client);
     }
     if (cmd === 'buy') {
-        if (!a || !b) throw new Error('usage: pool.ts buy <handle|K> <TON>');
+        if (!a || !b) throw new Error('usage: pool.ts buy <handle|K> <GRAM>');
         await buy(client, a, b);
         return report(client);
     }

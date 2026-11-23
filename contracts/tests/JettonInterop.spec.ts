@@ -108,7 +108,7 @@ describe('TEP-74 — the PRIMES jetton as a wallet or DEX sees it', () => {
 
         it('names the ledger as admin — the address that may actually mint', async () => {
             // TEP-74's "admin" is defined as the minter, and that is `ledgerAddr`. §8's
-            // guarantee is that no PERSON holds a key over any TON balance, which naming a
+            // guarantee is that no PERSON holds a key over any GRAM balance, which naming a
             // keyless contract here does not weaken. addr_none would read as a stronger
             // claim while being false.
             const { adminAddress } = await master.getJettonDataStandard();
@@ -431,8 +431,8 @@ describe('GAUNTLET.md V4 — the wallet parses a real TEP-74 transfer#0f8a7ea5 b
     });
 
     it('a notification to a masterchain owner that cannot pay its fee does not undo the credit (2026-11-08 audit)', async () => {
-        // The ledger's rebate mint forwards 0.005 TON; a `-1:` owner prices the notification
-        // at masterchain rates (~0.011 TON). Sent without IGNORE_ERRORS, that action-phase
+        // The ledger's rebate mint forwards 0.005 GRAM; a `-1:` owner prices the notification
+        // at masterchain rates (~0.011 GRAM). Sent without IGNORE_ERRORS, that action-phase
         // failure aborted the receiving wallet and bounced the PRIMES away.
         const mcOwner = new Address(-1, Buffer.alloc(32, 0x11));
         const r = await holder.send({
@@ -476,7 +476,7 @@ describe('GAUNTLET.md V4 — the wallet parses a real TEP-74 transfer#0f8a7ea5 b
         expect((await holderWallet.getWalletData()).balance).toBe(toNano('1000'));
     });
 
-    it('the forward is paid from the attached value, never the receiving wallet\'s own TON', async () => {
+    it('the forward is paid from the attached value, never the receiving wallet\'s own GRAM', async () => {
         // Pre-fix the receiver sent the notification REGULAR out of its balance
         // AND a mode-64 excesses carrying the whole inbound value, so a funded
         // wallet lost `forward_ton_amount` on every transfer it received.
@@ -547,7 +547,7 @@ describe('GAUNTLET.md V4 — the wallet parses a real TEP-74 transfer#0f8a7ea5 b
  * Measured on testnet that day, and the reason these tests exist: DeDust's
  * factory accepted `create_vault#21cfe02b`, its new PRIMES vault deployed and
  * asked, the master aborted with exit 101, the message bounced, and the vault
- * never reached `is_ready` — uninit, 0 TON, stake returned. `create_vault`
+ * never reached `is_ready` — uninit, 0 GRAM, stake returned. `create_vault`
  * itself reports success, so nothing upstream notices. A pool in that state can
  * never hold liquidity, which makes the ratchet's flush leg (CONCEPT.md §4.3)
  * unsellable on mainnet exactly as on testnet.
@@ -676,7 +676,7 @@ describe('TEP-89 — the PRIMES jetton as a DEX VAULT sees it', () => {
         expect(ownerRef!.beginParse().loadAddress().equals(venue.address)).toBe(true);
     });
 
-    it('replies non-bounceable, so the master is never handed TON it cannot route', async () => {
+    it('replies non-bounceable, so the master is never handed GRAM it cannot route', async () => {
         const r = await venue.send({
             to: master.address,
             value: toNano('0.15'),
@@ -704,16 +704,16 @@ describe('TEP-89 — the PRIMES jetton as a DEX VAULT sees it', () => {
  * this contract is on the receiving end of, with no arm to receive it, falling
  * into `else => assert (in.body.isEmpty()) throw 101`.
  *
- * `deployAndCredit` names the MASTER as `responseAddr` — it funds the 0.012 TON
+ * `deployAndCredit` names the MASTER as `responseAddr` — it funds the 0.012 GRAM
  * wallet deploy out of the value the ledger attached, so the change is its own —
  * and the freshly deployed wallet answers with `excesses#d53276db`. Until this
  * arm existed that reply aborted with exit 101 on EVERY mint the game has ever
  * performed.
  *
- * Measured on testnet 2026-09-17, trace `8c354845…d724a`: a 1 TON mint whose
+ * Measured on testnet 2026-09-17, trace `8c354845…d724a`: a 1 GRAM mint whose
  * every economic leg was exit 0 — item minted, PRIMES credited, splitter,
  * ratchet, treasury, bounty — and which Tonviewer nonetheless renders as
- * FAILED, because a trace is red if any transaction in it aborted. The TON was
+ * FAILED, because a trace is red if any transaction in it aborted. The GRAM was
  * never at risk (the wallet sends it `NoBounce`, so the credit phase had landed
  * it before the compute phase threw), which is exactly why nine months of tests
  * that assert on BALANCES never saw it.
@@ -792,8 +792,8 @@ describe('TEP-74 excesses — the master accepts its own change back', () => {
         const afterFirst = await balanceOf();
 
         // A second mint to the SAME holder: no wallet to deploy, so almost all
-        // of `deployAndCredit`'s 0.012 TON comes straight back. The master must
-        // end up richer than the 0.012 TON it just committed would suggest.
+        // of `deployAndCredit`'s 0.012 GRAM comes straight back. The master must
+        // end up richer than the 0.012 GRAM it just committed would suggest.
         const before = await balanceOf();
         await master.sendMintGenesis(genesisScript.getSender(), {
             to: holder.address, amount: toNano('1000'), value: toNano('0.5'),
@@ -804,7 +804,7 @@ describe('TEP-74 excesses — the master accepts its own change back', () => {
 
     it('accepts a bare excesses from anyone, because there is nothing to gate', async () => {
         // No sender check by design: nothing moves, the value is credited before
-        // the arm runs, and the worst an impostor achieves is donating TON to the
+        // the arm runs, and the worst an impostor achieves is donating GRAM to the
         // contract that pays for wallet deploys. Asserted so that adding a gate
         // later is a deliberate change rather than a quiet one.
         const supplyBefore = (await master.getJettonData()).totalSupply;
@@ -861,7 +861,7 @@ describe('TEP-74 excesses — the master accepts its own change back', () => {
         // The burn still happened, and is still the only thing that moved supply.
         expect((await master.getJettonData()).totalSupply).toBe(toNano('990'));
         // And the change is real value, not an empty envelope: the burner spent
-        // 0.3 TON on the hop and got most of it back, so the net cost is gas.
+        // 0.3 GRAM on the hop and got most of it back, so the net cost is gas.
         const spent = before - (await blockchain.getContract(holder.address)).balance;
         expect(spent).toBeLessThan(toNano('0.1'));
     });

@@ -179,8 +179,8 @@ describe('D-128 -- the secondary royalty splits between the operator and the rat
 
     // GAUNTLET W7. D-128 divides 50/50, but it divides the NET -- the balance above the
     // storage floor LESS `ROYALTY_FORWARD_GAS`, which the three-hop delivery genuinely
-    // costs. At section 3.1's 5% rate that skim is 40% of the royalty on a 1 TON resale
-    // and 4% on a 10 TON one, so the split a holder EXPERIENCES is not the nominal
+    // costs. At section 3.1's 5% rate that skim is 40% of the royalty on a 1 GRAM resale
+    // and 4% on a 10 GRAM one, so the split a holder EXPERIENCES is not the nominal
     // figure, and section 9.1 forbids printing a number a reader cannot recompute.
     // `getRoyaltySplit()` is what makes it recomputable from chain state.
     it('W7: publishes the REALISED split, so no surface has to quote the nominal one', async () => {
@@ -228,7 +228,7 @@ describe('D-128 -- the secondary royalty splits between the operator and the rat
     it('G81: an operator leg below one hop waits with the ratchet leg, and the trace stays green', async () => {
         await payRoyalty(toNano('2'), comment('sweep to the floor'));
         const before = await collection.getRoyaltySplit();
-        // Sized so the NET is 0.001 TON: the operator half is 0.0005 — a bare credit
+        // Sized so the NET is 0.001 GRAM: the operator half is 0.0005 — a bare credit
         // below one hop, which (sent) could land `skipped (no_gas)`. Read the balance
         // first: the last forward leaves some gas margin above the floor.
         const bal = (await blockchain.getContract(collection.address)).balance;

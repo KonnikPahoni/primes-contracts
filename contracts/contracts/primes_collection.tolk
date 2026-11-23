@@ -44,7 +44,7 @@ struct Aux {
     registrarAddr: address
 }
 
-// D-212 (§4.7.1). The two naming fees, in TON, and what naming has paid the floor.
+// D-212 (§4.7.1). The two naming fees, in GRAM, and what naming has paid the floor.
 // `nameFee`/`renameFee` are DEPLOY DATA with no message that changes them (§8,
 // D-194: a fee is a price, and this one has a fixed destination — the floor);
 // a different fee is a fresh genesis. The three meters change on every
@@ -61,8 +61,8 @@ struct NamingBook {
 // GAUNTLET W7. WHAT THIS COLLECTION HAS ACTUALLY FORWARDED, each way, and how
 // many deliveries it took. D-128 divides 50/50, but it divides the NET: the
 // balance above the storage floor, LESS `ROYALTY_FORWARD_GAS` for the three-hop
-// delivery. On a 1 TON resale at §3.1's 5% rate that skim is 40% of the royalty;
-// on a 10 TON one, 4%; above that, negligible. So the split a holder actually
+// delivery. On a 1 GRAM resale at §3.1's 5% rate that skim is 40% of the royalty;
+// on a 10 GRAM one, 4%; above that, negligible. So the split a holder actually
 // experiences is not the nominal one, and §9.1 forbids printing a figure a reader
 // cannot recompute. Published by `getRoyaltySplit()`.
 //
@@ -237,18 +237,18 @@ struct (0xb0000084) MintItemRefused {
 // it cost.
 const ROYALTY_RATCHET_BPS: int = 5000;
 const BPS_DEN: int = 10000;
-const ROYALTY_FORWARD_GAS: coins = 20000000;      // 0.02 TON: the whole delivery
-const ROYALTY_LEDGER_HOP_GAS: coins = 15000000;   // 0.015 TON of it rides to the ledger
+const ROYALTY_FORWARD_GAS: coins = 20000000;      // 0.02 GRAM: the whole delivery
+const ROYALTY_LEDGER_HOP_GAS: coins = 15000000;   // 0.015 GRAM of it rides to the ledger
 // The genesis endowment (`genesisPipeline.ts`: `sendDeploy(..., toNano('0.5'))`).
 // Reserved on every royalty so this contract's rent is never spent on delivering
 // somebody else's money, and so the deploy message itself forwards nothing.
-const ROYALTY_STORAGE_FLOOR: coins = 500000000;   // 0.5 TON
+const ROYALTY_STORAGE_FLOOR: coins = 500000000;   // 0.5 GRAM
 // G81: the smallest operator leg worth a message -- the ledger's `RATCHET_HOP_GAS`,
 // the measured one-hop budget, not a new figure.
-const ROYALTY_MIN_LEG: coins = 1000000;           // 0.001 TON
+const ROYALTY_MIN_LEG: coins = 1000000;           // 0.001 GRAM
 
 // D-128: the ratchet's half of a secondary royalty, sent to the LEDGER, which
-// does `T += amount` with `S` untouched and forwards the TON to the ratchet as
+// does `T += amount` with `S` untouched and forwards the GRAM to the ratchet as
 // `pending`. Declared here rather than imported because these contracts share no
 // header; `shared/schemas/ledger.tlb` and `shared/opcodes.ts` are the one
 // authority for the opcode and the field order.
@@ -304,7 +304,7 @@ struct (0xc000000a) NamingPaid {
 // gas and the item's (`NAMING_PAID_GAS` + `ITEM_NAME_GAS` in primes_item.tolk).
 // Below it the message is refused at this door and bounces home; at or above it
 // every refusal is the item's, and refunds.
-const NAME_RELAY_GAS: coins = 60000000; // 0.06 TON
+const NAME_RELAY_GAS: coins = 60000000; // 0.06 GRAM
 
 type AllowedMessage = MintItem | SetLedger | GetRoyaltyParams | NameNumber | NamingPaid
 
@@ -488,12 +488,12 @@ fun onInternalMessage(in: InMessage) {
             if (storage.ledgerSet == 0) { return; }
 
             // THE FLOOR IS THE GENESIS ENDOWMENT, AND THAT IS WHY IT IS THIS
-            // FIGURE. `genesisPipeline.ts` deploys this contract with 0.5 TON and
+            // FIGURE. `genesisPipeline.ts` deploys this contract with 0.5 GRAM and
             // it has income on no other path, so the endowment is the whole of its
             // runway (see `MintItem`'s own comment above about emptying at ~900
             // mints under the pre-CARRY send). Reserving it means a royalty can
             // never eat the contract's rent, and it also means the DEPLOY itself —
-            // an empty body carrying exactly 0.5 TON — forwards nothing, with no
+            // an empty body carrying exactly 0.5 GRAM — forwards nothing, with no
             // special case for the genesis sender.
             //
             // Splitting the BALANCE above the floor rather than this message's own
@@ -570,7 +570,7 @@ fun onBouncedMessage(in: InMessageBounced) {
     // V28: the item refused `Populate`. Nothing was paid — the held split rode in
     // the deploy and is in this bounce — so the original `MintItem` and every
     // nanoton that came back go to the ledger, which parks them for `retry_item`.
-    // This contract holds no mint TON afterwards. `Populate` and D-212's
+    // This contract holds no mint GRAM afterwards. `Populate` and D-212's
     // `item_name` are the only bounceable messages it sends.
     val storage = lazy Storage.load();
     val rich = lazy RichBounceBody.fromSlice(in.bouncedBody);
@@ -665,7 +665,7 @@ get fun get_nft_address_by_index(index: int): slice {
 // D-128 divides 50/50, but it divides the NET: the balance above the storage
 // floor, less `ROYALTY_FORWARD_GAS` for the three-hop delivery. That skim is a
 // large fraction of a small royalty — at §3.1's 5% rate it is 40% of the royalty
-// on a 1 TON resale, 4% on a 10 TON one, negligible above — so what a holder
+// on a 1 GRAM resale, 4% on a 10 GRAM one, negligible above — so what a holder
 // actually experiences is not the nominal figure, and §9.1 forbids printing a
 // number a reader cannot recompute. From these three they can: the realised
 // split is `toRatchet / (toRatchet + toOperator)`, and the delivery has cost

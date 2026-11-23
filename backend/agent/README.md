@@ -6,7 +6,7 @@
 
 Play [TON PRIMES](https://primes.live) from a program.
 
-Integers are minted strictly sequentially as NFTs for a flat 1 TON. Composites need a
+Integers are minted strictly sequentially as NFTs for a flat 1 GRAM. Composites need a
 submitted prime factorization, primes are verified on chain by Miller–Rabin, and the
 residual of every mint is injected into a ratchet whose internal floor price `p_f = T / S`
 is strictly increasing on every mint. That last one is a contract-verifiable invariant, not
@@ -64,7 +64,7 @@ calling that method yourself. Verify before you spend; the design assumes you wi
 
 Two things the read layer will not do to you:
 
-- **No `Number()` on a money figure.** Everything monetary decodes to `bigint`. A nanoTON
+- **No `Number()` on a money figure.** Everything monetary decodes to `bigint`. A nanoGRAM
   balance past 2⁵³ is ordinary, and rounding one is not an option.
 - **No index figure priced into a transaction.** `read.*` is for browsing. Everything
   under `chain()` is a live `runMethod`, and that is what the `act` methods check
@@ -79,9 +79,9 @@ const agent = new PrimesAgent({
   referralKey: 42,                        // a number you own: it is paid on every mint
 });
 
-await agent.mint();                       // 1 TON for the number at the head
+await agent.mint();                       // 1 GRAM for the number at the head
 await agent.mint({ invites: { count: 3, addresses: [{ slot: 1, address: "UQ..." }] } });
-                                          // §4.1: up to 3 slots of 0.1 TON, plain transfers to
+                                          // §4.1: up to 3 slots of 0.1 GRAM, plain transfers to
                                           // addresses YOU choose (keeper's /api/invitees is a default)
 await agent.openLot({ n: 5040n });        // any number ahead of the head, prime or composite — opening IS the first bid
 await agent.openHeadLot(9973n);           // a prime's descending lot
@@ -94,7 +94,7 @@ await agent.flush();                      // permissionless: TON has no schedule
 
 ```ts
 await agent.claimTribute(7n);             // §4.1's divisor share, off 7's own item
-await agent.name({ n: 9n, text: "the first odd square" });     // D-212, a number you own, for TON
+await agent.name({ n: 9n, text: "the first odd square" });     // D-212, a number you own, for GRAM
 await agent.annotate({ n: 30n, text: "the third primorial" });  // §4.7.1, an era trophy's engraving (first free)
 await agent.transferTrophy({ primorial: 30n, newHolder: "EQ..." });   // D-14, holder only
 ```
@@ -112,7 +112,7 @@ tests use, so a mint cannot carry a proof the ledger will reject.
    `pending`, a flush inside its 24-hour cooldown. Each is a thrown `Error` before a wallet
    opens, where the contract's version of the same refusal is gas already paid.
 3. **Nominal price plus a fee margin, never the exact price.** The contract compares the
-   value that *arrives*, after TON deducts the message's forward fee. Sending the exact
+   value that *arrives*, after GRAM deducts the message's forward fee. Sending the exact
    nominal reverts.
 4. **Throttled at the client.** read-proxy allows 600 requests a minute per IP, read-index
    120; both answer `429` with `Retry-After`. The default is 2 requests a second with one
@@ -138,7 +138,7 @@ tests use, so a mint cannot carry a proof the ledger will reject.
 
 | Method | Sends to | Costs |
 | --- | --- | --- |
-| `mint({ n?, beneficiary?, referralKey?, invites? })` | ledger | 1 TON |
+| `mint({ n?, beneficiary?, referralKey?, invites? })` | ledger | 1 GRAM |
 | `bid({ n, bidNanoton?, beneficiary?, referralKey? })` | market | the bid |
 | `openLot({ n, bidNanoton?, … })` | market | the opening bid |
 | `openHeadLot(n)` | market | gas |
@@ -205,7 +205,7 @@ contract, and the methods that can return it say so in their own doc comments.
 
 What it does not reward: a loop. Every automated behaviour is priced at the floor in
 `CONCEPT.md` §8 — a mint loop returns less than it pays, self-referral is assumed universal
-rather than prevented, and a recruit costs a fresh address plus a full 1 TON mint. §8.1
+rather than prevented, and a recruit costs a fresh address plus a full 1 GRAM mint. §8.1
 names the one regime where that inverts and publishes the threshold. Read it before you
 model a return.
 

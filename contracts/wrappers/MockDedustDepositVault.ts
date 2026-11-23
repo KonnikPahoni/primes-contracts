@@ -13,7 +13,7 @@ import { DEDUST } from '../../shared/opcodes';
  */
 const MockDedustDepositVaultOpcodes = {
     // `deposit_liquidity#d55e4686` USED TO BE LOCAL, on the premise that nothing
-    // in this repo ever sends one — the PRIMES/TON pool being seeded by the
+    // in this repo ever sends one — the PRIMES/GRAM pool being seeded by the
     // operator rather than by the protocol. That premise expired when the WEBAPP
     // grew a provide-liquidity form: `shared/messages.ts` now builds this body
     // for a player to sign, so the value is in the registry as `DEDUST.deposit_native`

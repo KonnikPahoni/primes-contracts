@@ -3,7 +3,7 @@
  *
  * The acceptance pass (`docs/audit/testnet-run-2026-09-14.md`) needs a float in a dozen places:
  * the cast wallets `A`/`B`/`C`/`R1..R6`, and the default keeper wallet that the
- * older prove* scripts send from. Owner TON arrives at ONE address — the deploy
+ * older prove* scripts send from. Owner GRAM arrives at ONE address — the deploy
  * subwallet named by `PRIMES_DEPLOY_SUBWALLET_ID` — so everything else is funded
  * from here rather than by asking for another transfer.
  *
@@ -69,18 +69,18 @@ async function main() {
     );
 
     let funderBal = await retry(() => client.getBalance(funder.address), 'funder-balance');
-    console.log(`funder ${funder.address.toString()} ${fromNano(funderBal)} TON\n`);
+    console.log(`funder ${funder.address.toString()} ${fromNano(funderBal)} GRAM\n`);
 
     for (const t of targets) {
         const have = await retry(() => client.getBalance(t.address), `balance(${t.address})`);
         if (have >= t.target) {
-            console.log(`skip  ${t.address.toString()} already ${fromNano(have)} TON (target ${fromNano(t.target)})`);
+            console.log(`skip  ${t.address.toString()} already ${fromNano(have)} GRAM (target ${fromNano(t.target)})`);
             continue;
         }
         const amount = t.target - have;
         if (funderBal - amount < FUNDER_RESERVE) {
             throw new Error(
-                `funder short: sending ${fromNano(amount)} TON would leave ${fromNano(funderBal - amount)}, ` +
+                `funder short: sending ${fromNano(amount)} GRAM would leave ${fromNano(funderBal - amount)}, ` +
                     `below the ${fromNano(FUNDER_RESERVE)} reserve`
             );
         }
@@ -105,11 +105,11 @@ async function main() {
             cur = await retry(() => funder.getSeqno(), 'poll-getSeqno');
         }
         if (cur === seqno) throw new Error(`external not confirmed funding ${t.address.toString()}`);
-        console.log(`sent  ${fromNano(amount)} TON -> ${t.address.toString()} (target ${fromNano(t.target)})`);
+        console.log(`sent  ${fromNano(amount)} GRAM -> ${t.address.toString()} (target ${fromNano(t.target)})`);
         funderBal -= amount;
     }
 
-    console.log(`\nfunder left with ${fromNano(await retry(() => client.getBalance(funder.address), 'final'))} TON`);
+    console.log(`\nfunder left with ${fromNano(await retry(() => client.getBalance(funder.address), 'final'))} GRAM`);
 }
 
 main().catch((e) => {

@@ -50,7 +50,7 @@ async function cmdStatus(c: Contracts) {
         const e = await retry(() => c.vault.getEraSchedule(b), `getEraSchedule(${b})`);
         if (e.scheduled) {
             console.log(
-                `  ${b.toString().padStart(8)}  bounty ${Number(e.bountyTon) / 1e9} TON  ` +
+                `  ${b.toString().padStart(8)}  bounty ${Number(e.bountyTon) / 1e9} GRAM  ` +
                     `max ${primes(e.maxPrimes)}  paid ${e.paid}`
             );
         }
@@ -96,7 +96,7 @@ async function cmdRebate(c: Contracts, n: bigint) {
     for (const kind of [0, 1]) {
         const r = await retry(() => c.vault.getRebateSchedule(kind, n), `getRebateSchedule(${kind},${n})`);
         console.log(
-            `kind ${kind}: scheduled ${r.scheduled} bounty ${Number(r.bountyTon) / 1e9} TON ` +
+            `kind ${kind}: scheduled ${r.scheduled} bounty ${Number(r.bountyTon) / 1e9} GRAM ` +
                 `max ${primes(r.maxPrimes)} paid ${r.paid}`
         );
         results.push({

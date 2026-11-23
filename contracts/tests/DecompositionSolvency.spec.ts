@@ -42,9 +42,9 @@ const K_SCALE = 1_000_000_000n;
 // at itself, rather than the guard silently drifting from its own test.
 const FLOOR_GUARD = 0n;
 // primes_ratchet.tolk's own FLUSH_PCT/FLUSH_MIN literals. `CHEAP_PRIME`'s actual
-// premium (~26 TON) sits ABOVE the current 5 TON FLUSH_MIN — a hardcoded
+// premium (~26 GRAM) sits ABOVE the current 5 GRAM FLUSH_MIN — a hardcoded
 // "amount == pending" full-drain assumption is what broke when FLUSH_MIN moved
-// from 50 to 5 TON (owner directive), so the tests below compute the guard's own
+// from 50 to 5 GRAM (owner directive), so the tests below compute the guard's own
 // `amount = min(pending, max(FLUSH_PCT*pending, FLUSH_MIN))` from whichever
 // branch the live `pending` actually lands on, instead of assuming one.
 const FLUSH_PCT = 200_000_000n; // 0.2, fixed-point
@@ -224,11 +224,11 @@ describe('TON PRIMES — §3.4 decomposition: solvency, floor guard, flush statu
 
     /**
      * Two ORDINARY primes, for the tests whose subject is the flush guard rather
-     * than the price. D-68's crown curve prices 2 at 2500 TON and 3 at 1666 TON,
+     * than the price. D-68's crown curve prices 2 at 2500 GRAM and 3 at 1666 GRAM,
      * and D-7 routes the whole premium to `pending` — so `acquire(2n)` now lands
      * `pending` two orders of magnitude ABOVE `FLUSH_MIN` and silently moves any
      * test that assumed the full-drain branch onto the pct branch instead. 541 is
-     * the first prime D-68 leaves ordinary, so its premium is the ~4 TON these
+     * the first prime D-68 leaves ordinary, so its premium is the ~4 GRAM these
      * tests always assumed. Where the prime's identity IS the subject (2 as a
      * factor of 4, the registrar's rank), 2 and 3 stay.
      */
@@ -311,7 +311,7 @@ describe('TON PRIMES — §3.4 decomposition: solvency, floor guard, flush statu
         // both halves are money the ledger CUSTODIES, not money it forwarded:
         //
         //   * the 80% divisor line (0.08 per composite mint), credited to the
-        //     cited prime's item as `owed` while the TON stays here. B-1: this
+        //     cited prime's item as `owed` while the GRAM stays here. B-1: this
         //     term used to be missing, and this assertion used to read a bare
         //     0.02 — which is precisely how an under-declared liability hides.
         //     `sweep_ops` measures its surplus above this number.
@@ -357,7 +357,7 @@ describe('TON PRIMES — §3.4 decomposition: solvency, floor guard, flush statu
         expect(br.divOutstanding).toBe(flat4 + flat);
         expect(rat.liability).toBe(await ratchet.getPending());
         expect(rat.liability).toBeGreaterThan(0n);
-        expect(reg.liability).toBe(0n); // registrar custodies no protocol TON, structurally
+        expect(reg.liability).toBe(0n); // registrar custodies no protocol GRAM, structurally
         // THE ESCROW LEG IS GONE (D-90.3), and its absence is the assertion.
         // There is no fourth contract holding refundable customer money, so
         // §3.4's decomposition is `pending` (the ratchet, nobody's) and `owed`
@@ -373,8 +373,8 @@ describe('TON PRIMES — §3.4 decomposition: solvency, floor guard, flush statu
     // §3.2's 80% divisor line is credited to the cited prime's item as a
     // *number* (`credit_tribute` carries CREDIT_TRIBUTE_VALUE of gas and an
     // `amount` field, never the amount itself). The item does `owed += amount`;
-    // the TON stays here, and `claim_tribute` pays it out of THIS contract's
-    // balance. §3.4's table says so in as many words — "Ledger ... TON it
+    // the GRAM stays here, and `claim_tribute` pays it out of THIS contract's
+    // balance. §3.4's table says so in as many words — "Ledger ... GRAM it
     // holds: accrued tribute ... whose it is: the prime owners'".
     //
     // So `Sum_p item.owed` is money owed to named counterparties, and it belongs
@@ -466,7 +466,7 @@ describe('TON PRIMES — §3.4 decomposition: solvency, floor guard, flush statu
 
         const T = await ledger.getFloorNum();
         expect(T).toBeGreaterThan(t0);
-        // genesis seeds T without any TON on the ratchet (the LP leg put it in
+        // genesis seeds T without any GRAM on the ratchet (the LP leg put it in
         // the pool, not on this contract), so the identity is over the DELTA
         // since genesis, which is what the dashboard actually renders.
         expect((await ratchet.getSwapped()) + (await ratchet.getPending())).toBe(T - t0);
@@ -984,7 +984,7 @@ describe('TON PRIMES — §3.4 decomposition: solvency, floor guard, flush statu
         expect(inject).toBeDefined();
         console.log(
             '[B5] decomposition hop cost, per mint: ' +
-                `ratchet pool_inject fees=${inject!.totalFees.coins} nanoTON ` +
+                `ratchet pool_inject fees=${inject!.totalFees.coins} nanoGRAM ` +
                 '(D-202 deleted the registrar record_mint hop)'
         );
 

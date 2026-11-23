@@ -48,7 +48,7 @@ DAY = 86400.0
 class PrimeHeadParams:
     """SS10's prime-head model. An arriving would-be minter facing a prime head
     compares what the prime actually pays -- discounted tribute, the
-    `PRIME_UPLIFT` credit, naming/rank -- against the 1 TON price, using a
+    `PRIME_UPLIFT` credit, naming/rank -- against the 1 GRAM price, using a
     private valuation `u` for the asset itself.
 
     `composite_accept_target` is the single most load-bearing assumption in
@@ -62,7 +62,7 @@ class PrimeHeadParams:
     composite_accept_target: float = 0.90
     typical_composite_k: float = 0.60
     sigma: float = 0.90               # lognormal shape of the private valuation
-    rights_value_ton: float = 0.05    # naming + rank, hand-set (SS4.7.1 pays no TON)
+    rights_value_ton: float = 0.05    # naming + rank, hand-set (SS4.7.1 pays no GRAM)
     prime_hunter_share: float = 0.05  # arrivals that take any prime regardless
     npv_horizon: int = 1_000_000      # horizon for the forward tribute sweep
 
@@ -98,7 +98,7 @@ class StakingParams:
     none of the three has a measured fill rate on mainnet:
 
       * leg 1, Tonstakers' fill-or-kill withdrawal, instant and at the exact
-        rate -- it fills when the pool's free TON covers the amount, which no
+        rate -- it fills when the pool's free GRAM covers the amount, which no
         get-method exposes, so it is a Bernoulli draw at `leg1_fill_prob`;
       * leg 2, the guarded DeDust swap, instant and at a haircut. The haircut is
         drawn at the FULL `exit_slippage_bps` bound every time, so the run
@@ -118,15 +118,21 @@ class StakingParams:
     enabled: bool = False
     #: N in "N days x the daily flush ceiling". Swept 1..14 by run_phase1.py.
     reserve_days: float = 3.0
-    #: Economic minimum, not a dust guard: the pool charges a FLAT 1 TON deposit
-    #: fee, so a small stake earns less than it costs. Sized by run_phase1.py.
+    #: Economic minimum, not a dust guard: every stake costs its caller a flat
+    #: `deposit_fee_ton`, so a small stake earns less than it costs. Sized by
+    #: run_phase1.py.
     stake_min_ton: float = 100.0
     #: ASSUMPTION, swept {0.02, 0.04, 0.06}. Yield never enters `T`.
     apr: float = 0.04
-    #: `DEPOSIT_FEE = ONE_TON`, pool.func:79. Paid from the ratchet's GAS BUFFER,
-    #: never out of the staked amount -- a fee out of `pending` would drop `T`
+    #: What one stake actually COSTS, not what it attaches. `DEPOSIT_FEE =
+    #: ONE_TON` (pool.func:79) is a gas reserve: ~0.89 of it comes back as
+    #: `excesses` and the ratchet forwards it to the caller (MISTAKES.md
+    #: 2026-11-23). Measured: 0.887-0.897 back on mainnet (2026-11-23), so at
+    #: most 0.113 lost; the caller's net in RatchetStaking.spec.ts is 0.1128.
+    #: It was 1.0, which sized `stake_min_ton` ~9x too high. Paid by the caller
+    #: (D-146), never out of `pending` -- a fee out of `pending` would drop `T`
     #: and break the ratchet theorem (D-151 point 2).
-    deposit_fee_ton: float = 1.0
+    deposit_fee_ton: float = 0.113
     #: `WITHDRAWAL_FEE = ONE_TON / 2` (pool.func:80) plus the TEP-74 burn leg's
     #: gas. Same gas-buffer treatment as the deposit fee.
     exit_fee_ton: float = 0.8
@@ -167,9 +173,9 @@ class SimParams:
     # reservation lane; neither is modelled. `reference_primes` is only the set
     # whose tribute NPV `analysis` measures (`trophy_auction.npv_calibration`).
     reference_primes: tuple[int, ...] = (2, 3, 5, 7, 11, 13)
-    # `L`, the genesis LP anchor: PRIMES per TON of founder seed. DENOMINATION_PLAN
+    # `L`, the genesis LP anchor: PRIMES per GRAM of founder seed. DENOMINATION_PLAN
     # (owner decision 2026-08-19) sets it to 10,000, which puts the deploy floor at
-    # 1/12,000 TON per PRIMES. It is a pure denomination knob -- `T` is bit-identical
+    # 1/12,000 GRAM per PRIMES. It is a pure denomination knob -- `T` is bit-identical
     # and `p_f/p_f0` is identical at every sampled day for any `L` -- so nothing
     # economic is re-derived when it moves. Kept in sync with the explicit value in
     # scripts/run_phase1.py and scripts/run_determinations.py; a stale default here
@@ -181,18 +187,18 @@ class SimParams:
     # clearings, which is only expressible if nothing mints until they land.
     #
     # T0 sets day-one depth, not price: S0 = T0 * L * (1 + vault_pct), so
-    # p_f0 = 1 / (L * 1.2) at ANY seed size. Owner decision 2026-08-15: 200 TON.
+    # p_f0 = 1 / (L * 1.2) at ANY seed size. Owner decision 2026-08-15: 200 GRAM.
     #
     # D-100 point 2 SPLITS this field in two. It used to be BOTH the PRIMES-side
-    # sizing of S0 AND the TON credited into T at genesis; those are now different
-    # numbers, because the operator funds 4.20 TON at genesis (not 240/480), and
+    # sizing of S0 AND the GRAM credited into T at genesis; those are now different
+    # numbers, because the operator funds 4.20 GRAM at genesis (not 240/480), and
     # `genesis_donation_ton` below carries the second role. This field keeps only
     # the first: it is a NOMINAL that sizes S0 = seed*L*(1/2 + vault_pct) = 11,000,000
     # PRIMES -- the 10,000,000-PRIMES bounty vault plus the 1,000,000 PRIMES the
     # treasury's lock vests (D-100 point 6; D-166 deleted the operator's matching
     # 1,000,000) -- and it is the
     # modelled depth of the DeDust pair the agent loop trades against. Neither of
-    # those is TON anyone sends: the pair is the operator's own, off-protocol
+    # those is GRAM anyone sends: the pair is the operator's own, off-protocol
     # (D-46 point 4), and locked depth is never summed into `T` (D-100 point 4).
     genesis_seed_ton: float = 200.0
     # GAUNTLET.md X14 -- the modelled DeDust pair, decoupled from the S0 nominal.
@@ -201,24 +207,24 @@ class SimParams:
     # nobody funds) and it sets the depth of the pool the agent loop trades. Before
     # D-100 point 2 those coincided with the money the operator actually posted; they
     # have not since, and D-140 moved the real pair again -- 292,000 PRIMES against
-    # 0.1022 TON, priced at `primes * p_f`. These two fields let a run seed the POOL at
+    # 0.1022 GRAM, priced at `primes * p_f`. These two fields let a run seed the POOL at
     # the real pair while leaving S0 exactly where it is, so the question X14 asks
     # ("what is calibrated against depth, and does the real book change it?") can be
     # measured rather than argued. `None` is the default and reproduces the previous
     # behaviour bit for bit -- no committed run passes them.
     modelled_pool_ton: float | None = None
     modelled_pool_primes: float | None = None
-    # D-154 (amends D-100 point 2): `T0`. The operator donates 132.5 TON at
+    # D-154 (amends D-100 point 2): `T0`. The operator donates 132.5 GRAM at
     # genesis through `donate_floor`, and that -- nothing else -- is what `seedT`
     # means after D-100 point 1 deletes the second `seedT` credit (D-26's
     # definition restored: capital credited straight into `T` that never passes
     # through the ratchet). D-92's derivation stands as a METHOD
     # (`X = S0 / (1/p_f - L)`); its INPUT is owner-set, and D-154 front-loads the
-    # WHOLE of D-100 point 3's 150 TON commitment into genesis instead of
+    # WHOLE of D-100 point 3's 150 GRAM commitment into genesis instead of
     # dribbling it in afterwards, because D-140 pins the pair at the floor and so
-    # makes opening depth quadratic in this field: the TON side is
+    # makes opening depth quadratic in this field: the GRAM side is
     # `m * X / (S0 + m)`, `m` the donation's own D-156-tapered mint (D-166 took the
-    # operator's vest tranche out of the pair), 14.13 TON at 132.5.
+    # operator's vest tranche out of the pair), 14.13 GRAM at 132.5.
     # `p_f0 = 132.5 / (11,000,000 + 1,312,854) = 1.0761e-5` (`_genesis`), and every
     # figure this file derives from the genesis floor moves
     # with it (regenerated, never hand-patched).
@@ -228,8 +234,8 @@ class SimParams:
     # re-calibrate k_max, the kill criteria and the reserves off a modelling
     # choice no decision makes. Flagged in `genesis._donation_vs_modelled_depth`
     # in shared/params.json rather than buried here. D-154 NARROWS that gap
-    # rather than closing it: the real pair goes from 0.1022 TON to ~17.4, against
-    # a modelled depth sized off the 200 TON nominal, so the two are now the same
+    # rather than closing it: the real pair goes from 0.1022 GRAM to ~17.4, against
+    # a modelled depth sized off the 200 GRAM nominal, so the two are now the same
     # order of magnitude for the first time. X14 already measured that seeding the
     # pool at the real pair moves 45 numeric leaves and NOT ONE parameter.
     genesis_donation_ton: float = 132.50
@@ -258,14 +264,14 @@ class SimParams:
     #     and can never park on one, so `prime_declines` is structurally 0;
     #   * a prime's lot opens when the head passes it and clears on the
     #     `MODE_DUTCH_BUYNOW` lane;
-    #   * D-7 routing: the nominal 1 TON runs the ordinary §4.1 five-way split
+    #   * D-7 routing: the nominal 1 GRAM runs the ordinary §4.1 five-way split
     #     (on a prime the tribute line has no recipient and falls to the pool)
     #     and 100% of the premium is credited to the ratchet as `pending` with
     #     zero emission -- a pure `T` increment against an untouched `S`;
     #   * an unsold prime's tribute forfeits to the TREASURY (D-20 point 4).
     primes_skip_head: bool = True
     #: Probability a prime lot finds a buyer, and the mean premium it clears at
-    #: over the 1 TON floor. Both are SUPPLIED, not invented here: the caller
+    #: over the 1 GRAM floor. Both are SUPPLIED, not invented here: the caller
     #: passes what `market.dutch_outcome` measured under its stated premises.
     prime_lot_sale_probability: float = 0.0
     prime_lot_mean_premium_ton: float = 0.0
@@ -490,7 +496,7 @@ class Engine:
         #
         # `self.pending` keeps its meaning -- the ratchet's WHOLE obligation, the
         # term of `T` that is neither seeded nor swapped -- and is now split by
-        # where the TON physically is:
+        # where the GRAM physically is:
         #
         #     pending == liquid + staked_cost + exiting
         #     T       == seeded + swapped + liquid + staked_cost + exiting
@@ -502,7 +508,7 @@ class Engine:
         # `_assert_t_identity` below checks it on every step.
         self.staked_cost = 0.0
         self.exiting = 0.0
-        #: tsTON yield, valued in TON. NEVER a term of `T` -- "realize, never
+        #: tsTON yield, valued in GRAM. NEVER a term of `T` -- "realize, never
         #: mark" (D-151 point 4) is this line.
         self.accrued_yield = 0.0
         self.harvested_tston = 0.0
@@ -510,7 +516,7 @@ class Engine:
         #: `pending`: a fee taken from the staked amount would drop `T`.
         self.staking_fees_paid = 0.0
         self.realized_slippage_ton = 0.0
-        #: TON a flush wanted and could not get in the step it wanted it, and the
+        #: GRAM a flush wanted and could not get in the step it wanted it, and the
         #: denominator that makes it a rate.
         self.unmet_flush_ton = 0.0
         self.flush_demand_ton = 0.0
@@ -584,7 +590,7 @@ class Engine:
         lp_ton = p.genesis_seed_ton
         lp_primes = lp_ton * p.genesis_lp_primes_per_ton
         vault_primes = lp_primes * p.bounty_vault_pct_of_lp
-        # D-100 point 2: `T0` is the 4.20 TON donation, NOT `lp_ton`. `lp_ton` sizes
+        # D-100 point 2: `T0` is the 4.20 GRAM donation, NOT `lp_ton`. `lp_ton` sizes
         # S0 and the modelled pair; it is not credited to `T` any more, because
         # after D-100 point 1 the only thing that lands in `seedT` is a donation.
         donation_ton = p.genesis_donation_ton
@@ -633,13 +639,13 @@ class Engine:
         # PROVENANCE (D-46 point 2, D-91 point 4, D-92, D-100 point 2). On chain
         # genesis seeds `T = 0` and the floor is created afterwards by
         # `donate_floor`, which adds `X` to `T`. Under D-92 that `X` was chosen to
-        # REPRODUCE `lp_ton / S0` -- 240 TON, so the two coincided and the deploy
+        # REPRODUCE `lp_ton / S0` -- 240 GRAM, so the two coincided and the deploy
         # floor could be written as `1/(L * (1 + vault_pct))`, independent of the
-        # seed. D-100 point 2 unpins them: the donation is 4.20 TON by owner
+        # seed. D-100 point 2 unpins them: the donation is 4.20 GRAM by owner
         # decision, `S0` is still `lp_ton * L * (1 + vault_pct)`, and the deploy
         # floor is therefore `4.20 / 12,000,000 = 3.5e-7` -- 48x below the old
         # figure and no longer a function of `L` alone. Anything that quotes
-        # "1/(L*1.2)" or "60,000 PRIMES per TON at open" is stale by this line.
+        # "1/(L*1.2)" or "60,000 PRIMES per GRAM at open" is stale by this line.
         # With no genesis clearings (D-20) `floor_price` equals this at deploy.
         # `self.S` here already includes the donor's mint, so this is
         # `X / (S0 + X*L*taper)`, not `X / S0`.
@@ -789,7 +795,7 @@ class Engine:
         # D-117: the unspent gas & ops line reaches the pool too, via the
         # permissionless `sweep_ops` -- emission-free, so it is outside the rebate
         # product above. Booked at mint: ponytail: the sweep's timing lag (it runs
-        # whenever someone calls it) is not modelled; the TON is the same.
+        # whenever someone calls it) is not modelled; the GRAM is the same.
         self.T += result.pool_injection + result.ops_surplus_to_pool
         self.pending += result.pool_injection + result.ops_surplus_to_pool
         self.ops_surplus_to_pool_total += result.ops_surplus_to_pool
@@ -853,7 +859,7 @@ class Engine:
     # Prime-head acceptance (SS10, SS5.1's liveness problem)
     # ------------------------------------------------------------------ #
     def prime_mint_value_ton(self, n: int) -> float:
-        """What a prime mint actually pays its minter, in TON-equivalent:
+        """What a prime mint actually pays its minter, in GRAM-equivalent:
         discounted forward tribute + the PRIME_UPLIFT credit + rights."""
         ph = self.p.prime_head
         npv = self._npv.get(n)
@@ -878,7 +884,7 @@ class Engine:
         elsewhere -- `market.dutch_outcome` -- rather than guessed here.
 
         Money, per D-7 and D-20 point 4:
-          * sold: the nominal 1 TON runs the ordinary §4.1 split with
+          * sold: the nominal 1 GRAM runs the ordinary §4.1 split with
             `is_prime_mint=True`, so the whole tribute line falls to the pool
             and `β = 0.85`; the ratchet's half of the premium (D-114) is added
             to `T` and `pending` with **zero emission**, which is what makes a
@@ -919,7 +925,7 @@ class Engine:
         # must be resolved here the same way `_do_mint` resolves it, not
         # special-cased to "unreferred". Hardcoding no referral would book
         # beta = 0.85 on every lot against a realised blend nearer 0.77, which
-        # flatters `T` by ~0.08 TON per prime for no reason the design gives.
+        # flatters `T` by ~0.08 GRAM per prime for no reason the design gives.
         # The genuinely NEW term is the premium below, which the pre-D-20 model
         # did not have at all.
         ref_number = self.agents.choose_referral(wallet_id)
@@ -1005,7 +1011,7 @@ class Engine:
     # ------------------------------------------------------------------ #
     @property
     def liquid(self) -> float:
-        """The part of `pending` that is TON on the ratchet's own balance.
+        """The part of `pending` that is GRAM on the ratchet's own balance.
 
         Derived, not stored: `pending` stays the whole obligation, so the six
         sites that write it need no knowledge of staking. This is the quantity
@@ -1050,7 +1056,7 @@ class Engine:
 
     def _land_exits(self, t: float) -> None:
         """Credit every exit whose leg has arrived. A leg-2 haircut is a REALIZED
-        loss: it leaves `exiting` at cost and lands as less TON, so `T` falls
+        loss: it leaves `exiting` at cost and lands as less GRAM, so `T` falls
         with `pending` and the identity holds across it."""
         if not self._exit_queue:
             return
@@ -1067,7 +1073,7 @@ class Engine:
         self._exit_queue = still
 
     def _exit_stake(self, need: float, t: float) -> None:
-        """D-151's three legs, in order. `need` is TON of cost basis to bring
+        """D-151's three legs, in order. `need` is GRAM of cost basis to bring
         back; the leg decides when it lands and at what haircut."""
         stk = self.p.staking
         need = min(need, self.staked_cost)
@@ -1124,7 +1130,7 @@ class Engine:
             self.staked_cost_peak = max(self.staked_cost_peak, self.staked_cost)
             self.stake_events += 1
             # The FLAT deposit fee is charged to the gas buffer, never netted out
-            # of the amount: netting it would drop `T` by 1 TON per stake and
+            # of the amount: netting it would drop `T` by 1 GRAM per stake and
             # `p_f = T/S` with it (D-151 point 2).
             self.staking_fees_paid += stk.deposit_fee_ton
         self._assert_t_identity()
@@ -1190,7 +1196,7 @@ class Engine:
             if venue_max <= 0:
                 # Below-the-fee-line market: no size fills. Not an attempt --
                 # the caller can see this off `get_reserves` without spending
-                # the ratchet's 0.25 TON of swap gas to be told.
+                # the ratchet's 0.25 GRAM of swap gas to be told.
                 self.last_flush_t = t
                 return
             amount = min(amount, venue_max)
@@ -1222,9 +1228,9 @@ class Engine:
         # guard still fills, at an average up to `p_f`, and the attacker sells
         # back above where it bought. The model before D-190 sized the flush
         # before the pump and capped the front-run at 0.5x the flush, so any
-        # pump bounced it and the check read 0.00 TON; the profitable pumps run
+        # pump bounced it and the check read 0.00 GRAM; the profitable pumps run
         # to ~8x the flush (`sandwich_frontrun_fracs`). What the attack takes is
-        # BURN EFFICIENCY -- fewer PRIMES burned per TON while the market is
+        # BURN EFFICIENCY -- fewer PRIMES burned per GRAM while the market is
         # under the floor. `T`, `S` and `p_f` do not move (CONCEPT.md SS8).
         front = 0.0
         primes_bought_by_sandwich = 0.0
@@ -1243,7 +1249,7 @@ class Engine:
                 self.sandwich_declined_events += 1
 
         # The cooldown is charged PRO RATA, matching `handleFlush`: it
-        # rate-limits TON throughput, not call count, so a tranche a tenth the
+        # rate-limits GRAM throughput, not call count, so a tranche a tenth the
         # auto size locks a tenth of the window. Keyed to the call instead, a
         # caller-chosen size would be a denial of service -- a dust request
         # would spend the whole day's allowance.
@@ -1272,7 +1278,7 @@ class Engine:
             self.burned_primes += bought
             self.burn_events += 1
         else:
-            # bounce: TON returns, `pending` restored unchanged, nothing lost
+            # bounce: GRAM returns, `pending` restored unchanged, nothing lost
             self.flush_bounces += 1
             self.last_flush_outcome = "bounced"
             if primes_bought_by_sandwich > 0:

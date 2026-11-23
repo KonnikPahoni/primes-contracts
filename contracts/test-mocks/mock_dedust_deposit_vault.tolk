@@ -94,7 +94,7 @@ struct (0x7362d09c) TransferNotification {
 }
 
 // Not a real DeDust opcode — this mock's own signal for the REFUND outcome, so
-// a test can tell "deposit accepted but under-filled, TON returned" apart from
+// a test can tell "deposit accepted but under-filled, GRAM returned" apart from
 // "deposit filled" without inventing a throw code DeDust itself does not use.
 struct (0x92000021) DepositRefunded {
     queryId: uint64

@@ -64,7 +64,7 @@ async function close(client: TonClient, n: bigint, handle: string) {
     const headBefore = await retry(() => ledger.getHead(), 'getHead');
     const tBefore = await retry(() => ledger.getFloorNum(), 'getFloorNum');
     const sBefore = await retry(() => ledger.getFloorDen(), 'getFloorDen');
-    console.log(`before: closed=${before.closed} highBid=${fromNano(before.highBid)} TON winner=${before.highBidder}`);
+    console.log(`before: closed=${before.closed} highBid=${fromNano(before.highBid)} GRAM winner=${before.highBidder}`);
     console.log(`        head=${headBefore} T=${tBefore} S=${sBefore}`);
 
     // DECIDE ON THE READ, BEFORE THE SEND (CLAUDE.md, driver scripts). The market throws 1005
@@ -109,7 +109,7 @@ const OPEN_DUTCH_GAS = toNano('0.2');
 
 async function guardBalance(client: TonClient, handle: string, addr: Address, need: bigint) {
     const bal = await retry(() => client.getBalance(addr), 'getBalance');
-    if (bal < need + MARGIN) throw new Error(`${handle} holds ${fromNano(bal)} TON, needs ${fromNano(need + MARGIN)} — nothing sent`);
+    if (bal < need + MARGIN) throw new Error(`${handle} holds ${fromNano(bal)} GRAM, needs ${fromNano(need + MARGIN)} — nothing sent`);
 }
 
 async function openAscending(client: TonClient, n: bigint, handle: string) {
@@ -125,7 +125,7 @@ async function openAscending(client: TonClient, n: bigint, handle: string) {
     const value = price.p0 + MARGIN;
     const w = await walletFor(client, handle);
     await guardBalance(client, handle, w.wallet.address, value);
-    console.log(`${handle} opens ascending lot ${n} (kind ${prime ? 1 : 0}) at p0 ${fromNano(price.p0)} TON, value ${fromNano(value)}`);
+    console.log(`${handle} opens ascending lot ${n} (kind ${prime ? 1 : 0}) at p0 ${fromNano(price.p0)} GRAM, value ${fromNano(value)}`);
     await m.sendOpenLot(w.sender, { n, kind: prime ? 1 : 0, factors, beneficiary: null, referralKey: 0, value });
     await new Promise((r) => setTimeout(r, 25_000));
     const after = await retry(() => m.getLot(n), 'getLot(after)');
@@ -160,7 +160,7 @@ async function buy(client: TonClient, n: bigint, handle: string) {
     const value = lot.minPayment + MARGIN;
     const w = await walletFor(client, handle);
     await guardBalance(client, handle, w.wallet.address, value);
-    console.log(`${handle} buys lot ${n} at minPayment ${fromNano(lot.minPayment)} TON, value ${fromNano(value)}`);
+    console.log(`${handle} buys lot ${n} at minPayment ${fromNano(lot.minPayment)} GRAM, value ${fromNano(value)}`);
     await m.sendBid(w.sender, { n, beneficiary: null, referralKey: 0, value });
     await new Promise((r) => setTimeout(r, 25_000));
     const after = await retry(() => m.getLot(n), 'getLot(after)');

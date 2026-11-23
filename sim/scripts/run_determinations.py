@@ -259,7 +259,7 @@ def q26(census: dict, prime_npv: dict, res_gas_ton: float,
         forfeit_sweep[f"lam_dutch={lam}/lot/day"] = r
         print(f"    forfeit at lam={lam}: unsold share "
               f"{r['expected_unsold_share']}, forfeit "
-              f"{r['expected_forfeited_tribute_ton']:.1f} TON, implied "
+              f"{r['expected_forfeited_tribute_ton']:.1f} GRAM, implied "
               f"{r['implied_buyers_per_composite_mint']:.2f} prime buyers per "
               f"composite mint")
     forfeit = mk.unsold_prime_forfeit(
@@ -461,7 +461,7 @@ def main():
     print(f"  {len(census['cells'])} cells, {len(prime_npv):,} prime lots in range")
 
     # D-33's ladder is derived FIRST: every ascending lot below is priced under
-    # the step the contract ships, never under the retired `max(1 TON, 5%)`.
+    # the step the contract ships, never under the retired `max(1 GRAM, 5%)`.
     print("\n=== 0b2. D-33 -- the minimum bid increment ladder ===")
     ladder_prem = mk.ObjectivePremises(draws=400, seed=SEED)
     ladder = acq.bid_increment_ladder(
@@ -469,7 +469,7 @@ def main():
         res_gas_ton=fees["res_gas_ton"],
         bid_round_trip_ton=fees["bid_round_trip_ton"],
     )
-    print(f"    floor {ladder['min_increment_floor_ton']} TON, "
+    print(f"    floor {ladder['min_increment_floor_ton']} GRAM, "
           f"bps by rung {ladder['min_increment_bps']}")
 
     # The prime lane's own measured outcome, fed back into the engine so its
@@ -486,7 +486,7 @@ def main():
         "prime_lot_mean_days_to_sale": lane["mean_days_to_sale"] or 0.0,
     }
     print(f"  prime lane: sale rate {lane['sale_rate']:.3f}, "
-          f"mean premium {lane['premium_per_lot_ton']:.3f} TON/lot")
+          f"mean premium {lane['premium_per_lot_ton']:.3f} GRAM/lot")
 
     print("\n=== 0c. D-20 baseline, pass 2: with the measured prime lane ===")
     base = run(SEED, **prime_lot)
@@ -494,7 +494,7 @@ def main():
           f"prime lots {base.prime_lots_opened:,} "
           f"(sold {base.prime_lots_sold:,}, unsold {base.prime_lots_unsold:,})  "
           f"floor {base.floor_price:.6f}  premium to ratchet "
-          f"{base.prime_lot_premium_total:,.0f} TON")
+          f"{base.prime_lot_premium_total:,.0f} GRAM")
 
     # The lane's effect on the floor, ACROSS SEEDS rather than on one path.
     # A single paired run is not a controlled experiment here: turning the lane

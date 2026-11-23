@@ -1,20 +1,20 @@
 # Threat model — assets, actors, trust boundaries, attacker gets
 
 `GAUNTLET.md` Track I, item I4. `docs/audit/scope.md` (I1) already drew the boundary —
-"every path TON can move through, and every figure the webapp or bot shows a player" —
+"every path GRAM can move through, and every figure the webapp or bot shows a player" —
 and its §1–§4 is the asset list. This document adds the layer scope.md itself says I4
 owes: **who the actors are, where the trust boundaries sit, and what each actor gets if
 it turns hostile or is compromised.** Not a measurement script like `contract-surface.md`
 — a judgement call, argued from `docs/audit/sender-gates.md` (122 arms, who authorises
 each), `docs/audit/withdraw-surface.md` (77 outbound sends, classified by destination),
 `docs/audit/money-arithmetic.md` (14 subtractions), and CONCEPT.md §8's own guarantee
-("no admin withdraw path on any TON balance, not timelocked, not multisig").
+("no admin withdraw path on any GRAM balance, not timelocked, not multisig").
 
 ## Assets
 
 Grouped by what is actually at stake, not by file:
 
-1. **TON held in the two pools** (CONCEPT.md §3.4): `pending` (the ratchet's, nobody's
+1. **GRAM held in the two pools** (CONCEPT.md §3.4): `pending` (the ratchet's, nobody's
    until `flush()`) and `owed` (per-prime-item purses, the item owner's). Each lives in
    its own contract so `balance ≈ declared liability` is a single get-call
    (`DecompositionSolvency.spec.ts`). **There used to be a third — escrow, for open
@@ -24,7 +24,7 @@ Grouped by what is actually at stake, not by file:
    money anymore.** This document originally listed three pools and was stale against
    that decision; corrected here rather than left standing, since an auditor sent
    looking for an escrow contract that no longer exists would waste real time on it.
-2. **Emitted PRIMES supply (`S`) and the floor identity (`T`, `p_f = T/S`)** — not TON
+2. **Emitted PRIMES supply (`S`) and the floor identity (`T`, `p_f = T/S`)** — not GRAM
    itself, but the ratchet-theorem invariant (`k < 1`, `S` never decremented, `T`'s
    three-term identity) every economic claim in the app rests on. Corrupting the identity
    without moving a single nanoton is still a protocol-breaking attack.
@@ -35,13 +35,13 @@ Grouped by what is actually at stake, not by file:
    `@ton/crypto`). `primes_voucher.tolk`'s `BurnSigner`/`ClaimVoucher` arms are the only
    two places a *signature*, not a sender comparison, is the authorisation mechanism
    (`sender-gates.md`'s one `signature` row) — the private half of this key is the single
-   piece of off-chain material that can make the voucher contract release TON to an
+   piece of off-chain material that can make the voucher contract release GRAM to an
    address of the signer's choosing, up to whatever `paidTotal` bound is live. Since audit
    R2-M2 these are two keys, one per track (QSTS, PQST), and each instance caps what one
    wallet can ever be paid (`maxPerWallet`, 716 above it).
 5. **The keeper's TON wallet** (`backend/keeper/src/wallet.ts`) — not an authorisation
    asset (see Trust boundary 3 below), but a custody asset in its own right: it holds real
-   TON to pay gas for the permissionless calls it automates.
+   GRAM to pay gas for the permissionless calls it automates.
 6. **Read-path honesty** — every figure `read-proxy`/`read-index` serve, which
    `stat-provenance.md` traces back to a get-method. Not custody, but the auditor-facing
    claim CLAUDE.md rule 4 makes: a reshaped or invented number here is a false claim even
@@ -99,7 +99,7 @@ Grouped by what is actually at stake, not by file:
 4. **Keeper wallet ↔ permissionless functions.** Deliberately *not* a privileged
    boundary — `scope.md` §2 already states this: "it moves no money the contract wouldn't
    otherwise release to anyone who called the same function." The keeper is in scope
-   because it is a live TON-holding process reachable from this repo's code, not because
+   because it is a live GRAM-holding process reachable from this repo's code, not because
    it holds authority a player lacks.
 5. **Deploy host ↔ webapp bundle / backend services.** The boundary CONCEPT.md §8
    deliberately does **not** cover: §8's "no admin withdraw path" is about the
@@ -128,11 +128,11 @@ Grouped by what is actually at stake, not by file:
   it is the only off-chain key whose compromise is a direct fund drain, distinct from every
   other actor on this list. Since audit R2-M2 (2026-11-20) the drain is capped twice: one key
   reaches one track, and one wallet at most that instance's `maxPerWallet` (QSTS 2,450 /
-  PQST 6,350 PRIMES), so emptying a track takes ~1,000 fresh wallets each paying ≥ 0.15 TON
+  PQST 6,350 PRIMES), so emptying a track takes ~1,000 fresh wallets each paying ≥ 0.15 GRAM
   per claim. Both service keys share one host's `.env`, so a host compromise takes both.
 - **The keeper wallet, compromised or drained.** An attacker gains nothing they could not
   already do by calling the same permissionless functions themselves (§4 above). The only
-  real loss is the TON balance the wallet itself holds for gas — bounded to whatever
+  real loss is the GRAM balance the wallet itself holds for gas — bounded to whatever
   operating float it carries, not protocol funds.
 - **The operator or deploy subwallet's private key, compromised.** Lets an attacker act
   as the operator for the specific arms `sender-gates.md` gates to the deploy subwallet
@@ -152,10 +152,10 @@ Grouped by what is actually at stake, not by file:
   balances."
 - **The governed treasury (`primes_treasury.tolk`), and the electorate that spends it.**
   D-100 adds a pot with **no key at all** — no owner field, no admin opcode, no upgrade,
-  no pause — holding its vest half in PRIMES, 80% of forfeits in TON, and any LP sent to
+  no pause — holding its vest half in PRIMES, 80% of forfeits in GRAM, and any LP sent to
   it. There is therefore no private key whose compromise reaches it, and that is a real
   reduction in what an operator-key compromise gets. What replaces the key as the attack
-  surface is **the vote**: a proposal transfers `{TON | PRIMES | LP}` to an address a
+  surface is **the vote**: a proposal transfers `{GRAM | PRIMES | LP}` to an address a
   simple majority of votes cast approved, with no quorum, so an attacker who accumulates
   more weighted LP than anyone who bothers to vote no can move up to 25% of one asset per
   proposal, one day at a time. D-100 point 10b accepts this in writing and names the
@@ -191,7 +191,7 @@ Grouped by what is actually at stake, not by file:
   what Tracks B–D already filed.
 - **A read-proxy/read-index bug or compromise.** A wrong number shown to a player — a real
   honesty defect (CLAUDE.md rule 4), traced and caught by `stat-provenance.md`'s chain, but
-  never a custody event: nothing routes TON through either service, per `withdraw-surface
+  never a custody event: nothing routes GRAM through either service, per `withdraw-surface
   .md`'s totals (no read-service contract appears as a destination class at all).
 
 ## New finding filed
@@ -211,7 +211,7 @@ Grouped by what is actually at stake, not by file:
 Availability-only risks (host downtime, log-shipper failures) are `GAUNTLET.md` Track G's
 job, not this pack's, per `scope.md`'s own boundary. Economic-parameter *provenance* (is
 `K_CEIL` the right number) is I8's job, not a trust-boundary question. This document is
-about **who can make TON or a claim move against the rules**, not about correctness of the
+about **who can make GRAM or a claim move against the rules**, not about correctness of the
 rules themselves (that is Track A/B/C's invariant work, already cited throughout).
 
 Log: written from `docs/audit/scope.md`, `sender-gates.md`, `withdraw-surface.md`,

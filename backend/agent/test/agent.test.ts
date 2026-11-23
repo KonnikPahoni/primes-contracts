@@ -1,7 +1,7 @@
 /**
  * THE SPENDING RULES.
  *
- * Three things here can cost a caller real TON, so three things are asserted throughout:
+ * Three things here can cost a caller real GRAM, so three things are asserted throughout:
  * that a LIVE read gates every spend (§9.1), that the bodies are the shared builders' own
  * bytes and not a fourth transcription of the wire format, and that the rate-limit
  * contract is honoured rather than retried in a loop (`MISTAKES.md`'s genesis 429).
@@ -83,8 +83,8 @@ describe("PrimesAgent — a live read gates every spend (CONCEPT.md §9.1)", () 
     expect(sent[0].bodyHash).toBe(expected.body.hash().toString("hex"));
     // D-191 point 1: to the payer's own minter card, not to the ledger.
     expect(sent[0].to).toBe(expected.to.toString());
-    // 1 TON plus the fee margin, never the exact nominal — the contract compares the
-    // value that ARRIVES, after TON takes the forward fee.
+    // 1 GRAM plus the fee margin, never the exact nominal — the contract compares the
+    // value that ARRIVES, after GRAM takes the forward fee.
     expect(sent[0].value).toBe(expected.value);
     expect(sent[0].value).toBeGreaterThan(1_000_000_000n);
   });
@@ -368,7 +368,7 @@ describe("annotate — an era trophy's engraving: the first free, later ones at 
   });
 });
 
-describe("name — the owner names any number for TON through the collection (D-212)", () => {
+describe("name — the owner names any number for GRAM through the collection (D-212)", () => {
   const FEES = async () => ({ nameFee: 2_000_000_000n, renameFee: 200_000_000_000n });
 
   it("sends the collection the shared builder's bytes at nameFee, then at renameFee once named", async () => {
@@ -491,8 +491,8 @@ describe("flush — permissionless, but the ratchet has two asserts worth readin
    * the market far BELOW the floor. The agent reads `getFloorCache` and `/market` and
    * sends the fillable size instead.
    *
-   * The pool here is the live testnet reading of 2026-09-19 — 1.2826 TON against 479,142
-   * PRIMES at a floor of 5.6875 TON/1M — where the auto-sized tranche demanded 7.2× the
+   * The pool here is the live testnet reading of 2026-09-19 — 1.2826 GRAM against 479,142
+   * PRIMES at a floor of 5.6875 GRAM/1M — where the auto-sized tranche demanded 7.2× the
    * pool's entire PRIMES side.
    */
   const LIVE_POOL = {
@@ -515,7 +515,7 @@ describe("flush — permissionless, but the ratchet has two asserts worth readin
     withMarket(agent, LIVE_POOL);
     await agent.flush();
     expect(sent).toHaveLength(1);
-    // ~1.41 TON after the 2% haircut, and NOT the contract's own 0 ("size it yourself").
+    // ~1.41 GRAM after the 2% haircut, and NOT the contract's own 0 ("size it yourself").
     expect(sent[0].bodyHash).not.toBe(buildFlushMessage().body.hash().toString("hex"));
     expect(sent[0].bodyHash).toBe(
       buildFlushMessage({ amountNanoton: 1_408_579_656n }).body.hash().toString("hex"),
@@ -523,9 +523,9 @@ describe("flush — permissionless, but the ratchet has two asserts worth readin
   });
 
   it("refuses rather than paying for a refusal when NO size clears the guard", async () => {
-    // Same floor, a pool ten times as deep in TON: the market is above the floor and the
+    // Same floor, a pool ten times as deep in GRAM: the market is above the floor and the
     // closed form has no positive root. Sending would buy one `payout#474f86cf` on the
-    // caller's own 0.25 TON of swap gas (D-146) to learn what the reserves already said.
+    // caller's own 0.25 GRAM of swap gas (D-146) to learn what the reserves already said.
     const { agent, sent } = fakeAgent({ ...ready, floorCache: async () => LIVE_CACHE });
     withMarket(agent, { ...LIVE_POOL, reserveTonNanoton: "12826426060" });
     await expect(agent.flush()).rejects.toThrow(/at or above the floor/);

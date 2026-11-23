@@ -24,7 +24,7 @@ against a cost basis that rises as `k_max(n)` decays, which D-57 showed inverts
 at n ~ 1173. D-106 deletes patron mode rather than re-basing the criterion to the
 flattering number, so the criterion has nothing left to measure. Note what does
 NOT replace it: the recruit ladder D-106 keeps pays in `k_max` uplift and never
-in TON, so there is no payer to be underwater and no breakeven to check. It is
+in GRAM, so there is no payer to be underwater and no breakeven to check. It is
 bounded by the K_CEIL clamp, which criterion 1's uplift stack already exercises.
 
 The FIRST retirement was blue-chip constellation crowding: does
@@ -79,9 +79,9 @@ def check_tribute_justifies_reserve(auction: dict) -> dict:
     by cutting the first ten primes from 62% to 22% of the line.
 
     Two thresholds, both this simulation's judgment calls:
-      * every auctioned prime's reference value must clear 5 TON, so an auction
-        reserve is meaningfully above the 1 TON anyone pays at the head;
-      * the six together must clear 100 TON, enough that the genesis LP is not
+      * every auctioned prime's reference value must clear 5 GRAM, so an auction
+        reserve is meaningfully above the 1 GRAM anyone pays at the head;
+      * the six together must clear 100 GRAM, enough that the genesis LP is not
         moved more than ~1% by a single mint.
     """
     min_ref = 5.0

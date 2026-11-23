@@ -6,7 +6,7 @@ tolk 1.4
 // (amends D-46 point 4). Opcodes: /shared/opcodes.ts `LP_SINK`. Wire format:
 // /shared/schemas/lp_sink.tlb. Invariant TR-6.
 //
-// WHAT IT IS. DeDust PRIMES/TON LP receipts — the jettons the pair mints to a
+// WHAT IT IS. DeDust PRIMES/GRAM LP receipts — the jettons the pair mints to a
 // liquidity provider — are transferred to this contract's own LP jetton wallet
 // and are never seen again. That is the entire contract. There is one inbound
 // message that does work (`transfer_notification` from that one wallet), one
@@ -17,7 +17,7 @@ tolk 1.4
 // balance LOCKED DEPTH and that is the name every surface must use for it.
 //
 // THE PROPERTY, AND WHY IT IS STRONGER THAN "NO WITHDRAW PATH". §8 forbids an
-// admin withdraw path on any TON balance, and every other contract in this repo
+// admin withdraw path on any GRAM balance, and every other contract in this repo
 // satisfies it by argument: you read its outbound sends and check that each
 // destination is either the payer, a child, or a peer. That is a real audit and
 // it takes real reading. This file makes the argument unnecessary:
@@ -33,9 +33,9 @@ tolk 1.4
 // deployment at a new address, visible as such, holding none of this one's
 // balance.
 //
-// The corollary, stated rather than discovered: **TON sent to this address is
+// The corollary, stated rather than discovered: **GRAM sent to this address is
 // also gone.** It is not a liability and nobody is owed it — the contract
-// declares no TON liability, appears in no §3.4 reconciliation row, and has
+// declares no GRAM liability, appears in no §3.4 reconciliation row, and has
 // nothing to pay anyone with. Send it storage rent and nothing else.
 //
 // THE ONE-LINE AUDIT (TR-6). `getLocked()` is monotone non-decreasing — the only
@@ -44,14 +44,14 @@ tolk 1.4
 // balance moves and the sender check makes them the only way this counter moves.
 // One get-call against one wallet balance is the whole reconciliation. There is
 // no `getSolvency` here for the same reason `primes_sink.tolk` has none: the
-// declared TON liability is not zero-valued, it is ABSENT, and publishing a zero
+// declared GRAM liability is not zero-valued, it is ABSENT, and publishing a zero
 // row would invite somebody to start summing it into the §3.4 aggregate.
 //
 // LOCKED DEPTH IS NEVER SUMMED INTO `T`. THIS IS A COPY CONSTRAINT, NOT A
-// COMMENT (D-100 point 4). An LP receipt is a claim on a pool whose TON/PRIMES
+// COMMENT (D-100 point 4). An LP receipt is a claim on a pool whose GRAM/PRIMES
 // composition moves with every trade, so any figure derived from it is
 // non-monotonic — it falls when the pool is bought through. `T` is the ratchet's
-// TON side and §5's theorem is that `p_f = T/S` only ever rises; adding a term
+// GRAM side and §5's theorem is that `p_f = T/S` only ever rises; adding a term
 // that can fall would void the proof outright, not weaken it. So:
 //
 //   * the FLOOR (`p_f = T/S`, monotone, a redemption ratio) and
@@ -199,13 +199,13 @@ fun onInternalMessage(in: InMessage) {
             storage.events += 1;
             storage.save();
             // No outbound message, no forwarded gas, no acknowledgement. The
-            // remaining value stays as this account's TON balance and pays its
+            // remaining value stays as this account's GRAM balance and pays its
             // storage rent; there is no `responseAddr` hop to make because
             // there is nothing to report and no send to make it with.
         }
 
         else => {
-            // A plain TON transfer with an empty body is allowed: it is how this
+            // A plain GRAM transfer with an empty body is allowed: it is how this
             // contract is deployed and how anyone tops up its storage rent, and
             // it can no more leave than the LP can. Anything else — an opcode
             // this file does not implement, or a bounce, which cannot happen

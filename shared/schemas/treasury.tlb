@@ -7,15 +7,15 @@
 // `staking` (the distribution rate and epoch).
 //
 // WHAT IT IS. The team's money under holder control. The treasury holds PRIMES
-// (its own genesis vest lock, D-100 point 6 / D-166), TON (58% of the unsold-prime
+// (its own genesis vest lock, D-100 point 6 / D-166), GRAM (58% of the unsold-prime
 // forfeits, §4.1/§6 point 2), tsTON (D-151) and depositors' LP. It is the
-// CUSTODY ADDRESS for LP that wants a vote: anyone deposits DeDust PRIMES/TON LP
+// CUSTODY ADDRESS for LP that wants a vote: anyone deposits DeDust PRIMES/GRAM LP
 // into one of FOUR lock terms (30 d / 3 m / 6 m / 1 y) and, while the term runs,
 // that position is the electorate. LP CUSTODY EARNS NO PRIMES (D-168 deleted the
 // LP miner); the treasury's PRIMES reach holders through `distribute()` to the
 // stake master (stake.tlb, §5.3) instead.
 //
-// IT HOLDS NO PROTOCOL TON, and that distinction is the whole of §8. `pending`
+// IT HOLDS NO PROTOCOL GRAM, and that distinction is the whole of §8. `pending`
 // is the ratchet's, `owed` is the prime owners', and neither is here. Nothing in
 // this family moves `T`, `S`, `pending`, `owed`, `k`, `K_CEIL` or the split, and
 // NOTHING HERE MINTS (TR-4).
@@ -27,7 +27,7 @@
 //
 // THE CHILD'S ADDRESS IS THE AUTHENTICATION. A child is deployed from the
 // treasury's `position_code` with init data `(owner, treasury_addr, empty, 0, 0,
-// 0, clock_divisor)`, so its address is a hash of that code and that owner. Every
+// 0, empty, 0, 0, clock_divisor)`, so its address is a hash of that code and that owner. Every
 // message from a child carries `owner`; the treasury re-derives
 // `positionAddress(owner)` and compares it to the sender.
 //
@@ -86,7 +86,7 @@ balances$_
 // amended 2026-11-19, audit R2-H1). The proposal was proposed at
 // `opens − getGov().notice_duration`; no separate field stores it.
 //
-// `asset` is 0 TON / 1 PRIMES / 2 tsTON (D-151; LP is not proposable, D-167) / 3
+// `asset` is 0 GRAM / 1 PRIMES / 2 tsTON (D-151; LP is not proposable, D-167) / 3
 // venue confirm (D-194: `amount` = the timelock record seq, no value moves).
 // `executed` is cleared again by the bounce handler when the send failed — that
 // is what makes a bounced execute retryable rather than a proposal lost forever.
@@ -180,8 +180,9 @@ treasury_storage$_
 // so the treasury counts only weight held before the proposal opened
 // (CONCEPT §5.5.5, 1202).
 //
-// `in_flight` is 1 while an LP move (withdraw / sink-forward) is in flight to the
-// treasury — the flag that stops the same LP being moved twice.
+// `in_flight` is 1 while a withdraw and 2 while a sink-forward is in flight to the
+// treasury — the flag that stops the same LP being moved twice, and (D-214) the
+// one that tells `confirm_withdraw` to credit `forever_amount`.
 //
 // `expired` is 1 once this position's vote weight has left BOTH aggregates — by
 // `expire`, or because a bounced move restored it without it. NOT the vote rule
@@ -211,6 +212,11 @@ position_storage$_
     // (1155), pruned by every `position_vote` once `now >= record_until`, deleted
     // when the vote bounces. Bounded by this owner's votes in the last window.
     voted:(HashmapE 64 uint40)
+    // D-214: Σ LP this owner locked forever through `to_sink`, and when that total
+    // last grew. Votes `forever_amount × 100` (`treasury.forever_vote_multiplier`)
+    // under position id 0xFFFFFFFF, never matures; every credit restamps the time.
+    forever_amount:Coins
+    forever_since:uint40
     clock_divisor:uint16                   // D-139, inherited. LAST.
   = PositionStorage;
 
@@ -238,7 +244,7 @@ set_wallets#96000001
 // AN ABSENT, UNRECOGNISED OR MALFORMED PAYLOAD ON THE LP WALLET, OR A TIER ABOVE
 // 3, REFUNDS IN FULL to the address that sent the transfer (sink.tlb's outcome
 // 2). A notification from any OTHER wallet throws (`treasury_wrong_wallet`,
-// 1151). The LP arm needs `TREASURY_MIN_FORWARD` = 0.15 TON (103).
+// 1151). The LP arm needs `TREASURY_MIN_FORWARD` = 0.15 GRAM (103).
 transfer_notification#7362d09c
     query_id:uint64
     amount:Coins
@@ -278,7 +284,7 @@ relock_vote#96000002
 // TERM has matured, which the child enforced) or to `primes_lp_sink.tolk`
 // (`to_sink = 1`, allowed at any time, D-100 point 4). `expired` says whether an
 // `expire_vote` already removed the vote weight, so the exit does not remove it
-// twice. Needs 0.15 TON. The treasury replies with `confirm_withdraw`.
+// twice. Needs 0.15 GRAM. The treasury replies with `confirm_withdraw`.
 withdraw_lp#96000003
     query_id:uint64
     owner:MsgAddress
@@ -310,7 +316,7 @@ vote#96000004
     record_until:uint40
   = InternalMsgBody;
 
-// Open a proposal: transfer {TON | PRIMES | tsTON} to an address, or (D-194,
+// Open a proposal: transfer {GRAM | PRIMES | tsTON} to an address, or (D-194,
 // asset 3) confirm a venue timelock record — `amount` = the record's `seq`,
 // `dest` = the timelock, no value moves. Refused unless
 // the proposer's weight is at least `treasury.propose_min_bps` of
@@ -347,7 +353,7 @@ expire_vote#96000007
 // PRIMES and tsTON that balance is the whole tracked balance: nothing accrues
 // inside the treasury since D-168. A BOUNCED EXECUTE RESETS `executed`. A venue-
 // confirm proposal (asset 3, D-194) has no cap; its executor attaches
-// `VENUE_CONFIRM_GAS` (0.03 TON), carried on to the timelock by mode 64.
+// `VENUE_CONFIRM_GAS` (0.03 GRAM), carried on to the timelock by mode 64.
 execute#96000006
     query_id:uint64
     seq:uint32
@@ -357,14 +363,14 @@ execute#96000006
 //
 //   budget = primes_balance · rate_bps_per_day · interval / (10000 · 86400)
 //
-// to `stake_addr`, with `forward_ton_amount` = 0.05 TON and forward payload
+// to `stake_addr`, with `forward_ton_amount` = 0.05 GRAM and forward payload
 // `stake_action_budget#53424754` ("SBGT", stake.tlb), response_destination = the
 // caller. `interval` = `staking.epoch_seconds` / clock_divisor.
 //   * at most once per interval: `treasury_distribute_early` (1200) until
 //     `now − last_distribute_time >= interval`;
 //   * `treasury_distribute_dust` (1201) below `DISTRIBUTE_MIN_BUDGET` = one
 //     nano-PRIMES — the empty treasury, and nothing else;
-//   * the caller attaches `DISTRIBUTE_MIN_FORWARD` = 0.15 TON (103) and gets the
+//   * the caller attaches `DISTRIBUTE_MIN_FORWARD` = 0.15 GRAM (103) and gets the
 //     change back.
 // The transfer's query_id is `(2 << 56) | previous last_distribute_time`, so a
 // bounce restores `primes_balance`, the cumulative figures AND the previous
@@ -408,12 +414,14 @@ confirm_withdraw#96000012
 // every term is already served) and `expired`, since its vote weight left
 // `eligible_weight` before the LP was sent and is not restored. The owner is
 // recovered from the failed transfer's `response_addr`, deliberately the OWNER on
-// both the withdrawal and the sink-forward.
+// both the withdrawal and the sink-forward. `from_sink` (D-214) is bit 40 of the
+// failed transfer's `query_id`: 1 takes back the forever credit the confirm made.
 restore_position#96000013
     query_id:uint64
     position_id:uint32
     amount:Coins
     tier:uint8
+    from_sink:uint8
   = InternalMsgBody;
 
 // ---------------------------------------------------------------------------
@@ -423,7 +431,7 @@ restore_position#96000013
 // 0x96000020 (`request_withdraw`, D-147) and 0x96000022 (`claim`, the miner's
 // payout, D-168) are RETIRED, not recycled.
 //
-// withdraw / to_sink / relock need POSITION_MIN_FORWARD = 0.20 TON (103), the
+// withdraw / to_sink / relock need POSITION_MIN_FORWARD = 0.20 GRAM (103), the
 // owner (1164), a held id (1165) and no move in flight (1168).
 
 // Take the LP back. ONE MESSAGE, refused until `matures_at`
@@ -472,7 +480,7 @@ relock#96000026
 // D-147, and THE ONE MESSAGE ON EITHER CONTRACT WITH NO SENDER CHECK. Mark a
 // matured position's vote weight gone, here and — via `expire_vote` — in the
 // treasury's `eligible_weight`. Moves no asset, changes no rule, IDEMPOTENT (an
-// already-expired position returns). Needs 0.20 TON.
+// already-expired position returns). Needs 0.20 GRAM.
 expire#96000027
     query_id:uint64
     position_id:uint32
@@ -482,7 +490,7 @@ expire#96000027
 // Outbound — assets
 // ---------------------------------------------------------------------------
 
-// TON, on `execute` of an asset-0 proposal. It carries a body so the bounce
+// GRAM, on `execute` of an asset-0 proposal. It carries a body so the bounce
 // handler gets the proposal sequence back to reset `executed`.
 ton_payout#96000014
     query_id:uint64
@@ -493,7 +501,7 @@ ton_payout#96000014
 // venue timelock, which sets `confirmed` on the record whose `seq` this names. No
 // value beyond the executor's hop. A refusal (stale seq, a vote that opened
 // before the record was queued, or one that closed before the record's `eta` —
-// audit H1) bounces and resets `executed`, like a TON payout.
+// audit H1) bounces and resets `executed`, like a GRAM payout.
 confirm_venue#a0000006
     query_id:uint64
     seq:uint32
@@ -570,14 +578,14 @@ transfer#0f8a7ea5
 //                                and its `expire`; the RULE is never approximate.
 //   getTierTerms()            -> the four LOCK TERMS as the CHILD enforces them
 //   getPositionOwner()        -> (owner, treasury_addr)
-//   getPositionMinForward()   -> nominal TON an owner message must forward
+//   getPositionMinForward()   -> nominal GRAM an owner message must forward
 //   getHasVoted(seq, id)      -> 0 | 1: this position holds a vote record on
 //                                `seq` (D-188 point 7; forgotten once the
 //                                proposal has certainly closed)
 //   getVotedCount(seq)        -> how many of this wallet's positions hold one
 //
-// THERE IS DELIBERATELY NO `getSolvency` ON EITHER CONTRACT. §3.4 reconciles TON
-// balances against declared TON LIABILITIES; the treasury owes its TON to nobody
+// THERE IS DELIBERATELY NO `getSolvency` ON EITHER CONTRACT. §3.4 reconciles GRAM
+// balances against declared GRAM LIABILITIES; the treasury owes its GRAM to nobody
 // and the child holds no assets at all. The PRIMES liability this family used to
 // carry (TR-1, the miner's accrual) moved to the stake master as ST-1 (D-168).
 // ---------------------------------------------------------------------------

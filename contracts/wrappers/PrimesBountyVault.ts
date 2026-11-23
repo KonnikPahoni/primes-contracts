@@ -17,14 +17,14 @@ import { BOUNTY_VAULT } from '../../shared/opcodes';
  * One entry of the genesis-fixed era schedule (DENOMINATION_PLAN P4).
  *
  * `bountyTon` is what the ceremony is WORTH and is the number the design fixes;
- * `maxPrimes` is what that TON buys at the genesis floor and is the largest the
+ * `maxPrimes` is what that GRAM buys at the genesis floor and is the largest the
  * boundary can ever pay. The vault pays `min(bountyTon * S / T, maxPrimes)`.
  */
 export type EraBounty = { eraBoundary: bigint; bountyTon: bigint; maxPrimes: bigint };
 
 export type AllowEntry = { addressHash: bigint; programTag: number; remaining: bigint };
 
-/** SPECIAL_NUMBERS_PLAN.md Phase 2: tier (0=discount,1=free,2=bonus) -> (TON value, PRIMES cap). */
+/** SPECIAL_NUMBERS_PLAN.md Phase 2: tier (0=discount,1=free,2=bonus) -> (GRAM value, PRIMES cap). */
 /** D-99 §1.5 — one entry of the two-entry rebate schedule. `tier` is the KIND
  *  (0 = composite per point, 1 = prime family); the word survives only as a
  *  dictionary key name. */
@@ -163,7 +163,7 @@ export class PrimesBountyVault implements Contract {
             beneficiary: Address;
             value: bigint;
             queryID?: number;
-            /** Ledger's post-mint T (nanoTON) and S (nano-PRIMES). P4: the vault
+            /** Ledger's post-mint T (nanoGRAM) and S (nano-PRIMES). P4: the vault
              *  prices the ceremony at `T/S`, capped by the entry's `maxPrimes`. */
             t: bigint;
             s: bigint;

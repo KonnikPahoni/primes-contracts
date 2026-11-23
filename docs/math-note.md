@@ -14,12 +14,12 @@ public anchor.
 
 ## 1. Setup
 
-Every mint pays a flat price `P = 1 TON`. A fixed split (CONCEPT.md §4.1) deducts **five
+Every mint pays a flat price `P = 1 GRAM`. A fixed split (CONCEPT.md §4.1) deducts **five
 lines** — three fixed: the treasury line (5%, paid to the governed treasury contract since
 `DECISIONS.md` D-152), gas & ops (20%, sized to the measured worst-case mint by `DECISIONS.md` D-117; what a mint does not spend is swept back to the pool, §4 below) and tribute (10%, which resolves to the empty set
 and falls back to the pool on a prime mint); and two conditional: an optional referral
-(10%) and the **invite line** (`count × 0.1 TON`, `count ∈ 0..3`, three text transfers to
-recipients the minter names — `DECISIONS.md` D-202; it was `count × 0.025 TON` over `0..5`
+(10%) and the **invite line** (`count × 0.1 GRAM`, `count ∈ 0..3`, three text transfers to
+recipients the minter names — `DECISIONS.md` D-202; it was `count × 0.025 GRAM` over `0..5`
 under D-101). *(This read "six lines" and named a patron line until 2026-09-21; D-106 deleted
 that line on 2026-09-07 and the count here had not followed.)* Everything left over — the *pool injection* `β·P` — is the residual, not an
 independently chosen number:
@@ -37,7 +37,7 @@ all three, the worst case — and `shared/params.json` `invites.beta_table` carr
 The contract tracks two cumulative counters, never reset, never decremented by anything except
 their own definitions:
 
-- `T` — total TON ever committed to the pool by the protocol.
+- `T` — total GRAM ever committed to the pool by the protocol.
 - `S` — total PRIMES ever emitted as rebates, plus the genesis bounty vault (counted in from
   block zero, CONCEPT.md §3.3).
 
@@ -145,9 +145,9 @@ the 0.2 floor still does its job (waiting is never punitive) while the cap still
 it: as `S -> S_MAX` the taper drives `k_eff -> 0` whatever `k_max` is holding at. Had the
 taper been folded into `k_max` instead, this floor would have defeated it.
 
-## 4. Where the injected TON actually goes: batched buy-and-burn
+## 4. Where the injected GRAM actually goes: batched buy-and-burn
 
-`T` increments **at mint time**, not at swap time — the protocol commits the TON the instant a
+`T` increments **at mint time**, not at swap time — the protocol commits the GRAM the instant a
 mint completes, even though the actual DeDust swap is batched and executed later by a
 permissionless `flush()` call (CONCEPT.md §4.3). This ordering is what makes §2's theorem true
 *at the moment of minting* rather than at some later, uncertain time when someone happens to
@@ -167,7 +167,7 @@ solvency gap that is not there. The gap between "committed" and "already swapped
 hidden, it's a named, queryable quantity.
 
 Once swapped, the resulting PRIMES is burned, and the receipt for the genesis DeDust pair is
-locked in the LP sink, which has no withdraw path (CONCEPT.md §6 point 3, D-154) — so every TON the protocol ever swaps lands in reserves nobody, not
+locked in the LP sink, which has no withdraw path (CONCEPT.md §6 point 3, D-154) — so every GRAM the protocol ever swaps lands in reserves nobody, not
 even the team, can withdraw. This is what makes "the floor rises with zero external buyers"
 a mechanism rather than a promise: the protocol is a perpetual, permanently-committed net
 buyer against its own ratchet.
@@ -262,7 +262,7 @@ first bid at `P0`, not a tenth of it.* `P0` is still anchored on fair value for 
 on a conservative fraction of it:
 
 ```
-P0(p) = max( 1.5 · NPV_tribute(p), PRIME_P0_MIN )     PRIME_P0_MIN = 5 TON,
+P0(p) = max( 1.5 · NPV_tribute(p), PRIME_P0_MIN )     PRIME_P0_MIN = 5 GRAM,
                                                        lifted further to a special
                                                        tier's price_max (D-88 point 2)
 ```
@@ -341,7 +341,7 @@ corrected this note's mint-timing sentence to match that already-true fact.)*
 untouched. A prime instead opens the **descending Dutch lane** described in §6, at the same
 `P0(p)` the ascending lane would have opened it at, decaying over the same 7-day window to
 `restingPrice(p) = max(NPV_tribute(p)/2, MINT_PRICE)` and then parking there, unexpiring,
-until bought. `RES_GAS` (0.06 TON) still exists — it is folded into `LOT_FLOOR` and
+until bought. `RES_GAS` (0.06 GRAM) still exists — it is folded into `LOT_FLOOR` and
 `RESERVE_FLOOR`, both inputs to `P0(n)`'s ladder — but it is no longer a settlement-gas fee
 prepaid against a later permissionless `settle(n)`, because there is no later settlement to
 prepay for. There is likewise no more separate "reservation rebate rule": a lot's mint is an
@@ -364,11 +364,11 @@ context D-88/D-90 above builds on — superseded where it disagrees with that up
 flat-fee `reserve(n, proof)` entry point this note originally described here was already
 deleted at D-30, replaced by a **reservable composite** won on an ascending lot and every
 **prime** bought on a descending Dutch lane openable before its turn at a flat `P0` and
-terminating at exactly 1 TON. The winner's claim escrowed the full mint price plus `RES_GAS`
+terminating at exactly 1 GRAM. The winner's claim escrowed the full mint price plus `RES_GAS`
 up front, proof was verified at open time, and anyone could call permissionless `settle(n)`
 once the head arrived. D-88/D-90 above is what deleted the escrow and `settle(n)` outright
 and moved the pre-turn prime case onto the ascending lane; the termination price also moved
-from a flat 1 TON to `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` (§6).
+from a flat 1 GRAM to `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` (§6).
 
 ---
 

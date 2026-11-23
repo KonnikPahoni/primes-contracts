@@ -63,10 +63,10 @@ tags:
       acquired by opening an ascending lot (opening IS a paid first bid; there is no score
       gate and no distance gate); a prime is bought on the descending Dutch lane, openable
       before its turn at a flat `P0(p)`, with the clock starting at the turn and terminating
-      at exactly 1 TON. What is priced is **the right to buy**, not the number. The flat-fee
+      at exactly 1 GRAM. What is priced is **the right to buy**, not the number. The flat-fee
       reservation lane these routes used to sit beside is DELETED (D-30), so `/trophy/*` is
       now the whole acquisition read surface. Every lot here is bypassable by waiting, and
-      that is the design, not a leak — the mint is 1 TON at the head, always.
+      that is the design, not a leak — the mint is 1 GRAM at the head, always.
   - name: treasury
     description: >
       DECISIONS.md D-100 / CONCEPT.md §5.5 — the GOVERNED TREASURY (`primes_treasury.tolk`),
@@ -75,7 +75,7 @@ tags:
       control; the game's economics stay under nobody's. Nothing in this group mints (TR-4),
       and nothing in it moves `T`, `S`, `pending`, `owed`, `k`, `K_CEIL` or the five-way
       split. **Locked depth is never summed into `T` or into the floor** (D-100 point 4): a
-      pool's TON/PRIMES composition moves with every trade, so an LP-derived term would void
+      pool's GRAM/PRIMES composition moves with every trade, so an LP-derived term would void
       §5's ratchet theorem. Two guarantees, two panels.
   - name: audit
   - name: events
@@ -196,7 +196,7 @@ components:
         Note what is NOT in this object: any field that could be read as a price. CONCEPT.md
         §9.1's rule is that a number nothing will sell is not quoted at zero as if it were
         free, and the contract's refusal to quote is only honest if the proxy does not
-        invent the quote back. The number is still MINTABLE — at 1 TON, at the head, like
+        invent the quote back. The number is still MINTABLE — at 1 GRAM, at the head, like
         every other number — it simply cannot be acquired ahead of the head.
 
         REPLACES `AuctionLaneOnlyBody` / exit 507. D-30 deletes the flat-fee lane, so there
@@ -247,7 +247,7 @@ components:
         scoreMax:
           type: string
           description: >
-            The ONE clamp on the sum. `2^(87/10) = 420.4`, so this figure IS the 420 TON
+            The ONE clamp on the sum. `2^(87/10) = 420.4`, so this figure IS the 420 GRAM
             ceiling on an opening price; no other ceiling exists.
     VestingLock:
       type: object
@@ -275,7 +275,7 @@ components:
         derived rather than proved (CONCEPT.md §9.1, §12).
       properties:
         head: { type: string, description: The ledger's head at the moment of the reading. }
-        owedNanoton: { type: string, description: The item's accrued tribute/referral, nanoTON. }
+        owedNanoton: { type: string, description: The item's accrued tribute/referral, nanoGRAM. }
         claimableDividendNanoton:
           type: string
           nullable: true
@@ -420,10 +420,11 @@ paths:
         - name: file
           in: path
           required: true
-          schema: { type: string, pattern: "^[0-9]+\\.(lottie\\.json|json|png|gif|mp4|tgs)$" }
+          schema: { type: string, pattern: "^[0-9]+\\.(lottie\\.json|emoji\\.tgs|json|png|gif|mp4|tgs)$" }
           description: >
             `<n>.json` for metadata, `<n>.png` for the still, `<n>.lottie.json` for the vector
-            animation, `<n>.tgs` for the same animation as a Telegram sticker (gzipped Lottie,
+            animation, `<n>.tgs` for the same animation as a Telegram sticker, `<n>.emoji.tgs` for it as a
+            round custom emoji with no square ground or brand mark (gzipped Lottie,
             512x512, loop capped at 3s), `<n>.gif` for the animation as a plain image file
             (every number — the fallback for the many surfaces that never play a Lottie),
             `<n>.mp4` for the video tier (primes only, and only where the host can render it).
@@ -555,7 +556,7 @@ paths:
                   data:
                     type: object
                     properties:
-                      floorNumNanoton: { type: string, description: "T, in nanoTON" }
+                      floorNumNanoton: { type: string, description: "T, in nanoGRAM" }
                       floorDenPrimes: { type: string, description: "S, in smallest PRIMES unit" }
                       divAccNanoton:
                         type: string
@@ -595,7 +596,7 @@ paths:
   /ledger/T:
     get:
       tags: [ledger]
-      summary: T alone — total TON backing, nanoTON. Projection of /ledger/floor.
+      summary: T alone — total GRAM backing, nanoGRAM. Projection of /ledger/floor.
       responses:
         "200":
           description: OK
@@ -1008,7 +1009,7 @@ paths:
   /ratchet/pending:
     get:
       tags: [ratchet]
-      summary: TON credited to the pool but not yet swapped (CONCEPT.md §4.3's `pending`).
+      summary: GRAM credited to the pool but not yet swapped (CONCEPT.md §4.3's `pending`).
       description: >
         Backed by `getPending` on the ratchet. Render this next to the floor WITH the reason
         it is there and with `T = swapped + pending` as the identity it is (UPGRADE_PLAN_V5.md
@@ -1033,7 +1034,7 @@ paths:
   /ratchet/swapped:
     get:
       tags: [ratchet]
-      summary: Cumulative TON actually swapped and burned via flush() (CONCEPT.md §4.3/§5).
+      summary: Cumulative GRAM actually swapped and burned via flush() (CONCEPT.md §4.3/§5).
       description: Backed by `getSwapped` on the ratchet.
       responses:
         "200":
@@ -1126,12 +1127,12 @@ paths:
 
 
         `realizedLoss` is reported NEXT TO `stakedCost` and never netted into it. It is
-        cumulative TON that left `T` and did not come back, and a non-zero value means `p_f`
+        cumulative GRAM that left `T` and did not come back, and a non-zero value means `p_f`
         overstates the backing by exactly `realizedLoss / S` — §5's one external risk,
         published as a number rather than promised as an absence.
 
 
-        `lastRateNum` / `lastRateDen` are the tsTON/TON rate as the PAIR it was learned as
+        `lastRateNum` / `lastRateDen` are the tsTON/GRAM rate as the PAIR it was learned as
         (off each `stake()`'s mint notification), so a reader checks the ratio rather than a
         quotient this service rounded. `lastHarvestTime` is `0` until the first harvest.
       responses:
@@ -1145,14 +1146,14 @@ paths:
                   data:
                     type: object
                     properties:
-                      stakedCostNanoton: { type: string, description: TON in the pool, at cost. A term of `T`. }
+                      stakedCostNanoton: { type: string, description: GRAM in the pool, at cost. A term of `T`. }
                       tstonHeldNano: { type: string, description: nano-tsTON owned, excluding a tranche in the exit machine. }
                       exitingNanoton: { type: string, description: A tranche on its way back, at its cost basis. A term of `T`. }
                       lastRateNum: { type: string }
                       lastRateDen: { type: string }
                       reserveTargetNanoton: { type: string, description: Derived on chain from `pending + stakedCost + exiting`, never stored. }
                       lastHarvestTime: { type: string, description: Unix seconds; `0` before the first harvest. }
-                      realizedLossNanoton: { type: string, description: Cumulative TON that left `T` and did not come back. }
+                      realizedLossNanoton: { type: string, description: Cumulative GRAM that left `T` and did not come back. }
                   provenance: { $ref: "#/components/schemas/Provenance" }
         "429": { $ref: "#/components/responses/RateLimited" }
         "503": { $ref: "#/components/responses/NotConfigured" }
@@ -1168,7 +1169,7 @@ paths:
         sets the mirror `tCache = T` in a later transaction. So the identity is checked as two
         exact claims: **ratchet-local** `tCache = seeded + swapped + pending + stakedCost +
         exiting + realizedLoss`, all read from one ratchet state, and **in flight** `T − tCache`.
-        The second is TON the ledger has credited whose `PoolInject` has not landed yet. The
+        The second is GRAM the ledger has credited whose `PoolInject` has not landed yet. The
         ratchet is read first, so `T ≥ tCache`. A snapshot that does not close is re-read once
         and then served as it stands.
       responses:
@@ -1212,7 +1213,7 @@ paths:
 
 
         There is ONE burn authority since D-212 deleted the naming sink (naming is paid in
-        TON). `burnedPrimes` is the ratchet's swap-and-burn and the third term of the identity
+        GRAM). `burnedPrimes` is the ratchet's swap-and-burn and the third term of the identity
         §3.3 publishes as checkable in get-calls:
         `S − getUnmintedHeld() == jetton master total_supply + cumulative burns`.
 
@@ -1424,7 +1425,7 @@ paths:
   #
   # THE RULE THAT GOVERNS EVERY ROUTE IN THIS GROUP (D-100 point 4): LOCKED DEPTH IS
   # NEVER SUMMED INTO `T`, into the floor `p_f = T/S`, or into any solvency figure.
-  # A DeDust pool's TON/PRIMES composition moves with every trade, so an LP-derived
+  # A DeDust pool's GRAM/PRIMES composition moves with every trade, so an LP-derived
   # term is non-monotonic and would void CONCEPT.md §5's ratchet theorem. Two
   # guarantees, two panels: the floor (a redemption ratio, monotonic) and the
   # liquidity (locked forever / committed >= 30d / withdrawable).
@@ -1449,7 +1450,7 @@ paths:
         D-167 it is all the LP the treasury holds. `tonBalanceNanoton` is already net of the contract's rent floor, so
         it is the same figure the proposal cap is enforced against on chain.
 
-        **UNITS.** TON is `...Nanoton`, PRIMES is `...Nanoprimes`, and LP is `...Raw` —
+        **UNITS.** GRAM is `...Nanoton`, PRIMES is `...Nanoprimes`, and LP is `...Raw` —
         because LP is a DeDust jetton with ITS OWN decimals, which this service does not read
         and must not assume are nine. An LP figure may only ever be compared against another
         LP figure.
@@ -1547,13 +1548,14 @@ paths:
                         nullable: true
                         description: >
                           DESIGN.md G33 — LEDGER `getInviteSpend` (§4.1's invite line, D-101), lifetime:
-                          slots declared, invite transfers sent, slots that fell to β, and the TON
+                          slots declared, invite transfers sent, slots that fell to β, and the GRAM
                           the line cost. Not a treasury inflow; null = not read.
                         properties:
                           slotsFunded: { type: string }
                           transfersSent: { type: string }
                           slotsToPool: { type: string }
-                          linePaidNanoton: { type: string }
+                          valueDeliveredNanoton: { type: string, description: "D-215 — GRAM invitees received, summed at each mint's live value." }
+                          linePaidNanoton: { type: string, description: "What the line took off β — valueDelivered plus INVITE_SEND_FEE per transfer." }
                   provenance:
                     type: array
                     items: { $ref: "#/components/schemas/Provenance" }
@@ -1619,7 +1621,7 @@ paths:
                             seq: { type: integer }
                             found: { type: boolean }
                             proposer: { type: [string, "null"] }
-                            asset: { type: integer, description: "0 = TON, 1 = PRIMES, 2 = tsTON (D-167), 3 = venue confirm (D-194)." }
+                            asset: { type: integer, description: "0 = GRAM, 1 = PRIMES, 2 = tsTON (D-167), 3 = venue confirm (D-194)." }
                             amountRaw:
                               type: string
                               description: >
@@ -1823,8 +1825,18 @@ paths:
                       positionAddress: { type: string }
                       positionCount: { type: integer }
                       nextId: { type: integer, description: Exclusive upper bound of the id range. }
-                      voteWeight: { type: string, description: Sum of amount x voteMultiplier over unexpired positions. }
+                      voteWeight: { type: string, description: Sum of amount x voteMultiplier over unexpired positions, plus the forever total's weight (D-214). }
                       idsNotRead: { type: integer }
+                      forever:
+                        type: object
+                        description: >
+                          D-214, `getForever()` on the child: LP this wallet locked forever through
+                          `to_sink`. It votes `amountRaw x multiplier` under position id 0xFFFFFFFF,
+                          never matures, and counts only on proposals opened after `since`.
+                        properties:
+                          amountRaw: { type: string }
+                          since: { type: integer }
+                          multiplier: { type: integer }
                       lpJettonWallet:
                         type: [string, "null"]
                         description: >
@@ -2109,7 +2121,7 @@ paths:
   /wallet/{address}/balance:
     get:
       tags: [numbers]
-      summary: A wallet's TON balance — whether it can pay for a mint at all.
+      summary: A wallet's GRAM balance — whether it can pay for a mint at all.
       description: >
         The funding check behind the mint control's top-up branch. A newcomer arriving from
         Telegram with an empty wallet is the largest single term in whether they ever mint at
@@ -2192,10 +2204,10 @@ paths:
   /number/{n}/name:
     get:
       tags: [numbers]
-      summary: Who may name n (its owner), what it is called, and what the next naming costs in TON.
+      summary: Who may name n (its owner), what it is called, and what the next naming costs in GRAM.
       description: >
         CONCEPT.md §4.7.1, DECISIONS.md D-212: the CURRENT OWNER of any minted number, prime
-        or composite, names it by sending `name_number` to the collection with TON attached —
+        or composite, names it by sending `name_number` to the collection with GRAM attached —
         the first naming `nameFee`, every later one `renameFee`, the fee credited to the
         ratchet floor. `getNamer()` on item(n) is the owner; `getAnnotation()` on item(n) is
         the count and standing text; `getNaming()` on the collection is the two fees and three
@@ -2206,8 +2218,8 @@ paths:
         engraving on the registrar — `getTrophy(n)`, `getTrophyAnnotation(n)` and
         `getTrophyRenameFee()` (the first engraving is free). Absent for every other n.
 
-        `namer: null` is `addr_none` or an unminted number with no item. All TON figures are
-        nanoTON as decimal strings. Slow tier, so a buyer sees the pen at most one TTL after
+        `namer: null` is `addr_none` or an unminted number with no item. All GRAM figures are
+        nanoGRAM as decimal strings. Slow tier, so a buyer sees the pen at most one TTL after
         a transfer.
       parameters:
         - $ref: "#/components/parameters/NumberPath"
@@ -2242,11 +2254,11 @@ paths:
                       data:
                         type: object
                         properties:
-                          nameFee: { type: string, description: "nanoTON, a first naming." }
-                          renameFee: { type: string, description: "nanoTON, every later naming." }
+                          nameFee: { type: string, description: "nanoGRAM, a first naming." }
+                          renameFee: { type: string, description: "nanoGRAM, every later naming." }
                           named: { type: integer, description: First namings relayed. }
                           renamed: { type: integer, description: Renames relayed. }
-                          toFloor: { type: string, description: "nanoTON of naming fees credited to the floor." }
+                          toFloor: { type: string, description: "nanoGRAM of naming fees credited to the floor." }
                           nextFee:
                             type: string
                             nullable: true
@@ -2265,7 +2277,7 @@ paths:
                             properties:
                               count: { type: integer }
                               text: { type: string, nullable: true }
-                          renameFee: { type: string, description: "nanoTON, every engraving after the first." }
+                          renameFee: { type: string, description: "nanoGRAM, every engraving after the first." }
                       provenance:
                         type: array
                         items: { $ref: "#/components/schemas/Provenance" }
@@ -2387,7 +2399,7 @@ paths:
                   data:
                     type: object
                     properties:
-                      tributeTotalNanoton: { type: string, description: Decimal nanoTON. }
+                      tributeTotalNanoton: { type: string, description: Decimal nanoGRAM. }
                   provenance: { $ref: "#/components/schemas/Provenance" }
         "429": { $ref: "#/components/responses/RateLimited" }
         "503": { $ref: "#/components/responses/NotConfigured" }
@@ -2575,7 +2587,7 @@ paths:
         critical path. Contracts sharing an address (pre-decomposition, ledger and ratchet are
         one account) are deduplicated so no balance is counted twice.
 
-        The bounty vault declares no `getSolvency` (it custodies PRIMES, not a TON liability),
+        The bounty vault declares no `getSolvency` (it custodies PRIMES, not a GRAM liability),
         and a role with no deployed account has none either: both report `available: false`
         with their real account balance and a null liability, rather than a blanked row.
 
@@ -2622,7 +2634,7 @@ paths:
                                 elsewhere, which is a legitimate state rather than an error. The three
                                 components always sum to `declaredLiabilityNanoton`.
                                 `tributeOwedNanoton` is the load-bearing one: §3.2's tribute is credited to an
-                                NFT item as a NUMBER while the TON stays on the ledger, so it is money already
+                                NFT item as a NUMBER while the GRAM stays on the ledger, so it is money already
                                 promised to named owners that would otherwise be indistinguishable from
                                 protocol float. A reader reconciles it against `Σ_p get_owed(p)`.
                               properties:
@@ -2971,7 +2983,7 @@ paths:
 
         `minNextBidNanoton` is exactly what the `bid` handler measures the incoming value
         against: `high + max(MIN_INCREMENT_FLOOR, MIN_INCREMENT_PCT% · high)`, i.e.
-        `max(1 TON, 5% · high)` at the shipped constants. Callers must still add a fee margin
+        `max(1 GRAM, 5% · high)` at the shipped constants. Callers must still add a fee margin
         on top — the contract rejects an exact nominal on a busy block.
 
         There is no ceiling field and no `take` lane, unlike `/auction/lot/{prime}`: this is
@@ -2981,7 +2993,7 @@ paths:
         winner (§2: four states that do not exist cannot be got wrong).
 
         `closed: true` means the lot has settled: the number was MINTED to the winner in the
-        closing transaction (D-90), the winner's 1 TON ran through the §4.1 split, and the
+        closing transaction (D-90), the winner's 1 GRAM ran through the §4.1 split, and the
         premium above it went to the ratchet as `pending`.
       parameters:
         - $ref: "#/components/parameters/NumberPath"
@@ -3193,7 +3205,7 @@ paths:
         against; add a fee margin on top, or a busy block rejects the nominal.
 
         `resGasNanoton` rides along because the two lanes spend it differently: it is INSIDE
-        `p0` on the ascending lane (`p0 >= LOT_FLOOR = 1 TON + RES_GAS`) and added ON TOP of
+        `p0` on the ascending lane (`p0 >= LOT_FLOOR = 1 GRAM + RES_GAS`) and added ON TOP of
         the standing price on the Dutch lane. Publishing it here makes that arithmetic
         checkable without a second read.
 
@@ -3201,7 +3213,7 @@ paths:
         `p0 + minIncrement`. Once a lot exists, `GET /trophy/lot/{n}`'s `minNextBidNanoton`
         is the live figure.
 
-        `score` is published with the price so "why does 1000 open at 128 TON" is answerable
+        `score` is published with the price so "why does 1000 open at 128 GRAM" is answerable
         without reading bytecode (§9.1). Cross-reference `/trophy/params`, which publishes
         the weight vector and the `2^(D/10)` fixed-point table the price is computed from.
 
@@ -3212,7 +3224,7 @@ paths:
         answer, not a gap: the dictionary is finite by construction and a miss means the
         score ladder alone governs — D-99 deletes `PRIME_P0_MIN`, so there is no flat prime
         floor left to fall back to — and it is exactly the case whose resting
-        price falls back to the 1 TON clamp.
+        price falls back to the 1 GRAM clamp.
 
         **409 for `n` above `AUCTIONABLE_MAX`.** `getLotPrice` throws 1020 `mkt_n_above_cap`
         there, and the refusal is cached on the same 30s key as a quote — it is a stable
@@ -3283,7 +3295,7 @@ paths:
                           so this doubles as the primality bit the lane no longer carries.
                           Draw the descent down to THIS, not to
                           `/trophy/params`'s `primeDutch.floorNanoton`, which is the global
-                          1 TON clamp and equals the resting price only for a prime the
+                          1 GRAM clamp and equals the resting price only for a prime the
                           finite NPV table misses.
                   provenance: { $ref: "#/components/schemas/Provenance" }
         "409": { $ref: "#/components/responses/NAboveCap" }
@@ -3324,7 +3336,7 @@ paths:
         mistake "no gate" for "gate at distance 0".
 
         `lotFloorNanoton` (was `reserveFloorNanoton`) is an IDENTITY, not an independent
-        constant: `MINT_PRICE + RES_GAS`, i.e. **1.06 TON** — D-30 removes the
+        constant: `MINT_PRICE + RES_GAS`, i.e. **1.06 GRAM** — D-30 removes the
         `RES_PRIORITY_BASE` term of the old 1.05, and W8.1 re-derived `RES_GAS` to 0.06.
         Writing it as a sum is what makes the floor a checked equality rather than a
         coincidence that drifts the next time `RES_GAS` is re-measured — cross-check it
@@ -3366,10 +3378,10 @@ paths:
                         type: string
                         description: >
                           SCORE_MAX — 87, the ONE clamp on the score (D-99). `2^(87/10) =
-                          420.4`, so this figure IS the 420 TON ceiling on an opening price.
+                          420.4`, so this figure IS the 420 GRAM ceiling on an opening price.
                           It occupies the tuple position `PRIME_P0_MIN` held before D-99
                           deleted that constant outright: there is no flat "a prime opens at
-                          >= 5 TON" floor any more, because one additive score prices every
+                          >= 5 GRAM" floor any more, because one additive score prices every
                           number and a prime that earns nothing opens like anything else.
                       primeP0MultiplePct:
                         type: string
@@ -3377,16 +3389,16 @@ paths:
                       lotFloorNanoton:
                         type: string
                         description: >
-                          LOT_FLOOR — an identity, MINT_PRICE + RES_GAS (1.06 TON). D-30
+                          LOT_FLOOR — an identity, MINT_PRICE + RES_GAS (1.06 GRAM). D-30
                           drops the RES_PRIORITY_BASE term; W8.1 re-derived RES_GAS to 0.06.
                       auctionWindowSeconds: { type: string, description: D4 — 604800 (7 days). }
                       bidExtensionSeconds: { type: string, description: D10 — 4020 (67 minutes, prime). }
                       minIncrementFloorNanoton:
                         type: string
                         description: >
-                          MIN_INCREMENT_FLOOR — 0.015 TON, the same value `incrementLadder`
-                          publishes. It replaced the flat 1 TON floor, which was defensible
-                          only while D_MIN kept the cheapest lot at 8 TON.
+                          MIN_INCREMENT_FLOOR — 0.015 GRAM, the same value `incrementLadder`
+                          publishes. It replaced the flat 1 GRAM floor, which was defensible
+                          only while D_MIN kept the cheapest lot at 8 GRAM.
                       fracTable:
                         type: array
                         items: { type: string }
@@ -3494,13 +3506,13 @@ paths:
       description: >
         Backed by `getEraSchedule(n)` on the bounty vault. Whoever mints one of §7's eight
         boundaries takes the whole era bounty — the largest payout the vault makes to a
-        minter, three orders of magnitude above §9.6's score rebate (0.000213 TON per point
-        of `D(n)`, against 0.21 TON flat at the first boundary) and the only one attached to
+        minter, three orders of magnitude above §9.6's score rebate (0.000213 GRAM per point
+        of `D(n)`, against 0.21 GRAM flat at the first boundary) and the only one attached to
         a particular number rather than to a score. It is budgeted from the genesis bounty
         vault (§3.3), so it is pre-counted in `S` and touches neither the split nor the
         ratchet.
 
-        TON-denominated (DENOMINATION_PLAN P4 / D22). The vault pays
+        GRAM-denominated (DENOMINATION_PLAN P4 / D22). The vault pays
         `min(bountyTon · S/T, maxPrimes)` nano-PRIMES, where `S` and `T` are
         `GET /ledger/floor`'s two terms. The multiplication is left to the reader on purpose
         (CONCEPT.md §9.1), the same split `/vault/rebate/{kind}/{n}` makes for the score.
@@ -3523,7 +3535,7 @@ paths:
                       scheduled: { type: boolean }
                       bountyTonNanoton:
                         type: string
-                        description: The ceremony's fixed VALUE in nanoTON.
+                        description: The ceremony's fixed VALUE in nanoGRAM.
                       maxPrimesNanoton:
                         type: string
                         description: The nominal PRIMES ceiling the payout is clamped to.
@@ -3745,11 +3757,11 @@ paths:
         transition and the claimable share of accrued value is monotone non-increasing.
 
 
-        COUNTS ONLY. The TON amounts these counts refer to live on the contracts and must
+        COUNTS ONLY. The GRAM amounts these counts refer to live on the contracts and must
         be read from there: `get_owed` on the item for the divisor line, and
         `getClaimableDividend(p)` on the ledger for the flat dividend not yet converted
         (§9.1). Joining the two is the dashboard's job; this endpoint deliberately does not
-        assert a TON figure it cannot verify.
+        assert a GRAM figure it cannot verify.
 
 
         `dormancyDays` is a REPORTING WINDOW and nothing more. Nothing expires, nothing is
@@ -3809,7 +3821,7 @@ paths:
         wallet's current holdings from an NFT holder index when one is configured
         (`attribution` says which). Transfers are not indexed, so a number sold on since its
         mint is still listed. NOT authority: confirm every row against the item's
-        `getNumberData()` owner (read-proxy `POST /numbers`) before calling it owned. TON
+        `getNumberData()` owner (read-proxy `POST /numbers`) before calling it owned. GRAM
         balances live on chain — `item.get_owed(p)` and `ledger.getClaimableDividend(p)`.
       parameters:
         - { name: address, in: path, required: true, schema: { type: string } }
@@ -3941,7 +3953,7 @@ paths:
 
         `market` is NOT a get-method value and never can be — no contract in this system
         records what its items sold for on a third-party venue. Volume, floor, the live
-        listing count and the trade count are computed DAILY from the free TON data lake's
+        listing count and the trade count are computed DAILY from the free GRAM data lake's
         `nft_events` (`tools/lake/market.sql`, DECISIONS.md D-201) — EVERY TON marketplace, not one venue's view of
         its own order book — and ride `MarketplaceProvenance` (`source: "marketplace"`), a
         distinct type so a client cannot render them in a proof drawer beside a get-method
@@ -3949,8 +3961,8 @@ paths:
         chain state.
 
 
-        Volume is SECONDARY ONLY and TON-denominated. A venue's headline "total volume" blends
-        its own primary mint revenue in; this game's primary sales are the 1 TON mints
+        Volume is SECONDARY ONLY and GRAM-denominated. A venue's headline "total volume" blends
+        its own primary mint revenue in; this game's primary sales are the 1 GRAM mints
         `issued` already reports from a get-method, so blending would double-count. Amounts
         are NANOTONS as decimal strings, because they are magnitudes a float would round.
 
@@ -4016,7 +4028,7 @@ paths:
                                 volumeNanoton:
                                   type: string
                                   description: >
-                                    All-time realised, TON-denominated, SECONDARY only.
+                                    All-time realised, GRAM-denominated, SECONDARY only.
                                     Nanotons as a decimal string.
                                 trades:
                                   type: integer

@@ -14,7 +14,7 @@ import { LP_SINK } from '../../shared/opcodes';
  * TON PRIMES — the LP SINK (CONCEPT §3.4 / §5 / §6 point 3 / §8,
  * DECISIONS D-100 points 4 and 9, invariant TR-6).
  *
- * DeDust PRIMES/TON LP receipts go in and nothing comes out, ever. The contract
+ * DeDust PRIMES/GRAM LP receipts go in and nothing comes out, ever. The contract
  * declares **no outbound message type at all** — a stronger statement than "no
  * withdraw path", because there is no send to audit. `LpSink.spec.ts` asserts it
  * against the compiled code cell.
@@ -23,7 +23,7 @@ import { LP_SINK } from '../../shared/opcodes';
  * wallet balance; that pair of numbers is the whole audit of the contract.
  *
  * **Locked depth is never summed into `T`** (D-100 point 4, and this is a copy
- * constraint). A pool's TON/PRIMES composition moves with every trade, so an
+ * constraint). A pool's GRAM/PRIMES composition moves with every trade, so an
  * LP-derived term is non-monotonic and would void §5's ratchet theorem. The
  * floor (`p_f = T/S`) and liquidity (locked / committed / withdrawable) are two
  * separate guarantees on two separate panels. Nothing built on this wrapper may

@@ -253,7 +253,7 @@ export interface QuestDef {
  * ---- Why there are two, and why that is not an inconsistency (D-41 / D-42) ----
  *
  * The other unit is always a quote at the current floor, so both variants render
- * a TON figure and a PRIMES figure. What differs is which one moves when `p_f`
+ * a GRAM figure and a PRIMES figure. What differs is which one moves when `p_f`
  * does, and that follows from what the reward is FOR.
  *
  * `ton` — the seventeen legacy quests. These reward things a player does inside
@@ -266,7 +266,7 @@ export interface QuestDef {
  * owner's target is a HEADCOUNT (10,000 wallets under D-42; 1,000 since D-204) paid out of a `quests` track
  * whose size is fixed in PRIMES. A fixed headcount out of a fixed PRIMES stock is
  * only arithmetically possible if the per-player draw is fixed in PRIMES too.
- * Under P4's TON denomination the early players were the expensive ones — 0.25 TON
+ * Under P4's GRAM denomination the early players were the expensive ones — 0.25 GRAM
  * cost 3,750 PRIMES at the opening floor and ~10 PRIMES at the sim's end state —
  * so the track funded ~65 players in the first months and the remaining 9,935
  * only years later. That is backwards for a growth programme. Fixing the PRIMES
@@ -277,14 +277,14 @@ export interface QuestDef {
  * crosses `QUEST_LIFETIME_CAP_TON` on its own — and past that line the programme
  * stops being self-funding. `capShare` is this quest's slice of the board's
  * allowance — its share of `QUEST_LIFETIME_CAP_TON` across both PRIMES boards (the cap was
- * netted of TON-denominated quests until D-118's 2026-11-20 amendment left none) — and `questRewardPrimes` clamps the payout
+ * netted of GRAM-denominated quests until D-118's 2026-11-20 amendment left none) — and `questRewardPrimes` clamps the payout
  * to it at CLAIM time. The shares sum to 1 across the board, so the clamp bounds
  * the wallet's lifetime total and not merely each quest.
  */
 export type QuestReward = { denomination: "primes"; primes: number; capShare: number };
 
 /**
- * The genesis floor as PRIMES per TON — `1 / p_f0`, read from the file that owns
+ * The genesis floor as PRIMES per GRAM — `1 / p_f0`, read from the file that owns
  * it. §6 quotes the floor in this direction on purpose (a reciprocal with four
  * leading zeros is not a number anyone can hold in their head), and this is the
  * conversion every reward below is quoted at until the ratchet moves it.
@@ -307,8 +307,8 @@ export const GENESIS_PRIMES_PER_TON =
  *
  * A fixed nominal PRIMES reward is not a fixed reward. `p_f` rises ~45x over year
  * one at baseline demand and rises forever after (§5's ratchet theorem, which is
- * the whole point of the token), so a 100-PRIMES quest worth 0.083 TON at open is
- * worth 3.85 TON at day 365 — a quest board that quietly inflates its own payouts
+ * the whole point of the token), so a 100-PRIMES quest worth 0.083 GRAM at open is
+ * worth 3.85 GRAM at day 365 — a quest board that quietly inflates its own payouts
  * by two orders of magnitude against a genesis-fixed budget. Redenominating `L`
  * alone does not fix that; it only restarts the same climb from a lower base.
  *
@@ -319,7 +319,7 @@ export const GENESIS_PRIMES_PER_TON =
  * D-42 goes the other way for §9.4's social board, and the reversal is deliberate
  * rather than an inconsistency: there the owner is buying a headcount out of a
  * PRIMES-fixed stock, so the PRIMES are fixed and `questRewardPrimes` clamps the
- * TON value to keep the inflation P4 warns about from crossing the self-funding
+ * GRAM value to keep the inflation P4 warns about from crossing the self-funding
  * ceiling. See `QuestReward` for the full argument.
  *
  * The relative weighting follows §9.4's own instruction that prime quests
@@ -336,10 +336,10 @@ export const GENESIS_PRIMES_PER_TON =
  * it carries the arithmetic for why a vault-funded programme is bounded the way it
  * is: the vault is pre-counted into `S` with no `T` behind it (§3.3), so its whole
  * worth at the opening floor is `T₀ · pct/(1 + pct)`. Raising the vault fraction
- * DOES raise that worth — D-42's 50% → 100% took it from 67 to 100 TON — and pays
+ * DOES raise that worth — D-42's 50% → 100% took it from 67 to 100 GRAM — and pays
  * for the increase entirely in a lower `p_f0`. What it can never do is pass `T₀`
- * itself, which is why 10,000 players cannot each be paid 0.5 TON at opening
- * prices: that is 5,000 TON against a 200 TON founder seed.
+ * itself, which is why 10,000 players cannot each be paid 0.5 GRAM at opening
+ * prices: that is 5,000 GRAM against a 200 GRAM founder seed.
  *
  * `capShare` rides along from the same row so the claim-time clamp and the reward
  * cannot drift apart.
@@ -366,12 +366,12 @@ const primeQuestReward = (id: string): QuestReward => {
 };
 
 /**
- * The ceiling on everything one wallet can ever earn from quests, in TON. Owner
+ * The ceiling on everything one wallet can ever earn from quests, in GRAM. Owner
  * decision 2026-08-19, and an INVARIANT rather than a budget.
  *
  * It equals `β · MINT_PRICE` — the ratchet injection of the mint that unlocks the
  * reward. The reason that particular number is the bound: a vault payout leaves
- * `S` untouched (§3.3 pre-counts the vault) while the gating mint adds `β` TON to
+ * `S` untouched (§3.3 pre-counts the vault) while the gating mint adds `β` GRAM to
  * `T`, so every quest-paid wallet strictly RAISES `p_f` as long as it is not paid
  * more than its own mint injected. Cross this line and the program stops being
  * self-funding and starts being a claim on other holders' backing.
@@ -384,19 +384,19 @@ export const QUEST_LIFETIME_CAP_TON = params.genesis.quest_rewards.lifetime_cap_
  * What one quest pays in PRIMES, at a given floor — and the only place the
  * §9.4 self-funding clamp lives.
  *
- * Every reward is PRIMES-denominated (the last TON one, the story quest, was folded into the
+ * Every reward is PRIMES-denominated (the last GRAM one, the story quest, was folded into the
  * social board by D-118's 2026-11-20 amendment). It is `min(nominal, capShare · cap · primesPerTon)`,
  * and the `min` is load-bearing. D-42 fixes the social rewards in PRIMES, which
- * means their TON value climbs with the ratchet forever; left alone, a reward
+ * means their GRAM value climbs with the ratchet forever; left alone, a reward
  * sized at a fraction of a mint today is worth more than `β · MINT_PRICE` in
  * roughly the sim's second year, and from that moment the programme is paying a
  * wallet more than its own gating mint contributed to `T`. That is not a budget
  * overrun, it is §5 stopping being true of quest-paid wallets.
  *
  * This is the same `min(value, stock)` shape `primes_bounty_vault.tolk` already
- * applies to the era schedule, running the other way: there a TON-denominated
+ * applies to the era schedule, running the other way: there a GRAM-denominated
  * ceremony is capped in PRIMES so it cannot inflate; here a PRIMES-denominated
- * reward is capped in TON so it cannot either.
+ * reward is capped in GRAM so it cannot either.
  *
  * `params.genesis.quest_rewards.cap_binds_at_floor_price` is where the clamp would
  * bite if the board had the whole cap to itself; the real crossover is lower,
@@ -409,7 +409,7 @@ export const QUEST_LIFETIME_CAP_TON = params.genesis.quest_rewards.lifetime_cap_
  *
  * Known and accepted: flooring to whole PRIMES loses granularity once the clamp is
  * paying only a handful of them. At ~1,000x the opening floor the board pays 3/3/4
- * PRIMES = 0.50 TON against an allowance of 0.59 — it UNDERPAYS by a sixth. That is
+ * PRIMES = 0.50 GRAM against an allowance of 0.59 — it UNDERPAYS by a sixth. That is
  * the same sub-unit horizon DENOMINATION_PLAN names, it errs in the safe direction,
  * and it sits far beyond the sim's three-year horizon
  * (`shared/params.json` `final_state.floor_appreciation.multiple_over_horizon`,
@@ -422,8 +422,8 @@ export function questRewardPrimes(reward: QuestReward, primesPerTon: number): nu
 }
 
 /**
- * The TON worth of a reward at a given floor — the display side of `questRewardPrimes`.
- * There is no fixed TON figure (the worth IS the floor path), so this reports the CLAMPED
+ * The GRAM worth of a reward at a given floor — the display side of `questRewardPrimes`.
+ * There is no fixed GRAM figure (the worth IS the floor path), so this reports the CLAMPED
  * quote; the unclamped nominal is `reward.primes`.
  */
 export function questRewardTon(reward: QuestReward, primesPerTon: number): number {
@@ -595,7 +595,7 @@ export const QUESTS: QuestDef[] = [
     description:
       "Twenty arrivals on your story's QR — a bot start or a wallet connected — and at least one paid mint on your key. Reach alone pays nothing here, deliberately: accounts and wallets cost nothing.",
     // D-118 amended 2026-11-20 (owner): a fifth share of the social board's params row, like
-    // the four below. It was `ton(legacyPrimes(80))` — a legacy TON figure outside params.json,
+    // the four below. It was `ton(legacyPrimes(80))` — a legacy GRAM figure outside params.json,
     // ~6,191 PRIMES at the genesis floor and unbudgeted in the `quests` track — which the
     // per-wallet voucher cap (audit R2-M2) would have stranded.
     reward: socialReward("story-verified-reach"),
@@ -614,8 +614,8 @@ export const QUESTS: QuestDef[] = [
   // farmer would attack, so read the economics before changing a number here.
   // Each pays only after an on-chain mint is attributed to the wallet (the
   // `gateOk` rule in `evaluateQuests`, decision 0.2.1), so the cheapest possible
-  // attack is: make a Telegram account, join two chats, spend 1 TON on a mint,
-  // and collect a reward the sim sized at a small fraction of that TON. Farming
+  // attack is: make a Telegram account, join two chats, spend 1 GRAM on a mint,
+  // and collect a reward the sim sized at a small fraction of that GRAM. Farming
   // is a loss-making trade by construction, not by policing.
   {
     id: "social-join-channel",
@@ -675,7 +675,7 @@ export const QUESTS: QuestDef[] = [
   },
   // D-41 deliberately has NO "bring a friend" quest here, and the omission is the
   // decision rather than an oversight. §4.1 already pays 10% of every mint to the
-  // recruiter, in TON, forever — funded by the FLOW of mints, so it grows with the
+  // recruiter, in GRAM, forever — funded by the FLOW of mints, so it grows with the
   // thing it is buying. A vault-funded bonus on top would spend the scarcest budget
   // in the system (a fixed stock bounded by T₀, see §9.4) duplicating the one reward
   // that needs no budget at all. Recruitment belongs in the UI as the referral line
@@ -712,7 +712,7 @@ export function evaluateQuests(
   facts: QuestFacts,
   defs: QuestDef[] = QUESTS,
   /**
-   * PRIMES per TON to quote rewards at — `S / T` from the ledger's
+   * PRIMES per GRAM to quote rewards at — `S / T` from the ledger's
    * `getRatchetState`. Defaults to the genesis floor so an unauthenticated or
    * chain-less render still shows a real, sourced number rather than a blank.
    * DISPLAY ONLY: nothing that pays money reads it (P4's correctness constraint).
@@ -756,7 +756,7 @@ export function evaluateQuests(
 }
 
 /**
- * Where a completed voucher quest's TON->PRIMES conversion is FROZEN.
+ * Where a completed voucher quest's GRAM->PRIMES conversion is FROZEN.
  *
  * ---- Why this interface has to exist (DENOMINATION_PLAN P4) ----
  *
@@ -764,7 +764,7 @@ export function evaluateQuests(
  * `total - paid` and stores the total, so a total that ever decreases pays zero
  * from then on and the difference is STRANDED — not clawed back, stranded.
  *
- * A TON-denominated reward is worth FEWER PRIMES as the floor rises. So if the
+ * A GRAM-denominated reward is worth FEWER PRIMES as the floor rises. So if the
  * conversion were done at read time — the obvious implementation, and the one
  * this comment exists to stop — every quest already completed would shrink on
  * every mint, the total would regress, the signer would refuse (correctly), and
@@ -854,7 +854,7 @@ export function quotedVoucherPrimes(states: QuestState[], program: VoucherProgra
 }
 
 /**
- * Everything one wallet can earn from VOUCHER-settled quests, in TON, if it
+ * Everything one wallet can earn from VOUCHER-settled quests, in GRAM, if it
  * completes every one of them.
  *
  * This is the figure `QUEST_LIFETIME_CAP_TON` bounds, and the test that compares
@@ -868,7 +868,7 @@ export function questCeilingTon(
   /**
    * The floor to evaluate at. Defaults to genesis, but under D-42 the interesting
    * question is what the board is worth at a MUCH higher floor — a PRIMES-
-   * denominated reward's TON value is the floor path, so a genesis-only check
+   * denominated reward's GRAM value is the floor path, so a genesis-only check
    * would pass forever while the real payout climbed past the cap. The test
    * sweeps this argument; that sweep is what the clamp is verified by.
    */

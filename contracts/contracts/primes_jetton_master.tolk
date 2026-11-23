@@ -87,20 +87,20 @@ struct (0x7bdd97de) BurnNotification {
 
 // ============================================================================
 // TEP-74's excess return, COMING HOME. `deployAndCredit` names THIS CONTRACT as
-// `responseAddr` — the master pays the 0.012 TON wallet-deploy reserve out of
+// `responseAddr` — the master pays the 0.012 GRAM wallet-deploy reserve out of
 // the value the ledger attached, so the change is the master's and must come
 // back to it or the mint path bleeds gas into every wallet it deploys. The
 // freshly deployed wallet obliges with `excesses#d53276db`, and until this arm
 // existed that message landed in `else => assert (in.body.isEmpty())` and threw
 // 101 on EVERY mint.
 //
-// Measured on testnet 2026-09-17, trace 8c354845…d724a: the 1 TON mint itself
+// Measured on testnet 2026-09-17, trace 8c354845…d724a: the 1 GRAM mint itself
 // was exit 0 all the way down — item, jetton, splitter, ratchet, bounty — and
 // the trace still reads FAILED in Tonviewer, because a trace is red if any
 // transaction in it aborted. Same false alarm shape as the TEP-89 gap above,
 // and the same cost: nothing is broken, everything looks broken.
 //
-// The TON was never at risk (the wallet sends this NoBounce, so the credit
+// The GRAM was never at risk (the wallet sends this NoBounce, so the credit
 // phase had already landed it here before the compute phase threw), which is
 // exactly why it went unnoticed — same reasoning as primes_ratchet.tolk's
 // the "A REFUSED DEDUST SWAP DOES NOT BOUNCE" note.
@@ -122,16 +122,16 @@ struct (0xd53276db) Excesses {
 // Without these two structs, the master answered `provide_wallet_address` with
 // `else => assert (in.body.isEmpty()) throw 101`. Measured on testnet
 // 2026-09-16: DeDust's factory accepted `create_vault#21cfe02b`, the vault
-// deployed and sent `provide_wallet_address#2c76b973` with 0.1464 TON, this
+// deployed and sent `provide_wallet_address#2c76b973` with 0.1464 GRAM, this
 // master threw 101 with `aborted: true`, the message bounced, and the vault
-// never reached `is_ready` — it stayed uninit at 0 TON with its stake returned.
+// never reached `is_ready` — it stayed uninit at 0 GRAM with its stake returned.
 // No DeDust pool for PRIMES can ever hold liquidity in that state, which makes
 // the ratchet's flush leg (§4.3) unsellable on BOTH networks. The failure is
 // silent from the sending side: `create_vault` itself succeeds.
 //
 // The reply is non-bounceable and carries the request's remaining value (TEP-89
 // requires mode 64): the asker paid for the round trip, and a reply that could
-// bounce would hand the master back TON it has no handler for.
+// bounce would hand the master back GRAM it has no handler for.
 // ============================================================================
 struct (0x2c76b973) ProvideWalletAddress {
     queryId: uint64
@@ -153,8 +153,8 @@ type AllowedMessage = MintOp | MintGenesis | SealAuthority | SetLedger | BurnNot
 
 // Sized against the measured cost of this send plus the recipient wallet's
 // deploy (gas-baseline.json: jetton_master.mint ~5.4k gas, the wallet deploy
-// itself ~1.5k gas + storage). The first pass used 0.03 TON here while the
-// BANK attaches only 0.02 TON to `mint` — so every rebate mint failed in the
+// itself ~1.5k gas + storage). The first pass used 0.03 GRAM here while the
+// BANK attaches only 0.02 GRAM to `mint` — so every rebate mint failed in the
 // action phase and bounced, silently delivering no PRIMES at all. Caught by the
 // gas-regression suite asserting a non-zero recipient balance
 // (docs/phase3-report.md); the value now fits inside what the ledger attaches.
@@ -290,7 +290,7 @@ fun onInternalMessage(in: InMessage) {
             // Accept and keep, deliberately without a sender gate. There is no
             // state to move: the value is credited before this code runs, and
             // this is the master's own change walking back one hop. A gate
-            // would buy nothing — the worst an impostor can do is donate TON to
+            // would buy nothing — the worst an impostor can do is donate GRAM to
             // the contract that pays for wallet deploys.
         }
 

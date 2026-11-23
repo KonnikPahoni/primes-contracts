@@ -16,7 +16,7 @@ tolk 1.4
 // deleted the escrow shard — a won lot MINTS AT CLOSE on both kinds.
 //
 // ---- What this contract prices: TIMING, never the number ----
-// The mint is a flat 1 TON at the head for anyone who waits (§2). Every lane
+// The mint is a flat 1 GRAM at the head for anyone who waits (§2). Every lane
 // here prices the position AHEAD of the head, and every lane is bypassable by
 // waiting. That is the design, not a leak: the sequential head is §2's fairness
 // claim and anything that closes the bypass is a gate on the head, which §12
@@ -109,7 +109,7 @@ const AUCTIONABLE_MAX: int = 42949672959999;    // 10000 · 2³² − 1
 // attacker-submitted `factors` list before it is proven to belong to `n`.
 const OMEGA_MAX: int = 12;
 
-const MINT_PRICE: coins = 1000000000;          // 1 TON, §2's flat all-in price
+const MINT_PRICE: coins = 1000000000;          // 1 GRAM, §2's flat all-in price
 
 // D-30/D-37: THE FEE IS ONE FIELD. `RES_GAS` is what a won lot pays to fund its
 // own mint, which D-90 makes happen in the close transaction. D-90.4 kept its
@@ -118,44 +118,44 @@ const MINT_PRICE: coins = 1000000000;          // 1 TON, §2's flat all-in price
 //
 // It is a params.json output (`off_head.res_gas_ton`), derived by
 // `sim/primes_sim/gas.py res_gas_derivation` and retained at
-// `RETAINED_RES_GAS_TON`: W8.1 set 0.060 TON, and D-113 raised it to 0.070 to
-// cover OPEN_RESERVE_GAS (0.02 TON, paid at open from this contract's float) —
-// measured by `PrimesMarket.spec.ts`'s V8 block at ~0.00625 TON per closed
+// `RETAINED_RES_GAS_TON`: W8.1 set 0.060 GRAM, and D-113 raised it to 0.070 to
+// cover OPEN_RESERVE_GAS (0.02 GRAM, paid at open from this contract's float) —
+// measured by `PrimesMarket.spec.ts`'s V8 block at ~0.00625 GRAM per closed
 // composite lot, quantum-rounded up.
-const RES_GAS: coins = 70000000;               // 0.07 TON, never waivable
+const RES_GAS: coins = 70000000;               // 0.07 GRAM, never waivable
 
 // §6 item 2, restated after D-30: an IDENTITY, not an independent constant. A
 // lot's opening price can never be below the all-in cost of the mint it buys —
 // one mint price plus the RES_GAS the winner must fund. Writing it as a sum keeps
 // the boundary a checked equality. params.json `off_head.lane_floor_ton` and
 // `trophy_auction.constants.RESERVE_FLOOR_TON` (both 1.07) are this identity.
-const LOT_FLOOR: coins = MINT_PRICE + RES_GAS;   // 1.07 TON
+const LOT_FLOOR: coins = MINT_PRICE + RES_GAS;   // 1.07 GRAM
 
 // What rides to the LEDGER with every close's mint leg (`MINT_PRICE +
 // SETTLE_GAS`, both kinds), carved from `RES_GAS`; the rest of RES_GAS stays here
 // as float.
-const SETTLE_GAS: coins = 25000000;            // 0.025 TON
-const PREMIUM_HOP_GAS: coins = 30000000;       // 0.03 TON — ledger hop, then ratchet
-const MIN_CHANGE: coins = 10000000;            // 0.01 TON — below this a refund is not worth a message
+const SETTLE_GAS: coins = 25000000;            // 0.025 GRAM
+const PREMIUM_HOP_GAS: coins = 30000000;       // 0.03 GRAM — ledger hop, then ratchet
+const MIN_CHANGE: coins = 10000000;            // 0.01 GRAM — below this a refund is not worth a message
 // D-45: the open-time `mark_off_head` hop to the ledger, funded from this
 // contract's own operational float, not carved from the
 // opener's bid — the bid recorded on the lot is the caller's whole attached
 // value. On the rare race-loss path the ledger's `mark_rejected` reply
 // carries its own gas back (`SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE`);
 // the REFUND itself is paid from this contract's own balance, since the bid
-// TON never left it — see `MarkRejected`'s handler.
-const OPEN_RESERVE_GAS: coins = 20000000;      // 0.02 TON
+// GRAM never left it — see `MarkRejected`'s handler.
+const OPEN_RESERVE_GAS: coins = 20000000;      // 0.02 GRAM
 // What `open_head_lot` must carry. That lane holds no bid and may never close,
 // so no RES_GAS ever repays it: its `mark_off_head` hop carries the caller's
 // whole remaining value (`SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE`) and this
 // contract's float pays nothing. The floor covers the open's own compute and
 // still leaves the ledger OPEN_RESERVE_GAS. It is sized from the protocol
 // ceiling, not a sample: config 21 caps a transaction at 1,000,000 gas (~0.0667
-// TON), so no open that succeeds can cost more; plus the 0.02 hop, rounded up.
+// GRAM), so no open that succeeds can cost more; plus the 0.02 hop, rounded up.
 // Measured opens near AUCTIONABLE_MAX reach ~680k gas since V34 (`PrimesMarket.spec.ts`
 // "open_head_lot is caller-funded"). Mirrored by `shared/messages.ts`
 // OPEN_HEAD_LOT_GAS_NANOTON.
-const OPEN_HEAD_VALUE: coins = 100000000;      // 0.1 TON
+const OPEN_HEAD_VALUE: coins = 100000000;      // 0.1 GRAM
 // What a REJECTED open keeps from its refund: the `mark_off_head` hop plus the
 // open's and the unwind's own compute, all paid from this contract's balance.
 // A closed lot repays its open through RES_GAS (D-113); a rejected one never
@@ -164,11 +164,11 @@ const OPEN_HEAD_VALUE: coins = 100000000;      // 0.1 TON
 // for good: a lot that closes ahead of `headHint` sets no sold bit, so a
 // claimed far number passes this contract's checks on every retry. So it is
 // sized like OPEN_HEAD_VALUE, from the protocol ceiling and not a sample:
-// config 21 caps the open at 1,000,000 gas (~0.0667 TON; a prime near
+// config 21 caps the open at 1,000,000 gas (~0.0667 GRAM; a prime near
 // AUCTIONABLE_MAX measures ~680k since V34), plus the 0.02 hop, plus the
 // unwind's own compute — rounded up. At that price a repeated rejection costs
 // its sender more than it costs the float, every round.
-const REJECT_GAS: coins = 100000000;           // 0.1 TON
+const REJECT_GAS: coins = 100000000;           // 0.1 GRAM
 // D-200: rows one `park_lots` looks at (and so folds at most). Each fold deletes
 // a `lots` row and sets one bit in a `marks` leaf; sized so the worst call stays
 // far under config 21's 1,000,000-gas cap (measured in `PrimesMarket.spec.ts`
@@ -180,9 +180,9 @@ const PARK_SCAN_MAX: int = 16;
 // `in.valueCoins - BID_GAS` as the bid, and `minPaymentOn` adds BID_GAS to what
 // a raise must pay, so the published minimum stays the one all-in figure.
 // RES_GAS (D-113) is sized for a one-bid lot; without this each raise cost the
-// float ~0.00084 TON on a 2-factor lot, ~0.00089 on a 12-factor one (measured
+// float ~0.00084 GRAM on a 2-factor lot, ~0.00089 on a 12-factor one (measured
 // in @ton/sandbox, `PrimesMarket.spec.ts` V23). Rounded up.
-const BID_GAS: coins = 2000000;                // 0.002 TON
+const BID_GAS: coins = 2000000;                // 0.002 GRAM
 
 // ---- auction format (params.json trophy_auction.constants, all DECLARED) ----
 const AUCTION_WINDOW: int = 604800;            // 7 days — D-3, the Fragment-style clock
@@ -195,11 +195,11 @@ const BID_EXTENSION: int = 4020;               // 67 minutes. 67 is prime, delib
 // `MIN_AUCTION_DISTANCE`): the only requirement is `n > head` at the moment the
 // ledger marks it off-head (see `open_lot`'s `mark_off_head` round trip).
 // ---- D-33's bid-increment ladder (params.json acquisition.bid_increment_ladder) ----
-// Replaces the flat `max(1 TON, 5%)` rule, which at the gate-free floor P0 of
-// 1.07 TON is a ~94% raise that ends the auction on the second bid. Both terms
+// Replaces the flat `max(1 GRAM, 5%)` rule, which at the gate-free floor P0 of
+// 1.07 GRAM is a ~94% raise that ends the auction on the second bid. Both terms
 // are derived:
 //
-//   FLOOR  0.015 TON — the gas of the round trip one competing raise imposes
+//   FLOOR  0.015 GRAM — the gas of the round trip one competing raise imposes
 //          (the bid plus the refund it forces, 0.011275) rounded up to the 0.005
 //          quantum. Below it a raise costs the protocol more than it moves the
 //          price. The sim emits `min_increment_floor_nanoton` as a 13-entry array
@@ -209,7 +209,7 @@ const BID_EXTENSION: int = 4020;               // 67 minutes. 67 is prime, delib
 //          objective over the whole ladder at once, restricted to MONOTONE
 //          NON-DECREASING vectors because that is D-33's stated shape ("a rarer
 //          number requires larger bid steps"), not a smoothing convenience.
-const MIN_INCREMENT_FLOOR: coins = 15000000;   // 0.015 TON
+const MIN_INCREMENT_FLOOR: coins = 15000000;   // 0.015 GRAM
 const BPS_DEN: int = 10000;
 
 // D-4 / D-88 point 1: a prime whose turn has passed is sold by descending
@@ -292,8 +292,8 @@ const PRIME_FLOOR_MULT_DEN: int = 2;
 // `BIT_PERFECT` at 40.
 //
 // THE CAP IS THE CEILING. `SCORE_MAX = 87` because
-// `MINT_PRICE · 2^(87/10) = 415.87 TON` — the highest price this game can ask
-// for anything, and it lands just under owner answer 9's 420 TON ceiling. (The
+// `MINT_PRICE · 2^(87/10) = 415.87 GRAM` — the highest price this game can ask
+// for anything, and it lands just under owner answer 9's 420 GRAM ceiling. (The
 // plan's §1.1 says 420.4; that is 2^8.716, and the arithmetic is wrong. The
 // conclusion is not: 87 is the largest clamp whose ladder stays under 420, and
 // 88 would reach 445.7.) There is no other ceiling anywhere — the same
@@ -585,7 +585,7 @@ fun isFactorialN(n: int): bool {
 //
 // A 65-entry TABLE was tried for Fibonacci and is MEASURABLY WORSE: 65
 // comparisons against 257-bit literals cost more in TVM than the roots, and
-// pushed the primorial mint from 0.0998 to 0.1000 TON, over §4.1's gas & ops
+// pushed the primorial mint from 0.0998 to 0.1000 GRAM, over §4.1's gas & ops
 // line.
 fun fibLucasOf(n: int): (bool, bool) {
     if (n < 1) { return (false, false); }
@@ -696,7 +696,7 @@ fun isLandmarkPrime(n: int): bool {
 // count `d` the caller already walked rather than a flat `||` chain. That last
 // point is not a style note — measured, the two tables below cost 1,311,067
 // nanoton more as flat chains, 61% of this whole batch's bill against §4.1's
-// gas & ops line (0.10 TON when measured; 0.20 since D-117).
+// gas & ops line (0.10 GRAM when measured; 0.20 since D-117).
 // ---------------------------------------------------------------------------
 
 // Sum of each digit raised to the digit COUNT. Early-exits the moment the
@@ -1214,9 +1214,9 @@ fun factorSummaryOf(n: int, factors: map<uint8, FactorEntry>): (int, int, int, i
 // per exponent step. Calling `scoreOfFrom` there instead would walk the
 // dictionary a SECOND time, which measured at ~1,300 gas on the worst-case mint
 // and was not affordable when measured: §4.1's gas & ops line was a fixed 0.10
-// TON with the invite fan-out (D-101) at 99.79 of it. D-117 (2026-09-22) resized
-// the line to the measured worst case (0.20 TON), which is what this walk must
-// still fit inside; the headroom there is ~0.014 TON, not a budget for a second walk.
+// GRAM with the invite fan-out (D-101) at 99.79 of it. D-117 (2026-09-22) resized
+// the line to the measured worst case (0.20 GRAM), which is what this walk must
+// still fit inside; the headroom there is ~0.014 GRAM, not a budget for a second walk.
 @inline
 fun scoreOfWithSummary(n: int, omega: int, distinct: int, maxExponent: int, minExponent: int,
                        expGcd: int, maxPrime: int, sigma: int, korselt: int,
@@ -1289,7 +1289,7 @@ fun isqrt(x: int): int {
 
 // §3.1's exact integer form:  P0 = ((MINT_PRICE << (D/10)) * FRAC[D%10]) >> 16
 // with FRAC[j] = round(2^(j/10) · 2^16). The largest intermediate is at
-// D = SCORE_MAX = 87: (1 TON << 8) · 106464 ≈ 2.7·10¹⁶, five orders inside
+// D = SCORE_MAX = 87: (1 GRAM << 8) · 106464 ≈ 2.7·10¹⁶, five orders inside
 // int257 — and the table itself is unchanged by D-99, because it interpolates
 // the fractional decade and knows nothing about where the score stops. Published by `getFracTable()` because the integer approximation is the
 // likeliest place for silent contract/sim drift.
@@ -1518,7 +1518,7 @@ struct MarketCounters {
     // permissionless `RetryPremiumForward`. The ledger bounces nothing in normal
     // operation, so this is 0 at rest.
     unforwardedByN: map<uint64, Unforwarded>
-    // §3.4: every other TON this contract owes somebody. Σ highBid over open
+    // §3.4: every other GRAM this contract owes somebody. Σ highBid over open
     // ascending lots (refunded on outbid/reject, spent at close) plus Σ premium
     // of closed lots whose `SettleConfirmed` has not yet arrived (forwarded on
     // confirm, refunded on a settle bounce). `getSolvency` reads it.
@@ -1644,7 +1644,7 @@ struct Storage {
     //     the mint leg's bounce): one per sale in flight.
     //   * ascending row: 7.75 cells (its own payload + factor map), each a paid
     //     bid ≥ P0 held ≤ 7 days + extensions, deleted at settle. Filling the
-    //     account with them alone locks ~8.4k × P0 ≳ 9k TON in bids.
+    //     account with them alone locks ~8.4k × P0 ≳ 9k GRAM in bids.
     lots: map<uint64, Lot>
     counters: Cell<MarketCounters>
     cfg: Cell<MarketConfig>
@@ -1910,15 +1910,15 @@ fun openingPriceOf(cfg: MarketConfig, n: int, score: int, isPrime: bool): coins 
 // somebody buys it. D-99 §1.2 makes it `max(MINT_PRICE, P0(n)/3, NPV(n)/2)` —
 // there is no tier left to lift it to, and the `P0(n)/3` term is what replaced
 // that lift. Small primes earn tribute for the whole life of the game and rest
-// high on the NPV term; large ones miss the finite table entirely (0.15 TON at
-// n≈10⁵, 4.6·10⁻⁶ TON at n≈10⁶) and used to collapse to exactly 1 TON, which
+// high on the NPV term; large ones miss the finite table entirely (0.15 GRAM at
+// n≈10⁵, 4.6·10⁻⁶ GRAM at n≈10⁶) and used to collapse to exactly 1 GRAM, which
 // made D-88's stated 3× open-to-rest spread false for every prime past 7,297.
 // The middle term is now what holds that promise everywhere.
 fun restingPriceOf(cfg: MarketConfig, n: int, score: int): coins {
     var floorPrice: coins = MINT_PRICE;
     // D-99 §1.2 — `open / 3` keeps D-88's 3× open-to-rest spread for every
-    // prime the finite NPV table misses. Without it a 300 TON scored prime
-    // would rest at 1 TON, which is not a descent, it is a giveaway.
+    // prime the finite NPV table misses. Without it a 300 GRAM scored prime
+    // would rest at 1 GRAM, which is not a descent, it is a giveaway.
     val third: coins = openingPriceOf(cfg, n, score, true) / 3;
     if (third > floorPrice) { floorPrice = third; }
     val look = cfg.npvTable.get(n);
@@ -1933,8 +1933,8 @@ fun restingPriceOf(cfg: MarketConfig, n: int, score: int): coins {
 //
 // The old MKT-1 read `floorOf(MODE_DUTCH_BUYNOW) == MINT_PRICE`, exactly, and
 // called itself the load-bearing line in this file. IT IS DELETED. §12's "no
-// lane may terminate above 1 TON" goes with it: every prime's lane now
-// terminates at `restingPriceOf(n)`, which is above 1 TON wherever the NPV
+// lane may terminate above 1 GRAM" goes with it: every prime's lane now
+// terminates at `restingPriceOf(n)`, which is above 1 GRAM wherever the NPV
 // table has an entry. The liveness argument that clause used to carry — "the
 // head can never park permanently on a prime nobody will pay a premium for" —
 // was already vestigial: D-20 defines the head over composites and Unity only,
@@ -1989,8 +1989,8 @@ fun dutchPriceOf(cfg: MarketConfig, rec: Lot, nowTs: int): coins {
 // the moment a lot opens is `P0(n)` itself, because under D-30 opening IS the
 // first bid.
 //
-// The floor binds below ~0.1 TON of standing bid, i.e. never on a live lot:
-// LOT_FLOOR is 1.07 TON, so on the ascending lane the percentage always governs
+// The floor binds below ~0.1 GRAM of standing bid, i.e. never on a live lot:
+// LOT_FLOOR is 1.07 GRAM, so on the ascending lane the percentage always governs
 // and the floor is there to keep the arithmetic honest, not to price anything.
 fun minIncrementOn(score: int, high: coins): coins {
     var inc: coins = high * incrementBpsAt(score / SCORE_HALVING) / BPS_DEN;
@@ -2008,9 +2008,9 @@ fun minIncrementOn(score: int, high: coins): coins {
 // standing price is already an all-in figure, because P0 >=
 // LOT_FLOOR = MINT_PRICE + RES_GAS by construction. On the BUYNOW lane it
 // cannot be, because that lane's floor is the NUMBER'S resting price — which
-// under D-88 is `max(NPV(n)/2, P0(n)/3, MINT_PRICE)` rather than a flat 1 TON, but is
+// under D-88 is `max(NPV(n)/2, P0(n)/3, MINT_PRICE)` rather than a flat 1 GRAM, but is
 // still a price for the number and not for its settlement — so RES_GAS is
-// added on top. At a floor of 1 TON a head-lot purchase is 1.07 TON all-in (RES_GAS 0.070, D-113);
+// added on top. At a floor of 1 GRAM a head-lot purchase is 1.07 GRAM all-in (RES_GAS 0.070, D-113);
 // the difference is the settlement the buyer funds.
 fun minPaymentOn(cfg: MarketConfig, rec: Lot, nowTs: int): coins {
     if (rec.mode == MODE_DUTCH_BUYNOW) {
@@ -2103,7 +2103,7 @@ fun sendRefund(dest: address, amount: coins, queryId: int) {
 //     RES_GAS 0.070   carved off FIRST (D-90.4 kept it). `SETTLE_GAS` of it rides
 //                     to the ledger with the mint leg in this transaction; the
 //                     remainder stays here as float.
-//     1 TON           to the LEDGER, which runs the ordinary §4.1 five-way split
+//     1 GRAM           to the LEDGER, which runs the ordinary §4.1 five-way split
 //                     on it and deploys the item — so the tribute and referral
 //                     lines are paid on auctioned numbers too.
 //     C − 1.070       the premium, to the LEDGER via `ClearingCleared` once the
@@ -2248,7 +2248,7 @@ fun onInternalMessage(in: InMessage) {
             // A key lookup walks only its own path, so any branch past the
             // first missing key could carry up to max_msg_cells of unread cells
             // into `lots`, and eight such opens fill config 43's 65,536-cell
-            // account cap (~10 TON, all refundable when outbid).
+            // account cap (~10 GRAM, all refundable when outbid).
             var verified = createEmptyMap<uint8, FactorEntry>();
             if (isPrime) {
                 assert (msg.factors.isEmpty()) throw 201;  // bad_factorization
@@ -2416,7 +2416,7 @@ fun onInternalMessage(in: InMessage) {
             // this lane opens at the same P0 the ascending lane would have
             // charged for the same number the day before its turn, and rests at
             // `max(MINT_PRICE, P0(n)/3, NPV(n)/2)` instead of collapsing to
-            // exactly 1 TON when the NPV table misses.
+            // exactly 1 GRAM when the NPV table misses.
             val p0 = openingPriceOf(cfg, msg.n, score, true);
             val priceFloor = restingPriceOf(cfg, msg.n, score);
             // The descent must never be an ascent. Guaranteed termwise by the
@@ -2457,7 +2457,7 @@ fun onInternalMessage(in: InMessage) {
             // bit, so it is tried once. The caller funds the hop: it carries
             // whatever this open's compute left of `in.valueCoins`, so the
             // float pays nothing (a fixed OPEN_RESERVE_GAS here cost it
-            // ~0.012 TON per minimum-value open).
+            // ~0.012 GRAM per minimum-value open).
             createMessage({
                 bounce: BounceMode.NoBounce,
                 value: 0,
@@ -2544,7 +2544,7 @@ fun onInternalMessage(in: InMessage) {
             // however many times it had been outbid, and a winner who paid for
             // the number got nothing. Found on the 2026-09-17 testnet gauntlet:
             // `K` opened 123456792 at the floor, `C` outbid it and won at
-            // 1.2279 TON, the close minted, and the item's owner came back `K`.
+            // 1.2279 GRAM, the close minted, and the item's owner came back `K`.
             // `C` was refunded nothing — it was the high bidder, so its money was
             // the price — and the NFT went to the wallet it had outbid.
             //
@@ -2836,7 +2836,7 @@ fun onBouncedMessage(in: InMessageBounced) {
 
     if (opcode == 0xb0000020) {
         // D-90: a ledger-side refusal of `mint_won_lot` would strand the
-        // winner's 1 TON on a contract with no withdraw path, so this refunds
+        // winner's 1 GRAM on a contract with no withdraw path, so this refunds
         // the winner, read off the lot record, which is still
         // there: the record is written before the send in `closeLot` and is
         // deleted only here or on `SettleConfirmed`. There is deliberately no
@@ -2887,7 +2887,7 @@ fun onBouncedMessage(in: InMessageBounced) {
             sendRefund(rec.highBidder, owed, original.queryId);
         }
     } else if (opcode == 0xb0000009) {
-        // The premium forward bounced. The TON came back with it and stays here,
+        // The premium forward bounced. The GRAM came back with it and stays here,
         // on a contract with no other outbound path for it. Book what ACTUALLY
         // returned — not the amount named in the original body, which is larger
         // by the bounce fee — so the permissionless retry can only ever re-send
@@ -2909,7 +2909,7 @@ fun onBouncedMessage(in: InMessageBounced) {
 // ---------------------------------------------------------------------------
 // Get-methods. CONCEPT §9.1: every number the UI shows maps to one of these, and
 // the market is a public price-discovery event, so all of it is readable —
-// including the "why does 1000 open at 128 TON" breakdown, which is why
+// including the "why does 1000 open at 128 GRAM" breakdown, which is why
 // `getLotPrice` returns the SCORE and not only the price.
 // ---------------------------------------------------------------------------
 
@@ -3130,7 +3130,7 @@ get fun getResFeeSplit(): (int, int) {
 // that actually charges them rather than against a comment. SimCrossCheck.spec.ts
 // asserts each field. The prime lane's window is in `getPrimeDutchTerms`, the
 // bid ladder in `getIncrementLadder`. `LOT_FLOOR` is params.json's
-// `RESERVE_FLOOR` (1.07 TON).
+// `RESERVE_FLOOR` (1.07 GRAM).
 get fun getMarketParams(): (int, int, int, int, int, int, int) {
     // D-139: fields 5 and 6 are the DIVIDED clocks — what this deploy enforces.
     val cfg = lazy Storage.load().cfg.load();
@@ -3330,7 +3330,7 @@ get fun getMarketStats(): (int, int, int, int, int, int) {
 }
 
 // §3.4's one-call check, same shape as the ledger's, ratchet's and registrar's:
-// (balance, declared liability, delta). The liability is every TON this
+// (balance, declared liability, delta). The liability is every GRAM this
 // contract owes somebody — standing high bids on open lots, premiums awaiting
 // `SettleConfirmed`, and premiums parked by a bounced forward. The rest of the
 // balance is RES_GAS headroom and rent; delta < 0 is insolvency.

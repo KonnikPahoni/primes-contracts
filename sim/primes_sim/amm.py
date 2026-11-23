@@ -1,5 +1,5 @@
 """Constant-product AMM (xy=k) with DeDust's mainnet volatile-pool fee, standing
-in for the DeDust PRIMES/TON pool (CONCEPT.md SS4.3, SS5).
+in for the DeDust PRIMES/GRAM pool (CONCEPT.md SS4.3, SS5).
 
 WHERE 0.0025 COMES FROM, AND WHAT IT IS NOT. It is what DeDust's mainnet factory
 sets on a volatile pool: 52,286 of the 52,326 pools its own listing published on
@@ -31,7 +31,7 @@ class Pool:
 
     @property
     def price_ton_per_primes(self) -> float:
-        """Marginal spot price, TON per PRIMES."""
+        """Marginal spot price, GRAM per PRIMES."""
         if self.primes_reserve <= 0:
             return float("inf")
         return self.ton_reserve / self.primes_reserve
@@ -47,7 +47,7 @@ class Pool:
         return self.primes_reserve * ton_in_eff / (self.ton_reserve + ton_in_eff)
 
     def max_in_at_floor(self, floor_ton_per_primes: float, floor_guard: float = 0.0) -> float:
-        """The largest TON input whose AVERAGE execution price still clears the
+        """The largest GRAM input whose AVERAGE execution price still clears the
         floor guard -- `flush()`'s venue-depth sizing (CONCEPT.md SS4.3.1).
 
         The contract sizes its tranche off `pending` and prices the guard off
@@ -81,7 +81,7 @@ class Pool:
         return a_max if a_max > 0 else 0.0
 
     def swap_ton_for_primes(self, ton_in: float) -> float:
-        """Bank/buyer sends TON, receives PRIMES. Returns PRIMES out."""
+        """Bank/buyer sends GRAM, receives PRIMES. Returns PRIMES out."""
         if ton_in <= 0:
             return 0.0
         ton_in_eff = ton_in * (1 - self.fee)
@@ -92,7 +92,7 @@ class Pool:
         return primes_out
 
     def swap_primes_for_ton(self, primes_in: float) -> float:
-        """Seller sends PRIMES, receives TON. Returns TON out."""
+        """Seller sends PRIMES, receives GRAM. Returns GRAM out."""
         if primes_in <= 0:
             return 0.0
         primes_in_eff = primes_in * (1 - self.fee)

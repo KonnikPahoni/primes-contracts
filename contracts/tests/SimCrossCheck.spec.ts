@@ -7,7 +7,7 @@
 // (getFloorDen), pending, and per-prime cumulative tribute credited match the
 // Python engine's own numbers for the identical mint sequence, within a
 // documented rounding tolerance (float accumulation on the Python side vs.
-// exact integer nanoTON arithmetic on-chain; k(t) is also computed by two
+// exact integer nanoGRAM arithmetic on-chain; k(t) is also computed by two
 // different approximations — an exact math.log/exp on the Python side, a
 // fixed-point log10/Taylor-series approximation on-chain, kMaxOf/kOfT in
 // primes_ledger.tolk — so per-mint rebates are expected to differ by a small
@@ -358,7 +358,7 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
             // G79: the flat dividend divides by pi(n) of the primes BELOW n on both
             // sides. The chain used to accrue after the head walk had counted the
             // next prime, so this drifted from the first twin-prime crossing on.
-            // The chain floors `0.02 TON / pi` per mint, hence one nanoton per mint.
+            // The chain floors `0.02 GRAM / pi` per mint, hence one nanoton per mint.
             const pyDivAcc = (ev as any).div_acc_after as number | undefined;
             if (pyDivAcc !== undefined) {
                 const onChainDivAcc = Number(await ledger.getDivAcc()) / 1e9;
@@ -398,7 +398,7 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
         const onChainS_ton = Number(onChainS) / 1e9;
         const onChainPending_ton = Number(onChainPending - premiumOutsideTheTrace) / 1e9;
 
-        // T and pending are exact rational fractions of 1 TON per mint on both
+        // T and pending are exact rational fractions of 1 GRAM per mint on both
         // sides (same split percentages, same MINT_PRICE) — expect these to
         // match tightly (float accumulation error only, not a k(t)-approximation
         // difference like S).
@@ -449,12 +449,12 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
         //
         // Fix for this check: recompute the expected per-prime credited total
         // directly from the trace's own factor/exponent data, using the exact
-        // integer nanoTON arithmetic primes_ledger.tolk uses (§3.2:
+        // integer nanoGRAM arithmetic primes_ledger.tolk uses (§3.2:
         // TRIBUTE_DIVISOR_AMOUNT * exponent * ⌊√p⌋ / sumWeights, floor
         // division, remainder folds to pool; the 20% flat line accrues to
         // div_acc, not to `owed`) — this is a ground-truth recomputation, not
         // a second opinion trusting a Python aggregate.
-        const TRIBUTE_DIVISOR_AMOUNT = 80_000_000n; // nanoTON, matches primes_ledger.tolk (§3.2's 80% line)
+        const TRIBUTE_DIVISOR_AMOUNT = 80_000_000n; // nanoGRAM, matches primes_ledger.tolk (§3.2's 80% line)
         const expectedOwed = new Map<number, bigint>();
         for (const ev of events) {
             const entries = Object.entries(ev.factors);
@@ -578,7 +578,7 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
         expect(docRows).toEqual(expected);
 
         // --- the load-bearing claims themselves -------------------------------
-        // "the asset side is a constant 0.200 TON at every point on the line"
+        // "the asset side is a constant 0.200 GRAM at every point on the line"
         expect(new Set(docRows.map((r) => r.assetSide)).size).toBe(1);
         // CONCEPT.md §5.4's monotone asset-share claim (was LATE_GAME_PLAN.md §3
         // item 5's kill criterion), asserted on the shipped table.
@@ -625,9 +625,9 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
      *   LOT_FLOOR             NOT independent — the identity MINT_PRICE + RES_GAS,
      *                         asserted as an identity so it cannot drift.
      *   the increment ladder  D-33's bid step, nine rungs of basis points plus a
-     *                         gas-derived floor, replacing the flat max(1 TON, 5%)
+     *                         gas-derived floor, replacing the flat max(1 GRAM, 5%)
      *                         that was only defensible while D_MIN kept the
-     *                         cheapest lot at 8 TON.
+     *                         cheapest lot at 8 GRAM.
      *
      * The assertions run in the direction "the contract must equal params.json",
      * because the sim is the parameter authority and the contract is the consumer.
@@ -702,7 +702,7 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
             ladder.min_increment_floor_ton,
             9
         );
-        // The flat 1 TON floor the ladder replaced (D-33) must NOT be what ships.
+        // The flat 1 GRAM floor the ladder replaced (D-33) must NOT be what ships.
         expect(onChain.minIncrementFloor).not.toBe(toNano('1'));
 
         // D-90.2 DELETES the release, so `getReleaseTerms` and the sim's
@@ -718,8 +718,8 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
     });
 
     /**
-     * D-212: the NAMING FEES. Owner-set, in TON: 50 EUR for a first naming (a genesis-day
-     * input, never a constant) and 200 TON for every rename. The binding is params.json's
+     * D-212: the NAMING FEES. Owner-set, in GRAM: 50 EUR for a first naming (a genesis-day
+     * input, never a constant) and 200 GRAM for every rename. The binding is params.json's
      * owner block == what genesis reads == what the contracts publish.
      */
     it("D-212: the naming fees are params.json's owner figures, and genesis reads them from there", async () => {
@@ -729,7 +729,7 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
         expect(params.naming._provenance).toMatch(/D-212/);
         expect(params.naming.rename_fee_ton).toBe(200);
         expect(params.naming.name_fee_eur).toBe(50);
-        // No TON figure for the first naming may exist anywhere: it is the genesis-day rate.
+        // No GRAM figure for the first naming may exist anywhere: it is the genesis-day rate.
         expect(params.naming.name_fee_ton).toBeUndefined();
         const deploySrc = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'deployGenesis.ts'), 'utf-8');
         expect(deploySrc).toMatch(/params\.naming\.rename_fee_ton/);
@@ -746,8 +746,8 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
         // while `primes_ratchet.tolk` read
         //     amount = pending * FLUSH_PCT; if (amount < FLUSH_MIN) amount = pending;
         // — "too small to bother with" turned into "then spend everything". The
-        // two agree outside FLUSH_MIN..FLUSH_MIN/FLUSH_PCT (50..250 TON) and
-        // inside it the contract spent up to 250 TON where the sim spends 50:
+        // two agree outside FLUSH_MIN..FLUSH_MIN/FLUSH_PCT (50..250 GRAM) and
+        // inside it the contract spent up to 250 GRAM where the sim spends 50:
         // the maximum-slippage choice, at exactly the depth where slippage
         // decides whether `min_out` is reachable. Both constants were correct
         // the whole time, which is why nothing caught it.
@@ -973,7 +973,7 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
         it('the block is NOT D-168 PRIMES staking, and says so', () => {
             // Two mechanics, one word. The top-level `staking` block is D-168's
             // PRIMES staking paid from the treasury vest; this block is the
-            // ratchet depositing TON into Tonstakers (D-151). Both exist, under
+            // ratchet depositing GRAM into Tonstakers (D-151). Both exist, under
             // two names, and this one's `_source` must say which it is not.
             expect(params.staking.epoch_seconds).toBeGreaterThan(0);
             expect(staking._source).toMatch(/UNRELATED to the top-level `staking` block/);
@@ -1051,7 +1051,7 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
             expect(sweep.implied_min_from_gas_accrual_ton).toBeUndefined();
             // The largest extrapolation is taken over rows that staked often
             // enough to be a flow; a row that staked once, late, is a timing
-            // (the D-180 run's 200,000 TON row read 2,548 against ~215).
+            // (the D-180 run's 200,000 GRAM row read 2,548 against ~215).
             const live = sweep.rows.filter(
                 (r: any) => r.stake_events >= sweep.min_stakes_to_extrapolate && r.fee_share_of_yield > 0,
             );
@@ -1162,7 +1162,7 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
             return cur;
         }
 
-        /** TON -> nanoton, and fixed-point 1.0 -> K_SCALE: the same conversion. */
+        /** GRAM -> nanoton, and fixed-point 1.0 -> K_SCALE: the same conversion. */
         const scaled = (x: number) => BigInt(Math.round(x * 1e9));
 
         type Binding = {
@@ -1239,7 +1239,7 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
                 note: '§3.2 — 20% of the tribute line, the flat prime dividend',
             },
             // ---- §5's rebate block. Fixed point, 1.0 == K_SCALE == 1e9, so the
-            //      SAME conversion as TON->nanoton by construction.
+            //      SAME conversion as GRAM->nanoton by construction.
             {
                 name: 'K_MIN',
                 file: 'primes_ledger.tolk',
@@ -1361,20 +1361,27 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
                 expected: () => ITEM_DEPLOY_VALUE_NANOTON,
                 note: 'shared/values.ts ITEM_DEPLOY_VALUE_NANOTON — the item endowment',
             },
-            // ---- DECISIONS.md D-202: §4.1's seventh line, OWNER-SET (like D-101's count)
-            //      and carried by the sim, so the contract literal and the published
-            //      parameter cannot disagree.
+            // ---- DECISIONS.md D-202/D-215: §4.1's seventh line. Its count and value are
+            //      operator-set on chain (`set_invite_terms`); the three bounds they sit
+            //      inside are OWNER-SET, carried by the sim, and pinned here so the
+            //      contract literal and the published parameter cannot disagree.
             {
-                name: 'INVITE_MAX_COUNT',
+                name: 'INVITE_COUNT_CEILING',
                 file: 'primes_ledger.tolk',
-                expected: () => BigInt(param('invites.max_count')),
-                note: 'D-202 — the most invite transfers one mint may fund',
+                expected: () => BigInt(param('invites.count_ceiling')),
+                note: 'D-215 — the most invite transfers any terms may let one mint fund',
             },
             {
-                name: 'INVITE_TRANSFER_VALUE',
+                name: 'INVITE_LINE_CAP',
                 file: 'primes_ledger.tolk',
-                expected: () => scaled(param('invites.transfer_value_ton')),
-                note: 'D-202 — the value of one invite transfer, nanoTON',
+                expected: () => scaled(param('invites.line_cap_ton')),
+                note: 'D-215 — count x (value + send fee) may not exceed this, nanoGRAM',
+            },
+            {
+                name: 'INVITE_SEND_FEE',
+                file: 'primes_ledger.tolk',
+                expected: () => scaled(param('invites.send_fee_allowance_ton')),
+                note: 'D-215 — the per-transfer fee allowance the line pays itself, nanoGRAM',
             },
             // ---- GAUNTLET.md I8 (parameter provenance audit): the registrar's
             //      discovery bounties were already comment-cited to this exact
@@ -1444,6 +1451,12 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
                     }
                 );
             }
+            BINDINGS.push({
+                name: 'VOTE_MULT_FOREVER',
+                file,
+                expected: () => BigInt(param('treasury.forever_vote_multiplier') as number),
+                note: `D-214, ${file} — what LP locked forever through a position votes with`,
+            });
         }
 
         for (const file of ['primes_stake.tolk', 'primes_stake_position.tolk']) {

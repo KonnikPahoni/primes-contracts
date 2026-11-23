@@ -48,51 +48,53 @@ mint#b0000002
                                    ;; body is sent to IS the beneficiary's (a §4.5 gift is
                                    ;; sent to the recipient's card), and the payer is its
                                    ;; sender. A gift to a FRESH card is §4.7's recruit edge.
-    invite_count:uint3            ;; §4.1's SEVENTH LINE (D-202): 0..3 invite transfers this
-                                   ;; mint funds at INVITE_TRANSFER_VALUE (0.1 TON) each. > 3
-                                   ;; throws invite_count_over_max (221) — the field is uint3
-                                   ;; so 4..7 are representable and that check is what makes
-                                   ;; them unreachable. A named slot off workchain 0 throws
-                                   ;; invite_bad_workchain (236, audit R2-L1).
+    invite_count:uint7            ;; §4.1's SEVENTH LINE (D-202, D-215): 0..Config.inviteCount
+                                   ;; invite transfers this mint funds at Config.inviteValue
+                                   ;; each (operator-set; genesis 3 x 0.1 GRAM). Over the live
+                                   ;; count throws invite_count_over_max (221); a spend over
+                                   ;; INVITE_LINE_CAP throws invite_terms_bad (238). A named
+                                   ;; slot off workchain 0 throws invite_bad_workchain (236).
     invites:(Maybe ^InviteList)    ;; the minter's recipients; null on an uninvited mint
   = InternalMsgBody;
 ;; ROOT-CELL BUDGET. D-106 removed the `patron` Maybe-ref and D-191 the `beneficiary`
-;; address, so this is 388 bits of
+;; address, and D-215 widened `invite_count` to 7 bits, so this is 392 bits of
 ;; fixed fields against 1023 and TWO of TVM's four refs used (`factors`,
 ;; `invites`), two spare. `invites` is a Maybe-ref and not a bare `^Cell` so a
 ;; mint that funds no invites pays one bit rather than a whole cell.
 ;; (A won auction lot mints through `mint_won_lot`, never this op.)
-;; msg value carries P = 1 TON plus a fee margin for a direct mint — the ledger
-;; asserts against the value that survives the forward fee, so exactly 1 TON
+;; msg value carries P = 1 GRAM plus a fee margin for a direct mint — the ledger
+;; asserts against the value that survives the forward fee, so exactly 1 GRAM
 ;; reverts. If `n` != current head when the message
 ;; lands, this is the losing side of a race: the mint fails cheaply and the
 ;; attached value is refunded in full minus gas — never burned, never kept.
 
 ;; ---- the invite list (§4.1's invite line; D-101 as D-202 rewrote it) ----
 ;;
-;; Up to three addresses THE MINTER chose, carried by the minter's own transaction.
+;; Up to Config.inviteCount (<= INVITE_COUNT_CEILING = 100) addresses THE MINTER chose, carried by the minter's own transaction.
 ;; One ref off the mint body, so an uninvited mint pays a single bit for it. There is
 ;; no signature (D-202 deleted the operator's invite signer with the generators).
 ;;
 ;; Each slot in `1..invite_count` that has an address receives ONE plain transfer from
 ;; the ledger, in the mint's own transaction:
 ;;
-;;   value  = INVITE_TRANSFER_VALUE (0.1 TON; params.json invites.transfer_value_ton),
-;;            send mode REGULAR, so its forward fee comes out of the 0.1
+;;   value  = Config.inviteValue (operator-set, D-215; genesis 0.1 GRAM), send mode
+;;            REGULAR | PAY_FEES_SEPARATELY, so it arrives whole; the line pays
+;;            INVITE_SEND_FEE per transfer for the fee, and what that overstates is
+;;            swept to the ratchet pool by sweep_ops
 ;;   bounce = false, so an undeployed Telegram wallet still receives it
 ;;   body   = text_comment$00000000 "<words> primes.live/?ref=<n>_tg"
 ;;            where <words> is the operator-set `Config.inviteText` (D-211, see
-;;            set_invite_text below) and <n> is the decimal of the number being
+;;            set_invite_terms below) and <n> is the decimal of the number being
 ;;            minted. The link is the ledger's own. Nothing in it is minter-written.
 ;;
 ;; A SLOT WITH NO ADDRESS IS NOT AN ERROR. The list may be shorter than
 ;; `invite_count` and may have holes; every slot in `1..invite_count` that has no
-;; address is simply not sent, and its 0.1 TON stays in the residual β and backs the
+;; address is simply not sent, and its value and fee stay in the residual β and backs the
 ;; floor — the same "an unresolvable line backs the floor" rule an unset referral key
 ;; already obeys (§4.1). THE SEVENTH LINE IS DEDUCTED FROM THE TRANSFERS ACTUALLY
 ;; SENT, not from `invite_count`. A key outside 1..invite_count is never read.
 invite_list$_
-    addresses:(HashmapE 3 MsgAddress) ;; slot (1..3) -> the invited address
+    addresses:(HashmapE 7 MsgAddress) ;; slot (1..invite_count) -> the invited address
   = InviteList;
 
 ;; D-168 retired set_stake_sink#b0000045 and set_stake_uplift#b0000044 with the
@@ -144,7 +146,7 @@ clearing_cleared#b0000009
 ;; Nothing is minted, emitted or credited to anybody on this path. The sender
 ;; must be the market address recorded by set_peers (100 otherwise), and the
 ;; message must really carry `amount` plus the ratchet hop gas (103 otherwise) —
-;; crediting T against a message that did not carry the TON is the one way this
+;; crediting T against a message that did not carry the GRAM is the one way this
 ;; handler could inflate the floor past its backing.
 
 ;; ---- inbound: item(n)'s receipt for a populated mint (D-117, V28) ----
@@ -170,7 +172,7 @@ _ forfeit:uint1 p:Coins share:Coins = HeldSplitLine;
 ;; ride on `mint_item` as value with this cell naming each; the collection carries
 ;; both to the item inside `populate`, and the item sends them back here once it
 ;; is populated (V28) — only then are they paid. Sender-derived: item(n). A
-;; refused mint carries the same TON home instead (a bounced `mint_item`, or a
+;; refused mint carries the same GRAM home instead (a bounced `mint_item`, or a
 ;; refused `populate` relayed as `mint_item_refused`): the ledger parks the original
 ;; body under `n` in its `unroutedItems` lane, declares the held split in
 ;; `unrouted_held`, and pays nothing.
@@ -180,8 +182,8 @@ retry_item#b000007b
     n:uint256
   = InternalMsgBody;
 ;; D-117, permissionless. Re-sends the parked `mint_item` for `n` (same owner, same
-;; held split, head refreshed) with the held split's TON plus ITEM_DEPLOY_VALUE, which the
-;; caller attaches (>= ITEM_DEPLOY_VALUE + 0.01 TON). Unknown n is a cheap no-op.
+;; held split, head refreshed) with the held split's GRAM plus ITEM_DEPLOY_VALUE, which the
+;; caller attaches (>= ITEM_DEPLOY_VALUE + 0.01 GRAM). Unknown n is a cheap no-op.
 
 ;; ---- inbound: a secondary royalty's ratchet half, from the two royalty-bearing
 ;;      collections only (D-128) ----
@@ -205,7 +207,7 @@ royalty_to_ratchet#b0000079
 ;;
 ;; The sender must be `ConfigA.collection_addr` (100 otherwise), and the message must really carry `amount` plus the ratchet
 ;; hop gas (103 otherwise) — the same guard `clearing_cleared` carries, for the
-;; same reason: crediting `T` against a message that did not bring the TON is the
+;; same reason: crediting `T` against a message that did not bring the GRAM is the
 ;; one way this handler could inflate the floor past its backing.
 
 ;; ---- inbound: the permissionless floor donation (D-91 point 4) ----
@@ -214,16 +216,16 @@ donate_floor#b000000c
     query_id:uint64
     amount:Coins
   = InternalMsgBody;
-;; D-91 point 4, amended by D-100 point 1. `amount` TON in, and TWO storage
+;; D-91 point 4, amended by D-100 point 1. `amount` GRAM in, and TWO storage
 ;; effects in one transaction:
 ;;
 ;;   T += amount            -- backing, forwarded to the ratchet as `pending`
 ;;   S += emitted           -- emitted = min(amount * L, amount * S / T),
 ;;                             with `amount * L` used while T = 0.
-;;                             L = 10,000 PRIMES/TON, params.json
+;;                             L = 10,000 PRIMES/GRAM, params.json
 ;;                             genesis.genesis_lp_ratio_primes_per_ton (D-29)
 ;;
-;; and `emitted` nano-PRIMES are minted to THE SENDER, who pairs them with TON
+;; and `emitted` nano-PRIMES are minted to THE SENDER, who pairs them with GRAM
 ;; on DeDust and burns the LP receipt themselves. D-91 point 6 names the gap
 ;; this leaves open: that pair-and-burn is not atomic, because no verified
 ;; DeDust deposit wire format exists in this repo yet.
@@ -253,16 +255,16 @@ donate_floor#b000000c
 ;; no-admin-withdraw rule has nothing to gate here.
 ;;
 ;; Unlike `genesis_seed` this is INCREMENTAL -- no virgin-ledger assert, so the
-;; operator can send 1 TON, verify the floor moved, then send the rest (D-100
-;; point 3 caps that at 150 TON post-genesis as an operator commitment, not a
+;; operator can send 1 GRAM, verify the floor moved, then send the rest (D-100
+;; point 3 caps that at 150 GRAM post-genesis as an operator commitment, not a
 ;; contract rule).
 ;;
 ;; One throw, 103, on two conditions. The message did not really carry `amount`
-;; plus both hops' gas (`RATCHET_HOP_GAS` + the 0.02 TON jetton-mint budget) --
+;; plus both hops' gas (`RATCHET_HOP_GAS` + the 0.02 GRAM jetton-mint budget) --
 ;; crediting `T` against money that did not arrive is the one way this handler
 ;; could break the §5 ratchet theorem. Or the clamped emission rounded to zero,
 ;; which is a donation too small to buy one nano-PRIMES at the current floor:
-;; refused rather than silently taking the TON for nothing.
+;; refused rather than silently taking the GRAM for nothing.
 
 ;; ---- inbound: an off-head prime sale, from the market only ----
 
@@ -296,7 +298,7 @@ mint_won_lot#b0000020
                                    ;; unchanged so the mint path recomputes the same split deterministically
                                    ;; (G70 deleted `res_premium`: always 0 since D-90)
   = InternalMsgBody;
-;; sender MUST equal the market's fixed address. Value attached = the 1 TON
+;; sender MUST equal the market's fixed address. Value attached = the 1 GRAM
 ;; mint price out of the winning bid, plus gas.
 
 ;; D-88 point 2 DELETES `settle_special_composite#b0000073` with SS3's 1-day
@@ -328,12 +330,12 @@ credit_tribute#b0000030
 ;; `p` exists so a BOUNCE is recoverable. The destination is already a pure
 ;; function of it (`itemAddress(p)`), and the item itself never reads it. Before
 ;; it rode the wire, a bounced credit was filed under `p = 0` and re-sent to
-;; `itemAddress(0)` forever, stranding the TON in `unroutedHeld` while
+;; `itemAddress(0)` forever, stranding the GRAM in `unroutedHeld` while
 ;; `getLiabilityBreakdown` still declared it owed — a solvency figure overstating
 ;; what could actually be paid out, which is the failure §3.4 exists to prevent.
 ;; sent once per distinct prime factor of a minted composite (or the sole
 ;; factor for a prime-power self-mint edge case), up to omega(n) <= 8 times
-;; per mint. Carries NO TON value beyond forward-fee gas — this is a
+;; per mint. Carries NO GRAM value beyond forward-fee gas — this is a
 ;; bookkeeping credit, not a tribute payout (that stays pull-based, on
 ;; claim). See engineering-spec §3 for why this does not reintroduce the
 ;; dust economics that killed push-based tribute in CONCEPT.md §3.2.1.
@@ -362,7 +364,7 @@ pay_special_number_rebate#b0000072
     t:Coins
     s:Coins
   = InternalMsgBody;
-;; DENOMINATION_PLAN P4: the vault's era schedule is TON-denominated, and the vault
+;; DENOMINATION_PLAN P4: the vault's era schedule is GRAM-denominated, and the vault
 ;; cannot call a get-method, so the ceremony is priced at the floor THIS mint just
 ;; set rather than at whatever the vault last heard. Same `(T, S)` snapshot pair as
 ;; `pool_inject` below, and taken at the same point for the same reason. The vault
@@ -469,12 +471,19 @@ set_sinks#b0000042
 
 ;; `set_invite_config#b0000046` is RETIRED by D-202 with the invite signer.
 
-;; ---- inbound: §4.1's invite words, from FeeDests.operatorAddr only (D-211) ----
+;; `set_invite_text#b0000085` is RETIRED by D-215: set_invite_terms carries the words.
+
+;; ---- inbound: §4.1's invite terms, from FeeDests.operatorAddr only (D-211, D-215) ----
 ;; `text` is bytes only: no refs, a whole number of bytes, at most
-;; INVITE_TEXT_MAX_BYTES (86), else invite_text_bad (237); any other sender is
-;; wrong_sender (100). Moves no value. Read back with get_invite_text.
-set_invite_text#b0000085
+;; INVITE_TEXT_MAX_BYTES (86), else invite_text_bad (237). `count`/`value` need
+;; value >= 1, count <= INVITE_COUNT_CEILING (100) and
+;; count * (value + INVITE_SEND_FEE) <= INVITE_LINE_CAP (0.31 GRAM), else
+;; invite_terms_bad (238); count 0 switches the line off. Any other sender is
+;; wrong_sender (100). Moves no value. Read back with get_invite_terms / get_invite_text.
+set_invite_terms#b0000086
     query_id:uint64
+    count:uint7
+    value:Coins
     text:^Cell
   = InternalMsgBody;
 
@@ -516,7 +525,7 @@ advance_head#b000007c
 ;; returns to the sender either way.
 
 ;; D-196, PERMISSIONLESS and caller-funded. value >= IMPORT_LOT_BLOCK_VALUE
-;; (0.05 TON, 103). Imports the frontier block (`getLotBlockState`) from its lot
+;; (0.05 GRAM, 103). Imports the frontier block (`getLotBlockState`) from its lot
 ;; block (lot_block.tlb): refused 234 until the block starts below
 ;; `head + LOT_BLOCK_WINDOW_BLOCKS * 256`; while an import is in flight it re-sends
 ;; the request to the same block, whose words are idempotent. The
@@ -536,7 +545,7 @@ lot_block_words#b000007f
     sold_prime:uint256
   = InternalMsgBody;
 
-;; D-198, PERMISSIONLESS and caller-funded. value >= FLUSH_UNSOLD_VALUE (0.15 TON, 103);
+;; D-198, PERMISSIONLESS and caller-funded. value >= FLUSH_UNSOLD_VALUE (0.15 GRAM, 103);
 ;; the hop carries a fixed 0.06. A refused hop restores the rows and rewinds the cursor.
 ;; Moves block `unsold_flushed`'s unsold rows -- each prime's §3.2 bookmark and §6
 ;; point 2 forfeit counter, exact -- to that block's lot block (`lot_block_bookmarks`,
@@ -571,7 +580,7 @@ retry_credit#b0000005
     credit_id:uint64
   = InternalMsgBody;
 ;; Re-sends a bounced `credit_tribute#b0000030` parked under `credit_id` in the
-;; unrouted lane. value >= CREDIT_TRIBUTE_VALUE + CALLER_COMPUTE_GAS (0.018 TON, 103). Unknown id is a cheap
+;; unrouted lane. value >= CREDIT_TRIBUTE_VALUE + CALLER_COMPUTE_GAS (0.018 GRAM, 103). Unknown id is a cheap
 ;; no-op (already retried or expired).
 
 retry_mint#b000000d
@@ -649,24 +658,29 @@ credit_dividend#b0000036
 ;;   contract number traceable to nothing — SimCrossCheck.spec.ts fails on exactly
 ;;   that until both the get-methods and the assertion against them are removed.
 ;; get_invite_spend             -> (slots_funded:uint64, transfers_sent:uint64,
-;;                                  slots_to_pool:uint64, line_paid:Coins)
+;;                                  slots_to_pool:uint64, value_delivered:uint64,
+;;                                  line_paid:int)
 ;;   §9.1 / §4.1's invite line. CUMULATIVE and never decremented. `slots_funded` is
 ;;   the summed `invite_count` over every mint, `transfers_sent` the number of
 ;;   invite transfers actually made, `slots_to_pool` their difference — so
-;;   §4.1's "unspent -> β" rule is CHECKED in public rather than asserted, and
-;;   `line_paid` must equal `transfers_sent × INVITE_TRANSFER_VALUE` exactly.
-;; get_invite_terms             -> (max_count:int, transfer_value:Coins)
-;;   D-202: the line's two owner-set terms, 3 and 0.1 TON.
+;;   §4.1's "unspent -> β" rule is CHECKED in public rather than asserted.
+;;   `value_delivered` is what invitees received, summed at each mint's live value
+;;   (D-215); `line_paid` = value_delivered + transfers_sent × INVITE_SEND_FEE
+;;   exactly, which is what the line took off β.
+;; get_invite_terms             -> (count:int, value:Coins, send_fee:Coins,
+;;                                  line_cap:Coins, count_ceiling:int)
+;;   D-215: the live operator-set count and value (genesis 3 and 0.1 GRAM) and
+;;   the three fixed bounds they sit inside (0.001 GRAM, 0.31 GRAM, 100).
 ;; get_invite_comment(n)        -> ^Cell
 ;;   D-202: the exact body an invite transfer for the mint of `n` carries.
 ;; get_invite_text              -> ^Cell
-;;   D-211: the live operator-set words alone, as set_invite_text last wrote them.
+;;   D-211: the live operator-set words alone, as set_invite_terms last wrote them.
 ;; get_seed_t                   -> seeded:Coins
 ;;   D-26 (§5): the `seeded` term of `T = seeded + swapped + pending`. Written
 ;;   once by `genesis_seed` and never again. `swapped` and `pending` are on the
 ;;   ratchet, so closing the identity is three get-calls across two contracts.
 ;;   D-100 point 1 makes "and never again" true: `donate_floor` used to add to
-;;   this as well as forwarding the same TON to the ratchet, which double-counted
+;;   this as well as forwarding the same GRAM to the ratchet, which double-counted
 ;;   every donation in the identity's right-hand side.
 ;; get_operator_totals          -> (operator_paid:Coins, treasury_paid:Coins,
 ;;                                  ops_swept:Coins, premium_treasury_paid:Coins)

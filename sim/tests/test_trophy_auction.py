@@ -74,7 +74,7 @@ def test_a_prime_never_collapses_onto_the_lane_floor():
     branches collapsed to `RESERVE_FLOOR` and the auction became a reservation
     with seven days of ceremony attached. Under D-99 primality is a category
     worth 15 points on its own, so the LADDER branch alone opens any prime at
-    2^(15/10) = 2.83 TON -- comfortably clear of the 1.06 TON lane floor, with no
+    2^(15/10) = 2.83 GRAM -- comfortably clear of the 1.06 GRAM lane floor, with no
     floor constant and no special case.
     """
     rng = random.Random(20260816)
@@ -151,7 +151,7 @@ def test_frac_table_is_within_a_stated_bound_of_the_true_exponential():
 
 def test_ladder_hits_the_exact_doublings():
     """Every whole multiple of SCORE_HALVING must be an exact power of two in
-    nanoTON -- FRAC[0] is exactly 2^16, so the multiply and divide cancel."""
+    nanoGRAM -- FRAC[0] is exactly 2^16, so the multiply and divide cancel."""
     for k in range(0, C.SCORE_MAX // C.SCORE_HALVING + 1):
         assert tr.ladder_nanoton(k * C.SCORE_HALVING) == tr.NANO << k
 
@@ -187,11 +187,11 @@ def test_plan_price_table_for_composites(n, expected_score, expected_p0_ton):
 
 
 def test_the_top_rung_is_the_declared_ceiling_and_not_a_guard():
-    """D-99 answer 9: a composite opens at no more than 420 TON, and the CLAMP
+    """D-99 answer 9: a composite opens at no more than 420 GRAM, and the CLAMP
     is what enforces it -- there is no second ceiling rule anywhere.
 
     Before D-99 the top rung was a guard nobody expected to see (`SCORE_MAX =
-    120` priced at 4,096 TON, far above any realised score). Now it is the
+    120` priced at 4,096 GRAM, far above any realised score). Now it is the
     stated cap and real numbers reach it: 2, 3 and 5 all clamp at 87.
     """
     assert tr.p0_ton(C.SCORE_MAX) == 415.875
@@ -207,7 +207,7 @@ def test_the_deep_line_opens_at_the_floor_now_that_the_threshold_is_gone():
     different way, and the sim has to check the new answer rather than the old.
 
     The old worry was that a continuous `2^(D/10)` map surcharges the deep line:
-    a 7-digit number scoring 8 opens at 1.74 TON, a 74% surcharge on ~98% of the
+    a 7-digit number scoring 8 opens at 1.74 GRAM, a 74% surcharge on ~98% of the
     book. What stops that now is not a threshold but the `RESERVE_FLOOR` branch
     of the `max`, which holds every low-score lot at `MINT_PRICE + RES_GAS`
     until the ladder overtakes it. So the property to assert is where the ladder
@@ -258,7 +258,7 @@ def test_lane_entry_depends_only_on_primality():
 
 
 def test_primorials_are_neither_reservable_nor_auctionable():
-    """SS7's era boundaries. Every argument applies with more force at 128 TON
+    """SS7's era boundaries. Every argument applies with more force at 128 GRAM
     than at 0.075 -- including for the primorials that are themselves prime."""
     for pr in tr.PRIMORIALS:
         assert tr.lane(pr, ds.score(pr)) == tr.HEAD_ONLY
@@ -474,7 +474,7 @@ def test_the_bid_increment_ladder_ships_in_acquisition(params):
     # D-33's stated shape: a rarer number requires larger bid steps.
     bps = lad["min_increment_bps"]
     assert all(bps[i] <= bps[i + 1] for i in range(len(bps) - 1))
-    # the floor is a measured gas round trip, not the retired flat 1 TON
+    # the floor is a measured gas round trip, not the retired flat 1 GRAM
     assert lad["min_increment_floor_ton"] < 1.0
     assert lad["min_increment_floor_nanoton"][0] == int(
         round(lad["min_increment_floor_ton"] * 1e9))

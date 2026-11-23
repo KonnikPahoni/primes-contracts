@@ -8,7 +8,7 @@
  * happens in the *reporting* path rather than in the test, jest reports the whole
  * suite as "failed to run" and its real results are discarded.
  *
- * This repo is BigInt-dense — every TON amount, every `n`, every get-method
+ * This repo is BigInt-dense — every GRAM amount, every `n`, every get-method
  * return is a bigint — so four suites (PrimesReservation, EscrowAggregate,
  * ReservationPricing, PrimesTrophyAuction) were silently contributing **zero**
  * to the failure count while hiding 23 genuine failures. A gate that under-reports

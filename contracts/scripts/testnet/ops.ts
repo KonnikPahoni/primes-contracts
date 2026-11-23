@@ -124,7 +124,7 @@ async function cmdUnforwardedRead(c: Contracts) {
             detail:
                 stats.unforwardedPremium === 0n
                     ? 'every premium this market booked, the ledger accepted'
-                    : `${ton(stats.unforwardedPremium)} TON booked and not accepted — retry it by its n`,
+                    : `${ton(stats.unforwardedPremium)} GRAM booked and not accepted — retry it by its n`,
         },
     ];
     record({ phase: '7', op: 'unforwarded-premium', ok: results.every((r) => r.ok), asserts: fromAsserts(results) });
@@ -177,7 +177,7 @@ async function cmdSweepOps(c: Contracts, handle: string) {
     const before = await snapshot(c);
     const sweepBefore = await retry(() => c.ledger.getOpsSweep(), 'getOpsSweep');
     const totalsBefore = await retry(() => c.ledger.getOperatorTotals(), 'getOperatorTotals');
-    console.log(`sweepable ${ton(sweepBefore.sweepable)} TON (reserve ${ton(sweepBefore.reserve)})`);
+    console.log(`sweepable ${ton(sweepBefore.sweepable)} GRAM (reserve ${ton(sweepBefore.reserve)})`);
     // Decided on the read, not after the send (CLAUDE.md): with nothing above
     // `liability + OPS_RESERVE` the sweep moves nothing, so sending it is gas for no proof.
     if (sweepBefore.sweepable === 0n) {

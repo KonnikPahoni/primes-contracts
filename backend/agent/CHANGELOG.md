@@ -9,7 +9,7 @@ testnet-only, so the major version stays at 0 while contract wire formats can st
 ### Added
 
 - **`name({ n, text })`** (`DECISIONS.md` D-212): the current owner of any minted number names
-  it for TON, sent to the collection with `buildNameNumberMessage`. The fee is read live —
+  it for GRAM, sent to the collection with `buildNameNumberMessage`. The fee is read live —
   `getNaming()`'s `nameFee` for the first naming, `renameFee` after — and the call refuses
   before signing unless this wallet is item(n)'s `getNamer()`. `chain.namingFees`,
   `chain.trophyAnnotationCount`, `chain.trophyRenameFee` and an optional
@@ -17,7 +17,7 @@ testnet-only, so the major version stays at 0 while contract wire formats can st
 
 ### Removed
 
-- **BREAKING: `read.sink()`** (D-212). Naming is paid in TON and `primes_sink.tolk` is deleted,
+- **BREAKING: `read.sink()`** (D-212). Naming is paid in GRAM and `primes_sink.tolk` is deleted,
   so read-proxy's `/sink` is gone.
 
 - **BREAKING: generators and constellations are deleted** (`DECISIONS.md` D-202,
@@ -40,14 +40,14 @@ testnet-only, so the major version stays at 0 while contract wire formats can st
 
 - **BREAKING: `read.name(n)` and `annotate()` follow D-212.** `name()` returns the CURRENT
   OWNER as `namer` (every number, composites included) plus `nameFee`, `renameFee` and
-  `nextFee` (bigint nanoTON; `nextFee` null while unminted), and `trophy` for a primorial.
+  `nextFee` (bigint nanoGRAM; `nextFee` null while unminted), and `trophy` for a primorial.
   `chain.namer` / `chain.annotationCount` read item(n) for every n, primorials included.
   `annotate()` is the era trophy alone: the first engraving free, later ones carry the
   registrar's live `getTrophyRenameFee()`.
 
 - **BREAKING: `mint({ invites })` takes an UNSIGNED address list** (`DECISIONS.md` D-202).
   `MintInvites` is `{ count, addresses: [{ slot, address }] }` with `count` 0..3 and slots
-  1..3 (was 0..5, plus a 128-hex `signature`). Each addressed slot is a plain 0.1 TON transfer
+  1..3 (was 0..5, plus a 128-hex `signature`). Each addressed slot is a plain 0.1 GRAM transfer
   the ledger sends with a fixed comment; there is no operator signature, and the minter may
   put any **workchain-0** address in a slot — the ledger refuses the whole mint (236,
   `invite_bad_workchain`) for a slot anywhere else, so `mint()` throws before sending (audit
@@ -77,7 +77,7 @@ testnet-only, so the major version stays at 0 while contract wire formats can st
   `sendGenerator({ ..., registrant? })` and `expireBuild(target, registrant?)` take an optional
   one and default to this wallet's own build. Every body (`prove_input`, `close_build`,
   `expire_build`, the generator's forward payload) now carries the registrant after `target`.
-- **`openBuild` sends to the LEDGER, with 0.04 TON + margin** (`DECISIONS.md` D-192,
+- **`openBuild` sends to the LEDGER, with 0.04 GRAM + margin** (`DECISIONS.md` D-192,
   `GAUNTLET.md` V27.1). The ledger relays it to the registrar with the sender as registrant
   and its real head, so a build's expiry is stamped from the real head. The registrar now
   refuses an open sent to it directly (`wrong_sender`, 100). Same method signature.

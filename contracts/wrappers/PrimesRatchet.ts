@@ -62,7 +62,7 @@ export type RatchetConfig = {
     tonstakersPool?: Address;
     /** DeDust's tsTON JETTON vault — leg 2's transfer destination. */
     dedustTstonVault?: Address;
-    /** DeDust's tsTON/TON pool — leg 2's `SwapStep.pool_addr`. */
+    /** DeDust's tsTON/GRAM pool — leg 2's `SwapStep.pool_addr`. */
     dedustTstonPool?: Address;
     /** The LP-governed treasury — `harvest()`'s only destination. */
     treasuryAddr?: Address;
@@ -79,10 +79,10 @@ export type RatchetConfig = {
     /**
      * D-153 — the same idea on the other axis. `clockDivisor` scales what this
      * contract enforces in SECONDS; this scales the one thing it enforces in
-     * TON, `STAKE_MIN` (500). 1 is mainnet and the identity.
+     * GRAM, `STAKE_MIN` (50). 1 is mainnet and the identity.
      *
      * Its reason for existing is arithmetic: the liquid reserve is 20% of the
-     * obligation, so `stake` is illegal until `pending` exceeds 625 TON, and on
+     * obligation, so `stake` is illegal until `pending` exceeds 62.5 GRAM, and on
      * testnet the only permissionless route into `pending` is a `donate_floor`
      * that §8 makes irreversible. Genesis reads it from `PRIMES_STAKE_MIN_TON`
      * — the MINIMUM an operator wants, not the divisor — exactly as the clock is
@@ -92,8 +92,8 @@ export type RatchetConfig = {
 };
 
 /**
- * D-153. `STAKE_MIN` is 500 TON and a `uint16` holds the divisor, so the
- * reachable range is a minimum of 500 TON down to ~0.0076 TON. Refuses 0 for
+ * D-153. `STAKE_MIN` is 50 GRAM and a `uint16` holds the divisor, so the
+ * reachable range is a minimum of 50 GRAM down to ~0.00076 GRAM. Refuses 0 for
  * the same reason `clockDivisorOf` does: the contract reads 0 as 1, so an
  * accidental 0 is a lie about the gate rather than a fast one.
  */
@@ -173,6 +173,7 @@ function stakingCell(c: RatchetConfig): Cell {
         .storeCoins(0) // recoveredExit — audit H2 nit 3: a recovered exit's tranche, whose late reply is not new tsTON
         .storeAddress(c.genesisScriptAddr) // tstonWalletAddr placeholder
         .storeUint(0, 8) // tstonWalletSet
+        .storeRef(beginCell().storeUint(0, 2).storeUint(0, 64).endCell()) // stakeRefund — addr_none, no open stake
         .endCell();
     return beginCell()
         .storeCoins(0) // stakedCost
@@ -511,7 +512,7 @@ export class PrimesRatchet implements Contract {
         };
     }
 
-    /** The vault leg 2's TON output is accepted from (deploy data). */
+    /** The vault leg 2's GRAM output is accepted from (deploy data). */
     async getTstonPayoutVault(provider: ContractProvider) {
         return (await provider.get('getTstonPayoutVault', [])).stack.readAddress();
     }

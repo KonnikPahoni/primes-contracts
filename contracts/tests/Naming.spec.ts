@@ -1,4 +1,4 @@
-// TON PRIMES — D-212: the owner names a number once for a TON fee; a rename costs more.
+// TON PRIMES — D-212: the owner names a number once for a GRAM fee; a rename costs more.
 // CONCEPT.md §4.7.1, §5 (a pure floor step); NAMING_PLAN.md §2 point 5.
 //
 // The route: owner -> collection `name_number` -> item(n) `item_name` (checks the owner
@@ -24,7 +24,7 @@ import { NAME_RELAY_GAS_NANOTON } from '../../shared/messages';
 const text = (t: string) => beginCell().storeStringTail(t).endCell();
 const MARGIN = toNano('0.05');
 
-describe('D-212 — naming a number for TON (§4.7.1)', () => {
+describe('D-212 — naming a number for GRAM (§4.7.1)', () => {
     let s: Stack;
     let alice: SandboxContract<TreasuryContract>;
     let bob: SandboxContract<TreasuryContract>;
@@ -88,7 +88,7 @@ describe('D-212 — naming a number for TON (§4.7.1)', () => {
         expect(await balanceOf(s.collection.address)).toBeLessThanOrEqual(collBal0);
         // Trap 3: the item paid nothing out of its own balance.
         expect(await balanceOf(it_.address)).toBeGreaterThanOrEqual(itemBal0 - toNano('0.001'));
-        // The extra 1 TON came home: alice is out the fee plus gas, not the fee plus 1 TON.
+        // The extra 1 GRAM came home: alice is out the fee plus gas, not the fee plus 1 GRAM.
         expect(alice0 - (await alice.getBalance())).toBeLessThan(nameFee + toNano('0.1'));
     });
 
@@ -193,7 +193,7 @@ describe('D-212 — naming a number for TON (§4.7.1)', () => {
         expect(a.text.beginParse().loadStringTail()).toBe('bob now');
     });
 
-    it('a PRIME names the same way, and its item balance (the owed TON) is untouched', async () => {
+    it('a PRIME names the same way, and its item balance (the owed GRAM) is untouched', async () => {
         await s.acquire(alice, 2n);
         const it_ = await item(2n);
         expect((await it_.getNumberData()).owner.equals(alice.address)).toBe(true);

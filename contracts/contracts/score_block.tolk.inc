@@ -51,8 +51,8 @@
 // `BIT_PERFECT` at 40.
 //
 // THE CAP IS THE CEILING. `SCORE_MAX = 87` because
-// `MINT_PRICE · 2^(87/10) = 415.87 TON` — the highest price this game can ask
-// for anything, and it lands just under owner answer 9's 420 TON ceiling. (The
+// `MINT_PRICE · 2^(87/10) = 415.87 GRAM` — the highest price this game can ask
+// for anything, and it lands just under owner answer 9's 420 GRAM ceiling. (The
 // plan's §1.1 says 420.4; that is 2^8.716, and the arithmetic is wrong. The
 // conclusion is not: 87 is the largest clamp whose ladder stays under 420, and
 // 88 would reach 445.7.) There is no other ceiling anywhere — the same
@@ -344,7 +344,7 @@ fun isFactorialN(n: int): bool {
 //
 // A 65-entry TABLE was tried for Fibonacci and is MEASURABLY WORSE: 65
 // comparisons against 257-bit literals cost more in TVM than the roots, and
-// pushed the primorial mint from 0.0998 to 0.1000 TON, over §4.1's gas & ops
+// pushed the primorial mint from 0.0998 to 0.1000 GRAM, over §4.1's gas & ops
 // line.
 fun fibLucasOf(n: int): (bool, bool) {
     if (n < 1) { return (false, false); }
@@ -455,7 +455,7 @@ fun isLandmarkPrime(n: int): bool {
 // count `d` the caller already walked rather than a flat `||` chain. That last
 // point is not a style note — measured, the two tables below cost 1,311,067
 // nanoton more as flat chains, 61% of this whole batch's bill against §4.1's
-// gas & ops line (0.10 TON when measured; 0.20 since D-117).
+// gas & ops line (0.10 GRAM when measured; 0.20 since D-117).
 // ---------------------------------------------------------------------------
 
 // Sum of each digit raised to the digit COUNT. Early-exits the moment the
@@ -973,9 +973,9 @@ fun factorSummaryOf(n: int, factors: map<uint8, FactorEntry>): (int, int, int, i
 // per exponent step. Calling `scoreOfFrom` there instead would walk the
 // dictionary a SECOND time, which measured at ~1,300 gas on the worst-case mint
 // and was not affordable when measured: §4.1's gas & ops line was a fixed 0.10
-// TON with the invite fan-out (D-101) at 99.79 of it. D-117 (2026-09-22) resized
-// the line to the measured worst case (0.20 TON), which is what this walk must
-// still fit inside; the headroom there is ~0.014 TON, not a budget for a second walk.
+// GRAM with the invite fan-out (D-101) at 99.79 of it. D-117 (2026-09-22) resized
+// the line to the measured worst case (0.20 GRAM), which is what this walk must
+// still fit inside; the headroom there is ~0.014 GRAM, not a budget for a second walk.
 @inline
 fun scoreOfWithSummary(n: int, omega: int, distinct: int, maxExponent: int, minExponent: int,
                        expGcd: int, maxPrime: int, sigma: int, korselt: int,

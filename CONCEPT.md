@@ -19,11 +19,11 @@ lane restated against D-45/D-88/D-90, and §11's status table and entries brough
 ## 1. One-paragraph pitch
 
 TON PRIMES mints the number line. Integers become NFTs: composites are built strictly in
-sequence for a flat 1 TON, and primes are sold on a descending price that comes to rest at the prime's own floor,
-`max(NPV(p)/2, P0(p)/3, MINT_PRICE)` — never below that same 1 TON. Primes are the aristocracy: they collect tribute from every composite they
+sequence for a flat 1 GRAM, and primes are sold on a descending price that comes to rest at the prime's own floor,
+`max(NPV(p)/2, P0(p)/3, MINT_PRICE)` — never below that same 1 GRAM. Primes are the aristocracy: they collect tribute from every composite they
 divide.
 Every NFT is also a referral key — `r42` pays the current owner of number 42 — so every
-piece of the number line is a cash-flowing identity asset. Every mint commits TON to the
+piece of the number line is a cash-flowing identity asset. Every mint commits GRAM to the
 **ratchet** — a contract with no withdraw path, which buys PRIMES **only when the market
 trades at or below the protocol's own floor price** — and pays composite minters a rebate
 in PRIMES jetton whose size grows the longer nobody mints, mathematically capped so that
@@ -34,7 +34,7 @@ the ratchet cannot inflate — the asset's perpetual tribute claim, a name on th
 and rank. Growth is a contract mechanic rather than a marketing budget: any mint can name a
 **beneficiary** (§4.5), and a gift to an address the ledger has never seen credits the
 giver a **recruit** — a tier on §4.7's ladder, which raises the rebate ceiling on their
-own future mints. It pays no TON, so there is no line in the split for it and no payer who
+own future mints. It pays no GRAM, so there is no line in the split for it and no payer who
 can end up underwater. The contract is the whitepaper: the target audience is
 TON-technical people, and
 the marketing is a set of on-chain puzzles ("how does it work?") whose bounties are paid
@@ -88,7 +88,7 @@ not a hedge, and §5.4 carries the table it is read off.
 
    **A further line, smaller and conditional, was added by `DECISIONS.md` D-20 and is
    disclosed here rather than in a footnote: the tribute share of a prime that is still
-   unsold is paid to the treasury** (§4.1, §6 point 2). It is TON out of the fixed 10%
+   unsold is paid to the treasury** (§4.1, §6 point 2). It is GRAM out of the fixed 10%
    tribute line, it issues no PRIMES, it touches none of the four pools named above, and
    it terminates permanently the moment that prime is bought. It is a fee under the letter
    of this principle, and it is **the one line in this document where "an unresolvable
@@ -100,24 +100,24 @@ not a hedge, and §5.4 carries the table it is read off.
    dashboard that a reader can't recompute.
 6. **Recruitment pays only on a full mint's spend.** Every reward for bringing someone
    in — the §4.7 rank tier, and the newcomer's own raised rebate ceiling (§4.6) — triggers
-   on a full 1 TON mint, never on a drop, a claim, or a wallet count. This is what makes
+   on a full 1 GRAM mint, never on a drop, a claim, or a wallet count. This is what makes
    the recruitment layer sybil-closed rather than sybil-resistant: farming it means
    paying the full mint price per fresh address, which is indistinguishable from being a
    customer. *(This principle read "pays only on the recruit's own spend", and listed
    "annuity, rank, purse release", until `DECISIONS.md` D-106 deleted patron mode. The
    annuity and the purse are gone; what moved is the trigger, from the newcomer's own
-   first mint to the §4.5 gift mint that buys their number — still a full 1 TON mint, so
+   first mint to the §4.5 gift mint that buys their number — still a full 1 GRAM mint, so
    the sybil-closure argument is unchanged and the reward is now a `k_max` tier rather
-   than TON.)* *(`DECISIONS.md` D-202 amends the price, not the trigger: the gift mint
+   than GRAM.)* *(`DECISIONS.md` D-202 amends the price, not the trigger: the gift mint
    may send §4.1's three invite transfers to the gifter's own wallets, so a fresh address
-   costs 0.70 TON net. It is still a full mint, and the reward is still no TON — §12.)*
-7. **The number's price is 1 TON. What is ever priced above that is *earliness*, never
+   costs 0.70 GRAM net. It is still a full mint, and the reward is still no GRAM — §12.)*
+7. **The number's price is 1 GRAM. What is ever priced above that is *earliness*, never
    the number.** The rule has two halves because the line has two classes, and since
    `DECISIONS.md` D-20 they are reached by different routes:
 
    - **Composites arrive at the head and mint flat.** Minting is strictly sequential over
      composites (and Unity), so every composite arrives at the head exactly once, and when
-     it does anyone holding its factorization mints it for a flat 1 TON — no auction, no
+     it does anyone holding its factorization mints it for a flat 1 GRAM — no auction, no
      gate, no exception, at any point on the line.
    - **Primes are never at the head at all** (§6 point 1). A prime opens as a descending
      buy-now lot the moment it is next among unbuilt numbers, and **its price decays to that
@@ -126,10 +126,10 @@ not a hedge, and §5.4 carries the table it is read off.
      D-99 — there are no tiers; a memorable prime opens higher on its score and its resting
      price follows through the `P0(p) / 3` term). Where the finite `NPV` table has an entry
      the lot opens at `1.5 · NPV(p)` off the same table, so that is a 3× fall and no
-     further; where it misses, `P0(p) / 3` keeps the same 3× fall off the score's ladder. **A small prime therefore rests well above 1 TON** — it earns tribute on every
+     further; where it misses, `P0(p) / 3` keeps the same 3× fall off the score's ladder. **A small prime therefore rests well above 1 GRAM** — it earns tribute on every
      multiple, forever, and the resting price is half of what that is modelled to be worth;
-     only a prime past the finite `NPV` table that opens under 3 TON rests at exactly the
-     1 TON a composite costs.
+     only a prime past the finite `NPV` table that opens under 3 GRAM rests at exactly the
+     1 GRAM a composite costs.
      Either way the buyer pays that resting price plus the `RES_GAS` that funds the sale's
      own settlement (§4.4 point 1b). It never rises, it never expires, and nobody is ever
      outbid at the floor.
@@ -139,19 +139,19 @@ not a hedge, and §5.4 carries the table it is read off.
    **nobody is ever forced to bid**: waiting is a complete strategy, available to everyone,
    and it is what caps what any of those mechanisms can ever fetch. This is the sentence
    most easily misread as a broken promise, so it is written here rather than left to be
-   inferred: a lot clearing at 128 TON and the price it decays to are not two prices for the
+   inferred: a lot clearing at 128 GRAM and the price it decays to are not two prices for the
    same thing. The bypass is the design, not a leak to be patched (§8), and closing it — by
    gating the head — is what §12 forbids at any price.
 
    **What the bypass is worth, exactly, because D-88 point 1 changed it and the old sentence
-   promised more.** For a **composite** the bypass is the flat 1 TON mint at the head, with
+   promised more.** For a **composite** the bypass is the flat 1 GRAM mint at the head, with
    no exception at any point on the line — including the most memorable composite on it,
    whose score prices only what an *early* buyer pays and changes nothing about its turn
    (D-88 point 2, D-99: the head-advance walk's last special-composite skip is deleted).
-   For a **prime** the bypass is that prime's resting price, not 1 TON: patience earns a 3×
-   discount off the opening price, not an unconditional 1 TON. D-88 **deleted** the older
-   invariant that no lane may terminate above 1 TON, and with it the reading that every
-   number is eventually a 1 TON number. What survives is that the terminus is **write-once
+   For a **prime** the bypass is that prime's resting price, not 1 GRAM: patience earns a 3×
+   discount off the opening price, not an unconditional 1 GRAM. D-88 **deleted** the older
+   invariant that no lane may terminate above 1 GRAM, and with it the reading that every
+   number is eventually a 1 GRAM number. What survives is that the terminus is **write-once
    from `n`** — proposed by no message, updated by no handler — and that the head never
    waits on a prime, which is what §12's entry rests on now.
 
@@ -165,7 +165,7 @@ not a hedge, and §5.4 carries the table it is read off.
   falls to the ordinary mint price and stays there. So the number line is still consumed
   in order and every integer is still minted exactly once — a prime simply reaches its
   buyer through a price rather than through a queue position (`DECISIONS.md` D-20).
-- Flat mint price **P = 1 TON, all-in, forever** — the minter sends exactly 1 TON and the
+- Flat mint price **P = 1 GRAM, all-in, forever** — the minter sends exactly 1 GRAM and the
   protocol pays every deploy and message (NFT item, jetton wallet, tribute accounting)
   out of the gas budget in §4.1. No variable gas quote, no refund dance. The NFT does not
   appreciate by mint-price escalation; its value comes from cash flows and
@@ -185,7 +185,7 @@ not a hedge, and §5.4 carries the table it is read off.
   takes the largest step the mechanism can produce (§5.1). The prime minter is paid in
   **rights** instead — a raised rebate ceiling on their next composite mints, prime rank
   (§4.7.1), and the pen on the number they found for as long as they hold it (any owner
-  names a number once for TON, `DECISIONS.md` D-212). The one-line statement
+  names a number once for GRAM, `DECISIONS.md` D-212). The one-line statement
   of the whole asset design: **composites pay you now, primes pay you forever.**
 - **Provable rarity classes**, each verifiable on-chain:
   twin primes, palindromic primes, Mersenne numbers, Sophie Germain primes, perfect
@@ -227,11 +227,11 @@ owner of NFT 42**, resolved on-chain at mint time. Consequences, all deliberate:
 - **Composites earn too.** Only primes collect tribute, but *any* number can earn
   referral income. A composite NFT is a working asset, not a souvenir — its yield is
   exactly the mint flow its owner can route through it.
-- **The rate is 0.10 TON per routed mint, flat, forever, with no `n` term.** §4.1 charges
+- **The rate is 0.10 GRAM per routed mint, flat, forever, with no `n` term.** §4.1 charges
   the referral line at 10% of the mint price at every point on the number line; nothing in
   it decays with `n` or scales with the key's own size. Since D-106 deleted the patron
   line — whose `PATRON_CAP` *did* terminate — it is also **the only conditional leg left**.
-  That makes the key **the only leg of the split that is both paid in TON and entirely
+  That makes the key **the only leg of the split that is both paid in GRAM and entirely
   independent of how far the head has travelled** — the
   cleanest instance of §5.4's rotation in the design, and the composite's answer to the
   prime's perpetual tribute claim. What it is *not* is a yield on the NFT: the key pays for
@@ -293,8 +293,8 @@ the split, so both sides pay for it in proportion.
 
 **And because of that skim, the split is 50/50 of the NET, not of the sale — so the
 realised figure is published rather than quoted.** The three hops cost
-`ROYALTY_FORWARD_GAS` (0.02 TON), taken before the division: at the 5% rate that is 40% of
-the royalty on a 1 TON resale, 4% on a 10 TON one, and negligible above that. §9.1 forbids
+`ROYALTY_FORWARD_GAS` (0.02 GRAM), taken before the division: at the 5% rate that is 40% of
+the royalty on a 1 GRAM resale, 4% on a 10 GRAM one, and negligible above that. §9.1 forbids
 printing a figure a reader cannot recompute, so the collection publishes
 `getRoyaltySplit() -> (toRatchet, toOperator, forwards)` — cumulative, counted at send. The
 realised split is `toRatchet / (toRatchet + toOperator)` and the delivery has cost
@@ -314,7 +314,7 @@ to outlast primary minting by a wide margin; a fee line that scales with *tradin
 than with minting is the one revenue stream that survives the number line slowing down.
 
 The disclosure that has to travel with it, because §2's first principle is that every
-economic claim is contract-verifiable and **this one is not**: TON royalty parameters are
+economic claim is contract-verifiable and **this one is not**: GRAM royalty parameters are
 a marketplace convention, not an enforced transfer tax. A direct wallet-to-wallet transfer
 pays nothing, and a marketplace that chooses to ignore the parameters pays nothing. The
 protocol neither blocks such transfers nor pretends the royalty is guaranteed — a transfer
@@ -325,7 +325,7 @@ in any projection the dashboard publishes.
 
 ### 3.2 Tribute (why primes are valuable)
 
-**Tribute is prime-only.** A flat 10% of every mint is distributed *in TON* to owners of
+**Tribute is prime-only.** A flat 10% of every mint is distributed *in GRAM* to owners of
 **prime** NFTs. Composite NFTs never earn tribute — their return is the rebate (§5),
 referral income (§3.1), rarity, and collectibility.
 
@@ -353,7 +353,7 @@ concentration problem quantified below, and both are pull-settled through the sa
 
 **Divisor weights are `e · √p`, not `e`.** For n = ∏ pᵢ^eᵢ, factor pᵢ takes
 `eᵢ·√pᵢ / Σ eⱼ√pⱼ` of the divisor line. Minting 234 = 2·3²·13 therefore pays the owner of
-13 slightly *more* than the owner of 3 (0.0340 vs 0.0327 TON) and the owner of 2 the least
+13 slightly *more* than the owner of 3 (0.0340 vs 0.0327 GRAM) and the owner of 2 the least
 — where flat exponent weighting paid 2 and 13 the same and gave 3 double. The exponent
 still matters; it is no longer the only thing that does.
 
@@ -442,7 +442,7 @@ tribute line by band, flat weighting vs `√p`:
 **Why the exponent is ½ and not 1.** Weighting by `p` itself flattens income further in
 theory, but there is a hard structural ceiling that makes the extra flattening nearly
 worthless: **p has only `N/p − 1` composite multiples below the horizon and can capture at
-most 100% of each one's line**, so its lifetime income can never exceed `0.10 · N/p` TON.
+most 100% of each one's line**, so its lifetime income can never exceed `0.10 · N/p` GRAM.
 `√p` already spends most of that budget:
 
 | p | multiples @10⁶ | ceiling | flat | **`√p`** | % of ceiling | `p` | % of ceiling |
@@ -486,19 +486,19 @@ comparison is at equal **multiplicative age** — what p has earned once the hea
 | 1,009 | 0.10 | 0.38 | 0.83 | 4.25 | **8.32** |
 | 9,973 | 0.10 | 0.39 | 0.88 | 4.67 | **9.33** |
 
-(TON, `√p` weighting, divisor line only.) **At equal age the ranking inverts: a large prime
-is the better asset.** Prime 9,973 has earned 9.33 TON by the time the head reaches 100× it;
-prime 2 had earned 3.79 TON at the same point in its own life. Break-even against the 1 TON
+(GRAM, `√p` weighting, divisor line only.) **At equal age the ranking inverts: a large prime
+is the better asset.** Prime 9,973 has earned 9.33 GRAM by the time the head reaches 100× it;
+prime 2 had earned 3.79 GRAM at the same point in its own life. Break-even against the 1 GRAM
 mint price arrives at head ≈ **12p** for large primes against ≈ **20p** for the genesis
 ones. The reason is the same ceiling that limits them: a large prime *dominates* the
 weight of nearly every multiple it appears in, so it takes 60–98% of that mint's divisor
 line, where prime 2 splits its multiples with everyone.
 
-So the deficit is **discounting, not unfairness**. Prime 9,973's 9.33 TON is real and
+So the deficit is **discounting, not unfairness**. Prime 9,973's 9.33 GRAM is real and
 arrives over ~110,000 further mints; prime 211's arrives over ~4,700. What a large prime
 lacks is not lifetime income but *time*, and the protocol pays for exactly that, in cash,
 at mint: the `PRIME_UPLIFT` credit (§5.1) is spendable on the minter's next five composite
-mints, and its value **rises** with n — 0.138 TON at n ≤ 1,000 to 0.165 TON at n = 10⁶ — as
+mints, and its value **rises** with n — 0.138 GRAM at n ≤ 1,000 to 0.165 GRAM at n = 10⁶ — as
 `k_max(n)` decays away from the fixed `K_CEIL` and opens headroom. **This is one instance
 of a general property, and §5.4 states it in general:** every leg of the split that is not
 the rebate is `n`-invariant, so a decaying `k_max(n)` rotates each mint's value toward the
@@ -550,10 +550,10 @@ reachable, and is the ω any bound must admit. Twelve recipients is far under TO
 
 **But cost is not monotone in ω, and that is the part worth carrying away.** Measured on
 the deployed ledger (`GAUNTLET.md` D6), an ω = 8 mint costs **more** than an ω = 12 one —
-0.0264 TON against 0.0242 — because the fee depends on the magnitudes of the primes, the
+0.0264 GRAM against 0.0242 — because the fee depends on the magnitudes of the primes, the
 `s = ⌊√p⌋` arithmetic and dictionary depth, not merely on how many factors there are. The
-worst protocol-side cost measured across the fan-out range is **0.0264 TON against the
-0.20 TON gas & ops line** (`DECISIONS.md` D-117), 7.6× headroom. So fan-out cost cannot be extrapolated from ω
+worst protocol-side cost measured across the fan-out range is **0.0264 GRAM against the
+0.20 GRAM gas & ops line** (`DECISIONS.md` D-117), 7.6× headroom. So fan-out cost cannot be extrapolated from ω
 alone: ω bounds the *number of recipients*, and a separate measurement bounds the *cost*.
 Treating "≤ N recipients" as a cost bound is exactly the mistake this paragraph used to
 invite.
@@ -578,8 +578,8 @@ distinction matters to anyone sizing a mint:
 
 1. **At mint**, the **ledger** (§3.4) sends **one `credit_tribute` message per cited
    factor** — up to ω(n) ≤ 12 of them (see §3.2's bound) — to that prime's own NFT item,
-   at `CREDIT_TRIBUTE_VALUE` = 0.008 TON of gas each. The message carries the share as a
-   **number**, not as value: **the TON stays custodied on the ledger** and is declared in
+   at `CREDIT_TRIBUTE_VALUE` = 0.008 GRAM of gas each. The message carries the share as a
+   **number**, not as value: **the GRAM stays custodied on the ledger** and is declared in
    its `tributeOwed` meter, which is what keeps `sweep_ops` from treating player money as
    gas & ops surplus. The `owed` balance therefore lives on the **item**
    (`primes_item.tolk`'s `getOwed()`), not in an `owed[p]` dictionary on the ledger.
@@ -610,8 +610,8 @@ distinction matters to anyone sizing a mint:
    with the forecast never presented as a balance.
 
 The alternative — pushing each share into the prime's own NFT contract so the balance
-travels with the NFT — was rejected on dust economics: a 7-factor mint splits 0.10 TON
-into ~0.014 TON shares against ~0.004–0.006 TON of forward fee plus receiving-contract
+travels with the NFT — was rejected on dust economics: a 7-factor mint splits 0.10 GRAM
+into ~0.014 GRAM shares against ~0.004–0.006 GRAM of forward fee plus receiving-contract
 gas each, skimming 30%+ off tribute, worsening as ω rises.
 
 Storage is the tradeoff that decided where this lives. At n ≈ 10⁶ there are π(10⁶) = 78,498
@@ -655,7 +655,7 @@ uninitialised with its stake bounced back — while `create_vault` itself report
 
 
 The liquid asset. Emitted **only** as mint rebates (§5), at the **floor-donation op**
-(§6 point 3 — anyone may send TON to the ledger and be minted `L` PRIMES per TON against
+(§6 point 3 — anyone may send GRAM to the ledger and be minted `L` PRIMES per GRAM against
 it; this is where the DeDust pool's PRIMES side comes from), from the **bounty vault** —
 a single genesis-minted, contract-held allocation that funds §9.6's score rebates (the
 `puzzles` track, D-47/D-99; it absorbed the constellation discovery-bounty track when
@@ -671,7 +671,7 @@ named, get-method-exposed contract holdings.
 **The vest moves custody, not economics.** `S` counts the lock's allocation at genesis;
 `T` never sees it. So `p_f = T/S` is
 bit-identical to an unvested genesis — the lock changes *who can sell and when*, and
-nothing else. It holds a jetton wallet and zero TON liability, so it does not appear in the
+nothing else. It holds a jetton wallet and zero GRAM liability, so it does not appear in the
 §3.4 solvency check at all. Its own reading is `getVesting` on the lock, and the same
 one-get-call check the vault gets applies here too: `totalAmount − releasedAmount` must
 equal the lock's own jetton wallet balance, which trusts none of the lock's arithmetic.
@@ -680,7 +680,7 @@ equal the lock's own jetton wallet balance, which trusts none of the lock's arit
 already priced into the floor from day one; paying a bounty moves tokens, never `p_f`.
 This is the same conservative direction as the burn accounting in §5 — the floor
 understates, never overstates. The vault is **15,600,000 PRIMES** at a nominal `T₀ = 200
-TON` and `L = 10,000` (D-46: `T₀` sizes supply only — it is not deposited anywhere) —
+GRAM` and `L = 10,000` (D-46: `T₀` sizes supply only — it is not deposited anywhere) —
 `T₀·L·7.8`, and therefore 78/83 (94.0%) of `S₀ = 16,600,000` at any nominal-seed size
 (§6 point 3; `DECISIONS.md` D-204 raised D-43's 500% to 780% alongside a larger donation and
 gave the whole 5,600,000 increase to §9.4's contract-fact quests. D-43's 10,000,000 was up
@@ -721,19 +721,19 @@ dashboard that renders the second as the first has invented a measurement.
 
 **A bounty the vault owes but has not delivered is a fifth number, and it is published
 too** (`getDeferredPayouts` on the vault; `DECISIONS.md` D-129). The vault pays every
-bounty by TEP-74 transfer and spends 0.1 TON of its own TON balance on each hop, so a
-vault that is short of TON cannot deliver — and because the ledger's leg is deliberately
+bounty by TEP-74 transfer and spends 0.1 GRAM of its own GRAM balance on each hop, so a
+vault that is short of GRAM cannot deliver — and because the ledger's leg is deliberately
 non-bouncing (a vault failure must never unwind the mint that triggered it), a payout that
 fails there fails in total silence. Each trigger is one-shot, so silence meant permanent
 forfeit. The vault therefore checks its balance before it pays: when it cannot afford the
 hop it writes the payout to its retry journal and sends nothing, leaving the era or the
 number UNPAID rather than marked paid, so anyone may finish it later with a permissionless
-`retry_bounty_payout` — which carries its own hop (0.15 TON attached, the same as a
+`retry_bounty_payout` — which carries its own hop (0.15 GRAM attached, the same as a
 discovery claim), so a repeated retry never spends the vault's balance. `getVaultPayouts` still counts only what has actually left — a
 deferred bounty is a liability, not circulating supply, and netting the two would report
 tokens as in circulation that are still in the vault.
 
-Running short of PRIMES is different from running short of TON, because nothing refills
+Running short of PRIMES is different from running short of GRAM, because nothing refills
 the vault: genesis funds it once. So the vault carries its genesis funding as deploy data
 (`getVaultFunded`), and an era bounty or number rebate that `funded − paid` cannot cover is
 refused before anything is sent — no journal row, no bounce, the era or number left
@@ -745,20 +745,20 @@ not this figure, is still what the dashboard shows.
 
 Earlier drafts referred throughout to "the bank," a word that was never defined and that
 turned out to be doing four unrelated jobs at once. This section names the components,
-says which TON each one holds and whose it is, and retires the word.
+says which GRAM each one holds and whose it is, and retires the word.
 
-| Component | TON it holds | Whose it is | The only ways TON leaves |
+| Component | GRAM it holds | Whose it is | The only ways GRAM leaves |
 |---|---|---|---|
 | **Splitter** — mint entry point: proof check, head advance, the §4.1 split | none (in-flight only) | — | the six split lines, atomically |
 | **Ledger** — `T`, `S`, `p_f`, `div_acc`, the unsold-prime rows (§3.2.1), all get-methods | accrued tribute | the prime owners' | tribute claim (§3.2.1), signed-voucher claim (§9.5) |
 | **Ratchet** — `pending`, `flush()`, swap, burn, the staked reserve (§4.3.2) | protocol backing | **nobody's** | `flush()` at contract-computed size and price (§4.3.1), and the §4.3.2 legs to the staking pool — every one to a venue address or the treasury, every amount computed here |
 | **Market** — one price-discovery contract for every lane: the ascending lot lane and the per-prime descending lane (§4.4, §6) | standing bids on open lots | the bidders', until the lot closes | refund to an outbid bidder, settlement/premium to the ledger |
-| **Collection + items** — TEP-62; per prime `owed`, the dividend stamp `entry[p]`, the forfeit counter; every number's name, written by its owner for TON (D-188, D-212) | none — a naming fee passes through to the ledger in the same transaction | — | the fee to the ledger's floor step, a refund to the payer |
-| **Jetton minter + bounty vault** | none | — | PRIMES only, never TON (§3.3) |
+| **Collection + items** — TEP-62; per prime `owed`, the dividend stamp `entry[p]`, the forfeit counter; every number's name, written by its owner for GRAM (D-188, D-212) | none — a naming fee passes through to the ledger in the same transaction | — | the fee to the ledger's floor step, a refund to the payer |
+| **Jetton minter + bounty vault** | none | — | PRIMES only, never GRAM (§3.3) |
 | **Registrar** — the eight era trophies (§4.7) and their engravings | none | — | a re-engraving's fee to the collection, a refund to the payer |
-| **Treasury** — the governed pot, LP custody for the vote, and the source of §5.3's staking budget (§5.5, D-100, D-168) | §4.1's 5% line on every mint (D-152) + 58% of the unsold-prime forfeits (D-166) | protocol revenue, under the LP electorate's control | a passed proposal, or nothing — `distribute()` sends PRIMES, never TON |
+| **Treasury** — the governed pot, LP custody for the vote, and the source of §5.3's staking budget (§5.5, D-100, D-168) | §4.1's 5% line on every mint (D-152) + 58% of the unsold-prime forfeits (D-166) | protocol revenue, under the LP electorate's control | a passed proposal, or nothing — `distribute()` sends PRIMES, never GRAM |
 | **Position child** — one per depositing wallet, that wallet's LP positions (§5.5.3) | none | — | — |
-| **Stake master** — PRIMES staking: principal, the reward stream, the accumulator (§5.3, D-168) | none — it owes PRIMES, not TON | — | — |
+| **Stake master** — PRIMES staking: principal, the reward stream, the accumulator (§5.3, D-168) | none — it owes PRIMES, not GRAM | — | — |
 | **Stake position child** — one per staking wallet, that wallet's stake positions (§5.3) | none | — | — |
 | **Minter card** — one per minting wallet: its rebate standing (prime rank, the §5.1 and §4.5 windows, §4.7's recruits and era tally); every head mint passes through the beneficiary's card to the ledger (§4.5, D-191) | none — what passes through is the mint's own value, forwarded | — | — |
 | **Lot block** — one per 256-number block an auction touched beyond the ledger's import frontier: the block's claim and sold-prime bits until the import pulls them in (§4.4, D-196) | none — the openers' forwarded gas, which rides back to the ledger with the words | — | its one reply to the ledger, which deletes it |
@@ -779,7 +779,7 @@ five.
 
 The registrar's only **outbound** messages are a trophy re-engraving's fee, sent on to the
 floor through the collection, and the payer's change (`DECISIONS.md` D-212); it moves no
-protocol TON (its constellation builds and their sends went with `DECISIONS.md` D-202).
+protocol GRAM (its constellation builds and their sends went with `DECISIONS.md` D-202).
 **Nothing it stores grows with the number line** (`DECISIONS.md` D-188 point 6): per-number
 state — a number's name — lives on the per-number item that already exists,
 as `owed` does, and the prime rank is on each wallet's minter card (§4.5); what remains is
@@ -795,7 +795,7 @@ left is one contract holding lots, counters, config and `headHint`. Wherever thi
 says "the reservation book", read the market; the settled layout is
 `docs/audit/unified-market-layout.md`.
 
-**TWO separate pools of TON exist at all times, with two different owners** (D-90; there were
+**TWO separate pools of GRAM exist at all times, with two different owners** (D-90; there were
 three until the escrow was deleted). `pending` is unwithdrawable protocol backing; `owed` is
 money already promised to specific NFT owners. They are not interchangeable, they do not fail
 together, and **a reader comparing a contract's balance to `get_pending()` will not get a
@@ -806,7 +806,7 @@ for:
 > For each contract, balance ≈ its own declared liability, checkable in one call. The
 > ratchet's balance is `pending` plus a small gas reserve and nothing else.
 
-**§4.3.2 does not add a term to that check, and the reason is where the TON physically is.**
+**§4.3.2 does not add a term to that check, and the reason is where the GRAM physically is.**
 Staked backing has left the ratchet's balance for the Tonstakers pool, so counting it as a
 liability against the balance would make the delta negative for the whole round trip.
 `getSolvency().liability` therefore stays **exactly** `pending`, and `stakedCost` and
@@ -814,7 +814,7 @@ liability against the balance would make the delta negative for the whole round 
 has always been in, for the same reason.
 
 **The third pool is gone rather than smaller, and that is the stronger statement.** Escrow
-was refundable customer money: a won lot became a claim holding 1 TON on a range-partitioned
+was refundable customer money: a won lot became a claim holding 1 GRAM on a range-partitioned
 shard until the head arrived. Because no caller could enumerate the deployed shards, the pool
 total was unreadable, and the market maintained a running aggregate over the shard traffic —
 with an under-report bound published beside it, because the count could drift on a
@@ -830,18 +830,18 @@ A standing bid is what the bidder paid less the gas their own message burned: a 
 no bid's gas is paid out of the market's float (GAUNTLET V22/V23).
 
 **Re-reading "two pools and no third" against a treasury that holds four assets** (D-100,
-§5.5, and tsTON since D-151). The count is about **protocol TON**, and it is unchanged: the treasury holds none of
-it. `pending` is on the ratchet, `owed` is on the ledger, and the treasury's TON is fee
+§5.5, and tsTON since D-151). The count is about **protocol GRAM**, and it is unchanged: the treasury holds none of
+it. `pending` is on the ratchet, `owed` is on the ledger, and the treasury's GRAM is fee
 revenue — §4.1's 5% line on every mint (`DECISIONS.md` D-152), 58% of the unsold-prime forfeits (D-166), plus, since D-114, half of
 every auction premium (§4.4) — which nobody is owed and which can leave only by a passed
 proposal. It is not refundable customer money, so D-90's stronger sentence survives
-verbatim: **no contract in this system holds refundable customer TON at all.**
+verbatim: **no contract in this system holds refundable customer GRAM at all.**
 
-**Is the treasury part of the balance-versus-declared-liability check? Not on the TON row,
+**Is the treasury part of the balance-versus-declared-liability check? Not on the GRAM row,
 and it brings two rows of its own.** Working it out rather than asserting it:
 
-- **TON: no row, because there is no declared TON liability to compare a balance against.**
-  The treasury's TON is nobody's claim — no depositor can ask for it and no get-method
+- **GRAM: no row, because there is no declared GRAM liability to compare a balance against.**
+  The treasury's GRAM is nobody's claim — no depositor can ask for it and no get-method
   declares an obligation over it. A zero row would be worse than no row: it would invite a
   reader to start summing an unrelated balance into the §3.4 aggregate.
 - **PRIMES: no row on the treasury since `DECISIONS.md` D-168, and the row moved to the stake
@@ -850,7 +850,7 @@ and it brings two rows of its own.** Working it out rather than asserting it:
   so it declares no PRIMES liability. **The stake contract carries that shape instead**:
   its PRIMES wallet ≥ `lockedTotal + streamRemaining + unclaimedTotal` (ST-1,
   `getStakeSolvency`), checkable in one get-call, and a shortfall is a stop-the-line reading
-  rather than a drift. It owes PRIMES and holds no TON, so it is **not a pool of TON** and
+  rather than a drift. It owes PRIMES and holds no GRAM, so it is **not a pool of GRAM** and
   leaves "two pools and no third" exactly as it was.
 - **LP: a row, and it is a genuine custody relationship this system did not have before.**
   The treasury holds *other people's* LP receipts — and, since `DECISIONS.md` D-167, only
@@ -869,12 +869,12 @@ matches its own declared liability, in every asset it holds** — and for the tr
 four assets and one liability (the depositors' LP); the stake contract adds one PRIMES
 liability of its own (ST-1). The fourth, tsTON, arrives from §4.3.2's `harvest()` and
 declares no liability at all: nobody is owed it, and it leaves only by a passed proposal like
-the TON beside it.
+the GRAM beside it.
 
 **Why not "bank."** Three independent reasons, any one sufficient:
 
 - **It claims the opposite of what the contract does.** A bank takes custody on a promise
-  to return; every TON path here is a formula with no discretion and no withdraw
+  to return; every GRAM path here is a formula with no discretion and no withdraw
   function. §5 was already forced to write *"not a deposit"* — the document was defending
   against the connotations of its own chosen word.
 - **It hands §12's perception risk a free premise.** "Where does the money in the bank
@@ -920,13 +920,13 @@ kept so older citations resolve; nothing else lives here.
 
 ## 4. The core loop
 
-1. A player acquires a number for 1 TON all-in, optionally with a referral key `rN`. Two
+1. A player acquires a number for 1 GRAM all-in, optionally with a referral key `rN`. Two
    routes, and which one applies is decided by the number rather than by the player:
    **the next composite at the head** is minted directly by submitting its factorization,
    or **a prime** is bought off its standing descending lot at whatever the price has
    decayed to — its resting price `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` at the bottom, never
-   below 1 TON, plus `RES_GAS` (§4.4 point 1b, §6 point 1).
-2. The 1 TON is split instantly and transparently (§4.1). Whatever survives every other
+   below 1 GRAM, plus `RES_GAS` (§4.4 point 1b, §6 point 1).
+2. The 1 GRAM is split instantly and transparently (§4.1). Whatever survives every other
    line — tribute, referral, treasury, gas — is the pool injection.
 3. **If the number is composite**, the player receives the current rebate in PRIMES (§5),
    whose floor-value is a fraction k(t) < 1 of that surviving injection, and the rebate
@@ -940,7 +940,7 @@ kept so older citations resolve; nothing else lives here.
 **The number line decides how often a prime appears** — roughly one in every ln(n) numbers
 — and that is the game's natural rhythm: a continuous stream of liquid, clock-driven
 composite mints at the head, punctuated by a prime lot opening beside it, priced on rarity,
-falling toward 1 TON, and paying its buyer nothing today and everything later. Since
+falling toward 1 GRAM, and paying its buyer nothing today and everything later. Since
 `DECISIONS.md` D-20 the two run in parallel rather than in alternation: the head does not
 wait for the prime, and the prime does not wait for the head.
 
@@ -953,23 +953,23 @@ this line depends on which branch was taken.
 
 Five lines are deducted first — three fixed, two conditional; **the pool injection β is
 the residual**, not an independently chosen constant. This is what makes the rebate cap in
-§5 exactly computable on-chain from real TON rather than from a hardcoded fraction.
+§5 exactly computable on-chain from real GRAM rather than from a hardcoded fraction.
 
 | Line | Share | Destination | Purpose |
 |------|------:|-------------|---------|
 | Tribute | **10%** always | 80% to the minted number's prime-factor owners weighted `e·√p`, 20% split flat across all minted primes (§3.2) | Makes primes cash-flowing assets |
 | Referral | **10%** if a valid key is set, else → pool | Current owner of NFT #key (§3.1) | Distribution incentive; makes every NFT a yield asset; documented self-referral discount |
 | Treasury | **5%** | The **governed treasury contract** (`ConfigA.feeDests.treasuryAddr`, §5.5) | Protocol revenue, spendable only by a passed proposal or, for its PRIMES, by `distribute()` to §5.3's stakers (D-168). This row has been named twice: D-100 point 6 renamed it ~~"Treasury 5% · Owner"~~ → "Operator 5%" on the reading that the line was the team's fee, and **D-152 reverses that reading and the destination with it** — the recurring per-mint fee is protocol revenue, so it lands where nobody can spend it unilaterally. The operator's only remaining claim on a mint is §6 point 2's forfeit remainder (42% since D-166); the gas & ops surplus is swept to the ratchet pool since D-117 |
-| Gas & ops | **20%** (derived, `DECISIONS.md` D-117; 10% until then) | Deploys, forward fees, primality gas subsidy, `owed` storage rent (flush gas left this line with D-146 — the caller pays it, §4.3); **the surplus over a standing reserve is swept back to the ratchet pool**, emission-free (it swept to the operator until D-117). Reservation settlement is **not** on this line — it is funded by `RES_GAS` (§4.4) | Keeps the all-in 1 TON solvent; what it does not spend raises the floor |
-| Invite transfers | **`count` × 0.1 TON**, `count` ∈ 0..3 set by the minter, unspent slots → pool | One plain, non-bounceable TON transfer per address the minter names, sent inside the mint transaction, each carrying the text comment `<words> primes.live/?ref=<n>_tg` — operator-set words, ledger-written link (`DECISIONS.md` D-202, D-211) | Reaches somebody not yet in the game as a line of text in their own wallet, carrying the minter's number as its referral key |
+| Gas & ops | **20%** (derived, `DECISIONS.md` D-117; 10% until then) | Deploys, forward fees, primality gas subsidy, `owed` storage rent (flush gas left this line with D-146 — the caller pays it, §4.3); **the surplus over a standing reserve is swept back to the ratchet pool**, emission-free (it swept to the operator until D-117). Reservation settlement is **not** on this line — it is funded by `RES_GAS` (§4.4) | Keeps the all-in 1 GRAM solvent; what it does not spend raises the floor |
+| Invite transfers | **`count` × (value + 0.001 GRAM fee)**, `count` set by the minter up to the operator's live count (genesis 3 × 0.1 GRAM), never more than **0.31 GRAM** a mint; unspent slots → pool | One plain, non-bounceable GRAM transfer per address the minter names, sent inside the mint transaction with its fee paid on top so the value arrives whole, each carrying the text comment `<words> primes.live/?ref=<n>_tg` — operator-set words, ledger-written link (`DECISIONS.md` D-202, D-211, D-215) | Reaches somebody not yet in the game as a line of text in their own wallet, carrying the minter's number as its referral key |
 | **Pool injection (β)** | **residual** | Credited to the ratchet; converted to PRIMES on DeDust and burned by the public flush schedule (§4.3) | The price-floor ratchet |
 
-**The mint keeps at most `MINT_PRICE + MINT_MARGIN` (1.5 TON); anything sent above that
+**The mint keeps at most `MINT_PRICE + MINT_MARGIN` (1.5 GRAM); anything sent above that
 ceiling comes straight back to the sender** (`DECISIONS.md` D-109), so a fat-fingered send
 funds nobody — the split above always runs on the nominal `MINT_PRICE`, never on the raw
 value attached. An excess too small to pay its own forward fee is not sent: it stays on the
 ledger and the gas & ops sweep carries it to the pool (until 2026-11-20 that unsendable
-refund failed the mint's action phase and the ledger kept the whole value). `MINT_MARGIN` (0.5 TON) is a wire constant sized against the largest
+refund failed the mint's action phase and the ledger kept the whole value). `MINT_MARGIN` (0.5 GRAM) is a wire constant sized against the largest
 padded send this repo actually makes, not a `shared/params.json` figure.
 
 **The lines that pay a third party are held behind the item deploy** — the *held split*
@@ -984,7 +984,7 @@ that the receipt came from item(`n`). While the deploy is in flight the money is
 on no contract's balance, so nothing can sweep it and there is still no third pool (§3.4). A
 `mint_item` the collection refuses bounces home; a deploy the item refuses bounces to the
 collection, which relays it to the ledger with every nanoton that came back. Either way the
-same TON comes home instead: **no split line is ever paid for an item that does not exist** —
+same GRAM comes home instead: **no split line is ever paid for an item that does not exist** —
 by construction, since the only sender of the receipt is the item. The ledger parks the original message — same number, same
 owner, same held split — in a retry lane keyed by `n`, declares the held split in `unroutedHeld`
 (so `sweep_ops` cannot take it and `getLiabilityBreakdown` reports it), and the
@@ -1002,21 +1002,31 @@ itself is not minted until the transaction completes — so tribute on a prime m
 to the empty set and falls to the pool, exactly as an unset referral key does (§3.1). No
 new rule: the existing "unresolvable line backs the floor" rule already covers it.
 
-**The invite line is the fifth deduction and the only one the minter sets entirely**
-(`DECISIONS.md` D-101 for the count, D-202 for the rest). The mint message carries both the
-count and the recipients — `invite_count:uint3` and `invites:(Maybe ^InviteList)`, a
-dictionary of up to three addresses keyed by slot 1..3, holes allowed — and **nobody signs
-the list**: there is no operator key on this line. The webapp fills all three slots from the
-keeper's default list (below) and the minter may change any of them, to anyone, their own
-wallets included; the agent SDK (`@ton-primes/agent`, `mint({ invites })`) names its own or
-none. Each slot with an address is one transfer of `INVITE_TRANSFER_VALUE` = 0.1 TON, sent
-non-bounceable so a Telegram wallet that is not deployed yet still receives it, with the
-forward fee paid out of the 0.1. Both numbers are owner-set, like D-101's count, and the sim
-carries them (`invites.max_count`, `invites.transfer_value_ton` in `shared/params.json`);
-`getInviteTerms()` publishes them as `(3, 0.1 TON)`. **The comment is `<words> primes.live/?ref=<n>_tg`**:
+**The invite line is the fifth deduction, and the minter chooses who it pays**
+(`DECISIONS.md` D-101 for the count, D-202 for the rest, D-215 for the terms). The mint
+message carries both the count and the recipients — `invite_count:uint7` and
+`invites:(Maybe ^InviteList)`, a dictionary of addresses keyed by slot 1..count, holes
+allowed — and **nobody signs the list**: there is no operator key on the recipients. The
+webapp fills every slot from the keeper's default list (below) and the minter may change any
+of them, to anyone, their own wallets included; the agent SDK (`@ton-primes/agent`,
+`mint({ invites })`) names its own or none. Each slot with an address is one transfer of the
+live `Config.inviteValue`, sent non-bounceable so a Telegram wallet that is not deployed yet
+still receives it, **with the forward fee paid on top so the value arrives whole** — a
+Telegram wallet pushes a notification for 0.1 GRAM received and not for the 0.0999 a
+fee-deducted send delivers (measured on mainnet, 2026-11-22). **The count and the value are
+operator-set** (`set_invite_terms`, from `FeeDests.operatorAddr` only; genesis 3 × 0.1 GRAM),
+so a channel that stops working can be traded for more, smaller transfers without a
+redeploy. What the operator cannot move is fixed in the ledger's code and pinned to
+`shared/params.json` by the sim: at most `INVITE_COUNT_CEILING` = 100 transfers a mint, and
+`count × (value + INVITE_SEND_FEE)` ≤ `INVITE_LINE_CAP` = **0.31 GRAM**, checked at the setter
+and again at every invite mint, so **no terms can take β below 0.24**. `INVITE_SEND_FEE` =
+0.001 GRAM is the line paying its own fee — an upper bound on the measured 0.0003–0.0004 GRAM
+per transfer — so the gas & ops line carries none of it, and what it overstates stays on the
+ledger, where `sweep_ops` returns it to the ratchet pool. `getInviteTerms()` publishes the
+live `(count, value)` beside the three bounds. **The comment is `<words> primes.live/?ref=<n>_tg`**:
 the link and the minter's own `n` as a referral key are written by the ledger's code; the
-words before them (at most 86 bytes) are set by the operator's wallet with `set_invite_text`
-(`DECISIONS.md` D-211), so a launch or a celebration can change what invitees read without a
+words before them (at most 86 bytes) are set by the operator's wallet with `set_invite_terms`
+(`DECISIONS.md` D-211, D-215), so a launch or a celebration can change what invitees read without a
 redeploy. `getInviteText()` returns the live words and `getInviteComment(n)` the exact bytes.
 A minter-written comment would let anyone send scam text from the game's address, so the
 minter writes none; the operator's key can change the words but never the link. The `n` is
@@ -1024,21 +1034,22 @@ what makes inviting pay the inviter, through the 10% referral line above, when a
 of its own, and nothing accumulates anywhere.
 
 **Every slot the mint does not spend falls to β, never to the operator.** If the minter names
-two addresses against a `count` of three, one slot's worth of TON is injected into the
+two addresses against a `count` of three, one slot's worth of GRAM is injected into the
 ratchet. This is not a new rule either — it is the same "an unresolvable line backs the
 floor" clause, applied to a line whose recipient may not have been supplied. The mint is
-still 1 TON all-in and the split is still closed at 100%: at the maximum count, 30 points of
-the mint move from the ratchet to three invitees, and not one nanoton leaves the six named
-lines above. **A minter who names their own wallets gets the 0.30 TON back**, and the owner
+still 1 GRAM all-in and the split is still closed at 100%: at the genesis terms, 30.3 points of
+the mint move from the ratchet to three invitees and their transfer fees, and not one nanoton
+leaves the six named lines above. **A minter who names their own wallets gets the 0.30 GRAM back**, and the owner
 accepts that (D-202): it is a cheaper mint paid for out of β, which is nobody's, and §8.1's
 mint-and-sell threshold rises rather than falls with it (3.56× the floor at n = 10,000 with
 self-referral, from 3.14×). What it does cheapen is a fake recruit, and §12 names that.
 `getInviteSpend()` publishes the whole line, lifetime: slots funded, transfers sent, slots
-that fell to the pool, TON paid.
+that fell to the pool, GRAM delivered to invitees, and GRAM the line took off β (delivered
+plus the fee allowance).
 
 **Who the default list names is published, not private.** It is a suggestion the app fills
 in, not a rule the contract enforces. The keeper's `GET /api/invitees`
-serves an unsigned list from candidates ranked off five lists computed daily from the free TON
+serves an unsigned list from candidates ranked off five lists computed daily from the free GRAM
 data lake, which anyone can rerun with no account (`tools/lake/`, `DECISIONS.md` D-201,
 `backend/keeper/src/lakeInvitees.ts`), one signal each:
 contract **deployers** (3–100 state-init sends), **keyword names** (a Telegram Username or TON
@@ -1069,11 +1080,12 @@ so which of the two is live, and how fresh, is one read away. The signals are a 
 invited addresses have had time to mint (`GAUNTLET.md` J12).
 
 **Two assertions guard the line.** `primes_ledger.tolk` throws **221**
-(`invite_count_over_max`) before the split is computed if `count` exceeds `INVITE_MAX_COUNT`
-(a `uint3` can say 4..7), and **236** (`invite_bad_workchain`) if any named slot inside the
+(`invite_count_over_max`) before the split is computed if `count` exceeds the live
+`Config.inviteCount` (a `uint7` can say up to 127), **238** (`invite_terms_bad`) if the spend
+would pass `INVITE_LINE_CAP`, and **236** (`invite_bad_workchain`) if any named slot inside the
 declared count is not on **workchain 0** (audit R2-L1, 2026-11-19). The second exists because
 the transfer's destination is minter-written: a send to a workchain that does not exist fails
-in the action phase, which aborts the mint with no bounce and kept the payer's 1 TON. The
+in the action phase, which aborts the mint with no bounce and kept the payer's 1 GRAM. The
 masterchain is refused with it — a `-1` invitee was deliverable, but every wallet the line is
 for is on workchain 0 and the rule is one comparison. Either throw reverts the whole
 transaction and bounces through the minter card (§4.5, D-191), which gives the mint's standing back
@@ -1120,7 +1132,7 @@ this forfeit remainder — zero on any mint whose cited factors all have owners.
 signed this knowingly and it is the one place where the rule as stated everywhere else in
 this document does not hold. **No leg is ever too small to pay its own gas** (`DECISIONS.md`
 D-172): the treasury's 58% rides the same message as §4.1's 5% line, and an operator
-remainder below one hop's gas (`RATCHET_HOP_GAS`, 0.001 TON) is **held** in `operatorHeld`
+remainder below one hop's gas (`RATCHET_HOP_GAS`, 0.001 GRAM) is **held** in `operatorHeld`
 and sent with the next remainder that clears it. The same rule holds a D-114 premium half
 below that figure in `treasuryHeld`, and a royalty whose operator half is below it waits on
 the collection's balance. Both counters are published by `getLiabilityBreakdown()` and are
@@ -1128,7 +1140,7 @@ part of the ledger's declared liability, so `sweep_ops` never takes them; the 58
 is exact over time, never per message.
 
 *Why it is a fee and not a supply claim*, in one sentence, because it will be read
-adversarially: the forfeit is TON taken out of the existing 10% tribute line for a
+adversarially: the forfeit is GRAM taken out of the existing 10% tribute line for a
 recipient who does not exist yet — it mints no PRIMES, never touches `S`, `T`, `pending`
 or `owed`, cannot be reached by any admin function, and stops permanently the instant the
 prime sells — so it is revenue that scales with activity like the other fee lines of
@@ -1148,8 +1160,9 @@ parameter being tuned for it. It is the same inversion that runs through §3.1: 
 prime withholds from its minter, it hands to the floor.
 
 One line varies now, so the table below is stated for `count = 0`. An invited mint
-subtracts `count × 0.1 TON` from whichever cell it lands in (`invites.beta_table` publishes
-the grid: 0.25 referred and 0.35 unreferred at `count = 3`). The figures are re-derived
+subtracts `count × (value + 0.001) GRAM` from whichever cell it lands in (`invites.beta_table`
+publishes the grid: 0.247 referred and 0.347 unreferred at the genesis 3 × 0.1, and never
+below 0.24 / 0.34 under any terms, `beta_at_line_cap`). The figures are re-derived
 in the sim against the measured opt-in rate and `shared/params.json` is the authority for
 what they become (§10 Phase 1) — the table is the shape:
 
@@ -1186,13 +1199,14 @@ deletion bought rather than losses it accepted:
   an activation mint with the referral resolved and a full invite fan-out
   (1.0 − 0.1 − 0.05 − 0.1 − 0.1 − 0.25 = 0.40, leaving 0.275 after the invite line). Without the
   patron line the same worst case was 0.525. The floor's slowest step got faster. (D-117's
-  20% gas & ops line has since taken it to 0.425, and D-202's three 0.1 TON transfers to
-  1.0 − 0.1 − 0.05 − 0.20 − 0.1 − 0.30 = **0.25**, a referred composite with all three slots
-  sent.)
+  20% gas & ops line has since taken it to 0.425, D-202's three 0.1 GRAM transfers to 0.25,
+  and D-215's fee-on-top to 1.0 − 0.1 − 0.05 − 0.20 − 0.1 − 0.303 = **0.247** at the genesis
+  terms, a referred composite with all three slots sent — and no operator terms can take it
+  below 0.24, the 0.31 GRAM line cap.)
 - **A fresh unrecruited wallet still mints at 65%**, and a gifted one at 55% from its
   first mint. It owns no NFT, cannot set a valid key, and §3.1's "newcomers structurally
   subsidize the floor" applies in full to the first; the second gets §3.1's referral
-  discount immediately, which is a real part of what the giver's 1 TON bought and belongs
+  discount immediately, which is a real part of what the giver's 1 GRAM bought and belongs
   in the gift-flow copy.
 
 Two consequences worth stating plainly, because they look like problems and aren't:
@@ -1203,20 +1217,20 @@ Two consequences worth stating plainly, because they look like problems and aren
 - **Setting a referral key shrinks your own rebate**, since the rebate is computed on the
   actual residual. That is not a bug and the rebate *must* be computed this way — basing
   it on a fixed notional 65% while injecting only 55% would give an effective k of 1.06
-  and run the ratchet backwards. Self-referral remains rational anyway: 0.10 TON in hand
-  beats k·0.10 TON of PRIMES for any k < 1. §7 already treats universal self-referral as
+  and run the ratchet backwards. Self-referral remains rational anyway: 0.10 GRAM in hand
+  beats k·0.10 GRAM of PRIMES for any k < 1. §7 already treats universal self-referral as
   the expected outcome and prices it as an honest 10% discount.
 
 **Tribute is 10%, revised down from 20%** — 20% starved the pool injection for a cash
 flow that is already the primes' main draw. Whether 10% is too thin to make prime NFTs
 genuinely attractive is a **Phase 1 kill criterion** (§10).
 
-**Gas & ops is a fixed 20% (0.20 TON), and the figure is derived, not estimated**
+**Gas & ops is a fixed 20% (0.20 GRAM), and the figure is derived, not estimated**
 (`DECISIONS.md` D-117, signed 2026-09-22). It is the **heaviest mint the ledger can
 perform**, measured on the ledger's own balance by `contracts/tests/GasRegression.spec.ts`
 — the fall in the ledger's surplus over declared liability across the whole mint trace,
 which counts every hop by construction — and rounded **up** to the owner-set 5% step by the
-sim (`sim/primes_sim/gas.py`, `gas_ops_line`). The measured rows, in TON of ledger balance
+sim (`sim/primes_sim/gas.py`, `gas_ops_line`). The measured rows, in GRAM of ledger balance
 per mint:
 
 | mint | draw |
@@ -1229,8 +1243,8 @@ per mint:
 | n = 6 (primorial), ω = 2 | 0.102 |
 | composite, ω = 1 | 0.077 |
 
-Headroom at the worst row is **0.008 TON** (0.016 until D-180 put the factored score on the mint's rebate leg, 0.014 after it; later per-mint legs, chiefly D-191's minter cards, took it to 0.008). Until D-117 the line was 10% against an
-unbenchmarked ~0.10 TON estimate, and the reconciliation that defended it reported 0.099 on
+Headroom at the worst row is **0.008 GRAM** (0.016 until D-180 put the factored score on the mint's rebate leg, 0.014 after it; later per-mint legs, chiefly D-191's minter cards, took it to 0.008). Until D-117 the line was 10% against an
+unbenchmarked ~0.10 GRAM estimate, and the reconciliation that defended it reported 0.099 on
 ω = 3 because its hand-kept list of attached hops missed the special-number rebate hop, the
 era trophy hop, the ratchet hop's `RATCHET_HOP_GAS` and the fee legs' forward fees, and
 double-counted downstream fees; measured on the balance, that row is 0.114 (0.110 before
@@ -1240,7 +1254,7 @@ untouched because β only scales the injection.
 
 **Where the gas & ops surplus goes: back to the pool.** The 20% is a budget sized to the
 worst mint, and a budget has a residual: ordinary mints draw well under the line (an
-ordinary referred composite draws ≈0.10 TON, a prime ≈0.008), so roughly 0.10 TON per
+ordinary referred composite draws ≈0.10 GRAM, a prime ≈0.008), so roughly 0.10 GRAM per
 composite mint and ≈0.19 per prime mint accumulates on the ledger. That residual needs a
 stated owner, because the alternative is to let it pile up unclaimed and unexplained, which
 also silently breaks §3.4's promise that each contract's balance matches its own declared
@@ -1257,7 +1271,7 @@ the same amount. It is **emission-free**: `k = 0`, `S` does not move and no PRIM
 minted, so each sweep is a pure floor raise and `T = seeded + swapped + pending` stays exact.
 The consequence is stated plainly: **the pool's effective share of an ordinary referred
 composite mint is β 0.55 plus the unspent line (0.20 − ≈0.10), ≈0.65** — and the swept part
-carries no rebate, so per TON it ratchets the floor harder than β does. What D-117 moved off
+carries no rebate, so per GRAM it ratchets the floor harder than β does. What D-117 moved off
 β at the worst mint it hands back on the ordinary one, just later (at sweep time, once the
 ledger clears `OPS_RESERVE`), not at mint time.
 
@@ -1279,19 +1293,19 @@ and all three are checkable rather than asserted:
   `DECISIONS.md` D-146 made every permissionless ratchet leg caller-paid.)
 
 **The surplus is about half the line, because the line is sized to the worst mint.**
-What the 0.20 TON pays for is not only TVM compute: every mint also *attaches* value to its
-own outbound messages — 0.025 TON to deploy the NFT item, 0.008 per cited factor for
+What the 0.20 GRAM pays for is not only TVM compute: every mint also *attaches* value to its
+own outbound messages — 0.025 GRAM to deploy the NFT item, 0.008 per cited factor for
 `credit_tribute`, and 0.020 for the rebate mint's wallet deploy. Those attachments are five
 to ten times the compute term and come out of the same line, which is why draw climbs with
-ω. Measured on the ledger's balance, draw runs from 0.077 TON (ω = 1) to 0.192 TON (ω = 12),
-with a blended draw near **0.095 TON per mint**. (Before D-117 this paragraph quoted a
-blended surplus of 0.034 TON against the 0.10 line; that reconciliation undercounted the
+ω. Measured on the ledger's balance, draw runs from 0.077 GRAM (ω = 1) to 0.192 GRAM (ω = 12),
+with a blended draw near **0.095 GRAM per mint**. (Before D-117 this paragraph quoted a
+blended surplus of 0.034 GRAM against the 0.10 line; that reconciliation undercounted the
 draw, see above.)
 
 **The worst case is an auction close, and it is the buyer who pays for it.**
 A close on a three-factor number is the only path that pays the hop into the ledger *and*
 three tribute attachments *and* a rebate mint, and measured against this line as a whole it
-came to ≈0.103 TON — a 3% overrun of the then-10% line that `GasRegression.spec.ts` was left failing on, because
+came to ≈0.103 GRAM — a 3% overrun of the then-10% line that `GasRegression.spec.ts` was left failing on, because
 the choice it forced belonged in this document: raise the line, cap cited factors on
 auctioned mints, or price the close's hop separately from the mint. **The third is taken**,
 and it costs the split nothing, because §4.4 had already specified the fee that does it:
@@ -1301,9 +1315,9 @@ its own hop money attached and is no more expensive to this line than a plain on
 overrun was two distinct errors, both now fixed:
 
 - The reconciliation charged the hop to the 10% line *and* to `RES_GAS`. It is funded once,
-  by the buyer, on top of the 1 TON.
-- The slice of `RES_GAS` forwarded to the ledger with the close (`SETTLE_GAS`) was 0.020 TON
-  against the 0.025 TON of hops the ledger attaches on the way back, so 0.005 TON per close
+  by the buyer, on top of the 1 GRAM.
+- The slice of `RES_GAS` forwarded to the ledger with the close (`SETTLE_GAS`) was 0.020 GRAM
+  against the 0.025 GRAM of hops the ledger attaches on the way back, so 0.005 GRAM per close
   genuinely did leak onto the line. The forwarded slice now matches what is attached, and the
   harness asserts the equality against a get-method rather than a copied constant — if the
   ledger's hops ever grow past what the market forwards, that is a red test, not a silent
@@ -1327,7 +1341,7 @@ lot's price adds exactly the fee that pays for them.
 
 The honest framing for the copy: the line is a budget, not a fee. Whatever the protocol did
 not spend on gas goes back to the floor, so **the floor's share goes up when the
-implementation gets cheaper and down when TON gas gets dearer**, and the operator's share of
+implementation gets cheaper and down when GRAM gas gets dearer**, and the operator's share of
 it is zero (`DECISIONS.md` D-117; before it, the residual was the operator's fee).
 
 `OPS_RESERVE` is a Phase 1 output, and it is derived rather than chosen. It is a float for
@@ -1361,9 +1375,9 @@ it. The ledger owes exactly three things, and
 `getLiabilityBreakdown()` publishes them separately so a reader can see each one move:
 
 1. **Accrued tribute** — §3.2's 80% divisor line, credited to the cited prime's item as
-   `owed` while the TON stays on the ledger. This is the large one (0.08 TON per composite
+   `owed` while the GRAM stays on the ledger. This is the large one (0.08 GRAM per composite
    mint) and the least obvious, because `credit_tribute` carries *a number*, not the money:
-   the item's `owed` rises without any TON moving, so the balance looks like float. It is
+   the item's `owed` rises without any GRAM moving, so the balance looks like float. It is
    reconcilable off-chain against `Σ_p get_owed(p)`, and the contract test suite performs
    exactly that walk on every step of its fuzz sequence.
 2. **Bounced credits awaiting `retry_credit`** — a credit whose item was unreachable. It is
@@ -1371,7 +1385,7 @@ it. The ledger owes exactly three things, and
    The two lines are always written together; an amount is in exactly one of them.
 3. **Accrued flat dividends** — §3.2's 20% line, not yet converted into item `owed` by
    `claim_dividend`. Note that a dividend claim *moves* value between lines 3 and 1 rather
-   than discharging anything: the TON does not leave the ledger until the owner claims the
+   than discharging anything: the GRAM does not leave the ledger until the owner claims the
    resulting `owed`.
 
 The pool injection is deliberately **absent** from that list: it physically leaves the
@@ -1405,7 +1419,7 @@ D-194). §4.3.2's staking addresses are deploy data with no setter.
 set a referral key — say `r42`, and (the expected case) the minter owns NFT 42
 themselves:
 
-| Destination | TON |
+| Destination | GRAM |
 |---|---:|
 | Pool injection → `T` counter | 0.550 |
 | Owner of NFT 42 (referral key) | 0.100 |
@@ -1433,10 +1447,10 @@ unchanged — the split does not know or care — but the NFT *and* the rebate w
 that address, and if the ledger had never seen it the minter would also be credited one
 recruit on §4.7's ladder.)
 
-The minter also receives the NFT and a rebate whose floor-value is k(t) · 0.550 TON —
-between 0.110 TON (minted instantly after the previous one, k = k_min) and at most
-0.495 TON (k → k_max = 0.9, since 234 < n₀). At the one-hour mark the ramp tops out
-(`T_ramp` = 1 h, `DECISIONS.md` D-98), so k = k_max = 0.9 gives the full 0.495 TON of
+The minter also receives the NFT and a rebate whose floor-value is k(t) · 0.550 GRAM —
+between 0.110 GRAM (minted instantly after the previous one, k = k_min) and at most
+0.495 GRAM (k → k_max = 0.9, since 234 < n₀). At the one-hour mark the ramp tops out
+(`T_ramp` = 1 h, `DECISIONS.md` D-98), so k = k_max = 0.9 gives the full 0.495 GRAM of
 floor-value, and the mint ratchets the floor roughly **+0.008%** (ratchet coefficient
 `(1−k)·β` = 0.055, §4.2.1's table).
 
@@ -1460,7 +1474,7 @@ rounds. That asymmetry is the point of §3.1.
 The head has advanced by one, the number is prime, and the same minter sets the same key
 `r42`. Nothing about the split changes; two of its lines simply find nobody to pay.
 
-| Destination | TON |
+| Destination | GRAM |
 |---|---:|
 | Pool injection → `T` counter | 0.650 |
 | Owner of NFT 42 (referral key) | 0.100 |
@@ -1494,29 +1508,29 @@ it is checkable against two get-methods.
 ### 4.3 The flush schedule: batched, permissionless buy-and-burn
 
 **Per-mint swapping is dead on dust economics.** A DeDust swap consumes roughly 0.05–0.20
-TON of gas (0.25 TON is the documented attach amount, excess bounced) plus 0.02–0.03 TON
-for the subsequent burn message. Against a 0.55 TON injection that is **13–42% skimmed off
+GRAM of gas (0.25 GRAM is the documented attach amount, excess bounced) plus 0.02–0.03 GRAM
+for the subsequent burn message. Against a 0.55 GRAM injection that is **13–42% skimmed off
 the ratchet**, on top of a gas & ops line already fully committed to NFT and jetton-wallet
 deploys. The pool trading fee is negligible by comparison: 0.25% on a mainnet volatile pool is
-~0.0016 TON of that injection. That is DeDust's mainnet default, not a constant of this
+~0.0016 GRAM of that injection. That is DeDust's mainnet default, not a constant of this
 design — the fee is per-pool and is READ (§9.1); the testnet venue's own `get_trade_fee`
-answers 0.40%, which moves this line to ~0.0026 TON and changes nothing about it. This is the
+answers 0.40%, which moves this line to ~0.0026 GRAM and changes nothing about it. This is the
 same arithmetic that killed push-based tribute in §3.2.1, applied to the pool leg.
 
 So the injection is **credited at mint, executed on flush**:
 
-1. **At mint**, β is added to the ratchet's `pending` counter and the TON simply stays on
+1. **At mint**, β is added to the ratchet's `pending` counter and the GRAM simply stays on
    its balance. Zero outbound messages, zero DeDust gas. `T` increments here (§5). (Since
    D-151 the part of that balance above a liquid reserve is staked at cost rather than left
    sitting — §4.3.2. It is still `T`, the counter still increments here, and nothing in this
    schedule changes.)
 2. **`flush()` is permissionless, and the caller pays for it** (`DECISIONS.md` D-146,
    signed 2026-09-22). Anyone may call it — team, keeper bot, or a curious participant —
-   and whoever calls it attaches the venue's gas: **`DEDUST_SWAP_GAS` (0.25 TON) plus
-   0.01 TON of the ratchet's own compute, 0.26 TON in all**. Below that the call refuses by
+   and whoever calls it attaches the venue's gas: **`DEDUST_SWAP_GAS` (0.25 GRAM) plus
+   0.01 GRAM of the ratchet's own compute, 0.26 GRAM in all**. Below that the call refuses by
    name (`ratchet_flush_gas`, 225) before anything moves; above it the change comes straight
    back to the caller as a TEP-74 `excesses`. **The swap message must carry the venue's own
-   gas on top of the TON being swapped**, or the vault rejects it for declaring more input
+   gas on top of the GRAM being swapped**, or the vault rejects it for declaring more input
    than it was sent — that gas now rides out of the caller's value, never out of `pending`.
    The owner's rule is the specification: *calling flush from any wallet should not affect
    the gas and fees reserve in any way.* The contract makes that arithmetic, not policy: it
@@ -1525,9 +1539,9 @@ So the injection is **credited at mint, executed on flush**:
    same rule covers all four permissionless ratchet legs — `flush`, `stake`, `unstake`,
    `harvest` (§4.3.2). The ratchet's own gas buffer — the surplus of each `pool_inject`,
    which carries `β + RATCHET_HOP_GAS` and credits only `β` — now pays its storage rent and
-   nothing else, which is why D-146 cut `RATCHET_HOP_GAS` from 0.005 to 0.001 TON.
+   nothing else, which is why D-146 cut `RATCHET_HOP_GAS` from 0.005 to 0.001 GRAM.
    (Before D-146 the buffer paid the venue, and the pro-rata cooldown below let a
-   one-nanoton tranche spend 0.20 TON of it per call with no cooldown at all — G39's drain.)
+   one-nanoton tranche spend 0.20 GRAM of it per call with no cooldown at all — G39's drain.)
 3. **The caller chooses only the timing — never the amount, and never the price.** Size,
    rate and the price limit are all fixed in the contract:
 
@@ -1555,8 +1569,8 @@ ratchet's PRIMES wallet, and that wallet notifies honestly for *any* incoming tr
 fill counts only when the jetton-level sender is the venue's PRIMES vault **and** the amount
 is at least the swap's `min_out` — a real fill always meets both. Without the second half, a
 stranger's 1-nanoPRIMES transfer would mark the trip filled, and a refusal arriving after it
-would find nothing in flight and strand its TON outside `pending`. The fill is recorded even
-when the TON the venue forwarded cannot pay for the burn that follows it: the burn is dropped,
+would find nothing in flight and strand its GRAM outside `pending`. The fill is recorded even
+when the GRAM the venue forwarded cannot pay for the burn that follows it: the burn is dropped,
 never the fill.
 
 **A trip that never settles expires.** After one hour (`getFlushStaleSec` — six times the
@@ -1573,10 +1587,10 @@ days.
 ratchet keeps that one trip's two reply addresses — the native vault that refunds a refusal,
 the PRIMES vault that pays a fill — until the next flush is sent, and settles the trip against
 those. Checked against the *new* venue instead, the old vault's refund was rejected on a
-non-bounceable message, its TON stayed in the gas buffer, and the stale close above booked up
+non-bounceable message, its GRAM stayed in the gas buffer, and the stale close above booked up
 to one `FLUSH_PCT` tranche as filled — and anyone could force it by sending `flush()` and the
 timelock's permissionless `execute` back to back. Refusing the change while a flush is open
-was the other fix and was not taken: a 1-nanoTON flush costs no cooldown, and against a venue
+was the other fix and was not taken: a 1-nanoGRAM flush costs no cooldown, and against a venue
 that answers nothing — the case a migration exists for — each one holds the full stale hour,
 so that refusal could be held open indefinitely. What a silent old venue can still delay is
 the first flush to the *new* venue, by at most `getFlushStaleSec` (one hour). Who settles the
@@ -1584,10 +1598,10 @@ open trip is public: `getFlushReplyVenue` returns the two addresses and whether 
 pin, where `getVenue` says only where the *next* flush goes (§9.1). The staking
 exit's DeDust leg was never exposed: its payout vault is deploy data (§4.3.2).
 
-Proposed: `FLUSH_PCT = 20%`, `FLUSH_COOLDOWN = 1 day`, `FLUSH_MIN = 5 TON`,
+Proposed: `FLUSH_PCT = 20%`, `FLUSH_COOLDOWN = 1 day`, `FLUSH_MIN = 5 GRAM`,
 `FLOOR_GUARD = 0`. `FLUSH_PCT`/`FLUSH_COOLDOWN`/`FLOOR_GUARD` are Phase 1 simulation
 outputs; `FLUSH_MIN` is a hand-fed Phase 1 input (the swap-worth-its-own-gas threshold,
-not something the sim calibrates), OWNER-SET at 5 TON (down from the original 50 TON
+not something the sim calibrates), OWNER-SET at 5 GRAM (down from the original 50 GRAM
 input) so `flush()` batches in smaller, more frequent tranches.
 
 ### 4.3.1 The floor guard: the protocol never buys above its own floor
@@ -1597,17 +1611,17 @@ rather than to a percentage band turns one required line into the protocol's ent
 treasury policy:
 
 **The flush fills only if PRIMES is trading at or below the floor price.** Above it, the
-venue cannot satisfy the limit, hands the TON back, the ratchet restores `pending`, and
+venue cannot satisfy the limit, hands the GRAM back, the ratchet restores `pending`, and
 nothing is lost but the caller's own gas — a path §4.3 already specifies for
 ordinary slippage failure. No new failure mode, no oracle, no price feed. The check is
 arithmetic on two counters the contract already keeps.
 
 **A NOTE ON THE WORD "BOUNCE", used throughout this section and §4.3.** It names the
-OUTCOME — the TON came back, `pending` was restored, nothing moved — and not, as this
+OUTCOME — the GRAM came back, `pending` was restored, nothing moved — and not, as this
 document previously assumed, the transport. A refused DeDust swap does not bounce. Its
 `limit` is checked in the POOL, one hop past the vault, and the pool commits its refund
 before throwing; the vault's own transaction succeeds, and a TON bounce travels exactly one
-hop, so there is nothing for the ratchet's swap message to bounce from. The TON returns as
+hop, so there is nothing for the ratchet's swap message to bounce from. The GRAM returns as
 a fresh, non-bounceable `payout#474f86cf`, and the ratchet has a handler for it
 (`DedustPayout`) alongside the real bounce handler, which still covers the narrower case of
 the VAULT refusing outright. Verified against mainnet 2026-09-16; `GAUNTLET.md` R18 carries
@@ -1620,15 +1634,15 @@ QUANTITY drawn from a register that has never heard of the pool. For the first y
 this design nothing connected the two, and the consequence is not subtle: a tranche larger
 than the venue can absorb is refused by the guard *even when the market is far below the
 floor*, because the constant product moves the price as the trade executes. Measured on
-testnet 2026-09-19 — pool 1.2826 TON against 479,142 PRIMES, the market **2.1× below** the
-floor on spot, and a 19.733 TON tranche demanding 3,469,538 PRIMES from a pool holding
+testnet 2026-09-19 — pool 1.2826 GRAM against 479,142 PRIMES, the market **2.1× below** the
+floor on spot, and a 19.733 GRAM tranche demanding 3,469,538 PRIMES from a pool holding
 479,142 in total. It executed at **7.7× above** the floor and was correctly refused, which
 on the dashboard is indistinguishable from "the market is above the floor".
 
 No fixed `FLUSH_PCT` repairs this. A tenth, a twentieth and a fiftieth of that same
 `pending` all still bounce; a hundredth clears the curve and is then raised back to
 `FLUSH_MIN` by §4.3's own rule; and any fraction chosen today breaks again as `pending`
-grows, which the sim takes to 210,833 TON. The fillable size is a property of the POOL.
+grows, which the sim takes to 210,833 GRAM. The fillable size is a property of the POOL.
 
 Solving the guard for the amount gives it in closed form. With reserves `R_t`, `R_p`, pool
 fee `f` and `G = FLOOR_GUARD`, the constraint
@@ -1650,24 +1664,24 @@ LINEAR in `amount`, so the guard is a PER-UNIT price and no choice of `amount` c
 nanoton above `p_f`. The clamp is one-directional — the handler takes `min(amount,
 autoSize)` and reads 0 as "size it yourself" — so a caller may only ever ask for **less**
 than the contract would have sent. The two things a bad `amount` can do are underspend,
-which leaves the TON in `pending` backing `T` either way, and bounce, which the refund path
+which leaves the GRAM in `pending` backing `T` either way, and bounce, which the refund path
 already reverses in full.
 
-`FLUSH_MIN` therefore binds the auto-sized path only. A venue whose `a_max` is under 5 TON
+`FLUSH_MIN` therefore binds the auto-sized path only. A venue whose `a_max` is under 5 GRAM
 is precisely the case the argument exists for, and refusing to buy there would be the guard
 enforcing a quantity it was never about.
 
 **The cooldown is charged pro rata**, at `FLUSH_COOLDOWN × amount / autoSize`. Once the
 caller picks the size, keying the cooldown to the CALL rather than to the amount is a
 denial of service: a stranger asking for one nanoton would spend the whole day's allowance
-and the real flush would wait 24 hours behind it. `FLUSH_COOLDOWN` rate-limits TON
+and the real flush would wait 24 hours behind it. `FLUSH_COOLDOWN` rate-limits GRAM
 throughput, and now says so. A full-size tranche still locks the full day.
 
 What it buys, in order of importance:
 
-- **The protocol stops selling TON to people leaving at their price.** A blind daily buy
+- **The protocol stops selling GRAM to people leaving at their price.** A blind daily buy
   spends the ratchet's own injection into strength, which is precisely when PRIMES needs
-  no support. Every TON spent above `p_f` buys less backing than it gave up. The guard
+  no support. Every GRAM spent above `p_f` buys less backing than it gave up. The guard
   makes that transaction impossible rather than merely unlikely.
 - **Buying becomes countercyclical by construction.** The ratchet accumulates while the
   market is healthy and deploys when the price is under the floor — dry powder that grows
@@ -1681,10 +1695,10 @@ What it buys, in order of importance:
   caller picks the size, so an attacker pumps first, sizes the tranche to the pumped pool
   (`a_max` above), lets the ratchet fill at an average up to `p_f`, and sells back. The
   ratchet still never pays above its own floor, and `T`, `S` and `p_f` do not move — a
-  flush moves TON from `pending` to `swapped` inside `T` whatever price it fills at. What
-  the attacker takes is **burn efficiency**: fewer PRIMES burned per TON than an
+  flush moves GRAM from `pending` to `swapped` inside `T` whatever price it fills at. What
+  the attacker takes is **burn efficiency**: fewer PRIMES burned per GRAM than an
   unsandwiched flush would have burned, and only while the market is under the floor.
-  Measured in the sim: 1,856 of 3,217 flush attempts over the three-year base run are sandwiched, for **800 TON of attacker profit — 3.0% of the 26,387 TON the ratchet swapped** (`flush.sandwich_profitability_check`; the unguarded control loses 82%).
+  Measured in the sim: 1,856 of 3,217 flush attempts over the three-year base run are sandwiched, for **800 GRAM of attacker profit — 3.0% of the 26,387 GRAM the ratchet swapped** (`flush.sandwich_profitability_check`; the unguarded control loses 82%).
 - **`T` is untouched.** `T` already counts `seeded + swapped + pending` (§5), so a bounced flush
   changes no counter and the floor does not so much as flicker. The guard reallocates
   *where* backing sits, never how much of it there is.
@@ -1697,12 +1711,12 @@ What it buys, in order of importance:
 - **Burning slows in healthy markets.** Fewer tokens are destroyed, so circulating supply
   runs closer to `S`, so `p_f` understates backing by a *narrower* margin than §5 promises
   today. The direction of the error is unchanged — `p_f` still never overstates — but the
-  copy should not claim a widening gap while the guard is holding TON back.
+  copy should not claim a widening gap while the guard is holding GRAM back.
 - **`pending` can grow for a long time without a fill, and that must be visible.** The
   dashboard shows `get_pending()` next to `get_floor()` already; it should also show
   whether the last flush attempt filled or bounced, so "the protocol hasn't bought in six
   weeks" reads as *the market is above the floor* rather than as neglect.
-- ~~**Idle TON earns nothing.**~~ **It does not sit idle any more — §11.14 is reopened and
+- ~~**Idle GRAM earns nothing.**~~ **It does not sit idle any more — §11.14 is reopened and
   adopted** (`DECISIONS.md` D-151, 2026-09-20). The balance the guard accumulates is 87% of
   `T` in the base three-year run (`final_state.pending_growth.pending_share_of_T` = 0.8688),
   and everything above a liquid reserve is now deposited into the Tonstakers pool and held
@@ -1723,7 +1737,7 @@ same number the landing page is already advertising.
 is not expressible on-chain. The cooldown is a *ceiling on rate*, not a guarantee of
 execution; the guarantee comes from the call being permissionless — anyone may send it, and
 below the floor someone is paid to (D-190: the sandwich is a caller's incentive too) — so
-there is no gatekeeper to fail. If literally nobody calls it, the TON is still on the
+there is no gatekeeper to fail. If literally nobody calls it, the GRAM is still on the
 ratchet's balance backing `T` — the failure mode is delay, not loss.
 
 **Why a percentage of the ratchet's balance rather than a fixed size:**
@@ -1759,14 +1773,14 @@ ratchet → PRIMES wallet            burn(received)
 
 The burn must originate from the wallet's owner, so the output cannot be routed straight
 to a burn address — the ratchet has to take delivery first. On slippage failure the venue
-hands the TON back (as `payout#474f86cf`, not as a bounce — see §4.3.1's note on the word)
+hands the GRAM back (as `payout#474f86cf`, not as a bounce — see §4.3.1's note on the word)
 and the ratchet restores `pending`; nothing is lost but gas. **The
 floor guard rides this exact field and this exact path** — a flush that would have bought above
 the floor is indistinguishable, at the contract level, from one that got sandwiched, and
 both are handled by the recovery that already had to exist.
 
 **Amortized cost.** At one flush per day against, say, 100 mints/day, the DeDust leg costs
-~0.001 TON per mint instead of 0.07–0.23 TON. It disappears into the gas & ops line
+~0.001 GRAM per mint instead of 0.07–0.23 GRAM. It disappears into the gas & ops line
 instead of eating a third of the ratchet.
 
 ### 4.3.2 The staked reserve: the standing bid earns while it stands
@@ -1775,7 +1789,7 @@ instead of eating a third of the ratchet.
 the ratchet from a five-day queue into an accumulating balance that may sit unspent for a
 long time — 87% of `T` at the end of the base three-year run
 (`final_state.pending_growth.pending_share_of_T` = 0.8688; 0.99991 in the
-`pending_growth_above_floor_market` stress run, which never flushes at all). That TON has a
+`pending_growth_above_floor_market` stress run, which never flushes at all). That GRAM has a
 job and keeps it: it is the reservation-price bid §4.3.1 is built around. **A standing bid
 does not have to be idle to be standing.**
 
@@ -1790,13 +1804,13 @@ reserve-day at `flush_pct` = 0.20. Above four reserve-days the rule stakes exact
 (`_reserve_days_ceiling`), which is why the constant is published as a fraction and not as a
 day count.
 
-> **The obligation is the three terms, not the balance.** `pending` on chain is only the TON
+> **The obligation is the three terms, not the balance.** `pending` on chain is only the GRAM
 > physically on the ratchet, because `getSolvency().liability` must keep equalling it exactly
 > (§3.4). So the obligation a future `flush()` may have to meet is
 > `pending + stakedCost + exiting`, and `reserveTarget` is 20% of *that*. It is **derived on
 > every read, never stored** — a stored copy would go stale on the next injection, and a
 > stale reserve is wrong exactly when the mint rate is highest. It is also invariant across a
-> stake or an exit, since both only move TON between the three terms, which is what lets an
+> stake or an exit, since both only move GRAM between the three terms, which is what lets an
 > exit be sized in one step.
 
 **The identity, in full.** §5's three-term form becomes six:
@@ -1805,10 +1819,10 @@ day count.
 T = seeded + swapped + pending + stakedCost + exiting + realizedLoss
 ```
 
-- `stakedCost` — TON in the Tonstakers pool, at what it cost. A term of `T`.
+- `stakedCost` — GRAM in the Tonstakers pool, at what it cost. A term of `T`.
 - `exiting` — a tranche on its way back out of the pool, at the cost it carried when it
   left. A term of `T`.
-- `realizedLoss` — cumulative TON that left and did not come back. **No message can lower
+- `realizedLoss` — cumulative GRAM that left and did not come back. **No message can lower
   `T`** (§5), so a shortfall cannot be subtracted; it is named instead, and it makes `p_f`
   overstate the backing by exactly `realizedLoss / S`. §5 states the one thing that can move
   it.
@@ -1837,11 +1851,11 @@ The keeper may poke all three on its existing cadence with no authority at all, 
 standing it has for `flush()`.
 
 **The rate is learned, not probed.** A contract cannot call another contract's get-method,
-and a Tonstakers withdrawal arrives carrying no amount in its body, so the filled TON and our
+and a Tonstakers withdrawal arrives carrying no amount in its body, so the filled GRAM and our
 own returned gas cannot be separated — a probe burn measures a sum, not a rate. A *deposit*
-is exact: the pool's `transfer_notification` names the tsTON minted against a TON figure this
+is exact: the pool's `transfer_notification` names the tsTON minted against a GRAM figure this
 contract chose, so `lastRate` is read off **every optimistic `stake()`** at no marginal cost —
-and **kept only when it raises TON per tsTON** (`GAUNTLET.md` B37). Every fill under-states that
+and **kept only when it raises GRAM per tsTON** (`GAUNTLET.md` B37). Every fill under-states that
 ratio (the pool mints against our stake plus the unspent stake gas, the pair books the stake
 alone), a small stake by the most, and `harvest()` values the whole position at the one pair:
 taking the latest let a small stake after a large one read accrued yield below zero. The higher
@@ -1878,11 +1892,11 @@ rate could fill well under the pool's own.
 **The exit, in three legs, in order, and never an unguarded sale.**
 
 1. **Tonstakers' own immediate withdrawal, at the pool's exact rate.** Burn tsTON with
-   `wait_till_round_end = 0, fill_or_kill = 1`. Two outcomes and no third: TON at
+   `wait_till_round_end = 0, fill_or_kill = 1`. Two outcomes and no third: GRAM at
    `total_balance/supply`, or the pool re-mints the tsTON and nothing was sold. No venue, no
-   price impact, no partial state. It fills when the pool's free TON covers the tranche,
+   price impact, no partial state. It fills when the pool's free GRAM covers the tranche,
    which on a quiet day is most sizes and in a run on the pool is none of them.
-2. **The DeDust tsTON/TON stable pool, with a floor on the fill.**
+2. **The DeDust tsTON/GRAM stable pool, with a floor on the fill.**
 
    ```
    min_out = amount × max(costBasis, lastRate × (1 − exit_slippage_bps))
@@ -1891,13 +1905,13 @@ rate could fill well under the pool's own.
    `exit_slippage_bps` = **50** and is the **owner's** figure, not the sim's
    (`staked_reserve._exit_slippage_bps_source`). Two bounds, and the floor is the
    load-bearing one: the 50 bps governs how far below the *observed rate* we will fill, and
-   `costBasis` — this tranche's own TON-per-tsTON as booked at `unstake()` — means we never
+   `costBasis` — this tranche's own GRAM-per-tsTON as booked at `unstake()` — means we never
    fill below what we paid at all. A book that will not pay our cost refuses the swap and the
    exit falls through to leg 3; a discount is not an answer to a bad price. Neither outcome
    is a bounce — a fill arrives as the same `payout#474f86cf` §4.3.1 already handles, and a
    refusal hands the tsTON back as a `transfer_notification`, which is what advances the leg.
 3. **The pessimistic bill, at the exact rate.** Burn with `wait_till_round_end = 1,
-   fill_or_kill = 0`; the pool pushes the TON back at round end, ~36 hours
+   fill_or_kill = 0`; the pool pushes the GRAM back at round end, ~36 hours
    (`staked_reserve.leg3_latency_days` = 1.5). When it lands it is `pending` again and `flush()` is
    callable by anyone. This is a *rule*, not a manual action — §8 forbids the admin key a
    manual action would need.
@@ -1910,7 +1924,7 @@ out of a non-idle leg other than that reply, and while a tranche is outstanding 
 `unstake()` **and `flush()` all refuse** — so a single lost message stopped §4.3.1's core
 loop, not merely the staking arms, with no recovery short of a redeploy. It happened on
 testnet on 2026-09-21: a leg 2 payout arrived from an address that was not the DeDust native
-vault, the handler refused it, the message was non-bounceable so the TON was credited while
+vault, the handler refused it, the message was non-bounceable so the GRAM was credited while
 no accounting ran, and the machine sat on leg 2 forever.
 
 **`recover_exit()` is the backstop, and it is a fourth permissionless arm with no number
@@ -1925,7 +1939,7 @@ unchanged** — the tsTON claim returns to `tstonHeld`, and the leg returns to i
   it cannot move value, only undo a bookkeeping state no message can reach any more.
 - **It cannot double-credit a payout that arrives late.** After it has run, the outstanding
   tranche is zero, and that is precisely the state the arrival handler already returns on —
-  late TON joins the gas buffer instead of being counted twice.
+  late GRAM joins the gas buffer instead of being counted twice.
 - **On legs 1 and 2 it may leave `tstonHeld` overstated**, if the tranche really was sold and
   the proceeds landed unattributed. The tsTON comes back with its whole cost, so `harvest()`'s
   accrual does not move, and the shortfall surfaces as `realizedLoss` at the next real exit.
@@ -1942,7 +1956,7 @@ unchanged** — the tsTON claim returns to `tstonHeld`, and the leg returns to i
   bounce clears it — so a mint that landed without its notification locked staking, and the
   reserve's refill with it, for ever. Past the same window, `recover_exit()` books the
   deposit's cost **not yet matched by arrived tsTON** (`inFlightStake − stakeCredited`) as
-  `realizedLoss` and adds it to `writtenOff`: not back to `pending` (the TON left), not as
+  `realizedLoss` and adds it to `writtenOff`: not back to `pending` (the GRAM left), not as
   tsTON at the last rate (the mint may never have happened, and invented tsTON reads as
   yield). tsTON that lands afterwards — a late mint or a late bill, from any sender — restores
   at most its value at the last learned rate and teaches nothing. `writtenOff` is never
@@ -1968,7 +1982,7 @@ and when the current exit opened, so §9.1 holds against the clock the contract 
 > precomputed at genesis or whitelisted afterwards without adding the admin surface this
 > contract's whole claim is that it has none of. So the arrival handler credits `pending` and
 > draws `exiting` down by the same figure — **both terms of `T`** — which leaves `T` unchanged
-> under a forged message and the credited TON really on the balance, because it *is* the
+> under a forged message and the credited GRAM really on the balance, because it *is* the
 > message value. Forging it is a donation. That is the whole defence, it is arithmetic rather
 > than a check, and it is why leg 3 is buildable at all.
 >
@@ -1990,59 +2004,69 @@ and when the current exit opened, so §9.1 holds against the clock the contract 
 >   non-optimistic fill — from the bill collection, so also unauthenticated — still carries
 >   its cost.
 > - **A flush's refusal** is recognised only when the vault's payout is at least the swap in
->   flight. A genuine refusal returns the whole input plus leftover gas (mainnet: 50.00 TON
->   in, 50.2759 TON back), so anything smaller is not ours.
+>   flight. A genuine refusal returns the whole input plus leftover gas (mainnet: 50.00 GRAM
+>   in, 50.2759 GRAM back), so anything smaller is not ours.
 
 **`harvest()` touches no term of `T` at all.** It moves `tstonHeld`, which is not in the
 identity; `pending`, `stakedCost` and `exiting` are not written by it. That sentence is
 "realize, never mark" written as arithmetic, and it is why **unrealized yield never enters the
 floor price** — an external, unverifiable number inside `p_f` is exactly what §2 forbids. What
-leaves is the accrued tsTON **as tsTON**, by a TEP-74 transfer forwarding 0.05 TON so the
+leaves is the accrued tsTON **as tsTON**, by a TEP-74 transfer forwarding 0.05 GRAM so the
 treasury's own handler runs and counts it (audit M1: at a zero forward a TEP-74 wallet sends no
 notification and the tsTON landed uncounted), to the **LP-governed
 treasury** (§3.3, §5.5, D-100 point 7), which gains `ASSET_TSTON` in its proposal types and
-publishes the balance in `getTreasuryBalances()`. It is new TON-denominated value that never
+publishes the balance in `getTreasuryBalances()`. It is new GRAM-denominated value that never
 entered `T`, so the backing and the floor are untouched by it, and it reaches the **operator
 only if an LP-depositor proposal sends it there** — there is no route from this arm to an
 operator address, and `getHarvestDest()` publishes the one address it can pay.
 
 **The counterparty's fees are what shape the parameters, and the CALLER pays them**
-(`DECISIONS.md` D-146). Tonstakers charges a **flat 1 TON per deposit** and **~0.5 TON per
-withdrawal** — read from the upstream source on 2026-09-20, not estimated, and recorded with
-file and line in the contract. `stake()` therefore attaches `amount + fee + gas`, credits
-`stakedCost += amount`, and **asserts the caller attached the fee and the gas** (1.31 TON)
-before anything moves, refusing by name (225) if not and returning the change if over.
-`harvest()` is the same at 0.16 TON (its 0.15 TON wallet hop includes the 0.05 forward). `unstake()` asks 1.96 TON, because it **prepays the
+(`DECISIONS.md` D-146). Tonstakers credits a deposit **less a flat 1 GRAM** and charges
+**~0.5 GRAM per withdrawal** — read from the upstream source on 2026-09-20 and recorded with
+file and line in the contract. The 1 GRAM is a **gas reserve, not a fee**: the pool mints with
+everything above its reserve and the unspent ~0.89 GRAM comes back as `excesses` (measured on
+mainnet 2026-11-23). `stake()` therefore attaches `amount + 1 + 0.01` (the 0.01 only outbids
+the deposit's forward fee, so the pool credits at least `amount`), credits
+`stakedCost += amount`, and **asserts the caller attached the reserve and the margin** (1.02 GRAM)
+before anything moves, refusing by name (225) if not and returning the change if over; when the
+pool's `excesses` for that stake arrives (authenticated on the tsTON wallet and the stake's query
+id) the ratchet forwards it, inbound value only, to the caller. A stake costs its caller ≈ 0.13
+GRAM net, almost all of it the 0.1 GRAM notification that pays the ratchet's fill.
+`harvest()` is the same at 0.16 GRAM (its 0.15 GRAM wallet hop includes the 0.05 forward). `unstake()` asks 1.96 GRAM, because it **prepays the
 whole exit**: legs 2 and 3 are sent by the replies that refuse the leg before them, when no
 caller is present, so their gas is taken up front and held; what the chain does not spend
 stays in the ratchet's gas buffer — the only direction the rule allows. The reason for all of
-it is the theorem: **a fee taken out of the staked amount would drop `T` by 1 TON on every
+it is the theorem: **a fee taken out of the staked amount would drop `T` by 1 GRAM on every
 stake, and `p_f = T/S` with it.** An accounting choice is not allowed to break §5, so the
 fee comes from the caller or the stake does not happen.
 
-That flat fee is also why `staked_reserve.stake_min_ton` = **500** is an *economic*
-parameter and not a dust guard. At the modelled 4% APR a 1 TON fee needs ~25 TON staked for a
-year merely to break even, and a round trip costs ~1.5 TON. The sim sets the minimum so fee
-spend stays a stated fraction of yield — `fee_share_of_yield` = 0.0434 at the headline APR,
-the one constraint the sim applies. (A second one — stakes rare enough for the ratchet's own
+That flat cost is also why `staked_reserve.stake_min_ton` = **50** is an *economic*
+parameter and not a dust guard. The sim charges each stake `deposit_fee_ton` = 0.113 GRAM — what
+the reserve does NOT bring back (0.887 of the 1 GRAM, the low end measured on mainnet), not the
+1 GRAM it attaches; at the modelled 4% APR that needs ~2.8 GRAM staked for a year merely to
+break even. The sim sets the minimum so fee spend stays a stated fraction of yield —
+`fee_share_of_yield` = 0.048 at the headline APR, the one constraint the sim applies. (It was
+500 until 2026-11-23, sized while the sim charged the whole 1 GRAM reserve as a fee —
+`MISTAKES.md` 2026-11-23.) (A second one — stakes rare enough for the ratchet's own
 gas accrual to fund their fees — was deleted with D-146, since the caller pays those fees
-now. It never bound: fee share implied ~289 TON against its ~118.)
+now. It never bound: fee share implied ~289 GRAM against its ~118.)
 
-**500 is the MAINNET minimum, and a deploy may divide it** — the same concession D-139 makes
+**50 is the MAINNET minimum, and a deploy may divide it** — the same concession D-139 makes
 for every wall clock in a set, on the value axis instead of the time axis. `DECISIONS.md`
 **D-153** adds a deploy-time `stakeDivisor` to `RatchetConfig`; the constant above keeps its
 declared value and the contract divides it at its one read site, so a deploy chooses a SCALE
-and never a different economics. **Mainnet deploys 1 and the 500 above is exact.** The reason
+and never a different economics. **Mainnet deploys 1 and the 50 above is exact.** The reason
 it exists is that the reserve is 20% of the obligation, so `stake` is illegal until `pending`
-exceeds **625 TON** — which arrives in the ordinary course of the game on mainnet and, on a
-test network, only by donating TON that §8 makes irreversible. It is init data, no message
+exceeds **62.5 GRAM** — which arrives in the ordinary course of the game on mainnet and, on a
+test network, only by donating GRAM that §8 makes irreversible. It is init data, no message
 reaches it (nobody can lower the gate on a running set), and `getStakeMin()` publishes the
 DIVIDED figure so §9.1 holds against the threshold the deployed contract actually enforces.
 
 **What the sim shows, and what it does not.** At the chosen configuration the base run ends
-with 218,278 TON at cost in the pool against 54,735 TON liquid, a reserve target of 54,602
-TON covering the largest tranche any flush asked for **129×**, **zero** unmet flush demand
-across 436 stakes, and 9,708 tsTON harvested to the treasury
+with 159,495 GRAM at cost in the pool against 39,917 GRAM liquid, a reserve target of 39,883
+GRAM covering the largest tranche any flush asked for **111×**, **zero** unmet flush demand
+across 3,158 stakes (357 GRAM of caller-paid stake cost over three years), and 7,135 tsTON
+harvested to the treasury
 (`staked_reserve.chosen_configuration`). The modelled APR is **an assumption, swept over
 {2%, 4%, 6%} rather than chosen** (`_modelled_apr_source`), and since yield never enters `T`
 every other figure in that block is identical at all three rates. **The run produced zero
@@ -2059,7 +2083,7 @@ dashboard shows. `getStakingVenue()` names the three venue addresses, `getHarves
 one address that receives value, `getExitLeg()` which leg a tranche is on — with, since
 D-155, when that exit opened and the recovery window this deploy enforces, so a reader can
 tell a waiting leg from a stranded one — and
-`getSolvency().liability` stays **exactly** `pending`, unchanged: staked TON has physically
+`getSolvency().liability` stays **exactly** `pending`, unchanged: staked GRAM has physically
 left the balance, so counting it would make the solvency delta negative for the whole round
 trip.
 
@@ -2085,11 +2109,11 @@ trip.
 >   for a prime. `PRIME_P0_MIN` is gone: a prime scores 15 points for being prime, so the
 >   ladder itself is what makes the prime lane worth opening.
 > - **The ceiling is the clamp — on the ladder, not on the NPV term.** `MINT_PRICE · 2^(87/10)
->   = 415.87 TON`, just under answer 9's 420 TON, is the highest price the *ladder* can ask, so
->   no composite opens above 420 TON (D-99 answer 9 is a composite cap). A prime's
+>   = 415.87 GRAM`, just under answer 9's 420 GRAM, is the highest price the *ladder* can ask, so
+>   no composite opens above 420 GRAM (D-99 answer 9 is a composite cap). A prime's
 >   `1.5 · NPV(n)` term is yield, not score, and is not clamped: `2`, `3`, `5` and `7` open
->   above it — prime 2 at `1.5 × 896.86 ≈ 1,345 TON` (`shared/params.json`
->   `trophy_auction.npv_ladder.npv_ton_by_prime`). The "widest achievable score 88 → 446 TON" row in the table
+>   above it — prime 2 at `1.5 × 896.86 ≈ 1,345 GRAM` (`shared/params.json`
+>   `trophy_auction.npv_ladder.npv_ton_by_prime`). The "widest achievable score 88 → 446 GRAM" row in the table
 >   below is arithmetic from the deleted weights.
 > - **The weights are owner-declared again, and §11.25's promotion of them to a sim output
 >   is withdrawn** — see the closure appended to §11.25. The sim still owns `NPV(p)`, the
@@ -2106,14 +2130,14 @@ trip.
 >
 > | | ahead of the head | at / after its turn |
 > |---|---|---|
-> | **composite** | paid ascending auction, 7 days → **the winner gets the NFT at close** | mints sequentially, 1 TON — the core loop |
+> | **composite** | paid ascending auction, 7 days → **the winner gets the NFT at close** | mints sequentially, 1 GRAM — the core loop |
 > | **prime** | paid ascending auction, 7 days → **the winner gets the NFT at close** | descending from `P0(p)` to `restingPrice(p)` over 7 days, then **parks there until bought** |
-> | **memorable, either class** | the same lane — the score `D(n)` raises `P0(n)`, nothing else (D-99) | the same — a composite still mints at 1 TON; a prime's rest follows its own `P0(p) / 3` |
+> | **memorable, either class** | the same lane — the score `D(n)` raises `P0(n)`, nothing else (D-99) | the same — a composite still mints at 1 GRAM; a prime's rest follows its own `P0(p) / 3` |
 >
 > **The third row is D-99's, 2026-09-04, and it deletes a vocabulary rather than a lane.**
 > It used to read "the same, at its tier's `price_max` … resting at its tier's `price_min`".
 > There are no tiers, no `price_max` and no `price_min`: one additive score `D(n)` prices
-> every number through one ladder (§9.6), and a composite the head reaches mints at 1 TON
+> every number through one ladder (§9.6), and a composite the head reaches mints at 1 GRAM
 > whatever it scores.
 >
 > The only cell that changed is the composite's, and D-88 point 4 is completed rather than
@@ -2148,11 +2172,11 @@ trip.
 >
 > | | ahead of the head | at / after its turn |
 > |---|---|---|
-> | **composite** | paid ascending auction, 7 days → the winner holds an escrowed claim until the head arrives — **D-90 deletes the claim; it mints at close** | mints sequentially, 1 TON — the core loop |
+> | **composite** | paid ascending auction, 7 days → the winner holds an escrowed claim until the head arrives — **D-90 deletes the claim; it mints at close** | mints sequentially, 1 GRAM — the core loop |
 > | **prime** | paid ascending auction, 7 days → **the winner gets the NFT at close** | descending from `P0(p)` to `restingPrice(p)` over 7 days, then **parks there until bought** |
-> | **special, either class** | ~~the same, at its tier's `price_max`~~ — **D-99 deletes the tiers; the score raises `P0(n)`** | ~~the same, resting at its tier's `price_min`~~ — **D-99: a composite mints at 1 TON, a prime rests at `max(MINT_PRICE, P0(p)/3, NPV(p)/2)`** |
+> | **special, either class** | ~~the same, at its tier's `price_max`~~ — **D-99 deletes the tiers; the score raises `P0(n)`** | ~~the same, resting at its tier's `price_min`~~ — **D-99: a composite mints at 1 GRAM, a prime rests at `max(MINT_PRICE, P0(p)/3, NPV(p)/2)`** |
 >
-> **1. Every prime's descending lane terminates ABOVE 1 TON.** The resting price is
+> **1. Every prime's descending lane terminates ABOVE 1 GRAM.** The resting price is
 > `max(NPV(p) / 2, P0(p) / 3, MINT_PRICE)`, ~~lifted to the tier's `price_min` for a special prime~~
 > (D-99 §1.2: the `P0(p) / 3` term, which carries the same 3× spread off the score's
 > ladder) —
@@ -2160,12 +2184,12 @@ trip.
 > the life of the game, the same table `P0(p) = 1.5 · NPV(p)` already comes from. Opening
 > to resting is therefore a **3× spread**. Small primes rest high (they earn tribute on
 > every multiple, forever); large ones miss the finite table and rest at `P0(p) / 3`, or
-> exactly 1 TON when they open under 3 TON (D-99 §1.2).
+> exactly 1 GRAM when they open under 3 GRAM (D-99 §1.2).
 > **The lot then stays listed at that price until somebody buys it, with no expiry** —
 > `sweep_expired_head_lot`, which used to delete an unbought lot after two decay windows,
 > is deleted and `DECISIONS.md` D-50 is dissolved with it.
 >
-> This **deletes** §12's "no lane may terminate above 1 TON" and invariant MKT-1
+> This **deletes** §12's "no lane may terminate above 1 GRAM" and invariant MKT-1
 > (`floorOf(MODE_DUTCH_BUYNOW) == MINT_PRICE`, exactly). MKT-1's liveness argument — that
 > the head can never park permanently on a prime nobody will pay a premium for — was
 > already vestigial: D-20 defines the head over composites and Unity only, so it does not
@@ -2195,8 +2219,8 @@ trip.
 > PROOF the open must carry — a factorization for a composite, nothing for a prime, which
 > the contract checks with its own Miller–Rabin — and no longer selects a lane.
 >
-> This is also what dissolves D-50: a lot record now costs at least `PRIME_P0_MIN` (5 TON)
-> to create rather than ~0.02 TON of gas, so nobody buys permanent storage cheaply and no
+> This is also what dissolves D-50: a lot record now costs at least `PRIME_P0_MIN` (5 GRAM)
+> to create rather than ~0.02 GRAM of gas, so nobody buys permanent storage cheaply and no
 > deposit or per-opener cap needs sizing.
 >
 > **4. A prime's pre-turn auction winner gets the NFT minted at close**, not an escrowed
@@ -2280,10 +2304,10 @@ trip.
 > - Anyone may buy at the standing price at any point, before or during the decay.
 >
 > This preserves D-4's structural liveness guarantee exactly — every prime still reaches
-> 1 TON within a week of its turn, so the head can never park on an unprofitable prime —
+> 1 GRAM within a week of its turn, so the head can never park on an unprofitable prime —
 > and it states §2 principle 7 more cleanly than the old design did: **the flat pre-turn
 > `P0` is the price of impatience**, which is the only thing that premium was ever for.
-> **The 1 TON terminus is untouched**, which is what §12 forbids moving at any price.
+> **The 1 GRAM terminus is untouched**, which is what §12 forbids moving at any price.
 >
 > ### Release: the winner may hand a claim back for 90% (D-32)
 >
@@ -2316,10 +2340,10 @@ trip.
 >    contested rare number resolves in fewer rounds instead of grinding through hundreds of
 >    minimum raises. This is a new consumer of the score. **The ladder has been delivered**
 >    (2026-08-19): `min_increment_bps` = 1500 for the first three rungs and 2000 thereafter,
->    indexed by `D/10` over 13 rungs, with a derived floor of **0.015 TON** — the gas of a
+>    indexed by `D/10` over 13 rungs, with a derived floor of **0.015 GRAM** — the gas of a
 >    bid plus the refund it forces. Note why the floor had to be re-derived rather than
->    kept: the old flat **1 TON** floor only worked while `D_MIN` held the cheapest lot at
->    8 TON. Dropping `D_MIN` (D-30) makes a 1 TON minimum raise absurd on a lot that opens
+>    kept: the old flat **1 GRAM** floor only worked while `D_MIN` held the cheapest lot at
+>    8 GRAM. Dropping `D_MIN` (D-30) makes a 1 GRAM minimum raise absurd on a lot that opens
 >    near `LOT_FLOOR`, so the two changes are not separable.
 > 3. **It is no longer a fee multiplier.** `RES_PREMIUM` does not exist. Nothing anywhere
 >    is charged as a scored fee.
@@ -2347,8 +2371,8 @@ trip.
 > the shard record, and derived (`sim/primes_sim/gas.py res_fee_split`) rather than chosen.
 > **Its derivation has been re-run** (2026-08-19, `sim/primes_sim/gas.py res_fee_split`),
 > because the fee it was carved out of no longer exists and the entry points it was priced
-> against were rewritten. The result: **`RES_GAS` = 0.060 TON**, up from 0.040, and the
-> lane floor `LOT_FLOOR = MINT_PRICE + RES_GAS` = **1.060 TON** *(since `DECISIONS.md` D-113:
+> against were rewritten. The result: **`RES_GAS` = 0.060 GRAM**, up from 0.040, and the
+> lane floor `LOT_FLOOR = MINT_PRICE + RES_GAS` = **1.060 GRAM** *(since `DECISIONS.md` D-113:
 > `RES_GAS` = 0.070, `LOT_FLOOR` = 1.070 — the D-90.4 floor)*. The three legs that moved:
 > the reserve-time notify hop became a **close-time claim write**; the worst-case
 > **scoring row left** the settle path, because D-33 puts `D(n)` at `open_lot` where the
@@ -2386,11 +2410,11 @@ the market's close-path compute). It is part of `LOT_FLOOR = MINT_PRICE + RES_GA
 rank, sink or discount can reach it.
 
 - **Derived, then floored.** `sim/primes_sim/gas.py res_fee_split` prices it off
-  `contracts/gas-baseline.json` and rounds up to the next 0.005 TON: **0.035 TON** today
+  `contracts/gas-baseline.json` and rounds up to the next 0.005 GRAM: **0.035 GRAM** today
   (`shared/params.json` `off_head.res_gas_derivation.derived_res_gas_ton`). The shipped
-  figure is **0.070 TON** (`off_head.res_gas_ton`; D-113 raised it from 0.060) and is
+  figure is **0.070 GRAM** (`off_head.res_gas_ton`; D-113 raised it from 0.060) and is
   floored there on purpose (D-90.4): lowering it would move `LOT_FLOOR` and with it every
-  price on the lane. The 0.035 TON surplus is published as
+  price on the lane. The 0.035 GRAM surplus is published as
   `off_head.res_gas_derivation.retained_headroom_ton` rather than banked.
 - **Where it is charged.** On the ascending lane it is carved off the clearing price
   **before** the premium is computed, so a clearing price `C` decomposes as
@@ -2401,7 +2425,7 @@ rank, sink or discount can reach it.
 1b. **Scarce numbers are priced, not queued — and what is priced is the right to buy
    early, never the number.** A first-come book resolves a contested number by whoever
    clicked fastest; this point is where that contest is settled in money. A composite's
-   turn still costs the ordinary 1 TON mint, and anyone unwilling to pay for earliness waits
+   turn still costs the ordinary 1 GRAM mint, and anyone unwilling to pay for earliness waits
    and pays it (§2 principle 7); a prime's descending lot rests at `restingPrice(p)` (§6
    point 1).
 
@@ -2447,8 +2471,8 @@ rank, sink or discount can reach it.
               )
    ```
 
-   with `SCORE_HALVING = 10`, `D_MIN = 30`, `PRIME_P0_MIN = 5 TON` and
-   `PRIME_P0_MULTIPLE = 1.5`. `RESERVE_FLOOR = 1.05 TON` is **asserted equal to
+   with `SCORE_HALVING = 10`, `D_MIN = 30`, `PRIME_P0_MIN = 5 GRAM` and
+   `PRIME_P0_MULTIPLE = 1.5`. `RESERVE_FLOOR = 1.05 GRAM` is **asserted equal to
    `MINT_PRICE + RES_GAS + RES_PRIORITY_BASE`** rather than written down beside them, so
    the boundary between the fee lane and the auction lane is a checked equality and not a
    coincidence that drifts the next time `RES_GAS` is re-measured.
@@ -2456,31 +2480,31 @@ rank, sink or discount can reach it.
    | n | D(n) | class | `P0` |
    |---|---:|---|---:|
    | 4818, 738491, 1000003, any 9+ digit composite | ≤ 20 | composite | fee lane, point 1a |
-   | 1234 (run) | 50 | composite | **32 TON** |
-   | 2023 (year) | 55 | composite | **45 TON** |
-   | 10000 (power of ten) | 66 | composite | **97 TON** |
-   | 1000 (power of ten) | 70 | composite | **128 TON** |
-   | 1111 (repdigit) | 80 | composite | **256 TON** |
-   | widest achievable score | 88 | composite | **446 TON** |
-   | `SCORE_MAX` guard | 120 | — | 4,096 TON |
+   | 1234 (run) | 50 | composite | **32 GRAM** |
+   | 2023 (year) | 55 | composite | **45 GRAM** |
+   | 10000 (power of ten) | 66 | composite | **97 GRAM** |
+   | 1000 (power of ten) | 70 | composite | **128 GRAM** |
+   | 1111 (repdigit) | 80 | composite | **256 GRAM** |
+   | widest achievable score | 88 | composite | **446 GRAM** |
+   | `SCORE_MAX` guard | 120 | — | 4,096 GRAM |
    | 17 | 28 | prime | `1.5 · NPV(17)` — the NPV branch binds |
-   | 1000003 | 8 | prime | **5 TON** (`PRIME_P0_MIN`) |
-   | 90000000017 | 0 | prime | **5 TON** (`PRIME_P0_MIN`) |
+   | 1000003 | 8 | prime | **5 GRAM** (`PRIME_P0_MIN`) |
+   | 90000000017 | 0 | prime | **5 GRAM** (`PRIME_P0_MIN`) |
 
    **`PRIME_P0_MIN` is the number that makes the prime lane worth opening.** A plain
    11-digit prime scores zero and its tribute NPV is negligible, so without it both prime
    branches collapse to `RESERVE_FLOOR` and the descending lane below would open two
-   hundredths of a TON above its own floor — a ceremony with no price in it. At 5 TON there
+   hundredths of a GRAM above its own floor — a ceremony with no price in it. At 5 GRAM there
    is a slope to walk down.
 
    **Why a threshold for composites rather than a continuous curve.** A continuous convex
    map surcharges the deep line: at `2^(D/10)` a seven-digit number scoring 8 would open
-   at 1.74 TON, a 74% surcharge on the ~98% of the book that is unremarkable. The
+   at 1.74 GRAM, a 74% surcharge on the ~98% of the book that is unremarkable. The
    threshold keeps point 1a's best property literally intact — *the deep number line pays
    nothing, so the floor of the ladder is exactly the status quo.* `2^(D/10)` is also
    exact cheap integer arithmetic on TVM (`P0 = (MINT_PRICE << D/10) · FRAC[D mod 10] /
    2^16`, a fixed ten-entry table of `round(2^(j/10) · 2^16)`), and it runs on the market
-   router, so it does not touch point 1's 0.0002 TON of `RES_GAS` headroom.
+   router, so it does not touch point 1's 0.0002 GRAM of `RES_GAS` headroom.
 
    ---
 
@@ -2559,16 +2583,16 @@ rank, sink or discount can reach it.
      once true it stays true forever. `headHint` is the market's cached copy of the head,
      and it lags on purpose: nothing on the mint path updates it. It moves only when someone
      sends the ledger the permissionless **`sync_head`** (`primes_ledger.tolk`, caller-funded,
-     at least 0.01 TON), which changes no ledger state and forwards the real head to the
+     at least 0.01 GRAM), which changes no ledger state and forwards the real head to the
      market as `head_update`. A stale-low hint only delays a due prime lot; an ascending open
      on a number the head already minted is still refused by `mark_off_head`.
    - **`RES_GAS` rides on top of the price, and only on this lane.** The lane's terminus is
      the resting price the seller is entitled to (D-88 point 1), so unlike `RESERVE_FLOOR`
-     it has no room to absorb the 0.070 TON that funds the sale's own settlement hop
+     it has no room to absorb the 0.070 GRAM that funds the sale's own settlement hop
      (`DECISIONS.md` D-113 re-derives this from 0.060). A purchase at the terminus is
      therefore **`restingPrice(p) + RES_GAS` all-in**, against 1.00 for a composite at the
-     head; for a prime past the `NPV` table that opens under 3 TON that is `LOT_FLOOR` =
-     1.070 TON. The difference
+     head; for a prime past the `NPV` table that opens under 3 GRAM that is `LOT_FLOOR` =
+     1.070 GRAM. The difference
      from a composite is the settlement the buyer is funding — plus, for every smaller
      prime, the resting price itself.
 
@@ -2608,7 +2632,7 @@ rank, sink or discount can reach it.
 
    > **Pointer, not spec.** This block used to specify a composite-only lane: `open_lot`
    > refusing primes (D-22), a `MIN_AUCTION_DISTANCE` gate of 20,000 mints, a flat
-   > `max(1 TON, 5% · high)` increment, a won lot waiting as an escrowed claim for the head,
+   > `max(1 GRAM, 5% · high)` increment, a won lot waiting as an escrowed claim for the head,
    > and an early close when the head arrived. **All of it is deleted**: D-88 point 3 opens
    > the lane to every number, prime included; D-45 marks an opened number off the
    > sequential line at `open_lot`, so the head skips it forever and there is no distance
@@ -2620,7 +2644,7 @@ rank, sink or discount can reach it.
    ```
    open(n, bid)   permissionless, n ahead of the head. Opens the lot AND places the
                   opener's bid, which must be ≥ P0(n). No score gate, no distance gate.
-   bid(n)         ≥ high + max(0.015 TON, high · bps(D) / 10000)     (D-33 ladder)
+   bid(n)         ≥ high + max(0.015 GRAM, high · bps(D) / 10000)     (D-33 ladder)
                   The previous high is refunded IMMEDIATELY, in the same transaction.
    close(n)       permissionless once now ≥ closesAt. The high bidder wins at their
                   own bid and the number MINTS to them in this transaction (D-90).
@@ -2671,7 +2695,7 @@ rank, sink or discount can reach it.
    the fastest head the base run produced). A mark beyond the frontier — a lot's claim on
    `n`, either kind, or a prime sold ahead — lives on that block's **lot block**, a child
    contract at an address derived from (ledger, block), deployed by the ledger on the first
-   mark. The permissionless, caller-funded `import_lot_block` (0.05 TON) pulls the next block
+   mark. The permissionless, caller-funded `import_lot_block` (0.05 GRAM) pulls the next block
    in once it starts below `head + W`: the lot block hands its words over and keeps them, so a call while an import is in flight re-sends it and an answer the ledger failed to process is never lost.
    **The head-advance walk stops at the frontier** exactly as it stops at its gas bound — head
    mints refund until someone imports and calls `advance_head` — so a late import stalls the
@@ -2687,14 +2711,14 @@ rank, sink or discount can reach it.
 
    ---
 
-   **The winner still pays a normal 1 TON mint, on both lanes.** The clearing price `C`
+   **The winner still pays a normal 1 GRAM mint, on both lanes.** The clearing price `C`
    decomposes identically wherever it came from:
 
    ```
-   C  =  1 TON (splits per §4.1)  +  RES_GAS 0.070  +  premium
+   C  =  1 GRAM (splits per §4.1)  +  RES_GAS 0.070  +  premium
    ```
 
-   ~~On lane B the 1 TON is held as escrow on the shard and splits at settlement~~ —
+   ~~On lane B the 1 GRAM is held as escrow on the shard and splits at settlement~~ —
    **VOID (`DECISIONS.md` D-90): both lanes split immediately, because on both the mint
    happens in the transaction that closes the lot.** Routing the
    whole clearing price through a variable mint price instead was rejected, and the reason
@@ -2702,7 +2726,7 @@ rank, sink or discount can reach it.
    nothing on precisely the highest-value acquisitions in the game**. A
    recruiter who brought the buyer of 1111 would be paid zero, which is against §2's
    *recruitment pays only on the recruit's own spend* in letter and badly against it in
-   spirit. Keeping the 1 TON leg intact also keeps three claims literally true that a
+   spirit. Keeping the 1 GRAM leg intact also keeps three claims literally true that a
    variable mint price would break at once: §2 principle 7, §4.1's closed 100%, and the sim
    cross-check. A lane-B settlement runs at **`k = k_min`** exactly as point 3 requires of
    every reservation; a prime runs at **`k = 0`** (§5.1) on either lane — a bought-forward
@@ -2712,7 +2736,7 @@ rank, sink or discount can reach it.
    exact sense: `S` is untouched, and — since `DECISIONS.md` D-114 amended D-7 (2026-09-10)
    — the premium splits 50/50 between the ratchet and the governed treasury, so `T` rises
    by half the premium, not the full amount. ~~It is **100% ratchet with no treasury cut**
-   (`DECISIONS.md` D-7) — the treasury is already paid its 5% out of the 1 TON leg, and a
+   (`DECISIONS.md` D-7) — the treasury is already paid its 5% out of the 1 GRAM leg, and a
    cut here would put trophy-number money on the team's fee lines against *team takes fees,
    never supply*.~~ D-114 records why this is now signed anyway: the treasury stopped being
    a team wallet at D-100 and spends only by a passed LP-depositor proposal. §5 carries the
@@ -2748,7 +2772,7 @@ rank, sink or discount can reach it.
 3. **A lot won ahead of the head settles at k = k_min.** The buyer trades rebate size for
    certainty of getting `n`. This closes every clock-gaming angle: the purchase cannot camp
    on the k(t) curve, and the ratchet gets the *strongest* possible step from every such
-   mint. The 1 TON leg splits exactly as §4.1, and since D-90 that happens in the closing
+   mint. The 1 GRAM leg splits exactly as §4.1, and since D-90 that happens in the closing
    transaction rather than at a later `settle(n)`. (Primes settle at `k = 0`, not `k_min`
    — §5.1, and `primes_ledger.tolk` asserts it.)
 Consequences:
@@ -2761,9 +2785,9 @@ Consequences:
   `getLot(n)`, `getLotPrice(n)` and `getLotFloor(n)` per lot — which is a demand signal of
   the same kind and a stronger one, because a standing high bid is money already committed
   to a specific number rather than a refundable balance. §9.1 is satisfied by those three
-  reads; nothing on any surface may show a pool-wide "TON escrowed" figure, because there is
+  reads; nothing on any surface may show a pool-wide "GRAM escrowed" figure, because there is
   no longer a get-method behind it and no longer a pool for it to describe.
-- ~~**Escrowed TON is honest backing-in-waiting.** It joins `T` only at settlement (a
+- ~~**Escrowed GRAM is honest backing-in-waiting.** It joins `T` only at settlement (a
   reservation can be cancelled; committed means committed)~~ **— VOID with the escrow
   (D-90); a lot's clearing price joins `T` at close, in one transaction.** The dashboard can show
   the reserved wall marching toward the head.
@@ -2782,13 +2806,13 @@ Consequences:
 ~~**Special-numbers carve-out (§9.6, `DECISIONS.md` D-47).**~~ **VOID — `DECISIONS.md`
 D-88 point 2 deleted the carve-out rather than narrowing it.** There is no second route and
 no special-only lane: a special number takes the same two lanes as every other number —
-ascending ahead of the head, descending (prime) or the flat 1 TON mint (composite) at its
+ascending ahead of the head, descending (prime) or the flat 1 GRAM mint (composite) at its
 turn — with `p0` and the resting price set by its own score `D(n)` and nothing else changed
 (~~lifted to its tier's figures~~ — D-99 deletes the tiers; §9.6).
 **Specialness is price, not mechanism**, so D-30/D-31's one-route rule now holds
 with no exception category at all. The old text, for the record: special numbers got a
 *second* route (a rarity-tied 7-day advance ascending auction) and special composites a
-1-day decaying route down to 1 TON, both deleted with `open_head_lot_composite`,
+1-day decaying route down to 1 GRAM, both deleted with `open_head_lot_composite`,
 `MODE_DUTCH_BUYNOW_SPECIAL` and `MODE_DUTCH_BUYNOW_SPECIAL_COMPOSITE`.
 
 ### 4.5 Gift mints
@@ -2825,10 +2849,10 @@ mint checkout warns when a named beneficiary reads `false`.
 
 > **STATUS: THE PATRON MECHANIC IS RETIRED (`DECISIONS.md` D-106, 2026-09-07).** This
 > section used to describe **patron mode**: a composite minted into an *unclaimed* state
-> with the payer written on as its Patron, a claim lock, a TON purse released on the
+> with the payer written on as its Patron, a claim lock, a GRAM purse released on the
 > recruit's first mint, a reclaim right at the next primorial boundary, and a §4.1 **patron
 > line** paying the Patron 25% of the recruit's activation mint and 7.5% of every mint
-> after, to a cumulative `PATRON_CAP` of 1.00 TON.
+> after, to a cumulative `PATRON_CAP` of 1.00 GRAM.
 >
 > **It never shipped to a player, and it never could have paid.** Two facts settle it:
 >
@@ -2839,21 +2863,21 @@ mint checkout warns when a named beneficiary reads `false`.
 > 2. `sim/primes_sim/kill_criteria.py` reported **FAIL** against the published cost basis
 >    for its entire life, and §4.6.2 (now deleted) carried both halves of that verdict
 >    rather than the flattering one. The root cause is D-57's: `PATRON_CAP` was a **fixed
->    nominal 1.00 TON** measured against a cost basis that *rises* as `k_max(n)` decays,
+>    nominal 1.00 GRAM** measured against a cost basis that *rises* as `k_max(n)` decays,
 >    so the payoff inverted at **n ≈ 1173** — a third of the way through the first decade
 >    of the number line. Every proposed fix spent something real: denominating the cap in
 >    cost basis destroyed the exact-refund framing §11.4's ToS argument rested on, and a
 >    sixth uplift term spent §5.1's `PRIME_UPLIFT · PRIME_WINDOW < k_max(n)` headroom to
->    paper over a TON-vs-cost-basis mismatch.
+>    paper over a GRAM-vs-cost-basis mismatch.
 >
 > D-106 deletes it rather than re-basing the criterion to the number that passes. What
 > follows is what the repo actually has.
 
-Everything in §4.1–§4.5 converts TON into pool depth and hands the payer an asset. The
+Everything in §4.1–§4.5 converts GRAM into pool depth and hands the payer an asset. The
 growth question is what brings in a wallet that has never heard of the game, and the
 answer is the one that was already shipped and already reachable: **§4.5's gift mint.**
 
-**The mechanic, in full.** A mint names a `beneficiary` other than the payer. The 1 TON
+**The mechanic, in full.** A mint names a `beneficiary` other than the payer. The 1 GRAM
 splits exactly as §4.1 — same tribute, same referral, same treasury, same gas, same
 injection, same ratchet step; **the split has no line for this and never had one after
 D-106**. What changes is delivery and one boolean:
@@ -2907,10 +2931,10 @@ would open, and it forfeits the recruit credit a real gift earns.
 **`fresh` is the whole sybil guard, and it costs nothing.** The card reads its own flag
 before it forwards the mint and sets it as it does; the ledger reads it off the message it
 already authenticated. Gifting the same wallet twice counts once, which means a recruit
-costs a **fresh address plus a full 1 TON mint** — the same price §8.1 always argued a fake
+costs a **fresh address plus a full 1 GRAM mint** — the same price §8.1 always argued a fake
 recruit had to pay, now charged by a single comparison instead of by a dictionary of patron
 records, a claim lifecycle and four message types. **Net of §4.1's invite line it is 0.70
-TON** (`DECISIONS.md` D-202 amends D-106 here): the gift mint may name the gifter's own
+GRAM** (`DECISIONS.md` D-202 amends D-106 here): the gift mint may name the gifter's own
 wallets as its three invitees and take the 0.30 back. §12 carries that as a named risk.
 
 **The credit is one hop later, and that is harmless.** On a recruit edge the ledger sends
@@ -2923,10 +2947,10 @@ dropped rather than moved into the next era. The recruit still counts on the pay
 lifetime rank.
 
 **The hop costs the gas & ops line, and it fits.** The card's compute and its forward come
-out of the mint's own 1 TON (the ledger accepts up to `CARD_HOP_ALLOWANCE` short of the
+out of the mint's own 1 GRAM (the ledger accepts up to `CARD_HOP_ALLOWANCE` short of the
 price, and refuses a body padded to make the forward dearer), and the recruit credit is a
 ledger send. Measured on the heaviest mint the ledger can perform (ω = 12, every leg, a
-recruit edge): 0.1913 TON of the 0.20 line, from 0.1882 before (`GasRegression.spec.ts`,
+recruit edge): 0.1913 GRAM of the 0.20 line, from 0.1882 before (`GasRegression.spec.ts`,
 `shared/params.json` `fees.gas_ops_line`).
 
 **What a recruit is worth: `k_max` uplift, and nothing else.** Each recruit moves the
@@ -2934,7 +2958,7 @@ payer up §4.7's ladder, which raises the rebate ceiling on **the recruiter's ow
 mints**, under the same single `K_CEIL = 0.95` clamp as every other uplift (§5). Three
 consequences, and they are why this cannot repeat D-57's failure:
 
-- **There is no payer to be underwater.** The old mechanic asked a Patron to spend 1 TON
+- **There is no payer to be underwater.** The old mechanic asked a Patron to spend 1 GRAM
   now against an annuity that might arrive later; the arithmetic could invert, and did. A
   gift mint delivers a number the giver was willing to buy, at the price they were willing
   to pay, and the ladder is on top. There is no bet to lose.
@@ -2945,10 +2969,10 @@ consequences, and they are why this cannot repeat D-57's failure:
   uplift a wallet holds — prime rank, recruit rank, both windows —
   enters ONE sum bounded by ONE clamp, so no stack of tiers can push `k` to or past 1.
 
-**The recruit gets paid too, in rebate rather than TON.** A wallet's first five mints
+**The recruit gets paid too, in rebate rather than GRAM.** A wallet's first five mints
 after receiving its first gifted number run at a raised rebate ceiling —
 `k_max + NEWCOMER_UPLIFT`, under the same hard `K_CEIL` clamp. This costs no split line
-and moves no TON: it is emission inside the bound the ratchet theorem already requires,
+and moves no GRAM: it is emission inside the bound the ratchet theorem already requires,
 spent on the one variable the whole loop depends on — whether a gifted wallet ever mints
 one of its own. The window is opened by the recruit edge and spent one unit per clocked
 mint; the gift mint that creates it neither consumes a unit nor collects the uplift, so
@@ -2962,7 +2986,7 @@ away from being checked** —
 > rebate ceiling.
 
 — which is the same standard the old §4.6 message was held to, over the three promises the
-contract can still keep. The purse ("0.3 TON released when you mint"), the lock ("nobody
+contract can still keep. The purse ("0.3 GRAM released when you mint"), the lock ("nobody
 else can take it") and the deadline ("it comes back to me at the boundary") are gone with
 the unclaimed state that made them true, and any gift message the app composes may not
 offer them (§9.1).
@@ -2989,7 +3013,7 @@ something too, so the end of this section says which of the three still apply to
   would find, and they would be right.
 - **Unsolicited NFTs are drainer spam.** TON wallets are saturated with pushed NFTs
   advertising off-site claims, wallets hide unknown collections by default, and observed
-  activation on cold drops is a fraction of a percent. The mechanic would spend 1 TON per
+  activation on cold drops is a fraction of a percent. The mechanic would spend 1 GRAM per
   near-zero-conversion impression *and* make the collection look like the thing it is
   competing against.
 - **Push gives the payer no reason to aim well.** A random recipient is not the giver's
@@ -3004,7 +3028,7 @@ not pay for — with no oracle, no randomness, no spam, and a self-interested di
 deleted patron mode, its annuity and its claim step, and the argument carries over to the
 gift mint unchanged.)*
 
-**The invite line is the rejected design's shape at a tenth of the price** — 0.1 TON and a
+**The invite line is the rejected design's shape at a tenth of the price** — 0.1 GRAM and a
 line of text to an address that has never played — so each objection is checked against it
 (`DECISIONS.md` D-202):
 
@@ -3023,12 +3047,12 @@ line of text to an address that has never played — so each objection is checke
 - **The aim objection is answered by the referral key.** The comment carries the minter's
   own `n` as `?ref=<n>_tg`, so §4.1's 10% referral line pays the minter when an invitee
   mints, and aiming at a real person is the minter's own interest. A minter who aims at
-  their own wallets instead gets 0.30 TON back and no invitee (§4.1, §12).
+  their own wallets instead gets 0.30 GRAM back and no invitee (§4.1, §12).
 
 #### 4.6.2 (deleted)
 
 This section priced the patron mint against an ordinary one —
-`a · (φ₁ + φ₂ · min(M − 1, 10)) + V > 0.415 TON` — and reported the answer as a **FAIL**
+`a · (φ₁ + φ₂ · min(M − 1, 10)) + V > 0.415 GRAM` — and reported the answer as a **FAIL**
 at the published cost basis. D-106 deleted the mechanic it was the kill criterion for.
 Nothing replaces the inequality, because nothing replaced the payment: the recruit ladder
 pays `k_max` uplift, which has no payer, no expectation and no breakeven. What bounds it
@@ -3038,11 +3062,11 @@ measures that with every ladder maxed at once.
 ### 4.7 Ranks: the only unbounded reward currency
 
 There is a hard ceiling on how good a mint can be made to feel in PRIMES. The ratchet
-theorem (§5) rests on `k < 1`: the moment a 1 TON mint returns 1 TON of floor-value, the
+theorem (§5) rests on `k < 1`: the moment a 1 GRAM mint returns 1 GRAM of floor-value, the
 floor stops rising and the entire pitch collapses. Emission is therefore not available as
 a growth lever — **the protocol cannot buy loyalty with PRIMES without unbuying its own
 central claim.** Rights and status carry no such constraint: they cost no supply, move no
-TON, and cannot run the ratchet backwards. So that is where the reward budget lives.
+GRAM, and cannot run the ratchet backwards. So that is where the reward budget lives.
 
 **Rank is the count of recruits** — addresses this wallet introduced with a §4.5 gift
 mint, counted once each on the recruit edge (§4.6). Never drops, never claims, never
@@ -3100,7 +3124,7 @@ What rank buys, none of it denominated in PRIMES:
   entry point with no rank lookup anywhere, and honouring it would have required either an
   async round-trip to the registrar (which holds rank state, on a different contract) or
   mirroring rank onto the market's hot path, to deliver a prize CONCEPT itself priced at
-  0.01 TON. **D-30 then removed the fee entirely** by deleting the flat-fee reservation
+  0.01 GRAM. **D-30 then removed the fee entirely** by deleting the flat-fee reservation
   lane, so the clause no longer has a referent to correct. Rank's rewards are the `k_max`
   uplift and the era trophy (the tribute multiplier bullet above it is
   itself struck, D-54) — it does not discount the cost of acquiring a number, and it never
@@ -3122,13 +3146,13 @@ What rank buys, none of it denominated in PRIMES:
   more real players into the game than anyone else while that era was open. **They are
   transferable (§11.13, closed 2026-08-16)**, so a trophy can be bought on the secondary
   market from whoever won it — what cannot be bought is the issuance. The earlier claim
-  that "no amount of TON can buy one" is withdrawn with that closure, and the trade it
+  that "no amount of GRAM can buy one" is withdrawn with that closure, and the trade it
   bought is stated in §11.13: a real market and a headline sale, against a prize that is
   no longer unbuyable. It costs the protocol nothing, it converts the recruiter leaderboard
   from a chart into a contest with a prize, and it is the reason to keep watching the
   countdown rather than merely to have watched it. **Its first engraving is the one free
   naming in the game** (`DECISIONS.md` D-179): the holder strikes it through the
-  registrar's `annotate`. A re-engraving costs the rename fee, `renameFee` (200 TON), paid
+  registrar's `annotate`. A re-engraving costs the rename fee, `renameFee` (200 GRAM), paid
   to the ratchet floor (`DECISIONS.md` D-212), and every refusal refunds. The engraving is
   the trophy's, not the number's: the primorial's own item is named by whoever owns it,
   like any number (§4.7.1).
@@ -3142,7 +3166,7 @@ elsewhere in this section — D-54, D-37/D-30). It used to also be `V`, the rank
 §4.6.2's breakeven; D-106 deleted that inequality with the payment it priced, so what is
 left is simply the reward itself.
 
-**Two products, one line.** The result is that the same 1 TON buys either of two
+**Two products, one line.** The result is that the same 1 GRAM buys either of two
 genuinely different things, and the game is better for the tension:
 
 | | ordinary mint | gift mint (§4.5) |
@@ -3150,7 +3174,7 @@ genuinely different things, and the game is better for the tension:
 | the number | kept — referral key, tribute if prime | delivered to the beneficiary, owned outright |
 | PRIMES rebate | yours | theirs |
 | referral commission | yours | yours — the payer keeps their own key's 10% |
-| paid in TON for recruiting | none | **none** |
+| paid in GRAM for recruiting | none | **none** |
 | rank | none | +1 recruit, if the ledger has never seen that address |
 | what the recruit gets | — | the number, plus five raised-ceiling mints |
 | you are buying | an asset | a player |
@@ -3158,8 +3182,8 @@ genuinely different things, and the game is better for the tension:
 **`DECISIONS.md` D-106 rewrote two rows of that table and they are the two that matter.**
 The gift mint used to be the *patron* mint: the number went to an unclaimed pool locked to
 a chosen recipient, the rebate stayed with the payer, and an **annuity** row read "25% of
-the activation mint, then 7.5%, to a 1.00 TON cap" with a best case of "the gift was free,
-and you have a player". Nothing pays TON for recruiting now. What a recruiter buys is a
+the activation mint, then 7.5%, to a 1.00 GRAM cap" with a best case of "the gift was free,
+and you have a player". Nothing pays GRAM for recruiting now. What a recruiter buys is a
 tier on a ladder that raises the ceiling on **their own** future mints — which is why the
 best-case row is gone rather than reworded: there is no bet, so there is no best case.
 
@@ -3190,9 +3214,9 @@ already exists:
 - **The pen on every number you own** (`DECISIONS.md` D-212, superseding D-179). Any
   current owner of a minted number — prime or composite — may name it, and the name is
   on-chain: *"1009 is named."* **The first naming of a number costs `nameFee`, about
-  50 EUR in TON** (chosen from the TON/EUR rate on genesis day — a contract cannot read EUR
+  50 EUR in GRAM** (chosen from the GRAM/EUR rate on genesis day — a contract cannot read EUR
   — and fixed in the collection's deploy data); **every later naming costs `renameFee`,
-  200 TON**, whoever owns it by then. Both are TON, both are published by the collection's
+  200 GRAM**, whoever owns it by then. Both are GRAM, both are published by the collection's
   `getNaming()`, and both go to the **ratchet floor**: the owner sends `name_number` to the
   collection, item(n) checks the sender is its owner and which fee applies, and the fee
   reaches the ledger as `royalty_to_ratchet` — `T` rises by exactly the fee and `S` does not
@@ -3241,7 +3265,7 @@ amended by D-24) — the item named under each is where a reader re-checks it.
 
 This is the heart of the project and the answer to "how does it work?".
 
-**Definitions.** Let each mint pay P = 1 TON, of which the residual β·P reaches the pool
+**Definitions.** Let each mint pay P = 1 GRAM, of which the residual β·P reaches the pool
 after every deduction in §4.1. β is not a chosen constant but the residual, and since
 `DECISIONS.md` D-106 deleted the patron line it ranges over `[0.25, 0.75]`:
 
@@ -3249,29 +3273,31 @@ after every deduction in §4.1. β is not a chosen constant but the residual, an
 β = 1 − 0.05 (treasury) − 0.20 (gas & ops, D-117)
       − 0.10 · 1{n is composite}        // tribute: no recipient on a prime (§4.1)
       − 0.10 · 1{valid referral key}
-      − count × 0.1, count ∈ 0..3       // §4.1's invite line (D-202)
+      − count × (value + 0.001)         // §4.1's invite line (D-202, D-215), ≤ 0.31
 ```
 
 **0.55 is the planning number for composites and 0.65 for primes** — both assume the
-expected case of a valid self-referral and no invite fan-out. The extremes are 0.25 (a
-referred composite sending all three invite transfers) and 0.75 (an unreferred prime sending none).
+expected case of a valid self-referral and no invite fan-out. The extremes are 0.247 (a
+referred composite sending all three genesis invite transfers; 0.24 is the floor under any
+operator terms, D-215) and 0.75 (an unreferred prime sending none).
 D-106 raised the lower extreme from 0.40, which was a recruit's activation mint, to 0.525;
 `DECISIONS.md` D-117's derived 20% gas & ops line (10% before it) took ten points off every
 value in this paragraph, so 0.65/0.75/0.525/0.85 became 0.55/0.65/0.425/0.75; and
-`DECISIONS.md` D-202's 3 × 0.1 TON invite line took the lower extreme from 0.425 to 0.25. β is what
+`DECISIONS.md` D-202's 3 × 0.1 GRAM invite line took the lower extreme from 0.425 to 0.25, and
+D-215's fee-on-top to 0.247. β is what
 reaches the pool *at mint*, and it is the figure the rebate is priced against; the gas & ops
 line's unspent part reaches the pool later, through `sweep_ops`, with no rebate against it
 (§4.1), so an ordinary referred composite's effective pool share is ≈0.65. The
 contract tracks two cumulative counters:
 
-- `T` = total TON ever committed to the pool by the protocol
+- `T` = total GRAM ever committed to the pool by the protocol
 - `S` = total PRIMES ever emitted as rebates, plus the genesis bounty vault (§3.3)
 
 and defines the **internal floor price** `p_f = T / S` (genesis values from §6 seed the
 ratio; no oracle, no external dependency).
 
 **`T` increments at mint, not at flush.** Because the injection is batched (§4.3), `T`
-counts TON *committed to the pool and under protocol control* — some already swapped into
+counts GRAM *committed to the pool and under protocol control* — some already swapped into
 the DeDust position, the remainder sitting on the ratchet's balance as `pending`. Counting
 at
 flush instead would mean a mint does not ratchet the floor until some unrelated party
@@ -3293,16 +3319,16 @@ next one, when the `PoolInject` lands. For those few seconds the six terms sum t
 `T`, and nothing is wrong. The ratchet stores the `T` each `PoolInject` carried (`tCache`) in
 the same transaction as the `pending` credit. So the check splits into two exact claims:
 `tCache = seeded + swapped + pending + stakedCost + exiting + realizedLoss`, read from one
-ratchet state by `getFloorOracle` and `getStaking`; and `T − tCache`, TON still in flight. A
+ratchet state by `getFloorOracle` and `getStaking`; and `T − tCache`, GRAM still in flight. A
 lost `PoolInject` cannot hide in the second. The next one that lands sets `tCache` to a `T`
 that includes the lost amount, and the first claim fails. The read-proxy's
 `/ratchet/identity` reads the ratchet first and `T` last, so the second is never negative.
 The genesis seed is the one credit to `T` that sends no `PoolInject`, so until one follows
 it, `tCache < seeded` and the check is against `T` directly. The first three terms are the original identity; the last three
 arrived with §4.3.2's staked reserve (`DECISIONS.md` D-151) and are published together by
-`getStaking()` on the ratchet — `stakedCost` is TON deposited into the Tonstakers pool,
+`getStaking()` on the ratchet — `stakedCost` is GRAM deposited into the Tonstakers pool,
 carried at what it cost; `exiting` is a tranche on its way back, also at cost; and
-`realizedLoss` is what the external-risk note below is about. **None of the three moves TON between
+`realizedLoss` is what the external-risk note below is about. **None of the three moves GRAM between
 this identity and anywhere else** — a stake moves `pending → stakedCost`, an exit moves
 `stakedCost → exiting` at send and `exiting → pending` on arrival, and each is credited in
 the same step the other is debited, so the sum is conserved by construction rather than by
@@ -3315,12 +3341,12 @@ ratchet and raises `T` and `pending` by the same amount in the same step. It emi
 
 **The `seeded` term, and why it is `0` in this deployment** (`DECISIONS.md` D-26, D-46).
 The field exists for a possible future deployment that funds a real founder seed straight
-into `T` — `genesisPipeline.ts` would set `seedT` to TON actually deposited as pool
+into `T` — `genesisPipeline.ts` would set `seedT` to GRAM actually deposited as pool
 backing, and the ledger's `handleGenesisSeed` would assign it to `T` without ever
 crediting the ratchet's `pending`, since that backing would sit in the pool rather than on
 the ratchet. **This deployment does not do that.** D-46 removed the deploy-time DeDust
 deposit (and D-166 deleted the operator's genesis PRIMES allocation that replaced it,
-§6 point 3); there is never a TON deposit, so `seedT = 0` and stays `0` for the life of the deployment — `handle
+§6 point 3); there is never a GRAM deposit, so `seedT = 0` and stays `0` for the life of the deployment — `handle
 GenesisSeed` is one-shot. The term is kept rather than deleted (checkable via `getSeedT`)
 so the identity above remains true and auditable by construction rather than collapsing to
 the terms that happen to be non-zero because nobody built the other case yet. The same
@@ -3328,8 +3354,8 @@ argument now covers `realizedLoss`, which also reads `0` on a healthy deployment
 for the same reason. `pending` and `swapped` still behave exactly as documented below — only
 `seeded` differs from a deployment that used a real founder seed.
 
-**Swapped TON is locked in the pool forever, once there is a pool.** Flush buys add no LP
-— so every TON the protocol ever swaps lands in pool reserves that **no one can withdraw**
+**Swapped GRAM is locked in the pool forever, once there is a pool.** Flush buys add no LP
+— so every GRAM the protocol ever swaps lands in pool reserves that **no one can withdraw**
 on the protocol's behalf. Under D-46 there is no guarantee a pool exists from genesis: it
 comes into being whenever anyone (including the operator) first adds liquidity to it, using
 DeDust directly — see §6 point 3. Before that, `flush()` simply cannot fill (the swap
@@ -3391,10 +3417,10 @@ asymptotically and never reaches it. Three consequences worth being explicit abo
    `S ≤ S_MAX` after crediting, so no genesis argument can open above the cap.
 5. **The taper is not by itself a bound; the headroom clamp is.** `e·(S_MAX − S)/S_MAX`
    stays under `S_MAX − S` only while the pre-taper emission `e ≤ S_MAX`. A mint's rebate
-   is bounded that way by construction (`I ≤ 1 TON` against `p_f·S_MAX` in the tens of
-   thousands of TON), but `donate_floor`'s `X` is uncapped, so past `S_MAX/L` = 120,000 TON
+   is bounded that way by construction (`I ≤ 1 GRAM` against `p_f·S_MAX` in the tens of
+   thousands of GRAM), but `donate_floor`'s `X` is uncapped, so past `S_MAX/L` = 120,000 GRAM
    of donation the taper alone would overshoot. `donate_floor` therefore also clamps its
-   emission to `S_MAX − S`; the donated TON still credits `T` in full, so the floor only
+   emission to `S_MAX − S`; the donated GRAM still credits `T` in full, so the floor only
    rises harder.
 
 **And `S` is not decremented by a failed mint either — the shortfall is named instead
@@ -3428,14 +3454,14 @@ schedule below). The rebate *share* grows every second — waiting is rewarded �
 tops out exactly `T_ramp` after the last mint** (`DECISIONS.md` D-98), where it parks until
 somebody mints and resets the clock to `k_min`. The climb is a straight line: at half the
 ramp the share is halfway up the band, and past the ramp waiting buys nothing at all.
-The rebate is denominated in TON-value at the floor price and **never reaches 100% of the
+The rebate is denominated in GRAM-value at the floor price and **never reaches 100% of the
 injection** — `k ≤ k_max ≤ K_CEIL = 0.95 < 1` is what the ratchet theorem needs, and the
 ramp reaching its ceiling does not touch it.
 Lots won ahead of the head settle at k = k_min always (§4.4), and **prime mints use k = 0 always**
 (§5.1) — the clock has nothing to modulate on a number that emits nothing.
 
 **The acquisition premium is `k = 0` money too** (§4.4 point 1b). Whatever a buyer pays
-above the 1 TON mint leg arrives on its own message field and never inside it: the 1 TON
+above the 1 GRAM mint leg arrives on its own message field and never inside it: the 1 GRAM
 splits five ways as §4.1 and buys its rebate, while the premium — **since `DECISIONS.md`
 D-114, split 50/50 between the ratchet and the governed treasury (§5.5), not routed to the
 ratchet whole** — has its ratchet-bound half forwarded to `pending` with **nothing added to
@@ -3447,10 +3473,10 @@ must physically arrive for the ledger to credit it (the settle handler asserts
 against a balance that does not hold it.
 
 **Since `DECISIONS.md` D-90 the premium arrives immediately on both lanes.** A clearing
-price `C` decomposes into a 1 TON leg that runs through §4.1, `RES_GAS`, and a premium
+price `C` decomposes into a 1 GRAM leg that runs through §4.1, `RES_GAS`, and a premium
 `C − 1 − RES_GAS` forwarded **at the moment the lot closes**, split 50/50 between the
 ratchet's `pending` and the governed treasury (`DECISIONS.md` D-114, amending D-7 — see
-below). ~~On the ascending lane the 1 TON is escrowed on a shard and splits when the
+below). ~~On the ascending lane the 1 GRAM is escrowed on a shard and splits when the
 head arrives, months later~~ — **VOID: there is no shard, no escrow and no later
 settlement. A won lot mints in its closing transaction on both lanes**, so the two legs land
 together whatever the number's parity. Nothing is added to `S`, so `p_f = T/S` rises by
@@ -3464,7 +3490,7 @@ it now joins — §5.5.1). And the floor ratchets on the day the lot closes rath
 month five.
 
 ~~There is **no treasury cut on the premium**: 100% ratchet, with the treasury paid its 5%
-out of the 1 TON leg like any other mint, so no lot size ever turns trophy money into team
+out of the 1 GRAM leg like any other mint, so no lot size ever turns trophy money into team
 revenue (§2 principle 4).~~ **AMENDED — `DECISIONS.md` D-114 (2026-09-10): this was D-7's
 original rule and no longer holds.** The premium now splits 50/50 ratchet/governed-treasury.
 D-114 records why this is signed despite §2 principle 4's original wording: the treasury
@@ -3488,7 +3514,7 @@ mitigations that actually exist rather than a mechanism that never shipped.
 **The rebate is capped by what actually survives the split.** β·P here is the real
 residual computed at mint time — after NFT and jetton-wallet deploy gas, tribute, the
 referral, and treasury — not a hardcoded fraction of the mint price. So the protocol can
-never emit more floor-value than the TON it actually retained, and this is checkable
+never emit more floor-value than the GRAM it actually retained, and this is checkable
 per-transaction rather than argued in prose.
 
 **Theorem (monotone floor).** After any mint, the new floor is
@@ -3505,7 +3531,7 @@ future change to the split. β is free to vary per mint; only `k < 1` is load-be
 
 So the floor price is a strictly increasing step function of participation, independent
 of external trading, independent of whether rebate recipients dump instantly. Emission
-value is always strictly less than injected TON, cumulatively and per-event.
+value is always strictly less than injected GRAM, cumulatively and per-event.
 
 **The one external risk to the theorem, stated next to the proof rather than in a decision
 record.** Since §4.3.2 the backing has one counterparty — the Tonstakers liquid-staking pool
@@ -3516,7 +3542,7 @@ the same screen.
 
 The exception exists because of an **asymmetry in `T`: no message can lower it.** `T` is the
 ledger's counter, incremented at mint, and *never falls* is precisely what the theorem
-asserts — so the ratchet has no opcode that decrements it and must not acquire one. TON that
+asserts — so the ratchet has no opcode that decrements it and must not acquire one. GRAM that
 genuinely leaves therefore cannot be subtracted. It is carried instead as a named term,
 `realizedLoss`, and the identity above closes only because that term is in it; a design that
 silently subtracted would break the theorem, and one that silently omitted would leave the
@@ -3534,8 +3560,8 @@ calls.
 **No path the contract chooses can make it non-zero**, which is what makes this a
 counterparty risk and not a design risk. Of §4.3.2's three exit legs, only leg 2 names a
 price at all, and its `min_out` is floored at the tranche's own cost basis — a book that will
-not pay what the TON cost is refused, not discounted. Legs 1 and 3 redeem at the pool's own
-`total_balance/supply` and name no price. So the only way TON comes back short of cost is the
+not pay what the GRAM cost is refused, not discounted. Legs 1 and 3 redeem at the pool's own
+`total_balance/supply` and name no price. So the only way GRAM comes back short of cost is the
 pool paying under it, i.e. slashing. The term is defence in depth against a future change to
 leg 2's bound, and an honest place for an external loss to land.
 
@@ -3565,9 +3591,9 @@ always and `T` grows without bound, so **`p_f` grows without bound** — the rat
 says so, and it is the whole reason to hold the token. Therefore *no price ceiling on
 PRIMES can ever be an invariant*, and writing one into this document would be exactly the
 uncheckable economic claim §2 forbids. What `L` buys is a **horizon**: at `L = 10,000` the
-floor ~~opens at 1/60,000 TON per PRIMES (D-43; up from 1/20,000 under D-42's smaller
-vault)~~ **opens at 1.0761e-05 TON/PRIMES: D-100 point 2 cut the genesis donation from
-240 TON to 4.20, D-154 raised it to 132.50 and D-204 to 200, against D-204's `S₀` of 16,600,000, to which the
+floor ~~opens at 1/60,000 GRAM per PRIMES (D-43; up from 1/20,000 under D-42's smaller
+vault)~~ **opens at 1.0761e-05 GRAM/PRIMES: D-100 point 2 cut the genesis donation from
+240 GRAM to 4.20, D-154 raised it to 132.50 and D-204 to 200, against D-204's `S₀` of 16,600,000, to which the
 donation's own mint adds 1,972,333** — 1.55× lower than D-92's floor rather than
 47.6×, so the horizon below is understated by that factor too and is due the same
 re-derivation.
@@ -3580,7 +3606,7 @@ promise about a price band, and any surface that renders it as one is wrong.
 
 The design consequence is that **no fixed nominal PRIMES amount can be a fixed reward.**
 Anything the protocol is supposed to pay at a *constant value* — era ceremonies (§7), quest
-rewards (§9.4) — is denominated in TON and converted at the floor when it pays. Anything
+rewards (§9.4) — is denominated in GRAM and converted at the floor when it pays. Anything
 left in PRIMES inflates against a budget the vault fixed once, at genesis.
 
 **Relation to the AMM price.** The protocol is a **price-disciplined** net buyer on its
@@ -3589,7 +3615,7 @@ only at or below `p_f` under the floor guard (§4.3.1). So the relationship betw
 floor and the market is no longer "the protocol buys on a schedule and hopes" — it is a
 standing bid with a published reservation price. If the AMM price sits below the floor
 trajectory, the protocol's accumulated balance is spent buying it back and arbitrage
-closes the gap; if it sits above, the protocol simply holds TON that already counts in
+closes the gap; if it sits above, the protocol simply holds GRAM that already counts in
 `T`. Cumulative buying is bounded below by the ratchet and now *conditioned* on price,
 which is what makes "PRIMES appreciates if participants keep coming, with zero external
 buyers" a mechanism rather than a promise — and what makes a sustained detachment below
@@ -3656,7 +3682,7 @@ belongs on the same screen as the proof.
 
 ### 5.1 Primes emit nothing
 
-> **D-88 note (2026-08-31).** What a prime BUYER pays is no longer 1 TON at the bottom of
+> **D-88 note (2026-08-31).** What a prime BUYER pays is no longer 1 GRAM at the bottom of
 > the lane — it rests at `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` (§4.4's D-88 box, D-99 §1.2). The split below is
 > untouched: it runs on the **nominal** `MINT_PRICE` on every lane, and everything paid
 > above `MINT_PRICE + RES_GAS` is premium, `k = 0` money, split 50/50 between the ratchet
@@ -3664,7 +3690,7 @@ belongs on the same screen as the proof.
 > under D-7). A higher resting price therefore makes this section's argument *stronger*,
 > not different — it just means half the extra reaches `T`, not all of it.
 
-**A prime mint pays the full 1 TON, takes the full split, and receives a rebate of zero.**
+**A prime mint pays the full 1 GRAM, takes the full split, and receives a rebate of zero.**
 `k = 0`, unconditionally and regardless of the clock, rank, or how long the head has been
 waiting.
 
@@ -3683,7 +3709,7 @@ touching any other participant's line:
 
 1. **The asset itself** — a perpetual claim on the tribute of every multiple of `p` ever
    minted, which is the only cash flow in the game that never terminates.
-2. **The pen on the number while they hold it** — any owner names a number once for TON
+2. **The pen on the number while they hold it** — any owner names a number once for GRAM
    (§4.7.1, `DECISIONS.md` D-212; it no longer stays with the finder after a sale).
 3. **+1 prime rank**, feeding a ladder whose rights are the same `k_max` headroom that
    recruit rank pays in (§4.7.1 — the tribute multiplier and the
@@ -3731,7 +3757,7 @@ whole line:
 
 - **Tribute is strong once the head has moved.** A prime `p` collects a share of the 10%
   tribute line from every multiple, and under the `√p` weighting of §3.2 it takes 60–98% of
-  the divisor line on each one. Simulated, `p` repays its full 1 TON mint price once the
+  the divisor line on each one. Simulated, `p` repays its full 1 GRAM mint price once the
   head reaches about **12p** for large primes and **20p** for the genesis ones — the large
   primes are *cheaper* to repay in relative terms, they simply need more calendar mints to
   get there (§3.2, "large primes are early, not underpaid"). Phase 1 computes this against
@@ -3742,10 +3768,10 @@ whole line:
 
 | n | k_max(n) | headroom to `K_CEIL` | credit value | rebate forgone | protocol nets |
 |---:|---:|---:|---:|---:|---:|
-| ≤ 1,000 | 0.900 | 0.050 | 0.138 TON | 0.585 TON | 0.447 TON |
-| 10,000 | 0.675 | 0.275 | 0.165 TON | 0.439 TON | 0.274 TON |
-| 100,000 | 0.540 | 0.410 | 0.165 TON | 0.351 TON | 0.186 TON |
-| 1,000,000 | 0.450 | 0.500 | 0.165 TON | 0.293 TON | 0.128 TON |
+| ≤ 1,000 | 0.900 | 0.050 | 0.138 GRAM | 0.585 GRAM | 0.447 GRAM |
+| 10,000 | 0.675 | 0.275 | 0.165 GRAM | 0.439 GRAM | 0.274 GRAM |
+| 100,000 | 0.540 | 0.410 | 0.165 GRAM | 0.351 GRAM | 0.186 GRAM |
+| 1,000,000 | 0.450 | 0.500 | 0.165 GRAM | 0.293 GRAM | 0.128 GRAM |
 
 (Credit value = `min(PRIME_UPLIFT, headroom) · PRIME_WINDOW · β·P` at β = 0.55 on the
 composite mints it is spent on; rebate forgone = `k_max(n) · 0.65 · P`. Both β figures are
@@ -3764,7 +3790,7 @@ Two properties to read off that table, both load-bearing:
   actually stops holding at n ≈ 10⁹** — `2.7/log₁₀(10⁹) = 0.30` exactly — **not 10¹³, and
   the `k_min` clamp is not why it's unreachable: `k_min` does not bind until n ≈ 10¹³·⁵,
   four decades later.** It is unreachable because the head cannot get there — a billion
-  composite mints at 1 TON each — and because `PRIME_UPLIFT`'s credit only ever applies on
+  composite mints at 1 GRAM each — and because `PRIME_UPLIFT`'s credit only ever applies on
   a head mint (`upliftSum = 0` on every off-head path), so the auction and reservation
   lanes that *can* name an n this large never spend the window.)
 
@@ -3775,7 +3801,7 @@ Two properties to read off that table, both load-bearing:
 - **The split.** No new line, no new rate — two existing lines resolve to nothing (§4.1).
 - **`S`.** Emission is now a function of composite mints only. `S` still never decrements,
   still pre-counts the bounty vault, still understates backing.
-- **Primes bought off the lot.** A prime clearing settles at `k = 0` on its 1 TON leg,
+- **Primes bought off the lot.** A prime clearing settles at `k = 0` on its 1 GRAM leg,
   with the premium already added to `T` at the close, so the acquisition route changes what
   securing a prime *costs* and nothing whatever about what it emits. Primes are not
   reservable at all (§4.4 point 1b's lane rule), so there is no reserved-prime case left to
@@ -3786,7 +3812,7 @@ future composite mints, bounded but real, and they belong in the same unpriced-l
 bucket as rank rights (§12). The stall risk is eliminated structurally rather than by
 arithmetic — primes are off the head — and what Phase 1 must now run instead is the
 *demand* question: how long an unpopular prime sits at its resting price — `max(NPV(p) / 2,
-P0(p) / 3, MINT_PRICE)` since D-88 point 1 and D-99 §1.2, not a universal 1 TON — and how much tribute is forfeited
+P0(p) / 3, MINT_PRICE)` since D-88 point 1 and D-99 §1.2, not a universal 1 GRAM — and how much tribute is forfeited
 to the treasury (§4.1) while it does.
 
 **What this deliberately is NOT:**
@@ -3820,7 +3846,7 @@ is now one action and family 2 is dropped — see each entry):
 
 1. **Burn-priced cosmetics and rights — EMPTY since `DECISIONS.md` D-212.** The family
    shipped with three named examples and none is left. Naming (§4.7.1), the last, is paid in
-   **TON** by the number's owner and goes to the ratchet floor, so it is not a sink at all;
+   **GRAM** by the number's owner and goes to the ratchet floor, so it is not a sink at all;
    `primes_sink.tolk`, its ledger round trip (`quote_floor`), `shared/schemas/sink.tlb` and
    `shared/params.json`'s `sinks` block are deleted with it. The era-ceremony lot went with
    `DECISIONS.md` D-126 (§7 defined no lot, no reserve and no prize) and the constellation
@@ -3831,17 +3857,17 @@ is now one action and family 2 is dropped — see each entry):
    already discretionary.
 3. **PRIMES staking** (§5.3, `DECISIONS.md` D-168). Not a burn: a time lock that takes PRIMES
    off the market for a term the chain enforces, paid in PRIMES the treasury already holds.
-   It moves no TON, decrements no `S` and touches no split, so it sits under the rule below
+   It moves no GRAM, decrements no `S` and touches no split, so it sits under the rule below
    without a burn. *(Until D-168 this entry was "staking for `k_max` headroom", a purchasable
    rebate uplift gated on a simulation result; that design is deleted.)*
 
 **The rule that unites them, and the reason the whole layer is free:**
 
-> A sink may consume PRIMES and may grant rights. It may **never move TON**, never
+> A sink may consume PRIMES and may grant rights. It may **never move GRAM**, never
 > decrement `S`, and never touch the split.
 
 That single sentence is what leaves the ratchet theorem, the closed 100% split (§4.1) and
-the three-pools reconciliation (§3.4) untouched by every sink this design will ever add. A sink contract would hold a jetton wallet and **zero TON
+the three-pools reconciliation (§3.4) untouched by every sink this design will ever add. A sink contract would hold a jetton wallet and **zero GRAM
 liability**, so it would not appear in the balance-versus-declared-liability check at all.
 Burning inside a sink does not move `p_f`, because `S` is cumulative emission and never
 decrements (§5, §3.3) — it widens the circulating-supply gap in holders' favour, exactly
@@ -3882,7 +3908,7 @@ the market are committed for a term the chain enforces.
 *fifth `k_max` uplift*: a stake bought `STAKE_UPLIFT(tier)` of rebate headroom, metered by
 an entitlement `θ < 1`. D-34 shipped the plumbing at `STAKE_UPLIFT_MAX = 0` because every
 figure it needed was bounded and not selected, and two costs sat on it that no parameter
-could remove: a purchasable uplift **sells ratchet rate** — more emission per TON injected,
+could remove: a purchasable uplift **sells ratchet rate** — more emission per GRAM injected,
 taken from every holder who did not stake — and it **lowers `x*`** (§8.1) for exactly the
 wallets holding the most PRIMES. D-168 deletes the leg outright: `STAKE_UPLIFT_MAX`,
 `stakeUplift` on `MinterState`, `SetStakeUplift`, `SetStakeSink`. The clamp in §5 sums four
@@ -3978,9 +4004,9 @@ settle rule run as a read, maturity proration included); `getTierTerms()`;
 - **The ratchet.** Nothing here touches `k`. The §5 clamp sums four earned uplifts and
   `K_CEIL < 1` is unchanged.
 - **`S` and `T`.** The rewards are vest PRIMES already counted in `S` at genesis (§3.3);
-  staking mints nothing and moves no TON, so neither counter moves.
-- **The split.** No new line, no TON path, no change to §4.1. §5.2's rule holds.
-- **Solvency.** The stake contract owes PRIMES and holds no TON — it is not a pool of TON
+  staking mints nothing and moves no GRAM, so neither counter moves.
+- **The split.** No new line, no GRAM path, no change to §4.1. §5.2's rule holds.
+- **Solvency.** The stake contract owes PRIMES and holds no GRAM — it is not a pool of GRAM
   in §3.4's sense, and ST-1 is its reconciliation row.
 
 **What it costs, honestly.** The vest that pays stakers used to pay LP providers (the §5.5.3
@@ -4013,25 +4039,25 @@ at the floor:
 | 100,000 | 0.540 | 0.297 | 0.100 | 0.080 | 0.020 | **0.200** | **40.2%** | 3.03 |
 | 1,000,000 | 0.450 | 0.248 | 0.100 | 0.080 | 0.020 | **0.200** | **44.7%** | 3.64 |
 
-(TON per 1 TON mint. Rebate at floor = `k_max(n)·β·P`; referral is §4.1's flat 10%;
+(GRAM per 1 GRAM mint. Rebate at floor = `k_max(n)·β·P`; referral is §4.1's flat 10%;
 divisor line and flat dividend are §3.2's `1−f` / `f` halves of the 10% tribute line;
 asset share = asset side ÷ (asset side + rebate). `x*` is §8.1's ceiling at `c = 0.10`.
 Every column is derivable from §4.1, §5 and §8.1; the β-dependent rebate column is a
 Phase A output and is quoted here at the planning β. `sim/tests/test_late_game.py`
 recomputes it from `economics.asset_share_curve`.)
 
-Read the two bold columns together: **the asset side is a constant 0.200 TON at every
+Read the two bold columns together: **the asset side is a constant 0.200 GRAM at every
 point on the line, and the rebate falls by half across three decades.** That is the whole
 rotation. It is the same mechanism §3.2 already applies to one narrow case — the
-`PRIME_UPLIFT` credit's value rising from 0.138 to 0.165 TON "as `k_max(n)` decays away
+`PRIME_UPLIFT` credit's value rising from 0.138 to 0.165 GRAM "as `k_max(n)` decays away
 from the fixed `K_CEIL` and opens headroom" — generalised from the credit to the split.
 
 **Three qualifiers, none of them optional.** Each one is a place where a reader who
 checks §3.2 would otherwise catch the section overclaiming:
 
 - **The flat prime dividend's *rate* decays per prime; its lifetime total does not.** The
-  line is a constant `f · 0.10` TON per mint divided among π(n) primes, so an individual
-  prime's dividend *rate* falls like `1/π(n) ≈ ln(n)/n` — 0.119 TON per 1,000 mints of head
+  line is a constant `f · 0.10` GRAM per mint divided among π(n) primes, so an individual
+  prime's dividend *rate* falls like `1/π(n) ≈ ln(n)/n` — 0.119 GRAM per 1,000 mints of head
   progress at n = 10³ against 0.00025 at n = 10⁶. That number is real and it is the wrong
   denominator to stop at, because the mint count grows over the same stretch: cumulative
   flat income sums `Σ 1/π(n)`, which diverges like `ln²(n)`. Measured at equal
@@ -4063,7 +4089,7 @@ checks §3.2 would otherwise catch the section overclaiming:
 
 **The rotation is denominated at the floor, and stops being a rotation at the ceiling.**
 `x*(n) ≈ (1−c)/(k_max(n)·β)` is proportional to `1/k_max(n)`, so at the premium ceiling
-the rebate is worth `1 − c` = 0.90 TON *for every n* and the asset share is a flat 18.2%
+the rebate is worth `1 − c` = 0.90 GRAM *for every n* and the asset share is a flat 18.2%
 all the way along. The decay term divides out exactly. So the honest statement is that the
 rotation describes what the protocol pays, not what the market pays — and the band §8.1
 publishes widens over the same stretch, which is the reader's compensation for that
@@ -4072,7 +4098,7 @@ caveat, not a hedge against it.
 **Both halves of the line rotate, and that is what keeps §3.2's symmetry intact.**
 Emphasising tribute alone would read as "primes win", which §3.2 explicitly rejects. The
 referral key is the composite's `n`-invariant leg — 10% of every mint it routes, flat, in
-TON, with no `n` term anywhere in §4.1 — and it is the cleanest instance of this section's
+GRAM, with no `n` term anywhere in §4.1 — and it is the cleanest instance of this section's
 claim in the entire design. Primes get the perpetual claim; composites get the key. Both
 are denominated in mint flow, and neither is denominated in `k_max`.
 
@@ -4124,12 +4150,12 @@ engineering in that block's own `_source`.
 #### 5.5.1 The treasury has no key
 
 `primes_treasury.tolk` holds four assets: **PRIMES** (the genesis vest — §3.3, D-100
-point 6 as amended by D-166 — which funds §5.3's staking through `distribute()`), **TON** (§4.1's 5% line on every mint since `DECISIONS.md` D-152, plus 58% of every
+point 6 as amended by D-166 — which funds §5.3's staking through `distribute()`), **GRAM** (§4.1's 5% line on every mint since `DECISIONS.md` D-152, plus 58% of every
 unsold-prime tribute forfeit (D-166) — §4.1, §6 point 2), **LP**
-(DeDust PRIMES/TON receipts — depositors' custody positions and nothing else, D-167) and,
+(DeDust PRIMES/GRAM receipts — depositors' custody positions and nothing else, D-167) and,
 since `DECISIONS.md` D-151, **tsTON** (§4.3.2's harvested staking yield, which arrives as
 tsTON and is not converted — a DEX leg would be a proposal governance has not made).
-**Three of the four are proposable — TON, PRIMES and tsTON.** LP is not: every LP token the
+**Three of the four are proposable — GRAM, PRIMES and tsTON.** LP is not: every LP token the
 treasury holds is a depositor's, and `getTreasuryBalances()` publishes each balance. It has
 **no owner field, no admin opcode, no pause, no upgrade and no
 beneficiary change.** The only one-shot inbound is `set_wallets`, the circular-address
@@ -4156,8 +4182,8 @@ nothing a §5 proof depends on.
 
 #### 5.5.2 Two proposal kinds, and what they must clear
 
-**The spending proposal is: transfer `{TON | PRIMES | tsTON}` to an address.** Plain jetton or
-TON transfers. **LP is not a proposable asset** (`DECISIONS.md` D-167): the treasury owns no
+**The spending proposal is: transfer `{GRAM | PRIMES | tsTON}` to an address.** Plain jetton or
+GRAM transfers. **LP is not a proposable asset** (`DECISIONS.md` D-167): the treasury owns no
 LP of its own, so there is nothing a vote could move without touching a depositor's. There is no
 parameter-change proposal and no upgrade proposal, because there is nothing in this system a
 vote is allowed to reach but one.
@@ -4166,7 +4192,7 @@ vote is allowed to reach but one.
 ratchet (§11.1) is queued by the proposer key on `primes_venue_timelock.tolk` and cannot
 execute until this electorate passes a proposal naming that record's `seq` (`amount`) and the
 timelock (`dest`); its `execute` sends `confirm_venue` and moves no value, so the cap below
-does not apply and the executor pays the 0.03 TON hop. The reason it exists: a re-pointed
+does not apply and the executor pays the 0.03 GRAM hop. The reason it exists: a re-pointed
 DeDust vault receives every flush tranche of `pending`, so the proposer key alone would be an
 admin withdraw path (§8). The rules are the ones below, plus one of its own: **the confirming
 vote must close no earlier than the record's `eta`** — open no earlier than `eta − voteDuration`
@@ -4212,8 +4238,8 @@ between the vote and the execution is respected, and a proposal written against 
 treasury **fails** rather than draining a poorer one. Three details of "that asset's
 balance" are contract facts a surface must not round off:
 
-- **TON** is this account's balance **less the value the execute message itself carried and
-  less a 0.05 TON rent floor**, so a caller cannot inflate the cap by over-funding the
+- **GRAM** is this account's balance **less the value the execute message itself carried and
+  less a 0.05 GRAM rent floor**, so a caller cannot inflate the cap by over-funding the
   execute and the account can always pay its own storage.
 - **PRIMES** is the whole `primesBalance`. Until D-168 it was the **free** balance,
   `primesBalance − accruedUnclaimed`, because PRIMES accrued to an LP miner were that miner's;
@@ -4235,7 +4261,7 @@ moved" (`retry_credit`, `retry_mint`).
 
 **The treasury's state is O(live proposals), never O(votes)** (`DECISIONS.md` D-188 point 7).
 Config 43 caps an account at 65,536 cells, and a book of one row per (proposal, position)
-with no minimum vote weight filled it for roughly 650–900 TON of dust positions and votes,
+with no minimum vote weight filled it for roughly 650–900 GRAM of dust positions and votes,
 after which `vote` and `propose` failed for ever. So:
 
 - **Who voted lives on the voter's child.** `position_vote` writes
@@ -4269,7 +4295,7 @@ would exceed.
 #### 5.5.3 LP custody: four lock terms that buy a vote, and `distribute()`, the one payout that bypasses it
 
 The treasury is the **custody address** for LP that wants a vote. Anyone transfers DeDust
-PRIMES/TON LP receipts to it with a tier tag and holds a **position**; several positions per
+PRIMES/GRAM LP receipts to it with a tier tag and holds a **position**; several positions per
 wallet; a position may be forwarded to the sink (§5.5.4) at any moment. Withdrawal is to the
 depositor and nowhere else. Because positions grow per wallet, they live on a **child
 contract** (`primes_lp_position.tolk`, one per owner) rather than in a dictionary on the
@@ -4311,7 +4337,7 @@ discharged and any tier is allowed, shorter ones included.
 sends a message when a term matures, so the two **published** figures — the child's
 `getVoteWeight()` and the treasury's `eligibleWeight` — keep counting terms that have ended.
 `expire(id)` is the poke that corrects them: anyone may send it, it moves no LP, no PRIMES
-and no TON, it names no destination, and a second send returns rather than decrementing
+and no GRAM, it names no destination, and a second send returns rather than decrementing
 twice. **It is not the vote rule.** The rule is the clock: `position_vote` names one
 position and weighs it against that position's own `maturesAt`, so a matured term is refused
 whether or not anybody has expired it. What the stale figure actually costs is the
@@ -4335,7 +4361,7 @@ protocol adds a vote on top of that and nothing else. Neither term touches `S` o
 
 **The whole path is inside the app, and both halves of it are the player's own
 transactions** (D-100 point 5, and the surface rule in §9.1). A player who holds no LP mints
-it: a two-sided DeDust deposit — TON to the native vault, PRIMES to the jetton vault as a
+it: a two-sided DeDust deposit — GRAM to the native vault, PRIMES to the jetton vault as a
 TEP-74 transfer's forward payload — sent as two messages under one signature, because the
 pool pairs the two legs and a player who signed only one would have half a deposit waiting
 for a partner that never arrives. **The LP receipt can only ever return to the account that
@@ -4369,7 +4395,7 @@ restores `primesBalance`, as `harvest()`'s does.
 balance**, `B_k = B₀·(1 − 0.057)^k > 0` for every finite epoch `k`: **the treasury never
 empties.** There is no schedule to exhaust, no cliff, and no "the rewards stopped" state —
 the payout shrinks with the pot, and every inflow (a PRIMES donation, the next vest
-tranche, a TON proposal whose recipient buys PRIMES and sends them back — D-168 Q11)
+tranche, a GRAM proposal whose recipient buys PRIMES and sends them back — D-168 Q11)
 lifts the whole trajectory from that epoch forward. A rule that *cannot* drain the treasury
 has no terminal state a governance process would need to protect against, so putting it to a
 vote would buy nothing and would add a governance lever D-100 wanted nowhere. The rule's
@@ -4388,13 +4414,13 @@ more. The PRIMES liability lives on the stake contract now, as §5.3's ST-1.
 withdraw path — no send to guard. `LpSink.spec.ts` asserts that against the built bytecode,
 which is the cheapest possible proof of permanence. Its LP wallet balance is **locked
 depth**, published by `getLocked()`, monotone non-decreasing (**TR-6**), and reconciled in
-one get-call against that wallet. TON sent to that address is also gone; the contract
+one get-call against that wallet. GRAM sent to that address is also gone; the contract
 declares no liability and appears in no §3.4 reconciliation row.
 
 **Locked depth is never summed into `T`, and this is a copy constraint rather than a
-preference.** An LP receipt is a claim on a pool whose TON/PRIMES composition moves with
+preference.** An LP receipt is a claim on a pool whose GRAM/PRIMES composition moves with
 every trade, so any figure derived from it is **non-monotonic** — it falls when the pool is
-bought through. `T` is the ratchet's TON side and §5's theorem is that `p_f = T/S` only ever
+bought through. `T` is the ratchet's GRAM side and §5's theorem is that `p_f = T/S` only ever
 rises. Adding a term that can fall would **void the proof outright**, not weaken it. So the
 product shows **two guarantees on two panels**:
 
@@ -4408,11 +4434,30 @@ backing for the floor, as collateral, or as part of `T`. It is a *market* guaran
 much of the pair can never be pulled. That is worth saying plainly and worth exactly nothing
 to `p_f`.
 
-**Locking is a one-way door out of the electorate.** LP forwarded from custody to the sink
-stops being a position: it carries no vote weight, because the vote is computed over custody
-positions and the sink holds none. A depositor who locks forever is choosing the strongest
-possible statement about the pair over a say in the treasury, and a surface offering the
-button must say so.
+**Locking forever keeps the vote, at the top of the ladder** (`DECISIONS.md` D-214). LP
+forwarded from custody to the sink stops being a position — no term, no withdraw, no relock —
+but its amount joins **one per-wallet forever total** on the depositor's own position child
+(`getForever()`), which votes `amount × forever_vote_multiplier` (×100, owner-set, past the
+1-year term's ×30) and never matures. The sink still holds no record and sends nothing; the
+vote lives on the child, so the sink's "no outbound message type at all" is untouched. Four
+rules make it safe:
+
+- **One total, not a row per lock.** A thousand dust locks write one `coins` field a thousand
+  times, so neither the child nor the treasury grows with them; the treasury keeps only the
+  aggregate `eligibleWeight` it always kept.
+- **Every credit restamps `foreverSince` to `now`.** The whole total is new weight, so LP that
+  voted on an open proposal as a term cannot vote on it again once locked forever (1202). A
+  top-up delays the total's next vote; it never adds one.
+- **Only the position round trip credits it.** `confirm_withdraw` credits the total only for a
+  move that left as a sink-forward, and a bounced sink-forward takes the credit back on both
+  sides (`restore_position.from_sink`). LP sent to the sink any other way — the genesis seed
+  included — carries no vote.
+- **It counts in `eligibleWeight`, and so in the 1% propose bar** (owner-accepted). Forever
+  weight whose holder stops voting stays in that denominator for good, which raises the bar
+  for everyone else; the trade is accepted in writing in D-214.
+
+It votes and proposes under the reserved position id `0xFFFFFFFF` (`FOREVER_POSITION_ID`),
+which no deposit can reach.
 
 **The panel shows the SHARE, not the raw LP count, and that is a §9.1 rule rather than a
 layout choice.** `getLocked()` answers in LP jetton units whose decimals no get-method
@@ -4421,7 +4466,7 @@ in an arbitrary scale, whose digits on the live deployment are an artefact of De
 first-deposit mint rule and not a fact about this game. Divided by
 `get_jetton_data().total_supply` on the pool it becomes the share of the venue that can
 never be withdrawn, which is the claim the sink actually makes and which is bounded, so it
-takes a shape; multiplied by `get_reserves()` on the same pool it becomes that share in TON
+takes a shape; multiplied by `get_reserves()` on the same pool it becomes that share in GRAM
 and PRIMES, which is the depth a seller can count on. Both are derived from three
 get-methods and both are labelled as derived; the exact integers stay one press away in
 each segment's proof. The remainder of the supply — LP held by outside providers — is a
@@ -4440,7 +4485,8 @@ Readability beat symbolism.
 **The electorate is LP custody, tiers ≥ 30 days WHOSE TERM IS STILL RUNNING, weighted
 `amount × voteMultiplier` with multipliers 30 d 1× / 3 m 3× / 6 m 10× / 1 y 30×** — owner-set
 as governance rather than economics, carried in `params.json` with a `_source` rather than as
-a contract literal. A **matured** position loses its vote (§5.5.3, D-147), and since D-168 a
+a contract literal — **plus the forever total of §5.5.4 at ×100, which never matures**
+(`DECISIONS.md` D-214). A **matured** position loses its vote (§5.5.3, D-147), and since D-168 a
 position earns nothing, so the vote is all a term buys. **The operator's LP votes like
 anyone's.** Vote weight is a
 pure function of `(amount, tier, now)` — no snapshot, no oracle, no `p_f` read (**TR-7**),
@@ -4477,8 +4523,8 @@ natural electorate for a treasury that — when D-100 was signed — existed to 
 moved the payout to PRIMES stakers and kept the vote where it was (its Q7: stakes do not
 vote), so the electorate is now the people whose depth the flush swaps against, not the
 people the treasury pays. A fixed PRIMES threshold was
-rejected outright for a different reason — 10,000,000 PRIMES is 3.5 TON at genesis and
-3.2 M TON at the modelled year-3 floor, so any token count is a threshold that means two
+rejected outright for a different reason — 10,000,000 PRIMES is 3.5 GRAM at genesis and
+3.2 M GRAM at the modelled year-3 floor, so any token count is a threshold that means two
 completely different things across the game's own horizon.
 
 **Two consequences were accepted in writing (D-100 point 10), and a spec that omitted them
@@ -4572,7 +4618,7 @@ pre-deployed set `{2,3,5,7,11,13}`) and supersedes D-5's genesis-fold amendment 
 There is no genesis-specific auction format left in this design. Every prime — starting
 with 2, and including every prime after it — clears through the same single mechanism
 D-4 already defined for "a prime reaching the head": a per-prime descending (Dutch)
-auction, buy-now only, resting at `restingPrice(p)` (never below 1 TON; D-88, D-99), no expiry. Genesis's only remaining job is
+auction, buy-now only, resting at `restingPrice(p)` (never below 1 GRAM; D-88, D-99), no expiry. Genesis's only remaining job is
 to start the game and open that mechanism; it does not get its own pricing curve, its own
 bid lane, or its own bootstrap contract.
 
@@ -4645,7 +4691,7 @@ Bootstrap sequence, fully scripted on-chain:
 
 1. **Every prime clears through one uniform, genesis-free Dutch lane — no queue-lock,
    ever.** The sequential head is defined **over composites (and Unity) only**. A prime
-   is never a candidate for direct 1-TON sequential mint at all, so it can never be the
+   is never a candidate for direct 1-GRAM sequential mint at all, so it can never be the
    thing the head is waiting on:
 
    ```
@@ -4669,9 +4715,9 @@ Bootstrap sequence, fully scripted on-chain:
    **Every prime decays to its own resting price — not to a universal floor.** This is
    `DECISIONS.md` D-88 point 1, which **deleted invariant MKT-1** and the older claim
    ~~"every prime decays to exactly `MINT_PRICE`, never a per-prime floor"~~ that stood here.
-   A small prime rests well above 1 TON because it earns tribute on every multiple, forever;
+   A small prime rests well above 1 GRAM because it earns tribute on every multiple, forever;
    a prime past the finite `NPV` table rests at `P0(p) / 3`, or at exactly `MINT_PRICE` when it
-   opens under 3 TON, which is the *lower bound* on the resting price and the only case where the two coincide. The liveness this
+   opens under 3 GRAM, which is the *lower bound* on the resting price and the only case where the two coincide. The liveness this
    used to be argued from is unaffected and comes from elsewhere: the head is defined over
    composites, so a prime nobody buys blocks nothing at any price (§12). What survives of
    MKT-1 is that the resting price is **write-once from `n` alone** — computed at the moment
@@ -4694,7 +4740,7 @@ Bootstrap sequence, fully scripted on-chain:
    not when a sale must happen. A prime that never sells simply sits, indefinitely, sellable
    at its resting price at any time — there is no "genesis primes cost nothing to leave
    unsold" liquidity failure to defend, because the resting price is derived from the
-   prime's own tribute value and never falls below the 1 TON a composite costs.
+   prime's own tribute value and never falls below the 1 GRAM a composite costs.
 
    Fair value has three of the four legs the old K-lot copy enumerated, and the auction
    surface must disclose all three: inbound tribute (§3.2), the self-tribute minting
@@ -4783,11 +4829,11 @@ Bootstrap sequence, fully scripted on-chain:
    D-140/D-154 put a floor-priced genesis pair back into the launch sequence;
    D-166 deleted the operator's share).
    The genesis `S` allocation is declared at deploy from a **nominal** sizing input, never
-   from a real TON deposit and never from auction proceeds:
+   from a real GRAM deposit and never from auction proceeds:
 
    ```
-   T₀ = 200 TON (nominal)          sizes supply only — NOT deposited into any pool
-   L  = 10,000 PRIMES per TON      the sizing ratio (same knob the old LP ratio used)
+   T₀ = 200 GRAM (nominal)          sizes supply only — NOT deposited into any pool
+   L  = 10,000 PRIMES per GRAM      the sizing ratio (same knob the old LP ratio used)
    V  = 7.80 · T₀ · L = 15,600,000 the bounty vault: contract-held, pre-counted in S (§3.3; D-204)
    A  = T₀ · L / 2   = 1,000,000   the treasury's vesting lock (D-100 point 6; D-166 deleted the operator's half)
    S₀ = A + V        = 16,600,000 PRIMES  (no PRIMES mint to the operator, §2 principle 4)
@@ -4799,33 +4845,33 @@ Bootstrap sequence, fully scripted on-chain:
    then half of it into the treasury's, D-100 point 6); **D-166 deletes the operator's
    share**, so only the treasury's 1,000,000-PRIMES lock survives in `S₀`. Between the
    donation and `ignite` the operator pairs the PRIMES the floor donation mints them (below)
-   with their own TON into the DeDust pool by hand, using DeDust's own permissionless deposit
+   with their own GRAM into the DeDust pool by hand, using DeDust's own permissionless deposit
    flow, and sends the LP receipt to the LP sink (D-154) — so the game opens against a
    floor-priced, locked pair rather than an empty pool. The **internal floor** `p_f = T/S` is `0`
    at the instant of deploy — no deposit backs `S₀` — and is opened by the **floor donation**
    below rather than by any deploy step (D-91 point 4, D-92, D-100 point 2, D-154): the
-   operator donates **200 TON** (D-204; 132.50 under D-154).
+   operator donates **200 GRAM** (D-204; 132.50 under D-154).
 
    ~~It is not a chosen figure but the solution of `p_f = X/(S₀ + X·L)` for the declared
-   opening floor, `X = S₀/(1/p_f − L) = 12,000,000/(60,000 − 10,000)` = **240 TON**, landing
+   opening floor, `X = S₀/(1/p_f − L) = 12,000,000/(60,000 − 10,000)` = **240 GRAM**, landing
    `p_f` on `1.667e-5` = `1/(6L)` — one sixth of the `L` market price, which is what
    `genesis.market_over_floor_at_open = 6` states.~~ **Superseded by D-100 point 2:** the
-   operator will not fund 480 TON (240 donated plus 240 paired), so the *input* changed and
+   operator will not fund 480 GRAM (240 donated plus 240 paired), so the *input* changed and
    the derivation did not. `genesis_donation_ton` is **owner-set, not sim-selected**, and the
    sim re-derives the floor from it. **D-154 sets it to `132.50`** — D-100 point 3's whole
-   150 TON commitment, front-loaded into genesis instead of dribbled in afterwards, because
+   150 GRAM commitment, front-loaded into genesis instead of dribbled in afterwards, because
    the pair below is pinned at the floor and that makes opening depth *quadratic* in this one
-   figure. **D-204 sets it to `200`** and grows the vault by the PRIMES the extra 67.50 TON
+   figure. **D-204 sets it to `200`** and grows the vault by the PRIMES the extra 67.50 GRAM
    backs at that same floor, so the floor holds (it was 1.0761e-05 at D-154's 132.50). So
    `p_f0 = 200/(16,600,000 + 1,972,333)` (the second term is what
    `donate_floor` mints to the donor — `X·L` under D-156's taper — since `S` counts it) =
-   `genesis.genesis_floor_price_ton_per_primes` = **1.0769e-05 TON/PRIMES** (≈92,862 PRIMES
-   per TON at open). The opening floor
+   `genesis.genesis_floor_price_ton_per_primes` = **1.0769e-05 GRAM/PRIMES** (≈92,862 PRIMES
+   per GRAM at open). The opening floor
    is therefore no longer a declared `1/(6L)` constant — it is
    whatever the donation buys. From
    there it ratchets on real mint injections (`pending`/`swapped`) like any other floor step.
-   Note the two numbers are different jobs and neither is stale: `T₀ = 200 TON` is the
-   **nominal** that sizes `S₀` and is deposited nowhere; the **200 TON donation** — the same
+   Note the two numbers are different jobs and neither is stale: `T₀ = 200 GRAM` is the
+   **nominal** that sizes `S₀` and is deposited nowhere; the **200 GRAM donation** — the same
    figure since D-204, by the owner's choice and not by construction — is the only money
    that actually moves at genesis, and `params.json`'s `_donation_vs_modelled_depth` records
    the modelling gap between them rather than burying it — a gap D-154 narrows to the same
@@ -4834,10 +4880,10 @@ Bootstrap sequence, fully scripted on-chain:
    **THE OPENING PAIR IS POSTED AT THE FLOOR, NOT AT `L` (D-140).** The market price at
    genesis is not a protocol quantity at all — it is the ratio of the two sides of the one
    DeDust deposit the operator makes by hand, and on an empty pool that ratio *is* the price.
-   Quoting it at `L` was an inherited convenience: `L = 10,000 PRIMES/TON` is the rate
+   Quoting it at `L` was an inherited convenience: `L = 10,000 PRIMES/GRAM` is the rate
    `donate_floor` mints at (D-39's **denomination knob**, never a price), and while D-92's
    donation equalled the nominal seed the donated PRIMES paired against an equal number of
-   TON exactly. D-100 point 2 unpinned those, and nothing re-read the pairing: the book would
+   GRAM exactly. D-100 point 2 unpinned those, and nothing re-read the pairing: the book would
    have opened at `genesis.market_over_floor_at_open` = **285.7×** the floor. Two consequences,
    both measured rather than argued:
 
@@ -4846,22 +4892,22 @@ Bootstrap sequence, fully scripted on-chain:
      money and `pending` accumulates with no outlet. In the sim's own calibration
      `FLOOR_GUARD = 0` bounces **1,082 of 1,089** attempts.
    - **The first mint's rebate outweighed the pair's whole PRIMES side.** Both figures in
-     this bullet were measured at D-100 point 2's 4.20 TON donation, which is what made the
+     this bullet were measured at D-100 point 2's 4.20 GRAM donation, which is what made the
      mis-pricing extreme: mint 1 emitted **1,168,800 PRIMES** (9.74% of `S₀`) against a book
-     holding 42,000 — 28× — so one 1 TON mint sold into it took **≈4.05 of the 4.20 TON** the
+     holding 42,000 — 28× — so one 1 GRAM mint sold into it took **≈4.05 of the 4.20 GRAM** the
      operator posted. The premium is not upside the protocol captures; it is a transfer to
      whoever mints first, after which the price is at the floor anyway. **D-154 shrinks both
-     halves** — a 132.50 TON donation lifts `p_f0` 31.5×, so an `L`-quoted book would open
+     halves** — a 132.50 GRAM donation lifts `p_f0` 31.5×, so an `L`-quoted book would open
      9.1× over the floor rather than 285.7×, and mint 1 emits 31.5× fewer PRIMES
      (`docs/audit/genesis-emission-curve.md` is regenerated from the donation). Neither
      change makes `L`-pairing correct; the rule below is what fixes it.
 
-   So the pair is posted at `PRIMES × p_f` TON instead, and
+   So the pair is posted at `PRIMES × p_f` GRAM instead, and
    `genesis.market_over_floor_at_open` is **1.0 by construction**. The PRIMES side is the
-   binding side — at the floor every PRIMES posted buys only `p_f` TON of depth — so it is
+   binding side — at the floor every PRIMES posted buys only `p_f` GRAM of depth — so it is
    the operator's whole reachable inventory: the **1,972,333 PRIMES** the donation mints
    (`genesis.genesis_donation_primes`: `X·L` tapered by D-156, rounded down to whole PRIMES),
-   **against 21.24 TON** (`1,972,333 × 10,768 nanoTON`, the floor rounded down to the chain's
+   **against 21.24 GRAM** (`1,972,333 × 10,768 nanoGRAM`, the floor rounded down to the chain's
    granularity). Until D-166 the operator's first vest tranche (250,000) joined it; the
    operator lock is deleted, so the pair is the donation's PRIMES alone.
    The treasury lock's first 250,000 is *not* available and must not be planned around: its
@@ -4871,14 +4917,14 @@ Bootstrap sequence, fully scripted on-chain:
    runbook `runGenesis` prints them, and `seedDedustLiquidity.ts` posts them.
 
    **Pinning the ratio is also what makes the depth a decision rather than a leftover.**
-   Because the TON side is `inventory × p_f` and *both* factors rise with the donation,
-   opening depth is close to quadratic in it: `m·X / (S₀ + m)` TON with `m = L·τ·X` the
+   Because the GRAM side is `inventory × p_f` and *both* factors rise with the donation,
+   opening depth is close to quadratic in it: `m·X / (S₀ + m)` GRAM with `m = L·τ·X` the
    donation's own mint (`τ` D-156's taper) since D-166 (it was `(L·X + 250,000)·X / S₀` with
-   the operator's tranche in the pair), which is **14.13 TON at D-154's `X = 132.50`**. D-154 chose `X` so the two sides together posted 149.89 TON —
-   the whole of the operator's 150 TON commitment. Without the tranche they post
-   **146.63 TON**; D-166 leaves the owner-set donation where it is rather than re-solving
-   it for 150. **D-204's `X = 200` against `S₀ = 16,600,000` makes the pair 21.24 TON —
-   221.24 TON posted in all, 200 of it donated.**
+   the operator's tranche in the pair), which is **14.13 GRAM at D-154's `X = 132.50`**. D-154 chose `X` so the two sides together posted 149.89 GRAM —
+   the whole of the operator's 150 GRAM commitment. Without the tranche they post
+   **146.63 GRAM**; D-166 leaves the owner-set donation where it is rather than re-solving
+   it for 150. **D-204's `X = 200` against `S₀ = 16,600,000` makes the pair 21.24 GRAM —
+   221.24 GRAM posted in all, 200 of it donated.**
 
    **That commitment is D-100 point 3's and D-154 spends it here** rather than
    post-genesis and incrementally through the same permissionless `donate_floor`. It is an
@@ -4893,7 +4939,7 @@ Bootstrap sequence, fully scripted on-chain:
    order is **seed → donate → ignite**, and a ledger whose `T` is still `0` refuses to launch
    (error 218, `ledger_floor_unbacked`). This is not tidiness: the rebate is `R = k·I·S/T`
    (§5), unbounded as `T → 0`, so a mint against an unbacked floor emits ~20% of the genesis
-   supply for 1 TON where the same mint after the donation emits 0.28%
+   supply for 1 GRAM where the same mint after the donation emits 0.28%
    (`contracts/tests/UnbackedFloorLaunch.spec.ts` measures both). The guard is `T > 0` rather
    than a target floor, because `donate_floor` is incremental — a testnet launch may fund
    itself in tranches, or for less.
@@ -4904,28 +4950,28 @@ Bootstrap sequence, fully scripted on-chain:
    **The vault's share of `S₀` grew 16.7% → 33.3% (D-41) → 50% (D-42) → 83.3% (D-43) →
    90.9% (D-166) → 94.0% (D-204)**, as it went from 20% to 50% to 100% to 500% of the nominal-sized `T₀·L`
    allocation, then D-166 removed the operator's half of that allocation from `S₀`, and
-   D-204 took the fraction to 780% alongside a 200 TON donation; the
+   D-204 took the fraction to 780% alongside a 200 GRAM donation; the
    D-43 jump was made to fund a puzzle campaign (3 riddles at genesis, then one a week for
-   3 years, each worth 1 TON at claim time) that D-47 replaced with §9.6's special-number
+   3 years, each worth 1 GRAM at claim time) that D-47 replaced with §9.6's special-number
    rebates; the fraction stayed. That is the whole price of the decision and it
    is worth stating in the direction that costs something: the vault is minted, not bought,
-   so every PRIMES it adds is backed by no additional TON, and the eventual real floor (once
+   so every PRIMES it adds is backed by no additional GRAM, and the eventual real floor (once
    liquidity and mint injections exist) absorbs the difference. A larger vault is a larger
    giveaway budget paid for by a lower real floor once one forms — nothing else moves, and
    no later mint is affected, because `p_f` ratchets from wherever it starts.
 
-   What the change cannot do is conjure TON, and the shape of that limit is the reason
+   What the change cannot do is conjure GRAM, and the shape of that limit is the reason
    D-43 will be the last vault-fraction increase without a nominal-seed increase
    alongside it. The vault's worth is `T₀ · pct/(1 + pct)` (still read against the nominal
-   `T₀`, since that is what the vault's PRIMES-per-TON ratio is calibrated to): 33 TON at
+   `T₀`, since that is what the vault's PRIMES-per-GRAM ratio is calibrated to): 33 GRAM at
    20%, 67 at 50%, 100 at 100%, 166.67 at 500%, converging on `T₀` however large `pct`
-   grows. Each doubling buys strictly less than the last, and none of them reaches 200 TON.
+   grows. Each doubling buys strictly less than the last, and none of them reaches 200 GRAM.
    **A stock-funded growth budget is bounded by the nominal seed**, which is why §9.4
-   cannot pay 10,000 players 0.5 TON each — that is 5,000 TON, twenty-five times the
+   cannot pay 10,000 players 0.5 GRAM each — that is 5,000 GRAM, twenty-five times the
    nominal figure — and why D-42 buys the headcount with time instead. Past 500% the only
    lever left is `T₀`. **D-204 pulled the other one that exists since D-100 unpinned the
-   donation from `T₀`:** 500% → 780% *with* 132.50 → 200 TON donated, sized so the opening
-   floor did not fall — the larger vault is paid for in TON, not in a lower floor.
+   donation from `T₀`:** 500% → 780% *with* 132.50 → 200 GRAM donated, sized so the opening
+   floor did not fall — the larger vault is paid for in GRAM, not in a lower floor.
 
    `T₀` sets `S₀`'s sizing, not price. There is no "day-one depth" any more (D-46): the
    real floor is `0` at deploy regardless of `T₀`'s size, and only becomes nonzero once
@@ -4939,7 +4985,7 @@ Bootstrap sequence, fully scripted on-chain:
    Holding everything else fixed and varying only `L`, the sim produces a bit-identical
    `T` trajectory, an `S` that scales exactly with `L`, and an identical `p_f / p_f0` at
    every sampled day (DENOMINATION_PLAN §1.1: `L = 1,000` and `L = 10,000` both give
-   `T = 48,527.4 TON` and `45.41×` at day 365). The same argument covers the vault
+   `T = 48,527.4 GRAM` and `45.41×` at day 365). The same argument covers the vault
    fraction's effect on `p_f0`: it moves where the ratchet *starts*, never how it climbs.
    So moving `L` re-derives nothing —
    not `k_min`, not `k_max(n)`, not `K_CEIL`, not the §4.1 split, not the auction
@@ -4966,13 +5012,13 @@ Bootstrap sequence, fully scripted on-chain:
 
    **The pool's PRIMES side is minted at a permissionless floor donation, at any time,
    by anyone** (D-91 point 4 as amended by D-100 point 1, `donate_floor` on
-   `primes_ledger.tolk`). Send `X` TON to the
-   ledger and three things happen in one transaction: `T` rises by `X` and the TON is
+   `primes_ledger.tolk`). Send `X` GRAM to the
+   ledger and three things happen in one transaction: `T` rises by `X` and the GRAM is
    forwarded to the ratchet as `pending` like every other injection; **`seedT` is not
    touched** (D-100 point 1 — see the correction below); and `S` rises by the **emitted**
    amount, minted **to the sender**, who pairs and
    locks them on DeDust themselves. It is incremental — unlike the one-shot genesis seed,
-   which asserts a virgin ledger — so the operator can send 10 TON, read the floor, and then
+   which asserts a virgin ledger — so the operator can send 10 GRAM, read the floor, and then
    send the rest. It takes money in and never out, so §8's no-admin-withdraw rule has
    nothing to gate here, and it is open to strangers by design: anyone who calls it is
    donating backing to every holder at once.
@@ -4992,14 +5038,14 @@ Bootstrap sequence, fully scripted on-chain:
    there is nothing left for a guard to throw and error 217 stays retired and unassigned.
    Rounding is **down**, and that direction is load-bearing: the floor after the donation is
    `(T+X)/(S+⌊X·S/T⌋) ≥ T/S`, equal only when the division is exact. A donation so small
-   that the floor rate rounds it to zero is refused rather than taking the TON for nothing.
+   that the floor rate rounds it to zero is refused rather than taking the GRAM for nothing.
 
    **`seedT` is not incremented, and this is a correction, not a refinement** (D-100 point
    1, amending D-26's propagation). D-91 specified two contradictory halves — a `seedT`
    credit *and* `handleClearingCleared`'s forward-to-the-ratchet shape — and the contract
    implemented both, so every donation raised the identity's right-hand side by `2X`
    against `X` on the left. On the live testnet the ratchet panel reported `beyond T
-   4.000 TON` against `seedT = 4.000 TON`: the alarm was right and the books were wrong.
+   4.000 GRAM` against `seedT = 4.000 GRAM`: the alarm was right and the books were wrong.
    `seedT` returns to meaning exactly what D-26 says — capital credited **straight into
    `T`** that never passes through the ratchet's `pending` — which in this deployment is the
    one-shot genesis assignment and nothing else. §5's `T = seeded + swapped + pending` closes
@@ -5011,19 +5057,19 @@ Bootstrap sequence, fully scripted on-chain:
    transaction; the DeDust deposit wire format is now verified in the sandbox (`GAUNTLET.md`
    R13), but the owner kept the manual sequence (D-120, signed 2026-09-24), so no contract
    sends a DeDust deposit. **At genesis the
-   donation is 200 TON, not 240, not D-100 point 2's 4.20 and no longer D-154's 132.50** (D-204; the
+   donation is 200 GRAM, not 240, not D-100 point 2's 4.20 and no longer D-154's 132.50** (D-204; the
    derivation method is unchanged and only its input moved, three times). The operator's stated
    sequence: donate
-   200 TON, receive 1,972,333 PRIMES, pair all **1,972,333 PRIMES against 21.24 TON** of
+   200 GRAM, receive 1,972,333 PRIMES, pair all **1,972,333 PRIMES against 21.24 GRAM** of
    their own (D-166: no vest tranche joins the pair any more) — the floor rate, D-140, not
-   the 197.2 TON a pairing at `L` would have taken — and send the
+   the 197.2 GRAM a pairing at `L` would have taken — and send the
    LP receipt to the **sink** (§5.5.4) rather than burning it — a sink balance is directly
    readable as locked depth where a burn needs an off-chain baseline somebody maintains.
    **D-154 makes that last step the decided one rather than a choice of two**: the whole
    opening pair goes to the sink, so the depth the game opens with is locked depth and no
    key can pull it.
-   `genesis.genesis_floor_price_ton_per_primes` is re-derived by the sim from 200 TON and
-   lands at **1.0769e-05 TON/PRIMES** against D-204's `S₀ = 16,600,000` plus the donation's
+   `genesis.genesis_floor_price_ton_per_primes` is re-derived by the sim from 200 GRAM and
+   lands at **1.0769e-05 GRAM/PRIMES** against D-204's `S₀ = 16,600,000` plus the donation's
    own 1,972,333; the emission curve that
    follows from it is published *before* deploy in `docs/audit/genesis-emission-curve.md`
    (see the second honest cost at the end of this section).
@@ -5038,10 +5084,10 @@ Bootstrap sequence, fully scripted on-chain:
    outbound message type and makes that depth permanent (§5.5.4). `flush()` needs none of
    this: it only ever needs the pool to have liquidity, never for any LP to have been locked
    or burned. §8's no-admin-withdraw claim is unaffected — the custody contract holds no
-   protocol TON, and its only LP paths are back to the depositor or into the sink.
+   protocol GRAM, and its only LP paths are back to the depositor or into the sink.
 
-   **A prime-lane clearing splits at exactly `MINT_PRICE`.** The nominal 1 TON runs
-   through the ordinary §4.1 five-way split like any composite mint; every TON above it —
+   **A prime-lane clearing splits at exactly `MINT_PRICE`.** The nominal 1 GRAM runs
+   through the ordinary §4.1 five-way split like any composite mint; every GRAM above it —
    the entire premium, which for a popular prime is most of the clearing price — splits
    50/50 between the ratchet's `pending` and the governed treasury (`DECISIONS.md` D-114,
    amending D-7's original "no treasury cut"). `T` rises by the ratchet-bound half only, `S`
@@ -5055,15 +5101,15 @@ Bootstrap sequence, fully scripted on-chain:
    pre-counted in `S`; the operator holds none (D-166).
 
    **One consequence worth stating rather than discovering:** the bounty vault is 780% of
-   the nominal `T₀·L` (D-204; 500% under D-43), so a 200 TON nominal seed sizes it at
+   the nominal `T₀·L` (D-204; 500% under D-43), so a 200 GRAM nominal seed sizes it at
    15,600,000 PRIMES rather than the 2,750,000 a sale-funded seed would have produced. The
    *proportion* is fixed — the vault is 78/83 (94.0%) of `S₀` at any nominal-seed size
    (10/11 before D-204, 5/6 before D-166) —
-   and its TON value ratchets upward with the real floor once one forms, so the first real
+   and its GRAM value ratchets upward with the real floor once one forms, so the first real
    backing that accrues multiplies the vault's purchasing power without minting a single
    new token. But the absolute early-era bounties (§7) are correspondingly small and the
    schedule in `params.json` must be regenerated against `T₀`, not hand-scaled. Since the
-   schedule is TON-denominated (§7), regenerating it against a different `T₀` moves what
+   schedule is GRAM-denominated (§7), regenerating it against a different `T₀` moves what
    each ceremony is *worth*, which is the decision being made — where hand-scaling the
    PRIMES amounts would move the token counts and leave the value to the floor.
 4. The market (§4.4) opens at the same block as minting — the ascending lot lane for any
@@ -5073,11 +5119,11 @@ Bootstrap sequence, fully scripted on-chain:
    (§3.4).
 
 The genesis ratio `L` is a real design decision — it sets how "cheap" early rebates feel —
-and point 3 fixes it at **10,000 PRIMES per TON**. ~~The floor opens at 60,000, the gap
+and point 3 fixes it at **10,000 PRIMES per GRAM**. ~~The floor opens at 60,000, the gap
 between them being the bounty vault rather than slack; `p_f0 = 1/60,000` holds at any seed
 size, so there is nothing for the simulation to solve.~~ **Amended by D-100 point 2:**
 `p_f0` is no longer a declared constant that holds at any seed size. It is
-`genesis_donation_ton / (S₀ + the donation's own mint)` — **200 / 18,572,333 = 1.0769e-05 TON/PRIMES** (D-204; 132.50 / 12,312,854 = 1.0761e-05 under D-154/D-166) — because the
+`genesis_donation_ton / (S₀ + the donation's own mint)` — **200 / 18,572,333 = 1.0769e-05 GRAM/PRIMES** (D-204; 132.50 / 12,312,854 = 1.0761e-05 under D-154/D-166) — because the
 donation stopped being derived *from* a target floor and became an owner-set figure the sim
 consumes. `L` is unchanged and is still a pure denomination knob; what moved is where the
 ratchet *starts*, never how it climbs (§5). What `T₀` buys is depth, and that is the number the
@@ -5085,9 +5131,9 @@ simulation prices (§10, phase 1).
 
 **Why 10,000 and not 1,000.** The token has to open cheap enough that a small reward is
 pocket change rather than a fraction of a mint. At `L = 1,000` the floor opened at
-1/1,200 TON per PRIMES, so a 100-PRIMES quest reward was 0.083 TON — a tenth of the mint
+1/1,200 GRAM per PRIMES, so a 100-PRIMES quest reward was 0.083 GRAM — a tenth of the mint
 price, which is not what "100 PRIMES" is supposed to feel like. At `L = 10,000` the same
-reward is 0.0083 TON and a mint's rebate is ~7,020 PRIMES instead of ~702. `10,000` is
+reward is 0.0083 GRAM and a mint's rebate is ~7,020 PRIMES instead of ~702. `10,000` is
 chosen over the 8,333⅓ that would land the floor on exactly 1/10,000 because every
 derived PRIMES quantity then stays integral (`toNano` refuses more than nine decimals),
 and because the exact target buys only a few days of a horizon the ratchet moves through
@@ -5105,13 +5151,13 @@ with a price before its lot opens.
 The honest costs of this format, stated here rather than discovered:
 
 - **The era bounties are symbolic at launch, and that is a decision rather than an
-  oversight.** `T₀ = 200 TON` funds a 15,600,000 PRIMES vault, of which 3,000,000
+  oversight.** `T₀ = 200 GRAM` funds a 15,600,000 PRIMES vault, of which 3,000,000
   PRIMES (30% until D-204 grew the vault around it) funds all eight era ceremonies (§7). The first one fires
   at n = 6 — within hours of launch, and the one a launch-day audience actually sees —
-  and is worth **10 TON**. The schedule is front-loaded, so later ceremonies are worth
-  less (5.0 TON from the 30030-era onward). Those figures moved again with D-43 without
-  anyone sizing them by hand: the schedule is a share of the vault's TON worth, and the
-  vault's TON worth went 33 → 67 → 100 → 166.67 TON across D-40/D-41/D-42/D-43. It is the
+  and is worth **10 GRAM**. The schedule is front-loaded, so later ceremonies are worth
+  less (5.0 GRAM from the 30030-era onward). Those figures moved again with D-43 without
+  anyone sizing them by hand: the schedule is a share of the vault's GRAM worth, and the
+  vault's GRAM worth went 33 → 67 → 100 → 166.67 GRAM across D-40/D-41/D-42/D-43. It is the
   clearest illustration of what that decision actually did — the ceremonies got more
   valuable again and the opening floor paid for all of it. The bet this encodes: what
   draws a player to a primorial is the trophy, the permanent naming rights and the
@@ -5121,11 +5167,11 @@ The honest costs of this format, stated here rather than discovered:
   (D-41 through D-43 did exactly that, 20% → 50% → 100% → 500%). Neither can take the
   vault past `T₀`, because `pct/(1 + pct)` converges on 1.
 
-  The ceremonies are **denominated in TON, not in PRIMES**, and pay whatever that TON buys
+  The ceremonies are **denominated in GRAM, not in PRIMES**, and pay whatever that GRAM buys
   at the floor when they fire, capped by their nominal amount at the genesis floor. A
   fixed nominal PRIMES bounty would inflate with `p_f` — the 30030-era ceremony would be
   worth ~45× its designed value at year one — against a vault sized once, at genesis. The
-  TON denomination is what makes "the schedule is front-loaded" a statement about value
+  GRAM denomination is what makes "the schedule is front-loaded" a statement about value
   rather than about token counts, and it makes the vault drain *more slowly* as the floor
   rises rather than faster.
 
@@ -5143,7 +5189,7 @@ The honest costs of this format, stated here rather than discovered:
 - **The resting price is `max(NPV(p)/2, P0(p)/3, MINT_PRICE)`, not near-zero, and that is
   the entire liveness guarantee** (D-88 point 1, D-99 §1.2). A prime nobody wants clears,
   whenever somebody finally wants it, at a price written once from `p` — never below the
-  1 TON the game already charges at the head, and for a prime the NPV table covers, half its
+  1 GRAM the game already charges at the head, and for a prime the NPV table covers, half its
   tribute value or a third of its opening price, whichever is higher. Unlike the old K-lot's
   1%-of-`P0` reserve, this floor is never embarrassingly cheap and never a liquidity failure
   to defend: the number is never worth *less* on the auction than it would be as an ordinary
@@ -5154,9 +5200,9 @@ The honest costs of this format, stated here rather than discovered:
 
 - **A small genesis makes the early mints hyper-emissive, and the curve is published
   before deploy rather than discovered on the hero** (D-100 point 2, D-154). A mint's rebate
-  is `R = k·I·S/T` (§5) and `S/T` is `1/p_f`, so a smaller genesis floor makes every TON of
-  injection buy proportionally more PRIMES: at D-100 point 2's 4.20 TON the floor was 47.6×
-  below D-92's and the first mints emitted 47.6× the PRIMES. **D-154's 132.50 TON takes
+  is `R = k·I·S/T` (§5) and `S/T` is `1/p_f`, so a smaller genesis floor makes every GRAM of
+  injection buy proportionally more PRIMES: at D-100 point 2's 4.20 GRAM the floor was 47.6×
+  below D-92's and the first mints emitted 47.6× the PRIMES. **D-154's 132.50 GRAM takes
   31.5× of that back** — the same front-loading that buys the opening book also buys down
   the front-loaded emission, and the table below is regenerated from the donation, never
   hand-patched. `docs/audit/genesis-emission-curve.md` measures the
@@ -5170,8 +5216,8 @@ The honest costs of this format, stated here rather than discovered:
   | first hundred mints, cumulative | **4.5% of `S₀`** — `S` grows 1.05×, `T` grows 1.1× |
   | `p_f` over the same span | **monotone at every step**, ending **1.08×** where it started |
 
-  *(As measured 2026-11-11 from D-204's 200 TON donation, with §4.1's invite line on at
-  3 × 0.1 TON — `DECISIONS.md` D-202.
+  *(As measured 2026-11-11 from D-204's 200 GRAM donation, with §4.1's invite line on at
+  3 × 0.1 GRAM — `DECISIONS.md` D-202.
   `S₀` here is the audit file's 18,572,333, the donor's own mint included.)*
 
   **It decays harmonically, not within ten mints**, and D-100 point 2's drafted phrase
@@ -5180,7 +5226,7 @@ The honest costs of this format, stated here rather than discovered:
   fall, `S` is never decremented (§3.3), and every emitted PRIMES is backed by the same `T`
   that received the injection. It is a **dilution schedule**, front-loaded by construction,
   and whoever mints first buys at a floor 1.55× cheaper than D-92's would have been — it was
-  47.6× under D-100 point 2's 4.20 TON, and D-154's donation is most of that gap. That is
+  47.6× under D-100 point 2's 4.20 GRAM, and D-154's donation is most of that gap. That is
   the cost, and it is a choice rather than an accident.
 
 - **There is no operator breakeven panel, and none is coming without an owner-supplied
@@ -5205,8 +5251,8 @@ era gradient keeps working where the boundaries stop. It is a display state, not
 no boundary, no ceremony, no bounty. Era boundaries are protocol-recognized:
 
 - **The primorial mint is a ceremony, and it is not for sale in advance.** Whoever mints a
-  primorial number receives an era bounty from the bounty vault — a **TON-denominated**
-  amount, paid in the PRIMES that TON buys at the floor when the ceremony fires, capped by
+  primorial number receives an era bounty from the bounty vault — a **GRAM-denominated**
+  amount, paid in the PRIMES that GRAM buys at the floor when the ceremony fires, capped by
   its nominal PRIMES amount at the genesis floor (§5's horizon note: a nominal bounty would
   inflate ~45× over year one against a vault sized once) — and
   the mint pays tribute to *every* smaller prime factor at once — 30030 = 2·3·5·7·11·13 is
@@ -5218,7 +5264,7 @@ no boundary, no ceremony, no bounty. Era boundaries are protocol-recognized:
   numbers `getIsOpenable(n)` answers `false` on (D-30/D-31 rename `getIsAuctionOnly`/
   `getIsReservable`; `getLotPrice(n)` refuses these numbers too, GAUNTLET.md C1.4). Every
   argument for closing the hole applies with more
-  force at 128 TON than at 0.075: a scored fee made a public ceremony cheap to buy years
+  force at 128 GRAM than at 0.075: a scored fee made a public ceremony cheap to buy years
   in advance, and an auction would make it merely expensive to buy years in advance, which
   is the same privatisation with a better price attached — and a *worse* look, because the
   price would be the headline. Earlier
@@ -5264,13 +5310,13 @@ emission curve.
 ## 8. Anti-abuse mechanics
 
 - **Front-running / MEV on juicy rebates: accepted, not mitigated.** The mint is ONE
-  message — `mint(n, kind, factorization, referral_key, beneficiary)` with 1 TON
+  message — `mint(n, kind, factorization, referral_key, beneficiary)` with 1 GRAM
   attached, settled in the transaction that receives it, so `k(t)` is read at execution.
 
   On a saturated clock a bot watching the mempool can therefore land its own mint ahead
   of yours and take the high `k`; the exposure is accepted because what it wins is
   bounded by `k_max · β · P` — cents at any head anyone would bother sniping — and it
-  pays the same 1 TON you would have, leaving the ratchet indifferent to which of you
+  pays the same 1 GRAM you would have, leaving the ratchet indifferent to which of you
   paid it. §4.4's ascending lane (on the market router) is the answer to "I want number *n*
   specifically", which is the contention case that actually has money in it, and it
   resolves by **bidding** rather than by block racing. ~~a direct reservation lane, which
@@ -5287,12 +5333,12 @@ emission curve.
   which refunds the bid less `REJECT_GAS` — the gas the failed open burned, so the
   market's float never pays for the attempt — and carries the ledger's head back into
   `headHint`, so the same stale gap cannot be opened into twice.
-- **Bot loops, at the floor:** k_max < 1 guarantees rebate value < injected TON < price
+- **Bot loops, at the floor:** k_max < 1 guarantees rebate value < injected GRAM < price
   paid, so looped minting is always net-negative *in floor terms* — the pump is closed by
   the same inequality as the ratchet. Worst case is a self-referring rank-V recruiter who
-  also owns the genesis primes: 0.10 TON referral, up to
-  ~0.09 TON of self-tribute on a smooth composite, and at most `K_CEIL`·0.55 = 0.5225 TON
-  of floor-value — **~0.71 TON returned against 1 TON paid**, before the value of the NFT
+  also owns the genesis primes: 0.10 GRAM referral, up to
+  ~0.09 GRAM of self-tribute on a smooth composite, and at most `K_CEIL`·0.55 = 0.5225 GRAM
+  of floor-value — **~0.71 GRAM returned against 1 GRAM paid**, before the value of the NFT
   itself. (An earlier draft quoted 0.7175 by omitting self-tribute; the corrected bound
   is what §8.1's premium arithmetic must start from.) The rank uplift of §4.7 moves this
   bound but cannot break it, because `K_CEIL < 1` is the same constant the ratchet rests
@@ -5306,7 +5352,7 @@ emission curve.
 - **Self-referral:** not prevented, and not pretended otherwise. Referral requires
   owning *some* NFT (§3.1), which any minter has from their first mint onward; an unset
   or invalid key routes the 10% to the pool, so self-referral is strictly rational
-  (0.10 TON in hand beats k·0.10 TON of PRIMES for any k < 1) and should be assumed
+  (0.10 GRAM in hand beats k·0.10 GRAM of PRIMES for any k < 1) and should be assumed
   universal — β = 0.55 is the planning number, not 0.65. The docs call the referral
   exactly what it is: **a 10% discount for people who read the contract and own a
   number.** Unreferred mints are first-timers and people who didn't read, subsidizing
@@ -5315,13 +5361,13 @@ emission curve.
 - **Sybil recruiting** — gift numbers to wallets you control, harvest rank. This is not
   defended against; it is **priced**, and `DECISIONS.md` D-106 made the price simpler to
   state rather than higher. A recruit is credited only when the beneficiary's minter card
-  is fresh (§4.6, D-191), so **gifting the same wallet twice counts once**: a recruit costs one fresh address plus one full 1 TON mint. The farmer pays the
+  is fresh (§4.6, D-191), so **gifting the same wallet twice counts once**: a recruit costs one fresh address plus one full 1 GRAM mint. The farmer pays the
   mint price in full, every one of those mints ratchets the floor, and what they buy is
-  **one tier on a ladder that raises the ceiling on their own future mints** — no TON
+  **one tier on a ladder that raises the ceiling on their own future mints** — no GRAM
   comes back at all.
   - *What changed, and why it is stronger.* The old attack ran against patron mode: a
     farmer minted in patron mode, claimed from wallets they controlled, and harvested rank
-    *and* the annuity. It was priced at **1.00 TON back against 12 TON of mints paid in
+    *and* the annuity. It was priced at **1.00 GRAM back against 12 GRAM of mints paid in
     full**, and the maximum possible outcome was getting one of those twelve refunded —
     the annuity's ceiling was a refund by construction. That bound was sound but it rested
     on a constant (`PATRON_CAP`) that D-57 showed inverts against a rising cost basis. The
@@ -5337,11 +5383,11 @@ emission curve.
   It works, and it is supposed to: one mint is one customer. The tier thresholds are the
   control. Note what D-106 removed from this threat rather than added: with no annuity, a
   recruit who never mints again has cost the recruiter a full mint and paid them nothing
-  in TON, so the incentive to farm low-value recruits is weaker than it was.
+  in GRAM, so the incentive to farm low-value recruits is weaker than it was.
 - ~~**Unclaimed inventory as a griefing surface**~~ — patron-minting a large block to hide
   numbers from the market. **NOT REACHABLE (D-106):** every mint delivers an owned number,
   so there is no way to mint one into a state where the market cannot see an owner. It was
-  already self-defeating on price (full 1 TON each, no NFT retained, every one ratcheting
+  already self-defeating on price (full 1 GRAM each, no NFT retained, every one ratcheting
   the floor) and self-limiting in time; now it has no mechanism.
 - **Open-lot griefing** (~~Reservation griefing~~ — **amended (`DECISIONS.md` D-88/D-90):**
   there is no reservation to grief). ~~a reserved number cannot stall the line — `settle(n)`
@@ -5353,7 +5399,7 @@ emission curve.
   D-45 marks an auctioned number off its sequential line the moment `open_lot` runs and the
   head-advance walk skips that position forever — and a run of them long enough to outgrow
   one transaction's gas is walked across several by `advance_head` (D-189), where before it
-  froze the head for ~60 TON of lots. Mass speculative opening is still the
+  froze the head for ~60 GRAM of lots. Mass speculative opening is still the
   protocol being prepaid at its best ratchet rate — the premium splits 50/50 between the
   ratchet and the treasury (D-114) — and there is no OPENER-INITIATED exit that returns a
   bid. The only two refunds are being outbid and `MarkRejected`'s unwind when a direct mint
@@ -5369,18 +5415,18 @@ emission curve.
   1. **Lot squatting without intent does not exist.** `open(n, bid)` places the opener's
      own bid at `≥ P0`, so you cannot open a lot you are unwilling to buy, and the no-bid,
      reserve-not-met and refund-the-opener states are *absent* rather than defended. A lot
-     costs at least 5 TON of locked capital to exist, which is why the open book is
+     costs at least 5 GRAM of locked capital to exist, which is why the open book is
      demand-bounded rather than eligibility-bounded.
   2. **Bid-refund griefing** — walking the high bid up in dust steps, each forcing a
      refund message at the contract's expense — is bounded by `MIN_INCREMENT`, sized since
-     D-33 as `max(MIN_INCREMENT_FLOOR, high · bps(score))` — a **0.015 TON floor**, not
-     1 TON, and a score-banded percentage (D-33's increment ladder, 5% below score 10
+     D-33 as `max(MIN_INCREMENT_FLOOR, high · bps(score))` — a **0.015 GRAM floor**, not
+     1 GRAM, and a score-banded percentage (D-33's increment ladder, 5% below score 10
      and 30% from 10 up — `incrementBpsAt`, published by `getIncrementLadder()`) rather than a flat
      5%: a rarer, more contested number requires a larger step so it resolves in fewer
      rounds. (This paragraph previously stated the pre-D-33 flat formula,
-     `max(1 TON, 5% · high)`; GAUNTLET.md C1.7 reconciled it against the shipped
+     `max(1 GRAM, 5% · high)`; GAUNTLET.md C1.7 reconciled it against the shipped
      `incrementBpsAt`/`MIN_INCREMENT_FLOOR` — the code value is the one to keep, since the
-     percentages are D-33's own signed sim output and 1 TON was never re-derived against
+     percentages are D-33's own signed sim output and 1 GRAM was never re-derived against
      it.) The anti-dust argument is §6's; the percentage is not, and point 1b says why §6's
      upper bound does not transfer to an ascending-only lane.
   3. **Sniping** is the characteristic failure of a hard close, which is why this lane no
@@ -5394,12 +5440,12 @@ emission curve.
      this section already documents for whale runs.
   4. **Wash bidding is structurally pointless, and this is stronger than it looks: there
      is no seller.** The protocol is the counterparty and half the premium goes to the
-     ratchet (D-114), so a bidder bidding against themselves burns real TON into every
+     ratchet (D-114), so a bidder bidding against themselves burns real GRAM into every
      holder's floor.
      There is no party on the other side to collect an inflated price, which is why this
      lane needs no bid-history rule at all — the usual reason to write one does not exist
      here.
-  5. **The 1 TON bypass is intended, not a leak, and it is documented here so nobody later
+  5. **The 1 GRAM bypass is intended, not a leak, and it is documented here so nobody later
      "fixes" it.** Every lot on this lane is bypassable by waiting for the head (§2
      principle 7). Closing the bypass means putting a gate on the head, which §12 forbids
      at any price and which would trade the game's fairness claim for auction revenue.
@@ -5407,13 +5453,13 @@ emission curve.
   `DECISIONS.md` D-20 every prime is selectable — it sits on a standing descending lot —
   so the "nobody can choose a prime" argument the earlier draft leaned on is withdrawn and
   the pricing argument has to carry the whole weight. It does: the cheapest a prime is ever
-  available is `getPrimeFloor(p) + RES_GAS` — at least `LOT_FLOOR` = 1.070 TON, and since
+  available is `getPrimeFloor(p) + RES_GAS` — at least `LOT_FLOOR` = 1.070 GRAM, and since
   D-88 point 1 strictly more than that for every prime the `NPV` table covers — at which the
-  farmer trades the ~0.11 TON
-  of rebate a composite would have paid for a credit worth 0.14–0.17 TON — an edge under
-  0.06 TON (at β = 0.55, `DECISIONS.md` D-117) — which is then spendable *only* across five further composite mints the farmer
-  pays 1 TON each for. **The attack is committing six full-price purchases to capture under
-  0.06 TON of uplift**, and it is worse than that for the farmer, because a prime bought
+  farmer trades the ~0.11 GRAM
+  of rebate a composite would have paid for a credit worth 0.14–0.17 GRAM — an edge under
+  0.06 GRAM (at β = 0.55, `DECISIONS.md` D-117) — which is then spendable *only* across five further composite mints the farmer
+  pays 1 GRAM each for. **The attack is committing six full-price purchases to capture under
+  0.06 GRAM of uplift**, and it is worse than that for the farmer, because a prime bought
   before its decay finishes costs the undecayed premium on top. The structural constraint `PRIME_UPLIFT · PRIME_WINDOW < k_max(n)` (§5.1)
   guarantees the credit never returns as much as the rebate the prime mint gave up. Every
   mint in the loop ratchets the floor, and the prime ones do it at maximum strength. This
@@ -5425,10 +5471,10 @@ emission curve.
   which costs the protocol one message of gas and the attacker the whole pump. Below `p_f`
   the caller sizes the flush (§4.3.1), so an attacker pumps, sizes the tranche to the
   pumped pool, lets the ratchet fill at an average up to `p_f`, and sells back. The cost is
-  **burn efficiency** — PRIMES not burned per TON spent — and never backing: `T`, `S` and
+  **burn efficiency** — PRIMES not burned per GRAM spent — and never backing: `T`, `S` and
   `p_f` are untouched, and the ratchet never pays above its own floor. Measured in the sim
   with a best-responding attacker who pumps up to 8× the flush and then sizes it:
-  1,856 of 3,217 flush attempts over the three-year base run are sandwiched, for **800 TON of attacker profit — 3.0% of the 26,387 TON the ratchet swapped** (`flush.sandwich_profitability_check`; the unguarded control loses 82%). The owner accepted this as the price of an oracle-free standing bid; a
+  1,856 of 3,217 flush attempts over the three-year base run are sandwiched, for **800 GRAM of attacker profit — 3.0% of the 26,387 GRAM the ratchet swapped** (`flush.sandwich_profitability_check`; the unguarded control loses 82%). The owner accepted this as the price of an oracle-free standing bid; a
   second price anchor under `p_f` would close it and was declined (D-190).
   Three oracle-free guards remain, since TVM has no synchronous get-calls and §5
   deliberately avoids price feeds: (a) the `limit`, now derived from `p_f` rather than from
@@ -5438,16 +5484,16 @@ emission curve.
   days. What remains extractable is the ordinary sandwich *inside* a filling swap, bounded
   by `FLOOR_GUARD` and `FLUSH_PCT`, and only available while the market is already under
   the floor.
-- **Draining the protocol's TON:** ~~three~~ **two** distinct balances sit on-chain at all
+- **Draining the protocol's GRAM:** ~~three~~ **two** distinct balances sit on-chain at all
   times, with two different owners — `pending` on the ratchet (nobody's, and
   unwithdrawable) and `owed` on the ledger (the prime owners', claimable).
   ~~plus purses held on unclaimed items (§3.4)~~ **D-106 deleted the purse** along with
   patron mode: every minted number has a real owner from the transaction that minted it, so
   there is no unclaimed item left to hold one. ~~and reservation escrow (the reservers',
   refundable)~~ **D-90 deleted the escrow**: a won lot mints in its own closing transaction,
-  so there is no refundable customer TON in this system at all. There must be **no admin
+  so there is no refundable customer GRAM in this system at all. There must be **no admin
   withdraw path on either of them** — not timelocked, not multisig, none. The only outbound
-  TON paths are the split, tribute claims, `flush()` and §4.3.2's staking legs, each with
+  GRAM paths are the split, tribute claims, `flush()` and §4.3.2's staking legs, each with
   contract-computed amounts. Their destinations matter as much as their amounts: §4.3.2's
   staking addresses are deploy data with no setter, and the flush venue changes only with
   the proposer key AND a passed LP vote, after 30 days in public (`DECISIONS.md` D-194 —
@@ -5458,7 +5504,7 @@ emission curve.
   the grep conclusive rather than merely reassuring, since each one's outbound set can then
   be read in isolation.
 
-  **The governed treasury does not weaken this, and the reason is which TON it holds**
+  **The governed treasury does not weaken this, and the reason is which GRAM it holds**
   (§5.5, D-100 point 7). `primes_treasury.tolk` can spend, so a reader who greps for a
   spendable balance will find it and should be told what it is before they guess. **The
   treasury has no key and no admin** — no owner field, no admin opcode, no pause, no
@@ -5509,7 +5555,7 @@ emission curve.
     direction. Unrealized appreciation is not marked into `T` (§4.3.2's "realize, never
     mark"), which means a tsTON rate that is wrong, stale or manipulated cannot inflate the
     floor by a single nanoton.
-  - **Loss published, not absorbed.** `realizedLoss` on `getStaking()` is cumulative TON
+  - **Loss published, not absorbed.** `realizedLoss` on `getStaking()` is cumulative GRAM
     that left and did not come back, reported beside `stakedCost` and never netted into it.
     A non-zero reading means `p_f` overstates the backing by `realizedLoss / S`, and §5
     states the arithmetic and the one event — a slashing inside that pool — that can move
@@ -5526,9 +5572,9 @@ emission curve.
   protocol cannot deflate; it can only stall. The ratchet keeps draining geometrically
   under §4.3 *while PRIMES trades under the floor* (§4.3.1), so a stalled game whose holders are
   selling still delivers a decaying tail of buy pressure until `pending` is exhausted —
-  and a stalled game whose holders are not selling keeps the TON on the ratchet, backing `T`,
+  and a stalled game whose holders are not selling keeps the GRAM on the ratchet, backing `T`,
   where it is worth more than it would have been spent for. VRGDA-style *price* adaptation was
-  considered and rejected in favor of the flat 1 TON + variable rebate share, which
+  considered and rejected in favor of the flat 1 GRAM + variable rebate share, which
   achieves demand-responsiveness on the reward side while keeping the cost side
   legible.
 
@@ -5638,7 +5684,7 @@ Three consequences, stated rather than discovered:
   removes the second of the two rather than capping it: it was the one recruitment reward
   sitting outside the then-live `PATRON_CAP`, and `ERA_DIV_CAP` existed only to
   bound it. With the dividend gone the era trophy replaces it, and a trophy is not
-  repriced by `x` — it pays no TON and no PRIMES, so a sybil pair cannot profit from it
+  repriced by `x` — it pays no GRAM and no PRIMES, so a sybil pair cannot profit from it
   at any premium. Nothing else in this section is repriced by `x`: the one-message
   mint of §8 holds no position open across a price move, so there is no free option on
   `x` crossing `x*` to price.
@@ -5654,7 +5700,7 @@ the *game* (the special numbers), never the token.
 
 **The gift mint (§4.5/§4.6) is the layer under all of it.** The bounty tracks and the
 Telegram surfaces are things the team builds and pays for; a gift mint is a mechanism that
-makes *players* pay to acquire players, priced by the protocol at 1 TON a head and settled
+makes *players* pay to acquire players, priced by the protocol at 1 GRAM a head and settled
 without an operator. It converts the growth budget from an expense line into an ordinary
 mint, and it is the only part of the funnel that keeps working when nobody is running a
 campaign. Everything in §9.1–§9.7 should be read as the surface that makes it usable — a
@@ -5703,7 +5749,7 @@ share link needs somewhere to be posted and something to open into.
   trophy race and its standings, §4.7/§7), **the eight** (which primorial ceremonies have
   fired and who holds each pen), **your two ladders** (recruit rank and prime rank, §4.7,
   §4.7.1), and the two **lifetime boards** (recruiters by the minter card's `getRecruitRank`,
-  prime finders by its `getMinterState` prime count with tribute TON claimed as the row's label). A referral key is a *number* (§4.1) and its right travels with the NFT
+  prime finders by its `getMinterState` prime count with tribute GRAM claimed as the row's label). A referral key is a *number* (§4.1) and its right travels with the NFT
   (§3.1), so "mints that quoted this key and paid" is a fact about the number, shown on the
   number's own page and on no `/leaders` board — §9.11's referral board on `/earn` is the one
   place numbers are ranked by what their key has paid (D-177); the count includes only mints the ledger actually
@@ -5717,7 +5763,7 @@ share link needs somewhere to be posted and something to open into.
   *centred on the connected wallet*, four above and five below, with the board's own leader
   kept at the head of the list. The leader stays because every bar is drawn against the maximum of what was
   served, and a band alone would silently rescale the column to a local maximum. The band
-  pays **nothing**: no TON, no PRIMES, no `k_max` uplift, no naming right. It is a window
+  pays **nothing**: no GRAM, no PRIMES, no `k_max` uplift, no naming right. It is a window
   over the same ranking, not a second contest, so §5's clamps and §4.1's split are untouched
   by it. A wallet with no row on a board has no band, and that board answers its top-N.
   Every served row carries its **true** rank, so a band at 8..17 prints 8..17 — the ordinal
@@ -5757,7 +5803,7 @@ share link needs somewhere to be posted and something to open into.
 - **The nameplate.** Naming (§4.7.1, §7) is a reward the document cites throughout, so the
   app must *show* it: every minted number's page carries the name its owner gave it, the
   owner who holds the pen, and — for that owner alone — the naming as a control, priced in
-  TON at `nameFee` for the first naming and `renameFee` after (`DECISIONS.md` D-212), both
+  GRAM at `nameFee` for the first naming and `renameFee` after (`DECISIONS.md` D-212), both
   read from the collection's `getNaming()` and chosen by the item's `getAnnotation()` count.
   A primorial also carries its era trophy's engraving, held and written by the trophy's
   holder on the registrar (`getTrophy(n)`, `getTrophyAnnotation(n)`, free the first time,
@@ -5777,7 +5823,7 @@ share link needs somewhere to be posted and something to open into.
   gone the moment somebody takes it. **This is the best conversion moment the game
   generates on its own** — roughly one number in ln(n), on a schedule no marketing team
   writes — and unlike the k(t) clock it is discrete and shareable rather than a curve.
-  *"233 is on the block at 12.4 TON, falling to 1 TON by Friday. No rebate, maximum
+  *"233 is on the block at 12.4 GRAM, falling to 1 GRAM by Friday. No rebate, maximum
   ratchet, and whoever owns it names it."* The app says it; nothing pushes it —
   there are no notification bells, in the app or the bot (`DECISIONS.md` D-169).
 
@@ -5863,10 +5909,10 @@ share link needs somewhere to be posted and something to open into.
   that blurs them is the exact failure §2 principle 5 exists to prevent. Second, the invite
   panel must carry, visibly, the three sentences that make recruiting structurally not a
   referral scheme. **D-106 changed all three of them, because it changed what has to be
-  defended**: they used to argue a real TON payout was bounded (single-level with no
+  defended**: they used to argue a real GRAM payout was bounded (single-level with no
   second-level field, a ceiling equal to one mint price, a line paid from the residual
-  that never touches tribute); nothing pays TON now, so they say instead that recruiting
-  pays no TON at all, that a recruit costs a full mint to an address the ledger has never
+  that never touches tribute); nothing pays GRAM now, so they say instead that recruiting
+  pays no GRAM at all, that a recruit costs a full mint to an address the ledger has never
   seen, and that every uplift lands under the single `K_CEIL` clamp. If those three are
   not on the screen, the panel is not finished.
 
@@ -5931,7 +5977,7 @@ share link needs somewhere to be posted and something to open into.
     launch is a surface that launches untested.
 
   **And the pool is where a holder trades, so the app offers the trade.** A swap form sits
-  above the ratchet on `/`: buy PRIMES with TON, or sell PRIMES for TON, against that same
+  above the ratchet on `/`: buy PRIMES with GRAM, or sell PRIMES for GRAM, against that same
   pool. It is the one ordinary thing a holder previously had to leave for a DEX front-end,
   and leaving meant a surface that knows nothing about `p_f` and cannot quote a testnet pool
   at all. Every figure in the form is a get-method reading like the rest of this list — the
@@ -5950,8 +5996,8 @@ share link needs somewhere to be posted and something to open into.
   a 24h trade count — are **not replaced by an estimate**. The card publishes the pool's
   depth instead, which is a get-method, and the price history it plots is this deployment's
   own log of the `get_reserves` readings it has taken, labelled as readings rather than as
-  a trade tape. Only the USD denomination is still borrowed: a TON/USD mark, applied to a
-  price the chain gave us, shown beside the TON figure and never instead of it.
+  a trade tape. Only the USD denomination is still borrowed: a GRAM/USD mark, applied to a
+  price the chain gave us, shown beside the GRAM figure and never instead of it.
 
   **The treasury, LP custody and locked depth add these** (§5.5, D-100; the list is as D-168
   leaves it — `getMiner`, `getMinerSolvency`, `getTierWeights`, the position's `getAccrued`
@@ -5963,7 +6009,7 @@ share link needs somewhere to be posted and something to open into.
 
   | Contract | Get-methods |
   |---|---|
-  | `primes_treasury.tolk` | `getTreasuryBalances` (TON less the rent floor, PRIMES, lpHeld, primesIn, tsTON), `getDistribution` (lastDistributeTime, interval, rateBps, nextBudgetEstimate, distributedTotal, stakeAddr — **the inputs; the chain computes no APY**. The stake form and the main page's stake card derive an *estimated* one from them and `getTreasuryBalances`' PRIMES: the fixed per-epoch share compounded over a year's epochs, split by weight with the stake counted; on an empty pot the form prices the typed amount as the first stake (the whole stream) and the card stays blank (`DECISIONS.md` D-182)), `getTreasuryCounts` (deposit and distribute events, for indexer reconciliation), `getGov` (next seq, eligibleWeight, cap bps, propose-min bps, vote duration, notice duration), `getProposal(seq)` (`opens` is when the vote opens, a notice after it was proposed), `getVotable(seq)` (is the vote open by the block's clock, and if not which error — 1206 in the notice), `getExecutable(seq)` (would it execute now, at what cap, and if not which error), `getPrunable(seq)` (D-188 point 7 — would `prune` delete it now), `getVoteMultipliers`, `getTierTerms` (the four LOCK TERMS, clock-divided), `getPositionAddress(owner)`, `getTreasuryActions` (the deposit payload tag), `getTreasuryMinForward`, `getTreasuryConfig` |
+  | `primes_treasury.tolk` | `getTreasuryBalances` (GRAM less the rent floor, PRIMES, lpHeld, primesIn, tsTON), `getDistribution` (lastDistributeTime, interval, rateBps, nextBudgetEstimate, distributedTotal, stakeAddr — **the inputs; the chain computes no APY**. The stake form and the main page's stake card derive an *estimated* one from them and `getTreasuryBalances`' PRIMES: the fixed per-epoch share compounded over a year's epochs, split by weight with the stake counted; on an empty pot the form prices the typed amount as the first stake (the whole stream) and the card stays blank (`DECISIONS.md` D-182)), `getTreasuryCounts` (deposit and distribute events, for indexer reconciliation), `getGov` (next seq, eligibleWeight, cap bps, propose-min bps, vote duration, notice duration), `getProposal(seq)` (`opens` is when the vote opens, a notice after it was proposed), `getVotable(seq)` (is the vote open by the block's clock, and if not which error — 1206 in the notice), `getExecutable(seq)` (would it execute now, at what cap, and if not which error), `getPrunable(seq)` (D-188 point 7 — would `prune` delete it now), `getVoteMultipliers`, `getTierTerms` (the four LOCK TERMS, clock-divided), `getPositionAddress(owner)`, `getTreasuryActions` (the deposit payload tag), `getTreasuryMinForward`, `getTreasuryConfig` |
   | `primes_lp_position.tolk` | `getPositions` (count, nextId, voteWeight), `getPosition(id)` (amount, tier, lockedAt, expired, inFlight, **maturesAt** — the instant `withdraw` stops throwing AND the vote stops, which under D-147 are the same instant), `getVoteWeight` (this wallet's, less what `expire` has retired — an UPPER BOUND between a maturity and its poke, and the get-method says so), `getTierTerms` (the enforced copy of the ladder), `getPositionOwner`, `getPositionMinForward`, `getHasVoted(seq, id)` / `getVotedCount(seq)` (the one-vote record, D-188 point 7 — per POSITION since D-147) |
   | `primes_lp_sink.tolk` | `getLocked` (**locked depth**, TR-6), `getEvents`, `getLpSinkConfig` |
   | `primes_ledger.tolk` (changed) | `getOperatorTotals` is a **quadruple** — `(operatorPaidTotal, treasuryPaidTotal, opsSweptTotal, premiumTreasuryPaidTotal)` (D-100 made it a triple; `DECISIONS.md` D-114 adds the fourth; `opsSweptTotal` keeps its name but since D-117 counts gas & ops surplus returned to the ratchet pool, not operator income) — because the 5% line, the forfeit share, and now an auction premium's treasury share are three distinct revenue events that must not land in one counter, which is exactly the misreading §9.1 exists to prevent; and `getFeeDests` publishes `(treasuryAddr, operatorAddr, FORFEIT_TREASURY_BPS)`, so the 58/42 forfeit split (`DECISIONS.md` D-166) is a number the chain states rather than one the UI asserts (the 50/50 premium split is `PREMIUM_TREASURY_BPS`, a separate owner-set constant, §4.4) |
@@ -6053,7 +6099,7 @@ share link needs somewhere to be posted and something to open into.
 
   | Contract | Get-methods |
   |---|---|
-  | `primes_ledger.tolk` | `getInviteTerms()` (`INVITE_MAX_COUNT`, `INVITE_TRANSFER_VALUE` — the line's two owner-set numbers), `getInviteComment(n)` (the exact comment an invite from `n` carries), `getInviteText()` (the operator-set words alone, D-211), `getInviteSpend()` (slots funded, transfers sent, slots returned to β, TON paid — so the invite line closes against `count` in public and §4.1's "unspent → β" rule is checked rather than asserted) |
+  | `primes_ledger.tolk` | `getInviteTerms()` (the live operator-set count and value, then `INVITE_SEND_FEE`, `INVITE_LINE_CAP`, `INVITE_COUNT_CEILING` — the three fixed bounds, D-215), `getInviteComment(n)` (the exact comment an invite from `n` carries), `getInviteText()` (the operator-set words alone, D-211), `getInviteSpend()` (slots funded, transfers sent, slots returned to β, GRAM delivered, GRAM the line cost — so the invite line closes against `count` in public and §4.1's "unspent → β" rule is checked rather than asserted) |
   | `primes_bounty_vault.tolk` | `getVaultFunded()` (the genesis funding an era bounty or rebate must fit under, `funded − paid`; V26.7), `getDeferredPayouts()` (bounties owed but not delivered — the count and the journal-key bound a retrier walks; D-129), `getRetryEntry(key)` (one journal row and whether a retry of it would pay, so a retrier reads before it sends; GAUNTLET.md G59) |
 
   **AMENDED 2026-08-19 (`DECISIONS.md` D-24): the rule gains a second clause, because the
@@ -6146,11 +6192,11 @@ share link needs somewhere to be posted and something to open into.
      sold yet" and "we could not find out" are different answers.
 
   **The source is an aggregate, not a venue.** The figures are computed daily from the free
-  TON data lake's `nft_events` (`tools/lake/market.sql`, `DECISIONS.md` D-201) — every
+  GRAM data lake's `nft_events` (`tools/lake/market.sql`, `DECISIONS.md` D-201) — every
   marketplace on TON, rather than one shop's view of its own order book — and anyone can rerun
   them with no account. **Volume is secondary only**: a venue's
   headline blends its own primary mint revenue in, and this game's primary sales are the
-  1 TON mints the same card already reports from a get-method, so blending would
+  1 GRAM mints the same card already reports from a get-method, so blending would
   double-count what the chain answers. Validated against GetGems' own published figures for
   a third-party collection: the live listing count agrees to within 1.4%. The lake indexes
   mainnet only, so a testnet card states `not-indexed` rather than a row of zeros.
@@ -6170,7 +6216,7 @@ share link needs somewhere to be posted and something to open into.
   rather than trusting a caller-supplied `kind`, because since §4.4 point 1b the lane
   depends on primality; `getLotPrice(n)` returns the opening bid `P0(n)` with the score, the
   category bitmask and the settlement gas, so *"why does 1000 open at
-  73.5 TON"* is answerable without reading bytecode and the same recompute-don't-trust rule
+  73.5 GRAM"* is answerable without reading bytecode and the same recompute-don't-trust rule
   applies as above; `getLot(n)` returns the standing high bid, the high bidder,
   `MIN_INCREMENT` and the live `closesAt` **including every snipe extension**, which is
   the one field a UI must never cache; and `getMarketStats()` publishes the open book's
@@ -6193,7 +6239,7 @@ share link needs somewhere to be posted and something to open into.
   rather than quote for any auction-lane number** — the same rule `getIsOpenable(n)`
   already applies to §7 primorials, that *a number that is not for sale is not quoted at
   zero as if it were free*. The case that makes this load-bearing is a plain prime scoring
-  `D(n) = 0`: a threshold-only implementation would quote it at 1.05 TON and the
+  `D(n) = 0`: a threshold-only implementation would quote it at 1.05 GRAM and the
   transaction would be rejected on-chain after the user signed. The webapp computes the
   lane locally to name the reason, exactly as it does the score, and a disagreement with
   the chain's answer is a warning on the screen rather than a silent divergence.
@@ -6201,14 +6247,14 @@ share link needs somewhere to be posted and something to open into.
   Two obligations on the lot surface itself, both §9.1 rules rather than copy preferences.
   It shows the score **with its named contributing predicate** next to `P0`, for the same
   reason the reserve form does. And it states the bypass in plain words — on an ascending
-  lot, *you can also just wait for the head and mint it for 1 TON*; on a prime lot, *you
-  can also just wait for this price to reach 1 TON, and it always does* (§2 principle 7) —
+  lot, *you can also just wait for the head and mint it for 1 GRAM*; on a prime lot, *you
+  can also just wait for this price to reach 1 GRAM, and it always does* (§2 principle 7) —
   because omitting it would be the single most misleading thing this product could leave
   off a screen.
 
   **The operator's own revenue is not exempt from this rule** — it is the number a hostile
   reader most wants to check, so it gets a get-method before it gets a recipient.
-  `getOperatorTotals()` meters every TON the operator has been paid (since D-117 only the
+  `getOperatorTotals()` meters every GRAM the operator has been paid (since D-117 only the
   forfeit remainder), and `getOpsSweep()` publishes the currently-sweepable gas & ops
   surplus and the reserve it is measured against — a surplus that goes to the ratchet pool,
   not to any address (§4.1). The treasury line is already
@@ -6218,7 +6264,7 @@ share link needs somewhere to be posted and something to open into.
 - **Two prices, both on screen, both named.** The floor and the market price are different
   numbers by construction (§6 point 3: the bounty vault sits in `S` with no `T` behind it),
   and a dashboard that shows one invites the reader to assume it is the other. Quote both
-  as **PRIMES per TON** — at genesis, 10,000 at the market and 20,000 at the floor — because
+  as **PRIMES per GRAM** — at genesis, 10,000 at the market and 20,000 at the floor — because
   `0.0000833` is the same fact in a denomination nobody can read at a glance, and a
   mis-parsed exponent is the most likely way this dashboard lies by accident. At `L = 10,000`
   every PRIMES figure on the dashboard gains a digit, so **thousands separators are part of
@@ -6242,7 +6288,7 @@ share link needs somewhere to be posted and something to open into.
 
   **The derived-rate rule, because the asset side is the one place the §9.1 constraint
   bites hardest.** Every asset exposes a *stock* — `getOwed()`, `getDivAcc()`,
-  `get_owed(p)` — and none exposes a *rate*, so "prime 211 earns X TON per 1,000 numbers of
+  `get_owed(p)` — and none exposes a *rate*, so "prime 211 earns X GRAM per 1,000 numbers of
   head progress" cannot be read off a single get-call. Storing trailing accrual counters
   on-chain is rejected: it spends real gas and state rent against the gas & ops line (20% since `DECISIONS.md` D-117) §12
   calls the tightest budget in the system, to store a number that is arithmetically implied
@@ -6331,21 +6377,21 @@ measured outcomes**:
      membership facts at all.
   2. **The mint gate, unchanged.** Nothing here pays before an on-chain mint is
      attributed to the wallet (decision 0.2.1). So the cheapest attack is: make a
-     Telegram account, join two chats, and spend 1 TON — to collect a reward worth
+     Telegram account, join two chats, and spend 1 GRAM — to collect a reward worth
      a small fraction of it. Farming is a loss-making trade by construction rather
      than by policing, and it stays one however cheap Telegram accounts get.
   3. **A ceiling that is an invariant, not a budget.** Everything one wallet can
      ever earn from voucher-settled quests is capped at **`β · MINT_PRICE`** — the
      ratchet injection of the mint that unlocks it. Below that line a quest-paid
      wallet strictly *raises* `p_f`: the payout leaves `S` untouched (§3.3
-     pre-counts the whole vault) while the gating mint adds `β` TON to `T`. Above
+     pre-counts the whole vault) while the gating mint adds `β` GRAM to `T`. Above
      it, the program stops being self-funding and becomes a claim on other holders'
      backing. The cap is in `params.json` and asserted in the backend's tests
      against the summed board, so a future quest addition fails loudly rather than
      quietly.
 
      **D-42 changed where that assertion has to happen, and the change is
-     load-bearing.** While the social rewards were TON-denominated, the cap could be
+     load-bearing.** While the social rewards were GRAM-denominated, the cap could be
      checked once, at design time: the board's worth never moved. Now that they are
      PRIMES-denominated their worth is the floor path, so the board grows into the
      ceiling on its own — around the sim's second year. The payout is therefore
@@ -6396,7 +6442,7 @@ measured outcomes**:
 
   **There is deliberately no "bring a friend" quest here, and the omission is the
   decision** (D-41, upheld by D-42). §4.1 already pays 10% of every mint to the
-  recruiter, in TON,
+  recruiter, in GRAM,
   forever. That line is funded by the *flow* of mints, so it grows with the thing it
   is buying; a vault-funded bonus on top would spend the scarcest budget in the system
   paying twice for one event. Recruitment therefore belongs in §9.1's presentation
@@ -6404,12 +6450,12 @@ measured outcomes**:
 
   **What bounds this program is inventory, not solvency, and the bound is `T₀`.**
   The bounty vault is pre-counted into `S` with no `T` behind it, so the whole vault
-  is worth `T₀ · vault_pct / (1 + vault_pct)` TON at the nominal genesis floor (D-46:
+  is worth `T₀ · vault_pct / (1 + vault_pct)` GRAM at the nominal genesis floor (D-46:
   `T₀` is a sizing input, not a real deposit — this figure is a calibration reference, not
   a claim about real backing at deploy). Raising the
-  vault fraction *does* raise that figure — D-41 took it from 33 to 67 TON, D-42 to
-  100 TON at 100% of the nominal-sized `T₀·L`, and D-43 to 166.67 TON at
-  500% (D-166's smaller `S₀` makes it `T₀ · V / S₀` = 10/11 of `T₀`, 181.8 TON; D-204's 780% makes it 78/83, 188.0 TON), to fund a puzzle
+  vault fraction *does* raise that figure — D-41 took it from 33 to 67 GRAM, D-42 to
+  100 GRAM at 100% of the nominal-sized `T₀·L`, and D-43 to 166.67 GRAM at
+  500% (D-166's smaller `S₀` makes it `T₀ · V / S₀` = 10/11 of `T₀`, 181.8 GRAM; D-204's 780% makes it 78/83, 188.0 GRAM), to fund a puzzle
   campaign that D-47 replaced with §9.6's special-number rebates — and pays for the raise entirely in the nominal opening floor reference (§6
   point 3). What it
   cannot do is pass `T₀`, because `pct/(1 + pct)` converges on 1,
@@ -6417,10 +6463,10 @@ measured outcomes**:
   slice of a fixed quantity bounded by the nominal seed, and the honest place to fund
   *growth at scale* remains the flow rather than the stock.
 
-  This is the constraint that decided D-42's shape. Paying 10,000 players 0.5 TON each
-  is 5,000 TON — twenty-five times the entire nominal seed, and at opening prices
+  This is the constraint that decided D-42's shape. Paying 10,000 players 0.5 GRAM each
+  is 5,000 GRAM — twenty-five times the entire nominal seed, and at opening prices
   75,000,000 PRIMES against a genesis supply of 4,000,000. No vault fraction reaches it
-  and no reallocation of the other tracks comes close; only a `T₀` around 15,000 TON
+  and no reallocation of the other tracks comes close; only a `T₀` around 15,000 GRAM
   would. The headcount and the per-player prize cannot both be chosen.
 
   **What the program offers, and what that buys (D-42).** Given that the two cannot both
@@ -6428,7 +6474,7 @@ measured outcomes**:
   **1,000 equal rewards** (`DECISIONS.md` D-204; D-42 set 10,000, and D-204 traded nine
   wallets in ten for a reward ten times the size), and every player who finishes the board
   draws the same number of PRIMES whenever they finish it. The track is **2,450,000 PRIMES**
-  (26.4 TON at the opening floor) — so one player's whole board is **2,450 PRIMES**, split
+  (26.4 GRAM at the opening floor) — so one player's whole board is **2,450 PRIMES**, split
   in **equal fifths across five quests — these four and the story quest below**, 490 each
   (D-118, owner-signed 2026-09-22 as quarters over the four, amended 2026-11-20 to fold the
   story quest in; it was 30/30/40 across three before `connect` joined). The split is
@@ -6438,11 +6484,11 @@ measured outcomes**:
   The track is spent first come, first served, until it is empty.
 
   **The reward is therefore denominated in PRIMES, and its worth is the floor path.**
-  2,450 PRIMES is **0.0264 TON** at the opening floor (`p_f0` = 1.0769e-05, D-204); alone it
+  2,450 PRIMES is **0.0264 GRAM** at the opening floor (`p_f0` = 1.0769e-05, D-204); alone it
   would reach `β · MINT_PRICE` once the floor has risen **~9.5×** (`genesis.quest_rewards.cap_binds_at_floor_multiple`), but
   the cap is shared with the contract-fact board below, and the two together — 8,800 PRIMES —
   reach it at **~2.6×** (`prime_quests.combined_cap_binds_at_floor_multiple`). The clamp above catches it there, and
-  the sim's three-year horizon ends at 429.1× the deploy floor (`final_state.floor_appreciation`).
+  the sim's three-year horizon ends at 428.9× the deploy floor (`final_state.floor_appreciation`).
   **So since D-204 the nominal PRIMES figure is an opening-weeks figure**: past roughly twice
   the opening floor a claim pays a fixed worth and a falling count. D-42's bet — a small
   reward that appreciates for years — is no longer what this board does; D-204 chose a reward
@@ -6456,8 +6502,8 @@ measured outcomes**:
   reason is that the two tracks are promising different things. The in-game quests promise
   a *worth*, so the worth is fixed. The social board promises that a *stated number of
   players gets paid*, and a fixed headcount out of a PRIMES-fixed stock is only possible
-  if the per-player draw is fixed in PRIMES too. Under the previous TON denomination the
-  early players were the expensive ones — 0.25 TON cost 3,750 PRIMES at the opening floor
+  if the per-player draw is fixed in PRIMES too. Under the previous GRAM denomination the
+  early players were the expensive ones — 0.25 GRAM cost 3,750 PRIMES at the opening floor
   and roughly 10 PRIMES at the end state — so the track funded 65 players in the first
   months and the remaining 9,935 only years later, which is backwards for an acquisition
   funnel. Fixing the PRIMES inverts it: the count is guaranteed and the value is what
@@ -6466,7 +6512,7 @@ measured outcomes**:
 
 - *Story shares:* the bot renders a personal 9:16 QR image (live floor staircase + the
   sharer's key baked in) for Telegram Stories; the share quest — a fifth of the social board
-  above, in PRIMES (D-118 amended 2026-11-20; it was a legacy TON figure, ~6,191 PRIMES at
+  above, in PRIMES (D-118 amended 2026-11-20; it was a legacy GRAM figure, ~6,191 PRIMES at
   the opening floor, outside the `quests` track) — pays only after **N
   counted arrivals tagged with that story's source label** — a bot `/start` or a wallet
   connected in the app, one per Telegram user or wallet (`DECISIONS.md` D-213: the QR opens
@@ -6505,8 +6551,8 @@ measured outcomes**:
 - Locked-but-visible quests tease the next step; a browser visitor's Telegram-bound
   quests deep-link into the bot carrying their live attribution.
 
-**In-game quest rewards are denominated in TON, not in PRIMES**, and the board shows the
-PRIMES that TON buys at the current floor, labelled with the rate. A fixed nominal PRIMES
+**In-game quest rewards are denominated in GRAM, not in PRIMES**, and the board shows the
+PRIMES that GRAM buys at the current floor, labelled with the rate. A fixed nominal PRIMES
 reward is not a fixed reward: §5's ratchet lifts `p_f` forever — ~45× over year one at
 baseline demand — so a reward written as "100 PRIMES" quietly multiplies its own value
 against a budget the vault fixed once, at genesis. What the design decides is what a quest
@@ -6515,7 +6561,7 @@ is *worth*; the token count is a quote.
 **The two headcount boards are the exceptions, and they are exhaustive** — the social board
 (D-42) and, since `DECISIONS.md` D-171, the contract-fact board (referral, recruit, prime,
 game), sized by the sim as `prime_quests / 1,000` wallets = 6,350 PRIMES split across its twelve
-quests, 104 to 1,301 each (`DECISIONS.md` D-204; it was `/ 10,000` = 75 PRIMES, 1 to 15 each). No voucher-paid quest is TON-denominated since D-118's 2026-11-20 amendment folded the story quest into the social board. Both boards live under **one**
+quests, 104 to 1,301 each (`DECISIONS.md` D-204; it was `/ 10,000` = 75 PRIMES, 1 to 15 each). No voucher-paid quest is GRAM-denominated since D-118's 2026-11-20 amendment folded the story quest into the social board. Both boards live under **one**
 `β · MINT_PRICE` ceiling per wallet, each row clamped to its share of it, so two boards never
 pay twice the cap. D-42 fixes these rewards in PRIMES because there the
 design decides a *headcount* rather than a worth; the argument is above, and the clamp is
@@ -6524,12 +6570,12 @@ unit is fixed, the UI must lead with that one: presenting a moving quote as the 
 the §9.1 problem in a different costume.
 
 One consequence is load-bearing enough to belong in the spec rather than only in the code.
-A rising floor makes a TON-denominated reward worth *fewer* PRIMES over time, and §9.5's
+A rising floor makes a GRAM-denominated reward worth *fewer* PRIMES over time, and §9.5's
 voucher total is a high-water mark that strands rather than refunds any decrease. So the
-TON→PRIMES conversion happens **once, at the moment a quest completes, and is persisted**;
+GRAM→PRIMES conversion happens **once, at the moment a quest completes, and is persisted**;
 the PRIMES-denominated social rewards are persisted at completion too, for the same reason
 running the other way — the clamp can only ever *lower* a payout as the floor rises, so an
-unfrozen social reward would regress across the clamp's crossover exactly as a TON-
+unfrozen social reward would regress across the clamp's crossover exactly as a GRAM-
 denominated one regresses everywhere;
 it is never recomputed at read time from the current floor. A quest completed at open keeps
 what it was worth at open. Re-deriving it would shrink an earned total on every mint, the
@@ -6565,7 +6611,7 @@ each one is a promise that had to become arithmetic:
   automatic.** The contract pays `cumulative_total − already_paid` and stores the total, so
   a total that ever decreases pays zero from then on and the difference is *stranded*, not
   clawed back. Every voucher-paid reward is a PRIMES row clamped at claim time to its share
-  of `β · MINT_PRICE` (§9.4; no TON-denominated one is left since D-118's 2026-11-20
+  of `β · MINT_PRICE` (§9.4; no GRAM-denominated one is left since D-118's 2026-11-20
   amendment), and that clamp quotes fewer PRIMES as the floor rises, so the per-quest figure
   is frozen at completion and the cumulative total sums those frozen amounts. The signer additionally keeps its own high-water mark per
   wallet, program and voucher instance (the contract's address, so a fresh genesis starts every
@@ -6588,9 +6634,9 @@ each one is a promise that had to become arithmetic:
   social board (`quest_rewards.reward_nanoprimes`, 2,450 PRIMES), `PQST` one wallet's whole
   contract-fact board (`quest_rewards.prime_quests.reward_primes`, 6,350), `SECU` the whole
   1,000,000-PRIMES track, because D-170 pays one prize to one wallet. A key thief now needs a
-  fresh wallet per cap's worth — about 1,000 per track — each claim carrying its own ≥ 0.15 TON.
+  fresh wallet per cap's worth — about 1,000 per track — each claim carrying its own ≥ 0.15 GRAM.
   **Resolved the same day (owner, D-118 amended 2026-11-20):** §9.4's `story-verified-reach`,
-  then TON-denominated outside `reward_nanoprimes` (~6,191 PRIMES at the genesis floor, above
+  then GRAM-denominated outside `reward_nanoprimes` (~6,191 PRIMES at the genesis floor, above
   this cap), is now a fifth of the 2,450-PRIMES social board, so every `QSTS` quest is inside it.
 - **The high-water mark lives on a per-claimant receipt, not on the claim contract
   (`DECISIONS.md` D-191 point 2).** A mark per wallet in one dictionary would grow with every
@@ -6651,7 +6697,7 @@ reward (`quests / 1,000` since D-204) are untouched.
 >
 > **The rebate stops wearing a rarity badge.** A tier used to do two jobs at once — lift a
 > price and size a bounty-vault payout — under names (`discount` / `free` / `bonus`) that
-> described the payout. So the rim of `/lot/5` said "free" beside a 10 TON lot. The two
+> described the payout. So the rim of `/lot/5` said "free" beside a 10 GRAM lot. The two
 > jobs are now two mechanisms with two populations, and neither is called a tier.
 
 No ads for the token. The funnel is: nerd-snipe → read contract → call contract.
@@ -6667,8 +6713,8 @@ predicate or it does not, and every predicate runs on chain, from `n` alone.
 D(n) = clamp( LEN(n) + max(DIGIT) + Σ LIFE + Σ FORM + CULTURE + POSITION , 0 , SCORE_MAX )
 ```
 
-- **`SCORE_MAX = 87`, and the clamp IS the ceiling.** `MINT_PRICE · 2^(87/10) = 415.87 TON`,
-  so the one clamp on the sum is the whole of the owner's 420 TON ceiling. There is no
+- **`SCORE_MAX = 87`, and the clamp IS the ceiling.** `MINT_PRICE · 2^(87/10) = 415.87 GRAM`,
+  so the one clamp on the sum is the whole of the owner's 420 GRAM ceiling. There is no
   second ceiling anywhere — the same one-clamp-over-a-sum discipline `K_CEIL` gives §5.
 - **DIGIT takes a `max`; every other group sums.** The six digit predicates imply one
   another — a repdigit is also a palindrome and an `abab` — so summing them would pay
@@ -6709,7 +6755,7 @@ D(n) = clamp( LEN(n) + max(DIGIT) + Σ LIFE + Σ FORM + CULTURE + POSITION , 0 ,
   `catalan` (15). The batch is composite-first on purpose: `shared/prime_tags.json` already
   names 78 prime families, while the core loop mints **composites**, which had no taxonomy
   of their own. Because the ledger's mint leg scores every head mint (`scoreOfFrom`, below),
-  all eight run on **every head mint** — which is what §4.1's gas & ops line (0.20 TON since
+  all eight run on **every head mint** — which is what §4.1's gas & ops line (0.20 GRAM since
   `DECISIONS.md` D-117, 0.10 when they were admitted) pays for, and the measurement that admitted them is recorded in `DECISIONS.md` `## N6`.
   `square_triangular` is free: both of its predicates already ran.
 
@@ -6748,20 +6794,20 @@ D(n) = clamp( LEN(n) + max(DIGIT) + Σ LIFE + Σ FORM + CULTURE + POSITION , 0 ,
   already verified (§9.6's payback below, `DECISIONS.md` D-99, D-180). A prime passes an
   empty list, where the two methods agree exactly. Until 2026-09-24 the rebate read the
   from-`n` score (43 categories): the factored walk cost ~842 gas when §4.1's gas & ops line
-  was a FIXED 0.10 TON with ~529 left, so C14 (2026-09-07) signed two widths. D-117 made the
-  line 0.20 TON, derived from the heaviest measured mint, and `GAUNTLET.md` C15 closed the
+  was a FIXED 0.10 GRAM with ~529 left, so C14 (2026-09-07) signed two widths. D-117 made the
+  line 0.20 GRAM, derived from the heaviest measured mint, and `GAUNTLET.md` C15 closed the
   split: the owner adopted the factored rebate (D-180), and the worst mint rose from 0.184 to
-  0.186 TON (0.192 since, chiefly from D-191's minter cards). `getLotPrice(n)` and `getScoreBreakdown(n)` stay what they were — the documented
+  0.186 GRAM (0.192 since, chiefly from D-191's minter cards). `getLotPrice(n)` and `getScoreBreakdown(n)` stay what they were — the documented
   lower bound for a reader without the factorization.
 
   **Said plainly, because the next reader will want to add something here: §4.1's gas & ops
-  line has almost no headroom.** Since `DECISIONS.md` D-117 it is 0.20 TON, sized to the
-  heaviest measured mint (0.192 TON, ω = 12, since D-180's factored rebate and D-191's minter
-  cards), which leaves **0.008 TON** at the worst row.
+  line has almost no headroom.** Since `DECISIONS.md` D-117 it is 0.20 GRAM, sized to the
+  heaviest measured mint (0.192 GRAM, ω = 12, since D-180's factored rebate and D-191's minter
+  cards), which leaves **0.008 GRAM** at the worst row.
   Under the old fixed 0.10 line it stood at 99.79 of 100 after D-101's invite fan-out and at
   **98.17 of 100** from 2026-09-19, when the rebate mint began carrying a TEP-74
   `transfer_notification` (without one no wallet shows the rebate at all) and the hop that
-  carries it was shaved 0.02 -> 0.018 TON to pay for it — the master was retaining ~0.0183
+  carries it was shaved 0.02 -> 0.018 GRAM to pay for it — the master was retaining ~0.0183
   of that 0.02 per mint, on a contract nothing sweeps. Any new feature that wants gas on the
   mint path will find none, and must either buy it from a line that already has an
   owner-signed figure, find a leg that is over-funded the way that one was, or not ride the
@@ -6773,23 +6819,23 @@ arithmetic off the ten-entry `FRAC` table `getFracTable()` publishes.
 
 ```
 composite:  open = max( LOT_FLOOR , ladder(D) )
-            rest = none — the head mints it at 1 TON (§4.4)
+            rest = none — the head mints it at 1 GRAM (§4.4)
 prime:      open = max( LOT_FLOOR , ladder(D) , 1.5 · NPV(n) )
             rest = max( MINT_PRICE , open / 3 , 0.5 · NPV(n) )
 ```
 
-`LOT_FLOOR = MINT_PRICE + RES_GAS` = 1.07 TON is the absolute floor on either lane (`DECISIONS.md` D-113). The
+`LOT_FLOOR = MINT_PRICE + RES_GAS` = 1.07 GRAM is the absolute floor on either lane (`DECISIONS.md` D-113). The
 `NPV` term survives the rewrite for the reason D-89 gave: it is **yield, not vanity** —
 what the prime is modelled to earn in tribute over the life of the game
 (`docs/math-note.md`). It binds only on the 555 primes up to 6,577
 (`shared/params.json` `trophy_auction.npv_ladder.npv_branch_binding_prime_count` /
 `npv_branch_last_binding_prime`), which is the owner's "majority" carve-out and the only
-way past the 420 TON ceiling: 2, 3, 5 and 7 open above it (prime 2 at ≈ 1,345 TON), and
-only 2 also rests above it (≈ 448 TON).
+way past the 420 GRAM ceiling: 2, 3, 5 and 7 open above it (prime 2 at ≈ 1,345 GRAM), and
+only 2 also rests above it (≈ 448 GRAM).
 `open / 3` carries D-88 point 1's 3× open-to-rest spread to every prime the finite table
-misses, so a 300-point prime does not rest at 1 TON.
+misses, so a 300-point prime does not rest at 1 GRAM.
 
-**A composite the head reaches mints at 1 TON, whatever it is worth.** The head-advance
+**A composite the head reaches mints at 1 GRAM, whatever it is worth.** The head-advance
 walk's special-composite skip is **deleted** — it was also a live bug, and `MISTAKES.md`
 2026-09-04 records why: D-88 point 2 deleted the lane the skip fed, so the **125 composites**
 matching the old `isCuratedNumber` predicate — drawn from the calendar years 1918–2030 and
@@ -6912,7 +6958,7 @@ follows is the other one — a one-time vault payout to the first owner, sized t
 `min(reward_ton · S/T, max_primes)` claim-time-clamped way the quest and era-bounty tracks
 already are (D-42/D-43).
 
-- **A composite minted AT THE HEAD**, the 1 TON path — `REBATE_PER_POINT · D(n)`, per point
+- **A composite minted AT THE HEAD**, the 1 GRAM path — `REBATE_PER_POINT · D(n)`, per point
   of the factored score (`scoreOfFrom`, the same `D(n)` the auction prices on — D-180). **An auction-won composite gets nothing**:
   the premium is the price of impatience.
 - **A prime of the rebate family**, by whatever route it minted — flat, and `D(n)` is
@@ -6928,8 +6974,8 @@ already are (D-42/D-43).
 keyed by `n` in `paidSpecials` so a retried send after a bounced transfer cannot double-pay.
 The words `discount`, `free` and `bonus` appear nowhere in contracts, params, copy or tests.
 
-**The owner signs targets; the sim sizes the rates.** The signed targets are 0.005 TON per
-point (D-99 answer 16) and a flat 0.132 TON for the family
+**The owner signs targets; the sim sizes the rates.** The signed targets are 0.005 GRAM per
+point (D-99 answer 16) and a flat 0.132 GRAM for the family
 (`genesis.score_rebate.signed_targets_ton`). `sim/scripts/run_phase1.py`
 `score_rebate_report` projects both over the `n ≤ 10⁶` horizon — every head-minted
 composite, exhaustively scored, and the family drawn on the auction path too — and applies
@@ -7004,14 +7050,14 @@ current design, and because D-47, D-64, D-68, D-88 and D-89 all cite it.
 
 Every price was a `max()` over four curves that never added: the 0..120 `desirabilityScore`
 (digit patterns, digit count and a bare-year check, in which **primality weighed 0**), the
-tribute-NPV term, a flat lift per rarity tier (6 / 10 / 15 TON to open, 1.32 / 1.06 / 6.29
-TON to rest), and `PRIME_P0_MIN` = 5 TON. Whichever curve was loudest won and the others
+tribute-NPV term, a flat lift per rarity tier (6 / 10 / 15 GRAM to open, 1.32 / 1.06 / 6.29
+GRAM to rest), and `PRIME_P0_MIN` = 5 GRAM. Whichever curve was loudest won and the others
 vanished, so a number rare in two ways was priced as if rare in one. Measured on the
-2026-09-01 genesis: the composite `1111` opened at 181 TON, twelve times `8191` — the fifth
-Mersenne prime ever — which opened at the same 15 TON as `131071`, because a tier was a flat
-population price; `2024` and the prime `2027` both opened at 32 TON, because primality scored
-nothing; `42`, `420` and `1337` opened at the 1.06 TON floor, because culture did not exist;
-`999983`, the largest six-digit prime, rested at 1 TON; and a birthday like `19720909` was an
+2026-09-01 genesis: the composite `1111` opened at 181 GRAM, twelve times `8191` — the fifth
+Mersenne prime ever — which opened at the same 15 GRAM as `131071`, because a tier was a flat
+population price; `2024` and the prime `2027` both opened at 32 GRAM, because primality scored
+nothing; `42`, `420` and `1337` opened at the 1.06 GRAM floor, because culture did not exist;
+`999983`, the largest six-digit prime, rested at 1 GRAM; and a birthday like `19720909` was an
 ordinary number. The `free` tier, meant as a rarity, covered 1 in 6 integers below 100.
 
 Five categories were "special" — Mersenne primes (bonus), twin / Sophie Germain / safe primes
@@ -7020,7 +7066,7 @@ curated list of dates, years and constants (assigned per entry) — for a worst 
 numbers to the `n ≤ 10⁶` horizon. **Every one of those categories survives as a scored bit**;
 what does not survive is the population-flat price a tier gave them. The sim output that sized
 the tiers is superseded by the two rates above and is gone from `shared/params.json`. (The
-figures this section used to quote — discount 0.0198, free 0.1320, bonus 0.1386 TON — had
+figures this section used to quote — discount 0.0198, free 0.1320, bonus 0.1386 GRAM — had
 already drifted from what the deleted `special_numbers.tier_value_ton` held, 0.0036 /
 0.0242 / 0.0254; the drift is recorded rather than reconciled, because both numbers
 now describe a deleted mechanism.)
@@ -7032,7 +7078,7 @@ curated composite the head had already passed, with `open_head_lot_composite`,
 and D-64's vault purchase and re-listing — on the reasoning that **specialness is price, not
 mechanism**. That sentence survives D-99 verbatim in spirit; what changed is that the price is
 now one sum instead of a tier's flat figure. **D-89** deleted D-68's crown overlay
-(`max(tier price, 5000 TON / n)` opening, `max(tier price, 500 TON / n)` parking) for being a
+(`max(tier price, 5000 GRAM / n)` opening, `max(tier price, 500 GRAM / n)` parking) for being a
 second pricing mechanism that competed with NPV and won below `n ≈ 834`, making D-88's
 promised 3× spread measure 3.26×–5.86× in practice. D-99 finishes the same job on the tier
 itself: there is now **one expression, and every axis is a term in it**.
@@ -7070,10 +7116,10 @@ unchanged.
 
 **Who they are, and why the fit is real rather than aspirational.** The Fragment /
 TON-anonymous-numbers / Telegram-username market has already established, with realized
-prices, that this audience: (a) holds TON and transacts natively in it, so there is no
+prices, that this audience: (a) holds GRAM and transacts natively in it, so there is no
 bridge and no onboarding cliff; (b) understands a 7-day ascending auction with anti-snipe
 extension, because that is Fragment's own mechanism (§4.4 point 1b already matches it —
-`DECISIONS.md` D-11 chose that shape because it is what TON bidders expect); (c) already
+`DECISIONS.md` D-11 chose that shape because it is what GRAM bidders expect); (c) already
 pays a premium for **digit patterns on an otherwise arbitrary integer**, which is one of the
 six things `D(n)` measures (§9.6; under D-99 the score also prices life dates, mathematical
 form, culture and position on the line, not digit patterns alone); and (d) already treats the number as an
@@ -7084,13 +7130,13 @@ Fragment comps in the first place.
 **What they buy here, stated honestly, including the part that is worse for them.** The
 point 1b's ascending lot ahead of the head — on any number, at an opening price §9.6's score
 lifts — is the Fragment-shaped product. The honest disclosure a collector is owed, and which must
-appear on the surface that sells to them, is that **an ordinary number has a 1 TON route**
+appear on the surface that sells to them, is that **an ordinary number has a 1 GRAM route**
 (§4.4, §12) — waiting is a complete strategy and it caps what any lot can fetch. What they
-are buying above 1 TON is priority and certainty, not scarcity, **except** for a **prime**,
-whose lane parks at `max(MINT_PRICE, P0(p) / 3, NPV(p) / 2)` and where the 1 TON
+are buying above 1 GRAM is priority and certainty, not scarcity, **except** for a **prime**,
+whose lane parks at `max(MINT_PRICE, P0(p) / 3, NPV(p) / 2)` and where the 1 GRAM
 alternative genuinely does not exist. **For a composite there is no exception left at all**
 — D-99 deleted the last special-composite skip, so every composite the head reaches mints
-at 1 TON however it scores (§9.6). ~~D-64/D-47's parked price for a special composite~~ is
+at 1 GRAM however it scores (§9.6). ~~D-64/D-47's parked price for a special composite~~ is
 gone with the lane that carried it. A surface that blurs those two cases is mis-selling, and §2's "the audience is the
 auditor" applies with more force here, not less, because the sums are larger.
 
@@ -7386,7 +7432,7 @@ all off-chain, none touching the split or any invariant:
    number" via `setEmojiStatus`, backed by a bot-owned custom-emoji set. A wearable is
    minted into the set **only when a number is named** (§4.7.1 naming, or an era trophy
    §7) — so status supply is bounded by the naming fee that already prices status
-   (`DECISIONS.md` D-212: the owner's TON fee, ~50 EUR; only an era trophy's first
+   (`DECISIONS.md` D-212: the owner's GRAM fee, ~50 EUR; only an era trophy's first
    engraving is free). Telegram caps one emoji set at 200, so the bot fills numbered sets
    (`primes_wearables_by_<bot>`, then `primes_wearables_<k+1>_by_<bot>`), all owned by one
    account (`WEARABLE_SET_OWNER_ID`), one wearable mint at a time. Premium-only
@@ -7445,15 +7491,15 @@ message builder, a Node SDK, and an MCP server over the SDK (`backend/agent` and
 What a program is told, and why each line is honest:
 
 1. **Every rule is a get-method** (§9.1), so an agent can verify the ratchet (§5), the split
-   (§4.1) and the floor before spending 1 TON. This is a description of the interface.
+   (§4.1) and the floor before spending 1 GRAM. This is a description of the interface.
 2. **A referral key pays the owner of that number on every mint the program makes** (§4.1,
    §9.2). Running an agent under one's own number is the operator loop and the KOL loop in
    one sentence.
 
 What a program is **not** told: that any loop returns more than it pays. §8 prices every
 automated behaviour at the floor — bot loops return `k · β · P < P`, self-referral is assumed
-universal, sybil recruiting costs a fresh address plus a full mint (0.70 TON net of the
-invite line, §4.6) and returns no TON — and
+universal, sybil recruiting costs a fresh address plus a full mint (0.70 GRAM net of the
+invite line, §4.6) and returns no GRAM — and
 §8.1 names the one inversion: above `x* = (1 − c) / (k_max(n) · β)` the self-referred loop is
 profitable, and an advertised agent population is one that computes `x*` in public and turns
 on together. That is bounded by `K_CEIL` like everything else and is published, not hidden.
@@ -7485,21 +7531,21 @@ What the packaging promises, each half enforced by a test rather than stated:
   wallet, an unread account — never a fabricated `0` (§9.1); a route that fails throws. Every
   getter the proxy reads exists on the deployed contracts, so no route answers "not on this
   deployment" any more.
-- **A write quotes before it spends.** Each MCP write tool echoes the TON it would send and sends
+- **A write quotes before it spends.** Each MCP write tool echoes the GRAM it would send and sends
   only on an explicit `confirm: true`; the server is local stdio, because signing is local.
 
 ### 9.11 The referral board: what each key has paid
 
 `DECISIONS.md` D-177 (owner, 2026-09-24). A referral key is a number (§4.1) and its right
 travels with the NFT (§3.1), so a number that recruits pays whoever holds it, and until now
-nobody could see which ones do. The board shows it as a **figure, never a promise**: TON the
+nobody could see which ones do. The board shows it as a **figure, never a promise**: GRAM the
 ledger has actually sent down each key's referral line, ranked. It turns §4.1's 10% line
 into a holder's reason to market a number, which is §2 principle 4's shape: the growth budget
 is a fee line that already exists, and no PRIMES, no `k_max` uplift and no new split line
 pays for it.
 
 - **What it ranks: numbers, not players.** A row is a key `rN`. Its figure is the lifetime
-  TON the ledger relayed through that number's item to its holder of the day, across every
+  GRAM the ledger relayed through that number's item to its holder of the day, across every
   wallet that has held it (D-149 finding 1). The current holder is a label on the row, read
   from `get_nft_data`, never the thing ranked.
 - **The §9.1 source is a get-method on the item.** Each paid referral is one
@@ -7507,7 +7553,7 @@ pays for it.
   minted item's `mint_confirmed` (D-117, D-199) and only for a key the ledger judged valid at mint
   (`key >= 2`, below the head, not an unsold prime, not reserved; D-149 finding 4). The item
   counts what that arm received in a never-decremented `referralPaidTotal`, published as
-  **`getReferralPaid()`**, the same shape as `getTributeTotal()` (§3.2.1). A row's TON figure
+  **`getReferralPaid()`**, the same shape as `getTributeTotal()` (§3.2.1). A row's GRAM figure
   is that reading and nothing else: not a count multiplied by `REFERRAL_AMOUNT`, and never
   the index's own arithmetic (§9.10: money-critical figures come from the chain).
 - **The ranking is the read-index's, the way `/boards/recruiters` is.** There is no key
@@ -7523,13 +7569,13 @@ pays for it.
   `/n/:number` beside D-149's paid-referral count.
 - **Form.** Each key is drawn in a `NumberOrb` (the orb rule; a key is a number's portrait, not a lot, so `LotOrb`'s lane and clock do not apply), its row a fill against the
   board's leader. The figure rolls to its reading. Cyan and amber keep their prime and
-  composite meanings, and the fill is green: TON paid out to a holder (CLAUDE.md frontend rule 5).
+  composite meanings, and the fill is green: GRAM paid out to a holder (CLAUDE.md frontend rule 5).
 - **PLAY** says the heading and the figures and nothing else. **AUDITOR** adds one
   sentence naming `getReferralPaid()`, the `ForwardToOwner` hop and the validity rule, and
   says the ranking is the index's while each figure is the chain's.
 - **What it must never claim.** No rate, no APY, no "yield", no projection of what a key
   will pay, no price or value for a number derived from its row, and no suggestion that
-  buying a number buys its past: the figure is lifetime TON already sent to past and present
+  buying a number buys its past: the figure is lifetime GRAM already sent to past and present
   holders, and a buyer receives only future referrals. The copy says "paid", never "earns"
   or "returns". A board of what already happened is all §9.1 lets it be.
 
@@ -7573,7 +7619,7 @@ longer a free parameter — it is the residual of §4.1 — but the simulation m
 the residual stays healthy under universal self-referral and a full invite fan-out.
 *(`DECISIONS.md` D-106 removed the deepest part of this check with the patron line: the
 list used to include φ₁, φ₂ and `PATRON_CAP`, and the trough to watch was β = 0.40 on
-activation mints and 0.575 through the annuity window. The worst case is 0.25 now (0.525 until `DECISIONS.md` D-117's 20% gas & ops line, 0.425 until D-202's 3 × 0.1 TON invite line), and it
+activation mints and 0.575 through the annuity window. The worst case is 0.247 now, and 0.24 under any operator terms (0.525 until `DECISIONS.md` D-117's 20% gas & ops line, 0.425 until D-202's 3 × 0.1 GRAM invite line, 0.25 until D-215 put its fees on top), and it
 does not depend on who the minter is.)* The quantity to watch is the floor trajectory
 during a *growth spike*, when the share of
 activation mints in the mix is at its highest — the one regime where recruitment success
@@ -7650,7 +7696,7 @@ dividend was the one recruitment reward sitting outside the then-live `PATRON_CA
 D-106 has since deleted the cap and the line it bounded.)
 
 Kill criteria: any parameterization where **the share of primes still unsold at their 1
-TON floor grows without bound as the head advances** — the successor to the old
+GRAM floor grows without bound as the head advances** — the successor to the old
 prime-head-wait criterion, which D-20 retired along with the prime head; it no longer
 threatens liveness, it threatens revenue, because every unsold prime forfeits its tribute
 to the treasury indefinitely (§4.1) — where the AMM price detaches persistently
@@ -7667,7 +7713,7 @@ needed to close the gap are worth more to a Patron than the mint volume required
 them (§4.6.2).~~ **THE CRITERION FIRED, AND `DECISIONS.md` D-106 IS THE ANSWER TO IT.** It
 was called the sharpest kill criterion in this document precisely because it was a
 *necessary* condition no other parameter could rescue: `PATRON_CAP` bounded the payout at
-1.00 TON, so below `a` = 41.5% the annuity could not clear the 0.415 TON cost of the
+1.00 GRAM, so below `a` = 41.5% the annuity could not clear the 0.415 GRAM cost of the
 surrendered NFT however engaged the recruits were. Phase 1 measured `a` = 0.370 and
 `sim/primes_sim/kill_criteria.py` reported **FAIL** at the published cost basis for the
 mechanic's entire life. This section already named the remedy — "that criterion kills
@@ -7759,14 +7805,14 @@ is named below with the section that specifies it.
   `div_acc` accrual for the flat prime dividend, **the empty-tribute path on prime mints (line falls to the
   pool, §4.1) and the zero-rebate path that skips jetton-wallet deploy entirely on primes
   (§5.1)**, §4.5 beneficiary routing and D-106's recruit edge, referral-key resolution.
-- **Ledger**: cumulative `T`/`S` counters, the `owed[p]` dictionary and its TON balance,
+- **Ledger**: cumulative `T`/`S` counters, the `owed[p]` dictionary and its GRAM balance,
   `p_f`, all public get-methods (§9.1), tribute distributor. Holds tribute owed to prime
   owners and nothing else.
 - **Ratchet** (`primes_ratchet.tolk`): `pending`, `flush()`, the DeDust leg, burn. Holds the protocol's own
   backing and nothing else. **No admin withdraw path** — and under §4.3.1 it now carries a
   materially larger standing balance, which raises the stakes on that requirement rather
   than changing it.
-- ~~**Escrow**: the market shards' TON, structurally separate from the other two so that
+- ~~**Escrow**: the market shards' GRAM, structurally separate from the other two so that
   refundable customer money never shares a contract with unwithdrawable backing (§3.4).~~
   **Deleted by `DECISIONS.md` D-90** with `primes_market_shard.tolk`: a won lot mints in its
   close, so no contract holds refundable customer money at all.
@@ -7783,7 +7829,7 @@ is named below with the section that specifies it.
   is posted by hand from the floor donation's PRIMES at `p_f`, its receipt locked in the LP
   sink (D-140, D-154, §6 point 3); no contract builds the deposit.
   **Benchmark actual flush gas** — the
-  0.05–0.20 TON swap estimate is quoted from DeDust's docs, not measured. Watch the
+  0.05–0.20 GRAM swap estimate is quoted from DeDust's docs, not measured. Watch the
   `amount·S/T` arithmetic for overflow and precision: `S` is a jetton supply in
   nano-units and `T` is nanotons, so the multiplication must be ordered and widened
   deliberately rather than left to whatever the compiler does.
@@ -7813,9 +7859,9 @@ open is not a lock. `DECISIONS.md` D-106 deleted the lock, so there is no secret
 
 **Phase 4 — Testnet + bug bounty (2–3 weeks).**
 Public testnet run with **one 1,000,000-PRIMES prize for a bug that can drain the system**
-— TON moving against §8 — paid to the first valid report on a merged fix, from the mainnet
+— GRAM moving against §8 — paid to the first valid report on a merged fix, from the mainnet
 bounty vault's reserved `security_bounty` track through a second instance of §9.5's voucher
-on the owner's own key (`DECISIONS.md` D-170, superseding D-141's 30 TON pool). Every other
+on the owner's own key (`DECISIONS.md` D-170, superseding D-141's 30 GRAM pool). Every other
 finding earns public credit. The terms are published on `/verify` before the round opens. For this audience the bounty program is also the
 pre-launch marketing.
 
@@ -7929,21 +7975,21 @@ away; `DECISIONS.md` D-106 deleted both.)*
 
    **`DECISIONS.md` D-106 STRENGTHENED THIS, and the review's headline sentence changes.**
    It used to be "the mechanism's ceiling is a refund" — the patron line's `PATRON_CAP` =
-   1.00 TON gave the review a *finite, disclosed* maximum any recruiter could ever earn
+   1.00 GRAM gave the review a *finite, disclosed* maximum any recruiter could ever earn
    from one recruit, exactly the price of the mint that started it, which was the
    difference between an acquisition cost and a downline. That line is deleted. **There is
-   now exactly ONE mechanism in the game that pays TON for bringing somebody in — §4.1's
+   now exactly ONE mechanism in the game that pays GRAM for bringing somebody in — §4.1's
    referral line, single-level, paid only on a mint the payer made themselves.** What
    replaced the patron line pays *no currency at all*: a recruit raises the recruiter's own
    rebate ceiling by a tier, which is a limit on what their own future purchases can earn
    them, not a payment from the person they introduced. The sentence to build the review on
-   is now: **recruiting pays no TON, and the one line that does is capped at a single
+   is now: **recruiting pays no GRAM, and the one line that does is capped at a single
    level by the absence of any field that could hold a second.** `webapp/src/routes/Terms`
    §4 already says exactly this.
 5. ~~Whether the gas & ops line should be a *fixed* 10% or a measured pass-through with the
    remainder falling to the pool.~~ **CLOSED (2026-08-16): fixed 10%.** The benchmark the
    question deferred to now exists, and the 2026-08-16 measurement came in under the 0.10
-   TON line, which is the condition the question named as favouring pass-through. *(That
+   GRAM line, which is the condition the question named as favouring pass-through. *(That
    figure was taken under a `RES_GAS`/`RES_PRIORITY` split D-30 deleted, and it undercounted
    the draw — see the D-117 note below; the current measured worst case, headroom and rule
    are `shared/params.json` `fees.gas_ops_line`.)* It is decided
@@ -7956,7 +8002,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
    `shared/params.json`'s `mint._gas_ops_pct_note` is updated to match (`DECISIONS.md` D-9).
    **Superseded in figure, not in kind, by `DECISIONS.md` D-117 (2026-09-22):** the line stays
    fixed, but at **20%**, derived by the sim as the heaviest mint measured on the ledger's own
-   balance (0.192 TON, ω = 12) rounded up to a 5% step, and its unspent part is swept back to
+   balance (0.192 GRAM, ω = 12) rounded up to a 5% step, and its unspent part is swept back to
    the ratchet pool rather than to the operator. The 2026-08-16 benchmark undercounted the draw
    (§4.1).
 6. Reservation horizon: should `reserve(n)` be unbounded (any n up to the Miller–Rabin
@@ -8083,8 +8129,8 @@ away; `DECISIONS.md` D-106 deleted both.)*
 
     **Shipped 2026-08-16 (EARN_PLAN E0/E1), with the inequality resolved as a split
     decision rather than a pass.** Phase 1 now derives `V` instead of asserting it and
-    publishes the `(a, M, V)` surface (§4.6.2). The patron mint returns 0.387 TON against
-    0.415 TON unranked — a **fail by 0.028** — and against 0.374 TON for an already-ranked
+    publishes the `(a, M, V)` surface (§4.6.2). The patron mint returns 0.387 GRAM against
+    0.415 GRAM unranked — a **fail by 0.028** — and against 0.374 GRAM for an already-ranked
     patron — a **clear by 0.013**. The kill criterion is left reporting FAIL at the
     published cost basis rather than re-based to the flattering one, and §4.6's STATUS
     block carries both halves. The first patron mint anyone makes is the one on the wrong
@@ -8106,13 +8152,13 @@ away; `DECISIONS.md` D-106 deleted both.)*
 12. ~~**Is 25% on the activation mint too deep a cut to the ratchet?**~~
     **MOOT since `DECISIONS.md` D-106**, which deleted patron mode and φ₁ with it
     (`shared/params.json` marks it MOOT). The closure below is kept as the record.
-    **CLOSED (2026-08-17): no — φ₁ = 0.25 TON stays, and it stays funded from the pool
+    **CLOSED (2026-08-17): no — φ₁ = 0.25 GRAM stays, and it stays funded from the pool
     injection.** The question asked whether β = 0.40 on an activation mint is too deep a
     cut, and the answer is no by roughly an order of magnitude. Phase 1 priced all three
     variants the question named, over five seeds and ~166,500 mints
     (`docs/phase1-determinations-report.md`):
 
-    | variant | final floor (mean ± sd) | vs no-patron baseline | treasury (TON) |
+    | variant | final floor (mean ± sd) | vs no-patron baseline | treasury (GRAM) |
     |---|---:|---:|---:|
     | dark — no patron line at all | 0.156861 ± 0.007870 | — | 9,523 |
     | **A — φ₁ 0.25 from the pool** *(adopted)* | 0.154750 ± 0.004033 | **−1.35%** | 9,736 |
@@ -8129,11 +8175,11 @@ away; `DECISIONS.md` D-106 deleted both.)*
 
     **Option C's objection turns out to be price, not capacity.** The paragraph above
     predicted a structural recruitment cap — treasury is 5% of a mint, so it funds one
-    0.25 TON bonus per five mints protocol-wide. **That cap never bound on any seed.** What
-    kills C instead is that it costs **6,650 TON/yr — 68% of all treasury revenue** — to buy
+    0.25 GRAM bonus per five mints protocol-wide. **That cap never bound on any seed.** What
+    kills C instead is that it costs **6,650 GRAM/yr — 68% of all treasury revenue** — to buy
     back a floor difference of 0.03%, indistinguishable from zero. D-19 adds a second
     objection the paragraph predates, and it is about timing rather than capacity:
-    launch-month operator revenue is ≈0.30 TON in total, so in month one C would fund
+    launch-month operator revenue is ≈0.30 GRAM in total, so in month one C would fund
     acquisition out of money the operator does not yet have.
 
     **Option B is dominated and is the worst of the three.** It pays exactly the cost this
@@ -8161,7 +8207,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
 
     **The propagation this forces is not cosmetic.** §11's "Resolved in this draft" entry
     on *where the loyalty budget comes from* describes the era trophies as "permanent
-    naming rights on the primorials themselves, **which no amount of TON can buy**". That
+    naming rights on the primorials themselves, **which no amount of GRAM can buy**". That
     sentence is now false and is corrected there. The loyalty-budget claim itself survives
     on the remaining rights — the rebate ceiling and naming rights, both still earned and
     unbuyable (the tribute multiplier, the `RES_PRIORITY_BASE` waiver and the era dividend
@@ -8429,10 +8475,10 @@ away; `DECISIONS.md` D-106 deleted both.)*
     **MOOT 2026-11-07 (`DECISIONS.md` D-202):** constellations and their discovery bounty are
     deleted, so there is nothing left for this question to reward. The closure stands as
     the record.
-25. **Do the desirability weights want retuning now that they set a 128 TON opening bid
-    rather than a 0.075 TON fee?** §4.4 point 1a's weights are the owner's taste and were
+25. **Do the desirability weights want retuning now that they set a 128 GRAM opening bid
+    rather than a 0.075 GRAM fee?** §4.4 point 1a's weights are the owner's taste and were
     chosen when the stakes were eight cents; point 1b maps the same score through
-    `2^(D/SCORE_HALVING)`, so the widest achievable score now opens a lot at 446 TON.
+    `2^(D/SCORE_HALVING)`, so the widest achievable score now opens a lot at 446 GRAM.
     `POW10_W = 50` putting 1000 above 2023 is defensible at any magnitude; `RUN_W = 30 >
     PALI_W = 25` — 1234 opening above 1221 — is worth a second look at these. **The
     weights ship unchanged and no change is proposed**; this is recorded as open so that a
@@ -8445,7 +8491,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
     retune is BLOCKED pending the numbers.** The stakes rose a third time and this one is
     qualitative rather than another order of magnitude: under the prime Dutch lane
     (§11.27) `desirabilityScore` sets the **opening price of every prime at the head**, on
-    a lane that has no reserve and decays to 1 TON regardless of what the score said
+    a lane that has no reserve and decays to 1 GRAM regardless of what the score said
     (D-88/D-99 later gave it a reserve: the lot now rests at `max(NPV/2, P0/3, MINT_PRICE)`,
     so the score lifts the resting price through the `P0/3` term). The
     weights therefore now decide whether primes undersell — which is the exact problem the
@@ -8500,7 +8546,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
     > 1. **Lane participation.** The fraction of opened lots that receive at least one bid
     >    (ascending) or sell above the floor (descending) must not fall below a stated
     >    threshold. A weight vector that maximises premium by pricing a handful of lots
-    >    enormously and leaving the rest to decay to 1 TON fails, because unsold primes
+    >    enormously and leaving the rest to decay to 1 GRAM fails, because unsold primes
     >    forfeit tribute to the treasury (§4.1) and that cost is not in the objective.
     > 2. **Head velocity is not reduced.** No weight vector may lower modelled mints per
     >    day relative to the flat-fee baseline. The ladder prices earliness; if it prices
@@ -8632,7 +8678,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
        numbers and rare reservations all clear through it.
 
     2. **Primes at the head clear by descending (Dutch) auction, opening on rarity and
-       decaying to exactly 1 TON over one week.** A flat 1 TON undersells a prime — the
+       decaying to exactly 1 GRAM over one week.** A flat 1 GRAM undersells a prime — the
        asset carries a perpetual tribute claim, immediate naming rights and prime rank, and
        the flat price captures none of it. Anyone may buy at the standing price at any
        point on the slope.
@@ -8665,14 +8711,14 @@ away; `DECISIONS.md` D-106 deleted both.)*
        prices, which under point 5 flows entirely to the floor. `N` is declared, not
        simulated.
 
-    5. **All premium above the nominal 1 TON goes 100% to the ratchet as `pending`, with no
-       treasury cut** — for every lane, genesis and Dutch included. The nominal 1 TON runs
+    5. **All premium above the nominal 1 GRAM goes 100% to the ratchet as `pending`, with no
+       treasury cut** — for every lane, genesis and Dutch included. The nominal 1 GRAM runs
        through §4.1's ordinary five-way split (six-way when written). Three properties follow and are the acceptance
        criteria: **the split stays closed at 100%**, because the premium is never in the
        split; **the ratchet arithmetic is unchanged and strictly favourable**, because a
-       premium is a `T` increment against *zero* emission, making a 40 TON prime a larger
+       premium is a `T` increment against *zero* emission, making a 40 GRAM prime a larger
        floor step than 39 patient composite mints; and **principle 6 is not violated**,
-       because splitting the full clearing price would pay a referrer 4 TON on one recruit's
+       because splitting the full clearing price would pay a referrer 4 GRAM on one recruit's
        single mint — a windfall unrelated to that recruit's own spend.
        **Amended by `DECISIONS.md` D-114 (2026-09-10): the premium now splits 50/50 between
        the ratchet and the governed treasury (`PREMIUM_TREASURY_BPS` = 5000); the split
@@ -8705,7 +8751,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
     while building and recorded here rather than left in the code:
 
     7. **A standing lot never blocks the direct mint.** When the head reaches `n`, the
-       number is mintable at 1 TON through the ledger whether or not a lot is open on it.
+       number is mintable at 1 GRAM through the ledger whether or not a lot is open on it.
        *(Superseded by `DECISIONS.md` D-45: `open_lot` marks `n` off the sequential line, so
        the head never reaches an auctioned number and skips it forever; D-90 mints it in the
        close.)*
@@ -8727,10 +8773,10 @@ away; `DECISIONS.md` D-106 deleted both.)*
     8. **On the prime Dutch lane the decayed price is the *number's* price; `RES_GAS` is
        charged on top.** The lane's terminus is the resting price the seller is entitled to,
        so unlike every other lane it cannot absorb the `RES_GAS` that funds the won lot's own
-       settlement — `RESERVE_FLOOR` = 1.05 TON is what made that absorption possible
+       settlement — `RESERVE_FLOOR` = 1.05 GRAM is what made that absorption possible
        elsewhere. A purchase at the terminus is therefore **`restingPrice(p) + RES_GAS`
        all-in**, against 1.00 for waiting at a composite's head position. *(As recorded
-       2026-08-16 this read "the floor is exactly 1 TON … 1.04 TON all-in"; `DECISIONS.md`
+       2026-08-16 this read "the floor is exactly 1 GRAM … 1.04 GRAM all-in"; `DECISIONS.md`
        D-88 point 1 made the terminus per-`n` and D-30/D-33, D-90 and D-113 moved `RES_GAS` to
        0.070, so the shape of the point survives and both its numbers do not.)*
 
@@ -8757,8 +8803,8 @@ away; `DECISIONS.md` D-106 deleted both.)*
       universal `MINT_PRICE` floor.** Point 2's "primes *at the head*" framing is
       superseded twice over: primes are never at the head (the head is defined over
       composites and Unity), and the floor is one derived constant rather than a per-prime
-      reserve. A prime opens the moment it is next among unbuilt numbers, decays to 1 TON,
-      and rests there indefinitely. *(D-88 point 1 and D-99 §1.2 later replaced the 1-TON
+      reserve. A prime opens the moment it is next among unbuilt numbers, decays to 1 GRAM,
+      and rests there indefinitely. *(D-88 point 1 and D-99 §1.2 later replaced the 1-GRAM
       rest with `restingPrice(p) = max(NPV(p)/2, P0(p)/3, MINT_PRICE)`, §6 point 1.)*
     - **`lookaheadH` (D-4a) is retired, not re-derived.** It existed so the head would not
       stall on a prime it could not skip; primes are not in the head's path at all, so
@@ -8780,7 +8826,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
     `MODE_DUTCH_BUYNOW` mechanism, while D-6's lane rule, read literally, put every prime
     on the ascending lane at any score. A prime won ascending would have closed into a
     reservation record on a shard that settles when the head reaches `n` — and under D-20
-    the head never reaches a prime, so the reserver's 1 TON would have sat cancellable but
+    the head never reaches a prime, so the reserver's 1 GRAM would have sat cancellable but
     never settleable. D-22 removes the state rather than adding a second settlement path.
 
     **The accepted cost, stated so it is not rediscovered as a bug (historical — see
@@ -8801,7 +8847,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
   `P0(n) = max(ladder, 1.5 · NPV(p), PRIME_P0_MIN, RESERVE_FLOOR)` (`PRIME_P0_MIN` and
   `RESERVE_FLOOR` are since renamed and deleted: the live expression is
   `max(LOT_FLOOR, ladder(D), 1.5 · NPV(p))` — D-30, D-99); the winner still pays a
-  normal 1 TON mint through §4.1 at settlement and the premium goes 100% to the ratchet at
+  normal 1 GRAM mint through §4.1 at settlement and the premium goes 100% to the ratchet at
   the close, with no treasury cut (amended by `DECISIONS.md` D-114: 50/50 ratchet/treasury). The two sub-questions this closes are worth naming
   separately. **The format is not §6's**, and the reason is the fallback: a genesis prime
   that never clears is never minted, while a trophy lot always has the head arriving behind
@@ -8822,7 +8868,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
     outright (§11.27 point 10). The fallback argument the entry rests on — "a genesis prime
     that never clears is never minted" — no longer describes anything: **every** prime rests
     at a floor it cannot fall below and stays listed there forever, so no prime can fail to
-    clear, and there is nothing for a special format to guarantee. (That floor was 1 TON
+    clear, and there is nothing for a special format to guarantee. (That floor was 1 GRAM
     when this was written; since `DECISIONS.md` D-88 point 1 it is
     `max(NPV(p) / 2, P0(p) / 3, MINT_PRICE)` (D-99 §1.2). The argument is unaffected — what matters is that the
     lane terminates and the lot never expires, not where it terminates.)
@@ -8839,7 +8885,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
     `RESERVE_FLOOR` remains a branch of the opening price.
 
   What survives untouched, and is now the rule for **every** lane: the lane trigger and the
-  buyer still paying a normal 1 TON mint through §4.1. **The premium going 100% to the
+  buyer still paying a normal 1 GRAM mint through §4.1. **The premium going 100% to the
   ratchet with no treasury cut (§11.27 point 5) does not survive untouched: `DECISIONS.md`
   D-114 (2026-09-10) amended D-7 to a 50/50 ratchet/governed-treasury split** — see §4.4
   point 1b and §5's acquisition-premium passage for the current rule. The `NPV(p)` extension
@@ -8893,7 +8939,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
   tribute; self-referral assumed universal from the second mint (§4.1, §8).
 - *Composite value proposition* → referral income + rebate + rarity; tribute stays
   prime-only (§3.1, §3.2).
-- *Gas model* → all-in 1 TON, protocol pays all deploys (§3.1, §4.1).
+- *Gas model* → all-in 1 GRAM, protocol pays all deploys (§3.1, §4.1).
 - *k_max normalization* → anchored at n₀ = 1000; k_max(n) = 2.7/log₁₀(n), clamped
   ≥ k_min (§5).
 - *Burn accounting* → `S` is cumulative emission plus the genesis bounty vault, never
@@ -8904,10 +8950,10 @@ away; `DECISIONS.md` D-106 deleted both.)*
   makes the 0.2% LP fee share on protocol buys accrue to reserves nobody can ever claim,
   which permanently deepens the pool at no cost — that argument is about the *protocol*
   adding LP as a flush side-effect, and is unaffected by D-46's separate change: DeDust
-  liquidity add is inherently two-sided (pairs TON+PRIMES) and is something *anyone*,
+  liquidity add is inherently two-sided (pairs GRAM+PRIMES) and is something *anyone*,
   including the operator, may do with their own capital, never the protocol acting on
   `pending`/`swapped`.
-- *Injection timing* → credit at mint, swap on flush; `T` counts committed TON
+- *Injection timing* → credit at mint, swap on flush; `T` counts committed GRAM
   (`seeded + swapped + pending`), incremented at mint (§4.3, §5). D-46: `seeded = 0` in
   this deployment (no real founder seed), so `T` is effectively `swapped + pending` here.
 - *Vanity demand vs. sequential purity* → **one** ascending auction lane ahead of the head,
@@ -8925,12 +8971,12 @@ away; `DECISIONS.md` D-106 deleted both.)*
 - *Should the operator hold a PRIMES allocation?* → **No, at genesis or ever, under any
   name** — not a bounty-vault tranche, not an ops reserve denominated in PRIMES, not
   retained LP (`DECISIONS.md` D-19). §2 principle 4 stays absolute. The operator is funded
-  by TON fee lines only: the secondary royalty (§3.1, its ratchet share carved out by D-128)
+  by GRAM fee lines only: the secondary royalty (§3.1, its ratchet share carved out by D-128)
   and — since D-20 — unsold-prime forfeited tribute, of which D-166 gives them
   **42%** (D-100 point 6's 20%, raised) and the governed treasury the rest (§4.1, §5.5). **§4.1's 5% line is no longer on
   this list: D-152 points it at the governed treasury contract; nor is the gas-&-ops sweep
   surplus: D-117 returns it to the ratchet pool.** The operator's only per-mint income is
-  therefore the forfeit remainder — up to 0.0336 TON on a mint whose every cited factor is
+  therefore the forfeit remainder — up to 0.0336 GRAM on a mint whose every cited factor is
   unsold, zero whenever every factor has an owner. Recorded here because the question will recur in other clothing.
   The consequence D-19 states and does not reopen: the treasury takes **no cut of auction
   premium** (§11.27 point 5), so launch-month operator revenue is approximately zero and
@@ -8947,9 +8993,9 @@ away; `DECISIONS.md` D-106 deleted both.)*
   purse, reclaim, expiry) to deliver a number the mint could simply have delivered.
 - *Recruitment reward trigger* → the gift mint itself, on a fresh address. Repeat gifts to
   the same wallet, drops, claims and wallet counts pay nothing (principle 6, §4.6).
-- *What recruiting pays* → **a `k_max` tier and no TON.** The earlier answer was an
+- *What recruiting pays* → **a `k_max` tier and no GRAM.** The earlier answer was an
   annuity: 25% of the recruit's activation mint, 7.5% thereafter, terminating at
-  `PATRON_CAP` = 1.00 TON, front-loaded and refund-capped. D-106 deletes it — a fixed
+  `PATRON_CAP` = 1.00 GRAM, front-loaded and refund-capped. D-106 deletes it — a fixed
   nominal cap against a cost basis that rises with `k_max(n)`'s decay inverts at n ≈ 1173
   (D-57), and every fix spent something real. A tier has no cost basis to drift against.
 - *What the recruit gets beyond the number* → a raised rebate ceiling for five mints
@@ -8969,7 +9015,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
   outright. **Amended 2026-08-28:** the tribute multiplier also used to appear here and is
   deleted the same way (`DECISIONS.md` D-54) — no code path wires rank into the ledger's
   tribute pass. **Amended 2026-08-16 by §11.13's closure:** the trophies are now
-  *transferable*, so the clause that used to end this sentence — "which no amount of TON
+  *transferable*, so the clause that used to end this sentence — "which no amount of GRAM
   can buy" — is withdrawn. The load-bearing half of the claim survives untouched: the
   budget is paid in rights rather than in emission, because `k < 1` forbids the
   alternative. The remaining rights are still earned and unbuyable. The trophies are not.
@@ -8993,7 +9039,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
   **Amended 2026-08-16 by §11.27 point 2, and again by `DECISIONS.md` D-20: the liveness
   risk is not mitigated, it is gone.** No `k = k_min` fallback was reinstated — `k = 0` on
   primes is untouched and remains absolute. First the *price* moved: a prime opens on
-  rarity and **decays to a floor it cannot fall below** — read as "exactly 1 TON" when this
+  rarity and **decays to a floor it cannot fall below** — read as "exactly 1 GRAM" when this
   was written, and as `max(NPV(p) / 2, P0(p) / 3, MINT_PRICE)` since `DECISIONS.md` D-88
   point 1 and D-99 §1.2 — so
   no prime is ever priced out of reach of a patient buyer. Then D-20
@@ -9006,7 +9052,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
 - *What is "the bank"?* → **There isn't one, and the word is retired** (§3.4). It was an
   undefined noun doing four jobs. The components are the **splitter**, the **ledger**
   (holds tribute `owed`) and the **ratchet** (holds `pending`, runs `flush()`) — **two**
-  distinct pools of TON with two different owners, previously fused and therefore
+  distinct pools of GRAM with two different owners, previously fused and therefore
   unreconcilable against any single balance. (There was a third, the market's escrow, until
   `DECISIONS.md` D-90 deleted it along with `primes_market_shard.tolk`; no contract in the
   system now holds refundable customer money at all.) "Bank" is rejected because it claims
@@ -9014,7 +9060,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
   spent twice (DeDust's, and the bounty vault's).
 - *When does the protocol buy PRIMES?* → **Only at or below its own floor.** The flush's
   slippage limit is set to `amount·S/T`, so a flush that would buy above `p_f` bounces and
-  the TON stays on the ratchet as backing (§4.3.1). This makes protocol buying countercyclical,
+  the GRAM stays on the ratchet as backing (§4.3.1). This makes protocol buying countercyclical,
   caps the flush-MEV attack at the floor (above `p_f` a pump makes the flush bounce; below it
   a sandwich can cost burn efficiency but never backing — D-190), and converts the
   ratchet from a five-day queue into standing floor defense. Costs: a larger honeypot,
@@ -9091,7 +9137,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
     number that reads as a birthdate in `YYYYMMDD` form is invisible to every layer except
     SCARCITY. Concretely: **19930909** (1993-09-09) scores `s=3, p=0, c=0` — the
     `CALENDAR` layer never fires because `19930909 ≫ 2100` — for a total score of 3 and an
-    opening price of `1 TON · 2^(3/10) ≈ 1.231 TON`, priced entirely off "one digit shorter
+    opening price of `1 GRAM · 2^(3/10) ≈ 1.231 GRAM`, priced entirely off "one digit shorter
     than 9," with nothing about the number's date-shape entering at all. This was found by
     inspecting a live auction lot, not proposed speculatively.
 
@@ -9126,8 +9172,8 @@ away; `DECISIONS.md` D-106 deleted both.)*
     4-digit `n` that is both a year and a valid `MMDD`; the year window is the existing
     `[YEAR_LO, YEAR_HI] = [1900, 2100]` in every form; the 6-digit `YYMMDD` short form **is**
     in scope; and it is a **summed group**, not a sub-case of a `max`. The worked example
-    that opened this question settles it: **19930909** scored 3 for a 1.23 TON opening bid,
-    and now scores 32 (LEN 2 + `YYYYMMDD` 30) for **9.19 TON** — the gift-grade band the
+    that opened this question settles it: **19930909** scored 3 for a 1.23 GRAM opening bid,
+    and now scores 32 (LEN 2 + `YYYYMMDD` 30) for **9.19 GRAM** — the gift-grade band the
     owner asked for. The weight comes from a signed owner decision rather than a sim run;
     §11.25's closure above is where that reversal is argued.
 
@@ -9214,39 +9260,40 @@ away; `DECISIONS.md` D-106 deleted both.)*
   that draws blood, the fix is a one-line destination change with no other consequence** —
   which is worth recording here, because it means the exposure is reversible and the
   reversal costs nothing structural.
-- **An invite is a text transfer sent by a contract, and whether Telegram shows a
-  contract-sent comment is unproven.** §4.1's invite line spends up to 0.30 TON of a mint's
-  ratchet injection on three 0.1 TON transfers whose whole payload is a line of text. The
-  owner's test on 2026-11-06 showed that text in Telegram at 0.1 and at 0.01 TON — sent from a
-  **wallet**. The ledger is not a wallet, and until it is shown otherwise the honest
-  description is that the line may be paying 0.30 TON per mint for comments nobody reads.
-  The test is written and **has not been run**: `contracts/scripts/mainnet/inviteProbe.ts`
-  deploys a few-line forwarder on mainnet (0.2 TON attached, 0.1 of it reaching the target)
-  that sends the ledger's exact comment bytes, NoBounce, to an address the owner names. It
-  is a mainnet send, so the owner runs it; it records whether the comment shows as text from
-  the contract's address and whether a push notification arrived (`DECISIONS.md` D-202).
-  **If the text does not show, the fix is the count the app fills in** — `count = 0` costs
-  nothing structural, because every unspent slot is β.
+- **An invite is a text transfer sent by a contract, and Telegram decides whether anyone is
+  told.** Measured on mainnet (owner's probes, 2026-11-07 and 2026-11-22, `DECISIONS.md` D-215):
+  a contract-sent comment shows as text in Telegram Wallet, but a **push notification**
+  arrives only when the amount received is **at least 0.1 GRAM** and the comment passes
+  Telegram's spam filter — the launch dedication was silent at 0.1, 0.15 and 0.2, with or
+  without the link, and `Hi from @primes_live_bot` alone pushed from a contract. Whether those
+  words still push with the ledger's ` primes.live/?ref=<n>_tg` after them is unmeasured
+  (`DECISIONS.md` D-215 point 4). Neither rule is published by Telegram,
+  both may change without notice, and repeat sends to one wallet were not reliable. What the
+  design does about it: the ledger pays each transfer's fee on top so the full value lands,
+  and the operator can change the words, the count and the value on chain (`set_invite_terms`)
+  inside a fixed 0.31 GRAM cap, so a channel that stops pushing can be traded for another
+  shape without a redeploy. **If invites stop reaching anyone, the fix is the count** —
+  `count = 0` costs nothing structural, because every unspent slot is β.
 - **Invites are unsolicited, and some recipients will call them spam — accepted, not
   solved** (`DECISIONS.md` D-202, §4.6.1). What bounds it: the comment is fixed in the
   ledger's code apart from the minter's `n`, names `primes.live` and asks for nothing, so the
   game's address can never carry scam text a minter wrote; the default list names an address
-  at most once; and the transfer is real TON, not an item to hide. What is not bounded: a
+  at most once; and the transfer is real GRAM, not an item to hide. What is not bounded: a
   wallet vendor or a public label set may class the ledger's address as a spammer, which
   would hide the comments, and nothing in this repo can prevent that. `getInviteSpend()`
   publishes the spend, and `?ref=<n>_tg` attribution counts the invitees who arrive.
-- **A minter who names their own wallets gets 0.30 TON back.** The owner accepts it
-  (D-202): the mint costs them 0.70 TON net, the 0.30 comes out of β, and the floor books it
+- **A minter who names their own wallets gets 0.30 GRAM back.** The owner accepts it
+  (D-202): the mint costs them 0.70 GRAM net, the 0.30 comes out of β, and the floor books it
   exactly as an honest invited mint — the sim's three-year run sends all three slots on every
-  mint and still ends at 429.1× the deploy floor (`final_state.floor_appreciation`). §8.1's
+  mint and still ends at 428.9× the deploy floor (`final_state.floor_appreciation`). §8.1's
   mint-and-sell loop gets harder, not easier: with self-referral at n = 10,000 it pays from
   3.56× the floor, up from 3.14×, because the smaller injection shrinks the rebate with it.
-- **A fake recruit costs 0.70 TON, not a full 1 TON** (D-202 amends D-106). A gift mint to a
+- **A fake recruit costs 0.70 GRAM, not a full 1 GRAM** (D-202 amends D-106). A gift mint to a
   fresh address may name the gifter's own wallets as its three invitees, so a §4.7 recruit
-  tier costs a fresh address plus 0.70 TON net. It still pays no TON: what a recruit buys is
+  tier costs a fresh address plus 0.70 GRAM net. It still pays no GRAM: what a recruit buys is
   `k_max` uplift under the single `K_CEIL` clamp, so the most a farm of fake recruits can
   reach is the clamp itself, which every rebate in the game already respects.
-- **Pricing a prime above 1 TON is safe because the head does not wait on primes — and
+- **Pricing a prime above 1 GRAM is safe because the head does not wait on primes — and
   the ambiguous reading is the catastrophic one, which is why it is written down.**
   π(10⁶) = 78,498. If a prime could only be obtained by winning an auction with a reserve,
   or by an ascending price with no ceiling, then every prime nobody bid on would be
@@ -9258,7 +9305,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
   signed 2026-08-31). The deleted property was invariant MKT-1, "the descending price
   reaches exactly `MINT_PRICE` and stops": a prime's lane now terminates at that prime's own
   resting price, `max(NPV(p) / 2, P0(p) / 3, MINT_PRICE)` (~~lifted to its tier's `price_min`
-  if it is special~~ — D-99), and for a small prime that figure sits well above 1 TON. MKT-1's rationale here
+  if it is special~~ — D-99), and for a small prime that figure sits well above 1 GRAM. MKT-1's rationale here
   was *liveness* — "the head can never park permanently on a prime nobody will pay a premium
   for" — and D-20 had already made that argument vestigial by defining the head over
   composites and Unity only. It was safe to delete because the property doing the actual
@@ -9276,10 +9323,10 @@ away; `DECISIONS.md` D-106 deleted both.)*
      The lot then rests there until bought, with no expiry.
 
   **What this costs, stated rather than buried.** A small prime is no longer obtainable for
-  1 TON by anyone patient enough; patience now buys it at `NPV(p) / 2` instead of at
-  `1.5 · NPV(p)`, a 3× discount rather than an unconditional 1 TON. That is a real narrowing
+  1 GRAM by anyone patient enough; patience now buys it at `NPV(p) / 2` instead of at
+  `1.5 · NPV(p)`, a 3× discount rather than an unconditional 1 GRAM. That is a real narrowing
   of §1's bypass promise for primes and it is disclosed there, not only here. What it is
-  *not* is a gate: no number the head must reach is priced above 1 TON.
+  *not* is a gate: no number the head must reach is priced above 1 GRAM.
 
   Any proposal to put primes back on the head's path, to make a resting price settable by a
   message or an operator, or to remove termination altogether, re-creates the failure this
@@ -9289,14 +9336,14 @@ away; `DECISIONS.md` D-106 deleted both.)*
   except them from.** D-88 point 2 deleted the special-only lanes: a special prime is an
   ordinary descending lot whose resting price is `max(NPV(p) / 2, P0(p) / 3, MINT_PRICE)`
   (~~its tier's `price_min`~~ — D-99 deletes the tiers), and a memorable
-  composite is an ordinary composite — it mints sequentially at 1 TON when the head reaches
+  composite is an ordinary composite — it mints sequentially at 1 GRAM when the head reaches
   it, exactly like every other composite, and its score prices only what an *early*
   buyer pays on the ascending lane. **D-99 makes that last clause true of every composite
   without exception**, by deleting the head-advance walk's curated-composite skip — the one
-  place a composite could still be taken off the 1 TON line (`MISTAKES.md`, 2026-09-04). D-64's vault purchase and re-listing went with that
+  place a composite could still be taken off the 1 GRAM line (`MISTAKES.md`, 2026-09-04). D-64's vault purchase and re-listing went with that
   deletion. **Composites still have no priced terminus at all**, which is the clause to
   check if this is ever revisited: a composite *is* the head, so a composite that could only
-  be obtained above 1 TON would re-create this entry's catastrophic reading in its purest
+  be obtained above 1 GRAM would re-create this entry's catastrophic reading in its purest
   form — one unsold trophy composite and the sequence stops permanently.
 
 - **Most primes are bought before their turn, so the descending lot is a fallback —
@@ -9347,7 +9394,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
   a benchmark-first plan, by the fact that most mints are composites (cheap verification),
   and by the fact that the check runs at lot-open time and never again — a purchase does
   not re-run Miller–Rabin.
-- **The all-in 1 TON could go gas-insolvent — measured, and now sized from the measurement.**
+- **The all-in 1 GRAM could go gas-insolvent — measured, and now sized from the measurement.**
   The benchmark this entry called for runs on every gate (`GasRegression.spec.ts`, against
   `contracts/gas-baseline.json`, reconciled by `sim/primes_sim/gas.py`). Since `DECISIONS.md`
   D-117 the gas & ops line is not a guess checked against a benchmark but *derived* from it:
@@ -9367,17 +9414,17 @@ away; `DECISIONS.md` D-106 deleted both.)*
   to see what was guessed next to what was measured is worth more than a tidy paragraph.
 
   The original estimate: the 10% gas line rests on an unbenchmarked
-  ~0.10 TON estimate covering NFT item deploy, jetton wallet deploy plus rebate mint,
+  ~0.10 GRAM estimate covering NFT item deploy, jetton wallet deploy plus rebate mint,
   `owed` dictionary rent, referral-key owner resolution, and the amortized flush gas from
-  §4.3 (~0.001 TON/mint at 100 mints/day — but it scales inversely with mint rate, so a
+  §4.3 (~0.001 GRAM/mint at 100 mints/day — but it scales inversely with mint rate, so a
   quiet protocol pays more per mint for the same daily flush). If real cost exceeds
-  0.10 TON — most plausibly on prime mints at large n, where Miller–Rabin lands in the
+  0.10 GRAM — most plausibly on prime mints at large n, where Miller–Rabin lands in the
   same budget — the protocol subsidizes each mint from somewhere else in the split.
   ~~**This is the highest-priority Phase 3 measurement**~~ *(done — see above)*, and the
   honest fallbacks are raising the gas line at the pool's expense, charging differential
   gas for prime vs. composite mints, or abandoning all-in pricing. Decide from the
   benchmark, not from this estimate. **`DECISIONS.md` D-117 (2026-09-22) took the first
-  fallback:** measured on the ledger's balance the worst mint is 0.192 TON (ω = 12), and the
+  fallback:** measured on the ledger's balance the worst mint is 0.192 GRAM (ω = 12), and the
   line is now a derived 20%, at ten points of β — most of which the pool gets back on an
   ordinary mint, because `sweep_ops` now returns the unspent line to the ratchet.
 - **Tribute at 10% may be too thin** to make prime NFTs worth a serious clearing price —
@@ -9396,7 +9443,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
   Phase 1 must not treat them as such — if the premium case fails, raising the tribute
   share and lowering the divisor exponent are the same lever pulled from opposite ends.
 - **The ratchet is a honeypot, and the floor guard made it a bigger one.** Batching (§4.3)
-  plus reservation escrow (§4.4) always meant a live TON balance; under §4.3.1 that balance
+  plus reservation escrow (§4.4) always meant a live GRAM balance; under §4.3.1 that balance
   is no longer bounded by a five-day queue but by *how long the market stays above the
   floor*, which could be indefinitely. The protocol may end up holding a very large,
   unwithdrawable reserve. It is the highest-value target in the system and the most
@@ -9406,17 +9453,17 @@ away; `DECISIONS.md` D-106 deleted both.)*
   withdraw path and does add a counterparty, priced in §8 and in §5. The two temptations
   still have the same answer and it still has to hold under both, and the second one has now
   been answered in public rather than deferred. Mitigations: no withdraw path in the
-  source at all; `flush()`, claims and the §4.3.2 legs as the only outbound TON paths, every
+  source at all; `flush()`, claims and the §4.3.2 legs as the only outbound GRAM paths, every
   destination a venue address or the treasury, every amount computed by the contract rather
   than the caller.
 - **DeDust dependency.** The ratchet's execution leg lives in someone else's protocol
   (§11.3). Venue failure, pool retirement, or a v3 migration stalls buy-and-burn even
-  though the backing TON is safe on the ratchet. The floor guard adds a monitoring wrinkle:
+  though the backing GRAM is safe on the ratchet. The floor guard adds a monitoring wrinkle:
   a bounced flush is now *normal*, so "the venue is gone" and "the market is above the
   floor" look identical from the outside. `get_flush_status` must distinguish them
   (§9.1), or a dead venue hides behind months of legitimate-looking non-execution.
 - **Tonstakers dependency, which is a different kind of dependency from DeDust's** (D-151,
-  §4.3.2). DeDust holds none of the backing — a dead venue stalls buy-and-burn and the TON
+  §4.3.2). DeDust holds none of the backing — a dead venue stalls buy-and-burn and the GRAM
   stays safe on the ratchet. Tonstakers *holds* 80% of the ratchet's obligation, so its
   failure is a loss of backing rather than a loss of execution, and that is the honest
   distinction to draw before a reader collapses the two. Three bounds on it, none of them a
@@ -9437,8 +9484,8 @@ away; `DECISIONS.md` D-106 deleted both.)*
   trustless; the *scoreboard* is not, and says so.
 - **The growth loop may simply not convert, and this is still the risk — it has just
   stopped being an arithmetic one.** Patronage rested on an activation rate above **41.5%**
-  with no prior for that number, and `PATRON_CAP` bounding the payout at 1.00 TON against a
-  0.415 TON cost meant a shortfall made every patron mint a donation dressed as a growth
+  with no prior for that number, and `PATRON_CAP` bounding the payout at 1.00 GRAM against a
+  0.415 GRAM cost meant a shortfall made every patron mint a donation dressed as a growth
   loop. `DECISIONS.md` D-106 removes that half: **nobody is underwater if a gift does not
   convert.** A gift mint delivers a number the giver chose to buy, at the price they chose
   to pay; the recruit tier is on top and costs the protocol emission inside a clamp it
@@ -9474,19 +9521,19 @@ away; `DECISIONS.md` D-106 deleted both.)*
   accrued value that anyone can still collect is monotone non-increasing, and it converges
   to zero over a long enough horizon.**
 
-  What this is and is not. It is *not* a solvency risk: the TON is where it always was,
+  What this is and is not. It is *not* a solvency risk: the GRAM is where it always was,
   the ledger's `balance ≈ declared liability` property (§3.4) still holds exactly, and no
   other holder is diluted — the divisor line simply never leaves the item. It is *not* the
   team's to reclaim, and an expiry-and-resweep mechanic is deliberately **not** proposed
   here: any such path is a withdraw path with a story attached, and §8's "no admin withdraw
-  on any TON balance" is not negotiable for this. What it is, is a slow, permanent
+  on any GRAM balance" is not negotiable for this. What it is, is a slow, permanent
   divergence between two numbers the dashboard shows next to each other — total tribute
   *accrued* and total tribute *collectable* — and a reader who finds that gap unexplained
   will assume the worst, exactly as they would with `pending` (§5).
 
   So it is disclosed and measured rather than fixed. The **attrition metric** reports the
   dormant share directly: the count of minted primes that have never claimed, the count
-  whose last claim predates a configurable dormancy window, and the TON sitting in both
+  whose last claim predates a configurable dormancy window, and the GRAM sitting in both
   groups. Every component is derivable from public state — mints and claims are on-chain
   events, `owed` is `get_owed` on the item, and the unconverted flat dividend is
   `getClaimableDividend(p)` (§9.1) — so the number is checkable and not merely published.
@@ -9530,8 +9577,8 @@ away; `DECISIONS.md` D-106 deleted both.)*
   `DECISIONS.md` D-20). What replaces it is the same risk across the whole line rather than
   six lots. **If primes attract no real interest they all clear at their resting price** —
   `max(NPV(p) / 2, P0(p) / 3, MINT_PRICE)` since D-88 point 1 and D-99 §1.2, so a third of
-  the opening price rather than 1 TON, and exactly 1 TON only for a prime that opens under
-  3 TON. The ratchet
+  the opening price rather than 1 GRAM, and exactly 1 GRAM only for a prime that opens under
+  3 GRAM. The ratchet
   then receives only that floor's premium leg from the prime lane, and the most valuable
   assets in the collection go to whoever is patient rather than to whoever values them.
   Nothing in the mechanism defends against that: the resting price is a clearing guarantee,
@@ -9550,7 +9597,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
   indefinitely; the current lot has no expiry, so "unsold" is a state that can persist
   forever, and it costs the eventual owner its tribute the whole time (§4.1, and the
   forfeit entry above). **The honest cost: market depth rests on an operator commitment.**
-  The genesis pair (D-154; ≈21.24 TON since D-204, against the donation's PRIMES, sink-locked) is posted by
+  The genesis pair (D-154; ≈21.24 GRAM since D-204, against the donation's PRIMES, sink-locked) is posted by
   hand and no contract enforces it; were it skipped, rebates would be backed but not
   sellable on the open market — a prime is still always payable at its resting price through the
   market contract directly (§6 point 3's "the genesis pair is an operator commitment"
@@ -9559,11 +9606,11 @@ away; `DECISIONS.md` D-106 deleted both.)*
 - **Perception risk**: any pyramid-adjacent mechanic invites the Ponzi label — and the
   design includes a referral program, which sharpens the question. Defense is structural,
   not rhetorical: **referrals are single-level, capped at 10%, and are the ONLY mechanism
-  in the game that pays TON for bringing somebody in** (`DECISIONS.md` D-106 deleted the
+  in the game that pays GRAM for bringing somebody in** (`DECISIONS.md` D-106 deleted the
   second one). What replaced it pays no currency at all — a recruit raises the recruiter's
   own rebate ceiling by a tier, which is a limit on what their own future purchases earn
   them, not a transfer from the person they introduced. *(This paragraph used to rest on
-  the patron line's cap: "lifetime extraction from a recruit is a disclosed 1.00 TON —
+  the patron line's cap: "lifetime extraction from a recruit is a disclosed 1.00 GRAM —
   exactly the price of the mint that bought them, which makes the mechanism's best case a
   refund rather than a profit". That was a strong sentence and it is superseded by a
   stronger one: there is no extraction.)* There is no second-level field anywhere, so
@@ -9578,11 +9625,11 @@ away; `DECISIONS.md` D-106 deleted both.)*
   own spending rather than out of anyone below them. That is a customer-acquisition cost,
   not a downline. A pyramid's defining feature is that recruitment income is unbounded in
   depth and in total; here it is bounded in both, by an absent struct member and by a
-  single constant. Batching adds one line to defend — "why is TON sitting in the
+  single constant. Batching adds one line to defend — "why is GRAM sitting in the
   contract?" — answered by `get_pending()`, each contract's `getSolvency()` (§3.4), and the absence of a
-  withdraw function. §4.3.2 adds the mirror-image line — "why is TON *leaving* the contract
+  withdraw function. §4.3.2 adds the mirror-image line — "why is GRAM *leaving* the contract
   for a staking pool?" — answered by `getStaking()`, by the destination being a venue this
-  contract cannot choose, and by the same absent withdraw function: the TON comes back to
+  contract cannot choose, and by the same absent withdraw function: the GRAM comes back to
   `pending` by rule and reaches no wallet on the way.
 
   **The ops sweep is the one function in this list that a hostile reader will find before
@@ -9601,10 +9648,10 @@ away; `DECISIONS.md` D-106 deleted both.)*
   tribute forfeit.** Said badly — "this document says unresolvable split lines never go to
   the team, and there is a path that sends them to the team" — it is the sharpest available
   attack on §2 principle 4, and it is *true as stated*. Said accurately: while a prime is
-  unsold there is no owner to pay, the money is TON out of the fixed 10% tribute line and
+  unsold there is no owner to pay, the money is GRAM out of the fixed 10% tribute line and
   never PRIMES, it cannot touch `S`, `T`, `pending`, `owed` or escrow, no admin function can
   reach or accelerate it, it stops permanently the moment somebody buys the prime for as
-  little as that prime's own resting price plus `RES_GAS` (at least 1.070 TON, and more for
+  little as that prime's own resting price plus `RES_GAS` (at least 1.070 GRAM, and more for
   every prime the `NPV` table covers — D-88 point 1), and every satoshi of it is published
   per-prime by `getForfeited(p)`
   (§4.1, §6 point 2, `DECISIONS.md` D-20 point 4). The owner signed it knowing the first

@@ -83,10 +83,10 @@ def increment_floor_ton(bid_round_trip_ton: float, *,
     than it moves the price**, which is a griefing primitive rather than price
     discovery. So the floor is that round trip, rounded up to the quantum.
 
-    This is the number that replaces the flat `MIN_INCREMENT_FLOOR = 1 TON`. The
-    1 TON floor was defensible while `D_MIN = 30` kept the cheapest lot at 8 TON;
+    This is the number that replaces the flat `MIN_INCREMENT_FLOOR = 1 GRAM`. The
+    1 GRAM floor was defensible while `D_MIN = 30` kept the cheapest lot at 8 GRAM;
     with the gate dropped the cheapest lot opens at `MINT_PRICE + RES_GAS`, and a
-    1 TON step there is a ~94% raise that ends the auction on the second bid.
+    1 GRAM step there is a ~94% raise that ends the auction on the second bid.
     """
     return math.ceil(bid_round_trip_ton / quantum_ton) * quantum_ton
 
@@ -359,12 +359,12 @@ def bid_increment_ladder(census: dict, prime_npv: dict, prem, *,
         "min_increment_floor_ton": round(floor_ton, 9),
         "_floor_derivation": (
             "The floor is the gas round trip one competing raise imposes -- the "
-            f"bid plus the refund it forces, {bid_round_trip_ton:.6f} TON -- "
-            "rounded up to the 0.005 TON quantum. An increment below it makes a "
+            f"bid plus the refund it forces, {bid_round_trip_ton:.6f} GRAM -- "
+            "rounded up to the 0.005 GRAM quantum. An increment below it makes a "
             "raise cost the protocol more than it moves the price. It REPLACES "
-            "the flat 1 TON floor, which was defensible only while D_MIN kept "
-            "the cheapest lot at 8 TON: at the D_MIN-free floor P0 of "
-            f"{ta.p0_ton(0, c=c)} TON a 1 TON step is a ~94% raise that ends "
+            "the flat 1 GRAM floor, which was defensible only while D_MIN kept "
+            "the cheapest lot at 8 GRAM: at the D_MIN-free floor P0 of "
+            f"{ta.p0_ton(0, c=c)} GRAM a 1 GRAM step is a ~94% raise that ends "
             "the auction on the second bid."
         ),
         "by_rung": rows,
@@ -414,7 +414,7 @@ def open_lot_volume(*, mints_per_day: float, mean_open_days: float,
     The identities, all Little's law:
 
         simultaneously open lots     L = R_open * mean_open_days
-        TON locked in open bids      = L * mean_clearing
+        GRAM locked in open bids      = L * mean_clearing
         claims created per day       R_claim = R_open * participation
         claim density on the head    = R_claim / mints_per_day
         post-win queue depth         Q = R_claim * mean wait for the head
@@ -507,15 +507,15 @@ def open_lot_volume(*, mints_per_day: float, mean_open_days: float,
 
 
 # --------------------------------------------------------------------------- #
-# D-212 -- the naming fees, in TON, owner-set (D-179's PRIMES burn is deleted)
+# D-212 -- the naming fees, in GRAM, owner-set (D-179's PRIMES burn is deleted)
 # --------------------------------------------------------------------------- #
 
 # The owner (2026-11-21): any current owner names a number ONCE for about 50 EUR
-# in TON; a rename costs 200 TON. Both go to the ratchet floor as a pure floor
+# in GRAM; a rename costs 200 GRAM. Both go to the ratchet floor as a pure floor
 # step (T rises, S does not), so the sim carries them with their source and
-# derives nothing. The first-naming fee has NO TON figure here on purpose: a
-# contract cannot read EUR, so the TON amount is chosen from the genesis-day
-# TON/EUR rate and passed to genesis as `PRIMES_NAME_FEE_TON`
+# derives nothing. The first-naming fee has NO GRAM figure here on purpose: a
+# contract cannot read EUR, so the GRAM amount is chosen from the genesis-day
+# GRAM/EUR rate and passed to genesis as `PRIMES_NAME_FEE_TON`
 # (contracts/scripts/deployGenesis.ts `resolveNamingFees`), which refuses to run
 # without it.
 RENAME_FEE_TON: float = 200.0
@@ -523,7 +523,7 @@ NAME_FEE_EUR: float = 50.0
 
 
 def naming_block() -> dict:
-    """`naming` -- SS4.7.1's two TON fees (D-212).
+    """`naming` -- SS4.7.1's two GRAM fees (D-212).
 
     Pure: nothing in it depends on the run, so `test_params_ownership.py` can
     prove the committed block equals this function without re-running the sim.
@@ -532,7 +532,7 @@ def naming_block() -> dict:
         "_provenance": "owner, DECISIONS.md D-212",
         "_note": (
             "D-212 replaces D-179's PRIMES burn (and deletes primes_sink.tolk): "
-            "the CURRENT OWNER of a minted number names it for a TON fee sent to "
+            "the CURRENT OWNER of a minted number names it for a GRAM fee sent to "
             "the collection's `name_number`; the fee is forwarded to the ledger "
             "as `royalty_to_ratchet`, a pure floor step. Both fees are deploy "
             "data on the collection (the rename fee also on the registrar, for "
@@ -540,8 +540,8 @@ def naming_block() -> dict:
         ),
         "name_fee_eur": NAME_FEE_EUR,
         "_name_fee_rule": (
-            "the first naming of a number. TON figure = name_fee_eur at the "
-            "TON/EUR rate on genesis day, passed as PRIMES_NAME_FEE_TON; no "
+            "the first naming of a number. GRAM figure = name_fee_eur at the "
+            "GRAM/EUR rate on genesis day, passed as PRIMES_NAME_FEE_TON; no "
             "default exists, and a genesis without it fails"
         ),
         "rename_fee_ton": RENAME_FEE_TON,

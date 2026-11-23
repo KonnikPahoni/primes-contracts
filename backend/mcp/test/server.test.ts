@@ -64,7 +64,7 @@ describe("a write tool quotes before it spends", () => {
     const { text } = await call("primes_mint", {});
     expect(mint).not.toHaveBeenCalled();
     expect(text).toMatch(/"confirmed": false/);
-    expect(text).toMatch(/mint 12 for 1 TON/);
+    expect(text).toMatch(/mint 12 for 1 GRAM/);
     expect(text).toMatch(/to this wallet, referral key none/);
   });
 

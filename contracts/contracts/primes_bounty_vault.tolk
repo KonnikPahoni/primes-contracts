@@ -12,7 +12,7 @@ tolk 1.4
 //
 //   pay_special_number_rebate — SPECIAL_NUMBERS_PLAN.md Phase 2, LIVE. Sender
 //                        must be the ledger's fixed address. The KIND and the
-//                        POINTS (never the TON value) are ledger-decided;
+//                        POINTS (never the GRAM value) are ledger-decided;
 //                        `rebateSchedule` is
 //                        genesis-fixed and `paidSpecials` makes a retry safe,
 //                        same shape as `pay_era_bounty` below.
@@ -21,7 +21,7 @@ tolk 1.4
 //                        not already paid (idempotent by `paidEras`, which makes
 //                        engineering-spec §5 row 6's retry safe against a
 //                        false-negative bounce). DENOMINATION_PLAN P4: the
-//                        schedule is TON-denominated and the vault converts to
+//                        schedule is GRAM-denominated and the vault converts to
 //                        PRIMES itself — see D22 below.
 //   pay_program_bounty — LIVE. Sender must be present in the genesis-fixed
 //                        allow-list under its own `programTag`; genesis lists
@@ -57,12 +57,12 @@ tolk 1.4
 //     wallets are addressed by owner), so the vault cannot embed it in its own
 //     address-determining data. Same circular-address family as D7/D11/D12,
 //     same one-shot resolution.
-// D22. DENOMINATION_PLAN P4 — the era schedule is TON-denominated, not
+// D22. DENOMINATION_PLAN P4 — the era schedule is GRAM-denominated, not
 //     PRIMES-denominated. A fixed nominal PRIMES bounty inflates with the floor
 //     (`p_f` rises ~45x over year one at baseline demand), so an era ceremony
-//     designed to be worth 2 TON at open would be worth ~90 TON at day 365. The
+//     designed to be worth 2 GRAM at open would be worth ~90 GRAM at day 365. The
 //     schedule therefore stores `(bountyTon, maxPrimes)` per boundary and the
-//     vault pays `bountyTon * S / T` — the PRIMES that TON buys at the floor —
+//     vault pays `bountyTon * S / T` — the PRIMES that GRAM buys at the floor —
 //     CAPPED by the genesis-fixed `maxPrimes`.
 //
 //     Three properties this shape is chosen to keep, and the reason for each:
@@ -85,13 +85,13 @@ tolk 1.4
 // by DECISIONS.md D-202; their PRIMES joined the `puzzles` track, which pays §9.6's score rebates.
 // ============================================================================
 
-const TRANSFER_GAS: coins = 100000000;  // 0.1 TON: wallet transfer hop + destination wallet deploy
+const TRANSFER_GAS: coins = 100000000;  // 0.1 GRAM: wallet transfer hop + destination wallet deploy
 // A permissionless retry pays the jetton hop plus this contract's own gas.
-const RETRY_PAYOUT_VALUE: coins = 150000000;  // 0.15 TON
+const RETRY_PAYOUT_VALUE: coins = 150000000;  // 0.15 GRAM
 // H12/D-129. The balance this contract must still hold AFTER paying a hop, so a
 // payout never leaves it unable to pay its own rent. Same figure as
 // `primes_treasury.tolk`'s `TON_RENT_FLOOR` and for the same reason.
-const STORAGE_FLOOR: coins = 50000000;  // 0.05 TON
+const STORAGE_FLOOR: coins = 50000000;  // 0.05 GRAM
 
 struct AllowEntry {
     programTag: uint32
@@ -102,7 +102,7 @@ struct AllowEntry {
 // address-determining deploy data and nothing in this contract ever writes to
 // them.
 struct EraEntry {
-    // The ceremony's VALUE, in nanoTON. This is the number the design fixes.
+    // The ceremony's VALUE, in nanoGRAM. This is the number the design fixes.
     bountyTon: coins
     // The nominal PRIMES that `bountyTon` buys at the GENESIS floor, and
     // therefore the largest payout this boundary can ever make. The floor only
@@ -120,7 +120,7 @@ struct EraEntry {
 // rarity is the score, and the score is the price. Who gets PRIMES back is a
 // separate question with a two-line answer.
 //
-//   0  REBATE_COMPOSITE_PER_POINT — a HEAD-MINTED composite, the 1 TON path.
+//   0  REBATE_COMPOSITE_PER_POINT — a HEAD-MINTED composite, the 1 GRAM path.
 //      `bountyTon` and `maxPrimes` are PER POINT of D(n); the vault multiplies
 //      by the `points` the ledger reports. An auction-won composite gets
 //      nothing: the premium is the price of impatience.
@@ -130,10 +130,10 @@ struct EraEntry {
 const REBATE_COMPOSITE_PER_POINT: int = 0;
 
 struct SpecialSchedule {
-    // rebate kind -> (TON value, nominal PRIMES cap); genesis-fixed, mirrors
+    // rebate kind -> (GRAM value, nominal PRIMES cap); genesis-fixed, mirrors
     // `schedule` above. Values trace to shared/params.json
     // `special_numbers.rebate` — the vault, not the ledger, is authoritative on
-    // the TON amount, same D22 trust shape as the era schedule.
+    // the GRAM amount, same D22 trust shape as the era schedule.
     // BOUND: two rows (the two rebate kinds, D-99 §1.5), written at deploy and
     // by no handler.
     rebateSchedule: map<uint8, EraEntry>
@@ -241,9 +241,9 @@ struct VaultConfigB {
     // none (V26.7): `canCover` refuses a payout the declared `fundedPrimes -
     // paidTotal` cannot meet before anything is sent, so the wallet's
     // insufficient-balance bounce — one row per head-minted composite — is
-    // never provoked. What remains is a transient failure (a TON-short vault,
+    // never provoked. What remains is a transient failure (a GRAM-short vault,
     // or a wallet holding less than genesis declared), and each such row
-    // stays until a PAID permissionless retry (0.15 TON) clears it.
+    // stays until a PAID permissionless retry (0.15 GRAM) clears it.
     retryJournal: map<uint64, RetryEntry>
 }
 
@@ -254,7 +254,7 @@ struct VaultConfig {
 }
 
 struct Storage {
-    // era_boundary -> (TON value, nominal PRIMES cap); genesis-fixed, never written to
+    // era_boundary -> (GRAM value, nominal PRIMES cap); genesis-fixed, never written to
     // BOUND: the era schedule's eight rows (`genesis.era_bounty_schedule`).
     schedule: map<uint256, EraEntry>
     // era_boundary -> paid flag; the only mutable state here
@@ -409,7 +409,7 @@ struct (0x90000004) RetryBountyPayout {
 // H11's arithmetic was never wrong: the wallet sends this NoBounce, so the
 // remainder was credited in the credit phase and STAYED even though the
 // compute phase aborted. What the throw cost was the trace — measured on
-// testnet 2026-09-17, trace 8c354845…d724a, where a fully successful 1 TON
+// testnet 2026-09-17, trace 8c354845…d724a, where a fully successful 1 GRAM
 // mint reads FAILED in Tonviewer because this one leaf aborted. Accepting it
 // is the whole fix; there is nothing to record.
 struct (0xd53276db) Excesses {
@@ -423,12 +423,12 @@ type AllowedMessage = PayEraBounty | PaySpecialNumberRebate | PayProgramBounty |
 // HOP. `TRANSFER_GAS` is drawn from this contract's own balance, so on every
 // pushed route (era bounty, special rebate, program bounty, retry) that is the
 // VAULT — the unspent remainder comes home. Naming the beneficiary there, as
-// the first pass did, gifted them the change: the vault spent 0.1 TON, got
+// the first pass did, gifted them the change: the vault spent 0.1 GRAM, got
 // 0.015 back from the ledger and saw the other ~0.085 land in the recipient's
-// pocket, so it bled 0.085 TON per payout against zero TON income and
+// pocket, so it bled 0.085 GRAM per payout against zero GRAM income and
 // eventually failed its own ACTION phase (GAUNTLET H11, found on testnet
 // 2026-09-14 after three payouts were silently lost). With the excess returning
-// the same payout is +0.0126 TON: the ledger's existing 0.015 TON leg covers
+// the same payout is +0.0126 GRAM: the ledger's existing 0.015 GRAM leg covers
 // the round trip and §4.1's gas & ops line needs no re-cut.
 fun payOut(cfg: VaultConfig, queryId: int, to: address, amount: coins, respondTo: address) {
     val b = cfg.b.load();
@@ -498,9 +498,9 @@ fun onInternalMessage(in: InMessage) {
             // double-pay (bounty_vault.tlb's own stated guarantee).
             if (storage.paidEras.get(msg.eraBoundary).isFound) { return; }
             val entry = scheduled.loadValue();
-            // D22: PRIMES = TON / p_f = bountyTon * S / T. The multiply happens
+            // D22: PRIMES = GRAM / p_f = bountyTon * S / T. The multiply happens
             // before the divide, as everywhere else in this codebase, so the
-            // fixed-point loss is one ulp of nano-PRIMES rather than of TON.
+            // fixed-point loss is one ulp of nano-PRIMES rather than of GRAM.
             // `T == 0` is the pre-first-mint state and cannot coexist with a
             // primorial boundary; falling back to the nominal cap there keeps
             // the branch total instead of leaving a division by zero.
@@ -748,7 +748,7 @@ fun onBouncedMessage(in: InMessageBounced) {
 // ---------------------------------------------------------------------------
 
 // (scheduled, bountyTon, maxPrimes, paid). Two amounts rather than one since
-// DENOMINATION_PLAN P4 (D22): the ceremony's fixed VALUE in nanoTON, and the
+// DENOMINATION_PLAN P4 (D22): the ceremony's fixed VALUE in nanoGRAM, and the
 // nominal PRIMES cap it can never exceed. §9.1 — the dashboard's era figure is
 // `bountyTon * S / T` from this get-call and the ledger's, recomputable by any
 // reader, never a printed constant.

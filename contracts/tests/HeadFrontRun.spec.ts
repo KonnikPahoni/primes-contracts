@@ -11,7 +11,7 @@
 //     bidding, so an attacker cannot buy priority over a transaction already in
 //     flight. What they can do is watch the head and race — the ordinary race
 //     every first-come-first-served system has.
-//   * Every head mint costs the same flat 1 TON (§4.1). There is no price to
+//   * Every head mint costs the same flat 1 GRAM (§4.1). There is no price to
 //     extract. Winning the race takes the NUMBER, not a margin.
 //
 // So the real question D12 asks is narrower and more useful: **when the race is
@@ -25,7 +25,7 @@
 // GAUNTLET V6 the refund was the whole amount via `SEND_MODE_REGULAR`, so the
 // LEDGER's own balance quietly paid for every ordinary lost race; V6 retained a
 // fixed floor (`LOST_RACE_GAS`), and D-191 replaced the floor with the mode.
-// The loser pays gas and keeps the rest of their TON.
+// The loser pays gas and keeps the rest of their GRAM.
 //
 // THE ANSWER TO THE SECOND is the interesting one, and it is where this differs
 // from D8. Before V6, the refund path was cheap but not free, and spamming
@@ -192,7 +192,7 @@ describe('TON PRIMES — D12: losing the race for the head costs the loser nothi
             const card = await ledger.getMinterCardAddress(loser.address);
             expect(r.transactions).toHaveTransaction({ from: ledger.address, to: card });
             expect(r.transactions).toHaveTransaction({ from: card, to: loser.address });
-            // ...and they are out real gas — nowhere near the full 1 TON mint
+            // ...and they are out real gas — nowhere near the full 1 GRAM mint
             // price. A generous bound because gas itself is a measurement and
             // this is not a gas test.
             expect(before - after).toBeLessThan(toNano('0.02'));
@@ -264,7 +264,7 @@ describe('TON PRIMES — D12: losing the race for the head costs the loser nothi
         });
 
         it('and the protocol\'s cost does NOT scale with what the attacker attaches', async () => {
-            // The amplification question. If attaching more TON made the refund
+            // The amplification question. If attaching more GRAM made the refund
             // more expensive for the ledger, an attacker could buy protocol pain
             // cheaply by sending large values that come straight back. It does
             // not: the refund is one message whatever it carries, so the
@@ -283,7 +283,7 @@ describe('TON PRIMES — D12: losing the race for the head costs the loser nothi
 
     it('losing the race costs the OPPORTUNITY, and nothing protects a valuable number', () => {
         // The limit of everything above, stated rather than left implied. Being
-        // made whole in TON is not the same as being made whole: the loser
+        // made whole in GRAM is not the same as being made whole: the loser
         // wanted THAT NUMBER, and for a number that carries an era trophy (§7) or
         // a special-number rebate (§9.6) the value at stake is real and the
         // refund does not replace it.

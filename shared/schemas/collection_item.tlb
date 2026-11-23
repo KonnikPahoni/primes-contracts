@@ -131,10 +131,10 @@ populate#c0000002
 ;; sends `mint_confirmed` (below) with the rest of the value. A throw here, in
 ;; compute or in that send, bounces `populate` whole to the collection.
 
-;; ---- D-212 (§4.7.1): the owner names a number, for TON ----
+;; ---- D-212 (§4.7.1): the owner names a number, for GRAM ----
 ;;
 ;; anyone -> collection. PERMISSIONLESS; value >= name_fee + NAME_RELAY_GAS (0.06
-;; TON), else 103 and the message bounces home. The collection derives item(n) and
+;; GRAM), else 103 and the message bounces home. The collection derives item(n) and
 ;; relays `item_name`, BOUNCEABLE, carrying the rest: an `n` with no item bounces,
 ;; and the bounce arm refunds the sender from the bounced body.
 name_number#c0000009
@@ -276,14 +276,14 @@ set_ledger#c0000003
 ;; and never topped up by any other message — never cited as a tribute
 ;; factor, so it never receives `credit_tribute`'s gas either. Measured rent
 ;; against that one-time endowment gives a multi-year but finite runway,
-;; after which TON freezes the contract for good. The owner does not want
+;; after which GRAM freezes the contract for good. The owner does not want
 ;; any item to reach that cliff (D-62).
 
 top_up#c1000006
     query_id:uint64
   = InternalMsgBody;
 ;; Permissionless: anyone (a wallet, a script, a future webapp button) may
-;; send TON here. The item does nothing with the body — TVM already credits
+;; send GRAM here. The item does nothing with the body — TVM already credits
 ;; an incoming message's value to the contract's balance before any handler
 ;; runs, which is the entire mechanism. What this opcode adds over an
 ;; unrecognized empty-body send (already silently accepted, see the item's

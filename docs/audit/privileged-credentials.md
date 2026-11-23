@@ -1,9 +1,9 @@
 # Privileged credentials, and who controls the money in year three
 
-CONCEPT.md §8 says there is **no admin withdraw path on any TON balance, not
+CONCEPT.md §8 says there is **no admin withdraw path on any GRAM balance, not
 timelocked, not multisig**, and `NoAdminWithdraw.spec.ts` proves it against
 `withdraw-surface.md`'s enumeration of every outbound send. That claim is true and it
-is narrow. It is a claim about **moving TON**, and a reader who takes it as "there are
+is narrow. It is a claim about **moving GRAM**, and a reader who takes it as "there are
 no privileged keys at all" has read more into it than it says.
 
 So this page is the other half: **every standing credential in the system, what it can
@@ -18,7 +18,7 @@ Enumerated from source, not from memory:
   contracts, minus the ones naming a peer protocol contract (a fixed or derived address
   that is itself bound by these same rules, and whose own sends are in
   `withdraw-surface.md`). Exactly two survive: the venue timelock's proposer and, since
-  D-211, the ledger's `operatorAddr` on `set_invite_text`.
+  D-211, the ledger's `operatorAddr` on `set_invite_terms` (`set_invite_text` until D-215).
 - **Key credentials** — every `isSignatureValid(…)` call site. They hold one key, the
   voucher signer's.
 
@@ -45,7 +45,7 @@ source comment (`GAUNTLET.md` X5).
 |---|---|
 | **What it is** | An address, `Storage.proposerAddr` (`primes_venue_timelock.tolk:82`), fixed in the contract's deploy-time (address-determining) data. |
 | **What it can do** | `queue` and `cancel` a change to the **seven venue addresses** `primes_ratchet.tolk` trades and stakes into: the three DeDust addresses `flush()` sells into, plus §4.3.2's Tonstakers pool, tsTON vault, tsTON pool and **harvest destination** (D-151). Nothing else. The harvest destination is the one worth reading twice — this key can re-aim where accrued yield is sent, after thirty days in public view, while still touching no term of `T`. |
-| **What it cannot do** | Move TON or PRIMES; touch `T`, `S`, `pending` or any `owed` balance; change treasury routing; alter any compiled-in economic parameter; or execute its own proposal early. The contract's own header calls it "the ONLY privileged credential", and that is the finding this page confirms rather than the claim it repeats. |
+| **What it cannot do** | Move GRAM or PRIMES; touch `T`, `S`, `pending` or any `owed` balance; change treasury routing; alter any compiled-in economic parameter; or execute its own proposal early. The contract's own header calls it "the ONLY privileged credential", and that is the finding this page confirms rather than the claim it repeats. |
 | **What bounds it in time** | `TIMELOCK_DELAY` = 30 days (`:70`). A queued change carries an `eta` and `execute` is **permissionless** — anyone may push a matured change, and nobody can push an unmatured one. **It is also not enough alone** (`DECISIONS.md` D-194): `execute` refuses a record the treasury's LP electorate has not confirmed (804), and since the 2026-11-19 amendment (audit H1) the confirming vote must close at or after `eta` (808), i.e. open no earlier than `eta − voteDuration`. Only LP locked before a vote opens counts (treasury 1202), so every holder has the whole 30 days to lock and vote no; an empty electorate is not a defence, because the proposer's own lock votes. |
 | **How a reader sees it** | The *pending action* is published: `getQueued()` returns `(hasQueued, fired, dedustNativeVault, dedustPool, primesJettonVault, eta, staking)` — every address the pending `execute` will write, the staked reserve's block (§4.3.2 / D-151) included as the same opaque cell `update_venue` will carry, decodable with `ratchet.tlb`'s `VenueStaking`. So any proposal is visible **in full** for its 30 days before it can land. The *holder* is not on a get-method — it is a storage field, readable off-chain from the account's data cell like any other, and it is address-determining, so it is also recoverable by re-deriving the contract address from its init data. **Stated rather than glossed:** there is no `getProposer()`. |
 | **What bounds it in test** | `PrimesVenueTimelock.spec.ts` — "rejects queue from a non-proposer sender", "rejects cancel/queue from a non-proposer, and cancel with nothing queued", "rejects an eta below the 30-day minimum delay", "rejects execute before eta matures", and "queue → wait 30 days → permissionless execute updates the ratchet venue addresses". |
@@ -64,22 +64,22 @@ floor depends on.
 |---|---|
 | **What it is** | **Two** Ed25519 public keys since audit 2026-11-19 R2-M2 (`DECISIONS.md` D-171, amended 2026-11-20): one per service-signed instance, each `Storage.signerPubkey` (`primes_voucher.tolk:113`) fixed at deploy — `QSTS` (§9.4 social board, `QUESTS_VOUCHER_SIGNER_SECRET_KEY`) and `PQST` (contract-fact quests, `PRIME_QUESTS_VOUCHER_SIGNER_SECRET_KEY`). The attribution service holds both private halves. Genesis refuses any two instances — these two and D-170's owner-held `SECU` — on one key. |
 | **What it can do** | Sign, for its own instance only, a voucher naming a wallet and a **cumulative** PRIMES total (`:273`) up to that instance's per-wallet cap, and sign the one-shot program burn that sets the claim deadline (`:289`). |
-| **What it cannot do** | Move TON. Name itself as a beneficiary in any sense that pays a bearer — a voucher is signed **for a specific wallet** and nobody else can redeem it. Pay one wallet more than the instance's write-once `maxPerWallet` (`:159`): a signed total above it is refused 716 (`:331`) before the receipt is touched, and the receipt stores the total, so this bounds the wallet's lifetime payout. Exceed the program's budget: the PRIMES come from `primes_bounty_vault.tolk`'s allow-list entry, and `remaining` is genesis-fixed there, so a total past it is refused **by the vault**. Spend the other track: the instance's key and tag are both in the check. Pay twice: totals are a high-water mark, so a replay settles to zero. Strand an earned balance: the burn cannot set a deadline inside `BURN_MIN_GRACE`. |
+| **What it cannot do** | Move GRAM. Name itself as a beneficiary in any sense that pays a bearer — a voucher is signed **for a specific wallet** and nobody else can redeem it. Pay one wallet more than the instance's write-once `maxPerWallet` (`:159`): a signed total above it is refused 716 (`:331`) before the receipt is touched, and the receipt stores the total, so this bounds the wallet's lifetime payout. Exceed the program's budget: the PRIMES come from `primes_bounty_vault.tolk`'s allow-list entry, and `remaining` is genesis-fixed there, so a total past it is refused **by the vault**. Spend the other track: the instance's key and tag are both in the check. Pay twice: totals are a high-water mark, so a replay settles to zero. Strand an earned balance: the burn cannot set a deadline inside `BURN_MIN_GRACE`. |
 | **How a reader sees it** | `getSignerState()` returns `(signerPubkey, burnedAt, claimDeadline, minGrace, programTag)` — the key itself, on chain, so "the key that signs is the key baked in at deploy" is checkable by inspection and a holder can verify a voucher **off-chain before spending gas on it**. `getMaxPerWallet()` returns the per-wallet cap. `isProgramClosed()` answers the time question on its own. |
 | **What bounds it in test** | `PrimesVoucher.spec.ts` — "a voucher signed by the wrong key is refused", "a voucher is NOT bearer paper: bob cannot redeem a voucher signed for alice", "REPLAY PAYS ZERO", "a signed total above the genesis-fixed budget is refused BY THE VAULT, and rolls back", the "R2-M2: the per-wallet cap" block (at cap pays; cap + 1 refused 716 with no receipt and no PRIMES; two vouchers cannot pass it; replay after it pays zero), "a program that is NOT allow-listed cannot pay, however valid the signature", "is authenticated by the KEY, not by an owner", and "CANNOT strand an earned balance: the grace floor is an on-chain assert". `GenesisRehearsal.spec.ts` — "every voucher instance carries its params.json per-wallet cap", "genesis refuses to deploy two voucher instances on one key", and the prime-quests key test. |
 
 **The honest shape of the risk.** A stolen service key can sign vouchers for **its own
 track only**, each at most one wallet's cap (`QSTS` 2,450 PRIMES, `PQST` 6,350 —
 params.json via `shared/voucher.ts` `VOUCHER_MAX_PER_WALLET`). Draining a track therefore
-takes about 1,000 fresh wallets, each claim carrying its own ≥ 0.15 TON — a slow, visible,
+takes about 1,000 fresh wallets, each claim carrying its own ≥ 0.15 GRAM — a slow, visible,
 paid attack rather than one transaction, and still bounded by the allow-list entry. It
-cannot reach the ratchet, the ledger, any TON balance, or one PRIMES beyond that entry.
+cannot reach the ratchet, the ledger, any GRAM balance, or one PRIMES beyond that entry.
 
-**When it pays the thief.** One claim costs ~0.15 TON (`CLAIM_MIN_VALUE`) and yields one cap,
-so at floor `p_f` it is worth `cap · p_f` TON. It breaks even at `p_f = 0.15 / cap`: on `QSTS`
-0.15 / 2,450 = 6.12e-5 TON per PRIMES, **≈ 5.7×** the opening floor (`p_f0` =
+**When it pays the thief.** One claim costs ~0.15 GRAM (`CLAIM_MIN_VALUE`) and yields one cap,
+so at floor `p_f` it is worth `cap · p_f` GRAM. It breaks even at `p_f = 0.15 / cap`: on `QSTS`
+0.15 / 2,450 = 6.12e-5 GRAM per PRIMES, **≈ 5.7×** the opening floor (`p_f0` =
 `genesis_floor_price_ton_per_primes` = 1.0769e-05); on `PQST` 0.15 / 6,350 = 2.36e-5, **≈ 2.2×**.
-Below those multiples a stolen key loses its holder TON on every claim; above them it is a
+Below those multiples a stolen key loses its holder GRAM on every claim; above them it is a
 profit at the floor, which is why the key split and storing the keys apart still matter.
 
 **What the split does not buy.** Both service keys live in the same `.env` on the same host
@@ -99,11 +99,11 @@ new genesis); the burn needs 90 days' grace.
 | | |
 |---|---|
 | **What it is** | An address, `FeeDests.operatorAddr` — the operator's wallet, fixed in the ledger's deploy data with no setter. Before D-211 it was a pay destination only (the forfeit's 42%). |
-| **What it can do** | `set_invite_text`: replace `Config.inviteText`, the words at the start of every later invite transfer's comment. Nothing else. |
-| **What it cannot do** | Move TON or PRIMES; change who is invited, how many, or the 0.1 TON; remove or alter the link — `inviteComment(n)` writes ` primes.live/?ref=<n>_tg` after the words itself; write more than 86 bytes, a ref, or a partial byte (refused 237). |
+| **What it can do** | `set_invite_terms` (D-215): replace `Config.inviteText`, the words at the start of every later invite transfer's comment, AND `Config.inviteCount` / `Config.inviteValue` — how many invites a mint may fund and what each delivers. That sizes §4.1's invite line, a split line, between 0 and 0.31 GRAM of every mint. Nothing else. |
+| **What it cannot do** | Move GRAM or PRIMES to itself or to any address it names — the recipients are the minter's; take the invite line past `INVITE_LINE_CAP` = 0.31 GRAM including fees or past `INVITE_COUNT_CEILING` = 100 transfers (refused 238, at the setter and at every mint), so β never drops below 0.24; remove or alter the link — `inviteComment(n)` writes ` primes.live/?ref=<n>_tg` after the words itself; write more than 86 bytes, a ref, or a partial byte (refused 237). |
 | **What bounds it in time** | Nothing: a change applies to the next invite mint. |
-| **How a reader sees it** | `getInviteText()` returns the live words; `getInviteComment(n)` the exact body for `n`. |
-| **The honest shape of the risk** | A stolen operator key can make the ledger send its words — with the real link after them — to every invitee the keeper pre-fills, paid by honest minters' invite lines, until the owner sets them back. That is a reputation risk on the game's own address, not a money path. |
+| **How a reader sees it** | `getInviteTerms()` returns the live count and value beside the three fixed bounds; `getInviteText()` the live words; `getInviteComment(n)` the exact body for `n`. |
+| **The honest shape of the risk** | A stolen operator key can make the ledger send its words — with the real link after them — to every invitee the keeper pre-fills, paid by honest minters' invite lines, until the owner sets them back; and it can move up to 0.31 GRAM of every mint between the ratchet pool and the minter-named invitees (or set the count to 0 and switch invites off). That is a reputation and floor-growth risk, never a money path to the key holder. |
 | **What bounds it in test** | `InviteTransfers.spec.ts` — "D-211: the operator rewrites the words; the next invite carries them, at the cap, with the link" and "D-211: anyone but the operator is refused 100; over-long or ref-carrying words are refused 237". |
 
 ---
@@ -131,7 +131,7 @@ gates *will* find it, and an undisclosed credential looks worse than a spent one
 `GAUNTLET.md` X5. The three credentials above are what exists *today*. This section is about
 who controls the money in **year three**, because the answer is not a credential at all: it is
 `primes_treasury.tolk`'s governance (D-100), and the owner's stated succession plan is that
-holders propose and vote TON out of it. That mechanism is built, tested and surfaced at
+holders propose and vote GRAM out of it. That mechanism is built, tested and surfaced at
 `/treasury`.
 
 **What was not published anywhere a holder reads is how thin the electorate may be.** The

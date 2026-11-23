@@ -24,9 +24,9 @@ import { PrimesJettonWallet } from '../wrappers/PrimesJettonWallet';
 /**
  * The genesis launch order: seed -> donate -> ignite.
  *
- * `genesisPipeline.ts` step 7 seeds `T = 0` (D-46 point 2 — no founder TON is
+ * `genesisPipeline.ts` step 7 seeds `T = 0` (D-46 point 2 — no founder GRAM is
  * deposited) and `S = 11,000,000` PRIMES (D-166), so `p_f = T/S` is ZERO until D-92's
- * 240 TON `donate_floor` lands. That donation is a separate permissionless
+ * 240 GRAM `donate_floor` lands. That donation is a separate permissionless
  * call, and until this suite's guard existed nothing stopped `ignite` from
  * opening minting in between.
  *
@@ -34,9 +34,9 @@ import { PrimesJettonWallet } from '../wrappers/PrimesJettonWallet';
  * `R = k * I * S / T` (math-note §2) — emit `k` times the injection, priced at
  * the floor — which is unbounded as `T -> 0`. A `T > 0` guard means the FIRST
  * mint after such a launch emits nothing; it also means that mint sets `T` to
- * one injection (~0.75 TON) against the entire genesis supply, and hands the
+ * one injection (~0.75 GRAM) against the entire genesis supply, and hands the
  * SECOND minter a floor near zero. Measured below: 20% of the supply for
- * 1 TON, against 0.28% once the donation has landed.
+ * 1 GRAM, against 0.28% once the donation has landed.
  */
 describe('genesis launch order (D-92, ledger_floor_unbacked)', () => {
     it('refuses to ignite while the floor has no backing', async () => {
@@ -75,7 +75,7 @@ describe('genesis launch order (D-92, ledger_floor_unbacked)', () => {
 /**
  * D-156: the taper alone does not bound `S` on the donation path — it keeps
  * `e·(S_MAX − S)/S_MAX`, which exceeds the headroom `S_MAX − S` once `e > S_MAX`,
- * i.e. for any donation over `S_MAX/L` = 120,000 TON. The headroom clamp in
+ * i.e. for any donation over `S_MAX/L` = 120,000 GRAM. The headroom clamp in
  * `handleDonateFloor` is what makes "S never exceeds S_MAX" true there.
  */
 describe('donate_floor cannot carry S past S_MAX (D-156)', () => {
@@ -101,8 +101,8 @@ describe('donate_floor cannot carry S past S_MAX (D-156)', () => {
     }, 180_000);
 
     it('a head mint on a dust-backed launch lands S on S_MAX, not past it (2026-11-08 audit)', async () => {
-        // `ignite` asks only `T > 0`. At 0.0001 TON of backing, p_f·S_MAX is far under
-        // the 0.65 TON injection, so the tapered rebate alone overshoots the headroom;
+        // `ignite` asks only `T > 0`. At 0.0001 GRAM of backing, p_f·S_MAX is far under
+        // the 0.65 GRAM injection, so the tapered rebate alone overshoots the headroom;
         // the mint path's own headroom clamp is what keeps the bound.
         const s = await deployStack({ seedT: 0n, donateBeforeIgnite: [toNano('0.0001')] });
         expect((await s.ledger.getLaunch()).launched).toBe(true);

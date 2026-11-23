@@ -5,17 +5,17 @@
  * 7-day `AUCTION_WINDOW` waits and everything downstream of them is gated on that clock:
  *
  *   0a  n = 123456792 = 2^3 * 3 * 59 * 87187, score 0 so `p0` sits exactly on D-113's
- *       `LOT_FLOOR` 1.07 TON — the cheapest thing on the board. Opened by the FUNDER
+ *       `LOT_FLOOR` 1.07 GRAM — the cheapest thing on the board. Opened by the FUNDER
  *       (deploy subwallet `PRIMES_DEPLOY_SUBWALLET_ID`); the open IS the first bid.
  *       Then raised by cast wallet `C`, a genuinely different sender, so the outbid
  *       refund path is exercised for real rather than by the opener re-bidding itself.
  *       Closes in Phase 5 and is what finally closes GAUNTLET H4.
  *
- *   0b  n = 899809363, prime, score 15, `p0` 2.828 TON. Opened by cast wallet `A`.
+ *   0b  n = 899809363, prime, score 15, `p0` 2.828 GRAM. Opened by cast wallet `A`.
  *       Ahead of the head, so this is the ASCENDING lane with `kind = 1` and no
  *       factorization: the contract Miller-Rabins it itself at settlement. Small primes
  *       are NOT the cheap option here — `NPV(p)` prices the dividend stream, so n=11
- *       opens at 415 TON and n=2 at 1303 TON. This is the affordable end of the lane,
+ *       opens at 415 GRAM and n=2 at 1303 GRAM. This is the affordable end of the lane,
  *       and winning it gives `A` the prime rank + `PRIME_WINDOW` uplifts Phase 2 reads.
  *
  * EVERY STAGE IS INDEPENDENTLY GUARDED AND IDEMPOTENT — on chain state first ("is this
@@ -75,7 +75,7 @@ function need(name: string): string {
 }
 
 function fmt(nano: bigint): string {
-    return `${(Number(nano) / 1e9).toFixed(9)} TON`;
+    return `${(Number(nano) / 1e9).toFixed(9)} GRAM`;
 }
 
 async function retry<T>(fn: () => Promise<T>, label: string, attempts = 8): Promise<T> {

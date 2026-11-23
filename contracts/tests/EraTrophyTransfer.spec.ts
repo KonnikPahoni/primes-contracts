@@ -30,7 +30,7 @@
 //      fooled: `sophie_germain` (6, 13) and `complete_factorization` {6, 36}.
 //      36 = 6² exactly, so the second one commits if and only if 6 is a prime.
 //
-//   4. NOTHING IS CUSTODIED. The registrar holds ZERO protocol TON and that
+//   4. NOTHING IS CUSTODIED. The registrar holds ZERO protocol GRAM and that
 //      property is what justifies it being a separate contract (§3.4). A trophy
 //      transfer is one dictionary write: no escrow, no fee, no outbound message.
 //      Whatever the trophy sold for was settled between the parties somewhere
@@ -341,7 +341,7 @@ describe('P2.B5 — the era trophy is transferable (D-14, §4.7)', () => {
 
         // Exactly two transactions: the sender's, and the registrar's. Nothing
         // is forwarded anywhere — no escrow contract, no treasury cut, no
-        // payout to the seller. The registrar has no TON path to add one to.
+        // payout to the seller. The registrar has no GRAM path to add one to.
         expect(res.transactions).toHaveLength(2);
 
         // §3.4's whole point, still true afterwards.

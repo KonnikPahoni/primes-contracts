@@ -72,7 +72,7 @@ import { deployStack, factorize as factorizeBig } from './helpers/stack';
 // THE REGISTRAR GOT DEARER because D-102 rebuilt it: `record_mint` now carries
 // and stores the head (the build line's expiry clock is a HEAD, not a wall
 // clock), and the D-99 score block is pasted into the contract, so the arm's
-// storage cell and its code both grew. 8,990 units is ~0.0036 TON at config 21
+// storage cell and its code both grew. 8,990 units is ~0.0036 GRAM at config 21
 // — it rides `REGISTRAR_HOP_GAS` on a PRIME mint, which is the cheapest leg of
 // the mint profile and has the room.
 //
@@ -84,7 +84,7 @@ import { deployStack, factorize as factorizeBig } from './helpers/stack';
 // GAUNTLET C13 (2026-09-12) CLOSES THE GAP THIS COMMENT USED TO NAME. D-101's
 // invite fan-out now has two rows of its own — `ledger.mint.invite_count_0`
 // (99,740) and `ledger.mint.invite_count_5` (117,809), same n (the head, 4 —
-// the same omega=1 composite as `ledger.mint.composite_w1`), same 1 TON, same
+// the same omega=1 composite as `ledger.mint.composite_w1`), same 1 GRAM, same
 // genesis shape, on two FRESH stacks that differ only in the invite list. The
 // **delta is 18,069 gas for five real `deploy_generator` sends** (~3,614/deploy,
 // well under this comment's own pre-measurement guess of "5 x 6,690 plus
@@ -99,7 +99,7 @@ import { deployStack, factorize as factorizeBig } from './helpers/stack';
 // signature check); this file owns only the gas number.
 //
 // FIFTH COMPARABILITY BREAK, 2026-11-07 (DECISIONS.md D-202). The invite line is
-// up to THREE plain 0.1 TON text transfers to minter-named addresses: no signature
+// up to THREE plain 0.1 GRAM text transfers to minter-named addresses: no signature
 // check, no `deploy_generator`. `ledger.mint.invite_count_5` is RETIRED and
 // `ledger.mint.invite_count_3` replaces it; `registrar.record_mint` is RETIRED with
 // the hop (its one reader was the build clock). Every mint row moved because the
@@ -201,7 +201,7 @@ const GAS_OPS_LINE = BigInt(
 // two uses below were hiding.
 const SETTLE_HOP = toNano('0.025');
 const MINT_PRICE = toNano('1');
-// D-191 point 1: the most of a mint's 1 TON the payer -> card -> ledger hop may consume,
+// D-191 point 1: the most of a mint's 1 GRAM the payer -> card -> ledger hop may consume,
 // read from the ledger's own source for the reason GAS_OPS_LINE is.
 const CARD_HOP_ALLOWANCE = BigInt(
     /const CARD_HOP_ALLOWANCE: coins = (\d+);/.exec(
@@ -271,8 +271,8 @@ describe('TON PRIMES — gas regression', () => {
         proposer = await blockchain.treasury('proposer');
         dedust = await blockchain.treasury('dedust');
         // D-20: the walk below BUYS ten primes off the Dutch lane on top of its
-        // nineteen 1-TON composite mints, and a prime opens at 1.5x its tribute
-        // NPV — tens of TON each, not one. The old 500 TON ran dry at n = 16 and
+        // nineteen 1-GRAM composite mints, and a prime opens at 1.5x its tribute
+        // NPV — tens of GRAM each, not one. The old 500 GRAM ran dry at n = 16 and
         // the mint after it came back as a refund, which reads exactly like a
         // head mismatch and is not one.
         minter = await blockchain.treasury('minter', { balance: toNano('100000') });
@@ -380,8 +380,8 @@ describe('TON PRIMES — gas regression', () => {
         vault = blockchain.openContract(
             PrimesBountyVault.createFromConfig(
                 {
-                    // DENOMINATION_PLAN P4: TON-denominated value + its nominal cap
-                    // at the genesis floor (20,000 PRIMES per TON, D-42).
+                    // DENOMINATION_PLAN P4: GRAM-denominated value + its nominal cap
+                    // at the genesis floor (20,000 PRIMES per GRAM, D-42).
                     schedule: [
                         {
                             eraBoundary: 30n,
@@ -585,7 +585,8 @@ describe('TON PRIMES — gas regression', () => {
     //   - a gift to a never-seen wallet, so the recruit edge writes two
     //     `minterState` rows, becomes the era's leader and the TROPHY hop fires;
     //   - a valid referral key (the relay rides in the D-117 held split);
-    //   - all three invite slots (D-202: three 0.1 TON transfers, the loop's compute);
+    //   - all three invite slots (D-202: three 0.1 GRAM transfers; since D-215 their fees are
+    //     paid out of the invite line's own INVITE_SEND_FEE, not this one);
     //   - a primorial, for the ERA BOUNTY hop, and the D-99 special-number
     //     rebate hop, which every scored head mint fires;
     //   - the rebate mint, the ratchet hop, the item deploy and the D-117
@@ -698,7 +699,7 @@ describe('TON PRIMES — gas regression', () => {
             const aliceCard = await s.ledger.getMinterCardAddress(s.alice.address);
             expect(fromLedger(aliceCard)).toBe(1);
             expect(r.transactions).toHaveTransaction({ from: aliceCard, to: s.ledger.address, success: true });
-            // THE PADDED BOUND. The payer -> card -> ledger hop is paid out of the 1 TON, and
+            // THE PADDED BOUND. The payer -> card -> ledger hop is paid out of the 1 GRAM, and
             // the ledger accepts a mint up to CARD_HOP_ALLOWANCE short of the price — so a
             // body padded to make the card's forward dearer can move up to that much of the
             // hop onto the line. The worst such mint is this one with its honest hop swapped
@@ -839,9 +840,9 @@ describe('TON PRIMES — gas regression', () => {
         );
         snapshot['ledger.mint.composite_referred'] = gasAt(referred, ledger.address);
         snapshot['item.forward_to_owner'] = gasAt(referred, await ledger.getItemAddress(2n));
-        // NOTE: the 0.1 TON referral relay is a SPLIT line (CONCEPT §4.1's 10%
+        // NOTE: the 0.1 GRAM referral relay is a SPLIT line (CONCEPT §4.1's 10%
         // referral), not a gas & ops cost, so it is deliberately excluded from
-        // the 0.10 TON reconciliation below — only protocol-side gas/deploy
+        // the 0.10 GRAM reconciliation below — only protocol-side gas/deploy
         // value counts against that line.
         recordMintCost('composite, referred', 'composite_referred', referredSpend);
 
@@ -1106,7 +1107,7 @@ describe('TON PRIMES — gas regression', () => {
             // Until D-100 an unsold prime's forfeited tribute share (§6 point 2)
             // was ONE send, to `treasuryAddr`. It is now TWO: 80% to the
             // governed treasury contract and the remainder to the operator. The
-            // forfeited TON itself is split money, not gas — it comes out of the
+            // forfeited GRAM itself is split money, not gas — it comes out of the
             // tribute line and never touches the 10% line — but the SECOND
             // MESSAGE'S OWN FEES do, and nothing in this file measured a mint
             // that forfeits at all. Every composite above cites factors the walk
@@ -1124,9 +1125,9 @@ describe('TON PRIMES — gas regression', () => {
             // their D-99 score and in their factor loop, so the difference is
             // not "the price of D-100's second send" and must not be quoted as
             // one. What IS comparable is the line this file exists to defend:
-            // the ω=3 all-sold row reconciles at 0.0924 TON and this one at
+            // the ω=3 all-sold row reconciles at 0.0924 GRAM and this one at
             // 0.0808, so the forfeit split comes out CHEAPER against §4.1's
-            // 0.10 TON. It trades one `credit_tribute` hop (0.008 of attached
+            // 0.10 GRAM. It trades one `credit_tribute` hop (0.008 of attached
             // gas) for two bare sends whose value is the forfeited tribute
             // itself — split money, never the 10% line. D-100's second send does
             // not threaten the gas & ops line, and this row is the measurement
@@ -1205,7 +1206,7 @@ describe('TON PRIMES — gas regression', () => {
             // D-20 PUT A WHOLE MINT PATH OUTSIDE THIS RECONCILIATION, and it had
             // to come back in. A prime's nominal MINT_PRICE runs the SAME §4.1
             // five-way split a composite runs — including the same 10% gas & ops
-            // leg — so the purchase has to fit inside the same 0.10 TON, and
+            // leg — so the purchase has to fit inside the same 0.10 GRAM, and
             // nothing measured whether it did. It is charged like any other mint:
             // the item deploy, the ratchet hop and the registrar hop are drawn
             // from the line; `RES_GAS` is not, because the buyer paid it on top of
@@ -1253,7 +1254,7 @@ describe('TON PRIMES — gas regression', () => {
             snapshot['market.close'] = gasAt(close, book.address);
         }
 
-        // ---- D-212: naming a number for TON (§4.7.1) ----
+        // ---- D-212: naming a number for GRAM (§4.7.1) ----
         //
         // Off the mint path, measured against the walk's own stack: the minter names a
         // composite it owns. Four hops, each its own row — the collection's door, the
@@ -1296,7 +1297,7 @@ describe('TON PRIMES — gas regression', () => {
         // Measured STANDALONE, like the venue timelock, the jetton wallet and
         // the burn sink blocks above, and for a stronger reason than any of
         // them: these three contracts touch nothing in the mint walk. They hold
-        // no protocol TON, they send the ledger nothing, and TR-4 is that
+        // no protocol GRAM, they send the ledger nothing, and TR-4 is that
         // nothing here mints — so there is no path by which a row below can
         // change a row above, and wiring them into the walk would have implied
         // one exists.
@@ -1380,7 +1381,7 @@ describe('TON PRIMES — gas regression', () => {
             snapshot['treasury.deposit'] = gasAt(deposit, treasury.address);
 
             // Audit M1 — harvest's tsTON arrives carrying exactly `HARVEST_FORWARD_TON`
-            // (0.05 TON). The tsTON branch returns before the 0.15 TON
+            // (0.05 GRAM). The tsTON branch returns before the 0.15 GRAM
             // `TREASURY_MIN_FORWARD` check, so the forward pays this compute and nothing else.
             const tstonIn = await treasury.sendTransferNotification(tstonWallet.getSender(), {
                 amount: toNano('1'),
@@ -1445,7 +1446,7 @@ describe('TON PRIMES — gas regression', () => {
             //    would measure the refusal. Deposit again (the position above is
             //    gone), propose, vote, wait out the day, execute.
             //
-            //    Asset 0 (TON) on purpose: it is the arm with the `TonPayout`
+            //    Asset 0 (GRAM) on purpose: it is the arm with the `TonPayout`
             //    send and `getOriginalBalance()` cap arithmetic, i.e. the one
             //    that does not reduce to a TEP-74 transfer already measured by
             //    the withdraw row above.
@@ -1458,7 +1459,7 @@ describe('TON PRIMES — gas regression', () => {
             // §5.5.5: only LP locked strictly before the proposal opened votes on it.
             blockchain.now = blockchain.now! + 1;
             await child.sendPropose(holder.getSender(), {
-                asset: TreasuryAsset.TON,
+                asset: TreasuryAsset.GRAM,
                 amount: toNano('1'),
                 dest: keeper.address,
                 positionId: 1,
@@ -1567,7 +1568,7 @@ describe('TON PRIMES — gas regression', () => {
         // ---------------- GAUNTLET C13: the invite line (D-202) ----------------
         // Two FRESH, otherwise-identical stacks (own `deployStack`, own genesis),
         // each minting the exact same head (4, the same omega=1 composite as
-        // `ledger.mint.composite_w1` above) for the same 1 TON — one with no
+        // `ledger.mint.composite_w1` above) for the same 1 GRAM — one with no
         // invite list, one with all three slots filled. Same n, same value, same
         // everything except the invite line, so the difference between the two
         // rows below IS the line's cost, not noise from a different fixture.
@@ -1623,11 +1624,11 @@ describe('TON PRIMES — gas regression', () => {
         // ---- §4.3.2, the staked reserve (D-151) ----
         //
         // ON ITS OWN FIXTURE, deliberately. Every arm below needs state the main
-        // stack cannot reach: `stake` needs `pending` above 625 TON (STAKE_MIN is
-        // 500 and the reserve is 20% of the obligation), `unstake` needs the
+        // stack cannot reach: `stake` needs `pending` above 62.5 GRAM (STAKE_MIN is
+        // 50 and the reserve is 20% of the obligation), `unstake` needs the
         // reserve already BREACHED — which only `flush()` can do — and `harvest`
         // needs the pool rate to have moved between two deposits. Reaching all
-        // three from the genesis stack would mean donating ~1,800 TON into `T`
+        // three from the genesis stack would mean donating ~1,800 GRAM into `T`
         // and firing a second venue timelock cycle in the middle of a file whose
         // other rows are measured against that same `T`. A fresh ratchet against
         // `mock_tonstakers_pool.tolk` measures the same compute with none of that
@@ -1726,7 +1727,7 @@ describe('TON PRIMES — gas regression', () => {
             );
 
             // Audit H2 — a NON-OPTIMISTIC fill: the bill pays as a jetton transfer from the
-            // payout collection with only 0.01 TON forwarded (`nft-collection.func:19`), so
+            // payout collection with only 0.01 GRAM forwarded (`nft-collection.func:19`), so
             // the ratchet's tsTON handler (`creditStakeArrival` against the open stake) must
             // run inside ~25k gas or the tsTON lands uncounted.
             const billCollection = await blockchain.treasury('billCollection');

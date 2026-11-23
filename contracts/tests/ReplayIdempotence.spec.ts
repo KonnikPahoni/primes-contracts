@@ -327,7 +327,7 @@ describe('TON PRIMES — D2: a replayed message never moves state twice', () => 
 
         it('Mint of the same n — the head has moved, so the replay cannot land', async () => {
             await mintFour();
-            // The replay carries its own TON, as a real duplicate would. Nothing
+            // The replay carries its own GRAM, as a real duplicate would. Nothing
             // may be credited for it: no second item, no second injection.
             await replayIsInert('ledger.mint(4)', () =>
                 ledger.sendMint(player.getSender(), {

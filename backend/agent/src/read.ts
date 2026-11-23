@@ -62,7 +62,7 @@ export interface Read<T> {
 
 /** `getLedgerCounters` — T and S, plus §3.2's two dividend counters and D-156's `S_MAX`. */
 export interface LedgerCounters {
-  /** T, the ratchet's numerator, in nanoTON. */
+  /** T, the ratchet's numerator, in nanoGRAM. */
   tNanoton: bigint;
   /** S, the denominator, in the smallest PRIMES unit. */
   sPrimes: bigint;
@@ -119,7 +119,7 @@ export interface RatchetIdentity {
 }
 
 export interface Staking {
-  /** TON in the pool, at what it cost. A term of `T`. */
+  /** GRAM in the pool, at what it cost. A term of `T`. */
   stakedCostNanoton: bigint;
   /** nano-tsTON owned, EXCLUDING a tranche inside the exit machine (`exiting` counts that). */
   tstonHeldNano: bigint;
@@ -132,7 +132,7 @@ export interface Staking {
   reserveTargetNanoton: bigint;
   /** Unix seconds; `0` before the first harvest. */
   lastHarvestTime: bigint;
-  /** Cumulative TON that left `T` and did not come back. Non-zero ⇒ `p_f` overstates the
+  /** Cumulative GRAM that left `T` and did not come back. Non-zero ⇒ `p_f` overstates the
    *  backing by exactly `realizedLoss / S`. Never netted into `stakedCostNanoton`. */
   realizedLossNanoton: bigint;
 }
@@ -329,10 +329,10 @@ export class PrimesRead {
 
   /**
    * `/number/:n/name` — D-212 (§4.7.1): who may name `n` (its CURRENT OWNER, item(n)'s
-   * `getNamer`), the name standing on it (`getAnnotation`), and the TON the next naming costs
+   * `getNamer`), the name standing on it (`getAnnotation`), and the GRAM the next naming costs
    * (collection `getNaming`: `nameFee` first, `renameFee` after; `null` while unminted). A
    * primorial also carries `trophy`, the registrar's separate era-trophy engraving.
-   * nanoTON. Index-grade: `act.name` re-reads the fee from the chain before it spends.
+   * nanoGRAM. Index-grade: `act.name` re-reads the fee from the chain before it spends.
    */
   async name(n: bigint): Promise<{
     namer: string | null;
@@ -409,13 +409,13 @@ export class PrimesRead {
     };
   }
 
-  /** `getPending` — TON waiting in the ratchet for the next `flush()`. */
+  /** `getPending` — GRAM waiting in the ratchet for the next `flush()`. */
   async pending(): Promise<bigint> {
     const { data } = await this.proxy<{ pendingNanoton: string }>("/ratchet/pending");
     return BigInt(data.pendingNanoton);
   }
 
-  /** `getSwapped` — cumulative TON the ratchet has actually spent at the venue. */
+  /** `getSwapped` — cumulative GRAM the ratchet has actually spent at the venue. */
   async swapped(): Promise<bigint> {
     const { data } = await this.proxy<{ swappedNanoton: string }>("/ratchet/swapped");
     return BigInt(data.swappedNanoton);
@@ -487,7 +487,7 @@ export class PrimesRead {
    * §5's identity as ONE ordered snapshot: the ratchet's `getFloorOracle` + `getStaking`, then
    * the ledger's `getFloorNum`. Two exact claims come out of it: `tCacheNanoton` equals
    * seeded + swapped + pending + the three staking terms, and `tNanoton − tCacheNanoton` is
-   * TON a `PoolInject` is still carrying to the ratchet. Check the identity from this, not
+   * GRAM a `PoolInject` is still carrying to the ratchet. Check the identity from this, not
    * from `floor()` plus `pending()` read at two moments: those disagree for one hop after
    * every mint with nothing wrong.
    */
@@ -561,7 +561,7 @@ export class PrimesRead {
   // One wallet
   // =========================================================================
 
-  /** The wallet's TON balance. `null` = the account read failed, NOT a zero balance. */
+  /** The wallet's GRAM balance. `null` = the account read failed, NOT a zero balance. */
   async balance(address: string): Promise<bigint | null> {
     const { data } = await this.proxy<{ balanceNanoton: string | null }>(`/wallet/${address}/balance`);
     return data.balanceNanoton === null ? null : BigInt(data.balanceNanoton);

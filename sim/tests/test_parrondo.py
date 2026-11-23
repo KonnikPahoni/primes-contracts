@@ -92,7 +92,7 @@ def test_uplifts_clamp_once_at_k_ceil(model, params):
 
 
 def test_asymptotic_bound_is_k_ceil_times_beta(model, params):
-    """Granting infinite free grinding, the best sustainable return per TON is
+    """Granting infinite free grinding, the best sustainable return per GRAM is
     `k_max_stacked * beta`. At n = n0 the clamp binds and the number is exactly
     `K_CEIL * beta_ceiling` — which is what makes K_CEIL the load-bearing constant
     rather than one of the four uplifts."""
@@ -114,15 +114,15 @@ def test_asymptotic_bound_safe_at_every_decade(params, n):
 
 
 def test_self_sender_row_is_the_split_not_a_typed_number():
-    """TELEGRAM_INVITES_PLAN.md: a referred composite with 3 invites leaves 0.25
-    for the ratchet and a self-sender recovers 0.40 in cash -- together exactly the
-    plain referred row plus the self-referral, so cash and beta cannot both be
-    granted on one TON."""
+    """TELEGRAM_INVITES_PLAN.md: a referred composite with 3 invites leaves 0.247
+    for the ratchet and a self-sender recovers 0.40 in cash -- together the plain
+    referred row plus the self-referral, less the three transfers' fee allowance
+    (D-215), so cash and beta cannot both be granted on one GRAM."""
     name, beta, cash = pa.BETA_ROWS[0]
     assert name == "self_sender_referred"
-    assert beta == pytest.approx(0.25)
+    assert beta == pytest.approx(0.247)
     assert cash == pytest.approx(0.40)
-    assert beta + cash == pytest.approx(econ.beta(False, False))
+    assert beta + cash + econ.INVITE_MAX_COUNT * econ.INVITE_SEND_FEE_TON == pytest.approx(econ.beta(False, False))
 
 
 def test_self_sender_scenario_loses_with_its_cash(params):
@@ -159,8 +159,8 @@ def test_net_optimum_is_reached_by_not_minting(model):
 
 def test_ratio_optimal_policy_does_mint_and_still_loses(model):
     """The ratio search is the one that finds a real strategy. It must actually
-    spend TON (otherwise the bisection degenerated) and must still come back under
-    1.0 TON returned per TON spent."""
+    spend GRAM (otherwise the bisection degenerated) and must still come back under
+    1.0 GRAM returned per GRAM spent."""
     r = pa.optimal_ratio(model, horizon=120)
     assert not r["degenerate"]
     assert r["spend_ton"] > 0.0

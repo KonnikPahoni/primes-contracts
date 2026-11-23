@@ -93,7 +93,7 @@ export class PrimesItem implements Contract {
         return (await provider.get('getTributeTotal', [])).stack.readBigNumber();
     }
 
-    /** CONCEPT §9.11 / D-177 (G89) — cumulative §4.1 referral TON this key has relayed, as received. */
+    /** CONCEPT §9.11 / D-177 (G89) — cumulative §4.1 referral GRAM this key has relayed, as received. */
     async getReferralPaid(provider: ContractProvider) {
         return (await provider.get('getReferralPaid', [])).stack.readBigNumber();
     }

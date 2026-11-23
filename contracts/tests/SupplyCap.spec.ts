@@ -186,7 +186,7 @@ describe('D-156 — the cap binds on the real mint path and at genesis', () => {
     });
 
     it('the headroom clamp: a launch on a dust floor cannot carry S past S_MAX, and once at the cap S never moves', async () => {
-        // T = 1 nanoTON: the rebate formula's I·S/T is astronomically larger than the
+        // T = 1 nanoGRAM: the rebate formula's I·S/T is astronomically larger than the
         // headroom, so only the last clamp (`rebate <= S_MAX − S`) stands between S and
         // the cap (2026-11-08 audit).
         const s = await deployStack({ seedT: 1n, seedS: S_MAX_NANO - HEADROOM });

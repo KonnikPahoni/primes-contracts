@@ -2,7 +2,7 @@
  * TON PRIMES — naming, both halves (§4.7.1, D-212).
  *
  * `name` — the CURRENT OWNER of a minted number names it through the collection's
- * `name_number`, paying `nameFee` the first time and `renameFee` after, in TON; the fee
+ * `name_number`, paying `nameFee` the first time and `renameFee` after, in GRAM; the fee
  * goes to the ratchet floor (`T` rises by exactly the fee, `S` does not). Any refusal
  * refunds the whole value.
  *
@@ -26,7 +26,7 @@ import { addr, contracts, walletFor, type Contracts } from './chain';
 import * as A from './assert';
 import { fromAsserts, record } from './journal';
 
-const ton = (v: bigint) => (Number(v) / 1e9).toFixed(4) + ' TON';
+const ton = (v: bigint) => (Number(v) / 1e9).toFixed(4) + ' GRAM';
 
 function collectionOf(c: Contracts) {
     return c.client.open(PrimesCollection.createFromAddress(addr('PRIMES_COLLECTION_ADDRESS')));

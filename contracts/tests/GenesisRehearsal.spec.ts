@@ -60,7 +60,7 @@ const SECURITY_KEY = keyPairFromSeed(Buffer.alloc(32, 170));
 
 const SCALE = 1000; // see the scale note above
 
-/** D-212: a stand-in for the genesis-day TON figure of 50 EUR, and the owner's rename fee. */
+/** D-212: a stand-in for the genesis-day GRAM figure of 50 EUR, and the owner's rename fee. */
 const REHEARSAL_NAME_FEE = toNano('10');
 const REHEARSAL_RENAME_FEE = toNano(String((sharedParams as any).naming.rename_fee_ton));
 
@@ -145,7 +145,7 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
         for (const name of ['bidder0', 'bidder1', 'bidder2', 'bidder3', 'bidder4', 'bidder5']) {
             // D-20 prices a prime at 1.5 x its tribute NPV, and the rehearsal
             // ships the REAL, unscaled NPV table (see the trophyNpv note below),
-            // so prime 2 opens above 1,300 TON. Buyers are funded for the real
+            // so prime 2 opens above 1,300 GRAM. Buyers are funded for the real
             // number rather than the table being scaled down to the buyers —
             // scaling it would clamp every prime to PRIME_P0_MIN and the ladder
             // would go untested.
@@ -174,7 +174,7 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
         params = {
             eraSchedule: sharedParams.genesis.era_bounty_schedule.era_bounty_schedule.map((e) => ({
                 eraBoundary: BigInt(e.era_boundary_n),
-                // DENOMINATION_PLAN P4: TON-denominated value + nominal cap. BOTH
+                // DENOMINATION_PLAN P4: GRAM-denominated value + nominal cap. BOTH
                 // scale, and they have to scale together — the vault pays
                 // `bountyTon * S / T` and `S`/`T` are both at 1/SCALE here, so a
                 // cap left at full size would simply never bind and the scaled
@@ -239,7 +239,7 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
             ),
             lpPrimesPerTon: sharedParams.genesis.genesis_lp_ratio_primes_per_ton,
             // D-46: nominal supply-sizing input only, never deposited. Scaled
-            // like every other PRIMES/TON figure in this rehearsal (see the
+            // like every other PRIMES/GRAM figure in this rehearsal (see the
             // SCALE note above).
             seedTon: toNano((sharedParams.genesis.genesis_seed_ton / SCALE).toFixed(9)),
             // D-100 point 6: this is the OPERATOR'S WALLET, renamed from
@@ -251,11 +251,11 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
             operatorAddr: treasuryWallet.address,
             proposerAddr: proposer.address,
             distributionRateBpsPerDay: sharedParams.staking.distribution_rate_bps_per_day,
-            // D-212: the naming fees. The first naming's TON figure is a genesis-day
+            // D-212: the naming fees. The first naming's GRAM figure is a genesis-day
             // input (no params value exists); the rename fee is params.json's owner figure.
             nameFee: REHEARSAL_NAME_FEE,
             renameFee: REHEARSAL_RENAME_FEE,
-            // D-100 point 2, owner-set. Scaled like every other TON figure here.
+            // D-100 point 2, owner-set. Scaled like every other GRAM figure here.
             donationTon: sharedParams.genesis.genesis_donation_ton / SCALE,
             // D-140. `p_f` is a RATIO, and the rehearsal scales `T` and `S`
             // together, so it is scale-free and goes in unscaled -- the same
@@ -387,7 +387,7 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
         // `ignite` throws 218 (`ledger_floor_unbacked`) — the pipeline leaves
         // `T = 0` and this is the step that creates the floor at all. Scaled
         // like every other figure in this rehearsal; the mainnet amount is
-        // D-92's derived 240 TON.
+        // D-92's derived 240 GRAM.
         const donation = toNano((genesisDonationTon(sharedParams.genesis) / SCALE).toFixed(9));
         // D-156: the taper scales this emission by `(S_MAX − S)/S_MAX`, evaluated at the
         // `S` the handler sees. `donateGenesisFloor` does nothing but the donation, so the
@@ -605,12 +605,12 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
         // D-100 point 2 BROKE THE OLD FORM OF THIS ASSERTION, and it is worth
         // being exact about which half broke. The identity above is a statement
         // about SUPPLY SIZING and it is untouched by D-100 — `S₀` is `seed·L·(1/2 +
-        // vault_pct)` = 11,000,000 at the 200 TON nominal since D-166 deleted the
+        // vault_pct)` = 11,000,000 at the 200 GRAM nominal since D-166 deleted the
         // operator's half of the vest. What used to be true
         // as well is that this same ratio WAS the opening floor's reciprocal,
         // because D-92 chose the donation to make `T/S₀` come out at `seed/S₀`.
-        // The owner unpinned the donation from the seed (132.50 TON against a 200
-        // TON nominal), so `deploy_floor_primes_per_ton` is now
+        // The owner unpinned the donation from the seed (132.50 GRAM against a 200
+        // GRAM nominal), so `deploy_floor_primes_per_ton` is now
         // `1 / genesis_floor_price_ton_per_primes` = 2,857,142.86 — a floor
         // figure, ~48× the supply ratio, and no longer the same number.
         // Asserting them equal is asserting the coincidence D-100 removed.
@@ -624,8 +624,8 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
         const supplyPrimesPerSeedTon =
             sharedParams.genesis.genesis_lp_ratio_primes_per_ton *
             (0.5 + sharedParams.genesis.bounty_vault_pct_of_genesis_lp);
-        // `seedS` is nano-PRIMES and `tonNominal` nanoTON: same 1e9, so the ratio
-        // is PRIMES per TON directly.
+        // `seedS` is nano-PRIMES and `tonNominal` nanoGRAM: same 1e9, so the ratio
+        // is PRIMES per GRAM directly.
         expect(Number(result.seedS) / Number(tonNominal)).toBeCloseTo(supplyPrimesPerSeedTon, 3);
         expect(sharedParams.genesis.genesis_supply_primes).toBeCloseTo(
             sharedParams.genesis.genesis_seed_ton * supplyPrimesPerSeedTon,
@@ -967,7 +967,7 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
             // LOT_FLOOR is an IDENTITY, not a second number: MINT_PRICE + RES_GAS.
             expect(mp.lotFloor).toBe(toNano('1') + resGas);
             expect(mp.lotFloor).toBe(BigInt(sharedParams.off_head.lane_floor_nanoton));
-            // D-88 point 1 DELETED §12's "no lane may terminate above 1 TON"
+            // D-88 point 1 DELETED §12's "no lane may terminate above 1 GRAM"
             // and MKT-1 with it: a prime's lane rests at max(NPV(p)/2,
             // P0(p)/3, MINT_PRICE) (D-99 §1.2).
             // `floorMin` below is therefore the LOWER BOUND the contract
@@ -1015,7 +1015,7 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
             // the two differ. D-204 set the donation to the seed's own 200, and a
             // string cannot tell two equal figures apart.
             if (sharedParams.genesis.genesis_seed_ton !== sharedParams.genesis.genesis_donation_ton) {
-                expect(text).not.toContain(`${sharedParams.genesis.genesis_seed_ton} TON`);
+                expect(text).not.toContain(`${sharedParams.genesis.genesis_seed_ton} GRAM`);
             }
         });
 
@@ -1023,7 +1023,7 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
         // ever stated, because the price is not protocol state — it is the ratio
         // of the one deposit a human makes by hand. So the number it prints is
         // asserted here, against `p_f` and not against a literal: a runbook that
-        // quotes the TON side at `PRIMES / L` reopens the 286x book, and nothing
+        // quotes the GRAM side at `PRIMES / L` reopens the 286x book, and nothing
         // on chain would complain.
         it('quotes the pair at the floor, not at L (D-140)', async () => {
             const d = await deployAndWire(env, code, params);
@@ -1040,28 +1040,28 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
             expect(primes).toBe(Math.floor(g.genesis_donation_primes));
             expect(primes).toBeLessThan(g.genesis_donation_ton * g.genesis_lp_ratio_primes_per_ton);
 
-            // …and the TON side is that times the floor, which is the whole
+            // …and the GRAM side is that times the floor, which is the whole
             // decision. `market_over_floor_at_open` is the same statement from
             // the sim's side, and the two are asserted against each other so a
             // regen that moved one without the other fails here.
-            // The quote is in WHOLE nanoTON, so "at the floor" can only mean "at
+            // The quote is in WHOLE nanoGRAM, so "at the floor" can only mean "at
             // the floor rounded down to the chain's granularity" — exact equality
-            // held only while `p_f` happened to land on a nanoTON boundary (350
-            // exactly, under D-100 point 2's 4.20 TON donation). D-154's 132.50 TON
-            // puts it at 11,041.666… nanoTON, so the two assertions below are the
+            // held only while `p_f` happened to land on a nanoGRAM boundary (350
+            // exactly, under D-100 point 2's 4.20 GRAM donation). D-154's 132.50 GRAM
+            // puts it at 11,041.666… nanoGRAM, so the two assertions below are the
             // real invariant `genesisPairingTon` promises: never ABOVE the floor —
-            // a book a nanoTON over is one `flush()` refuses — and never more than
-            // one nanoTON per PRIMES below it.
+            // a book a nanoGRAM over is one `flush()` refuses — and never more than
+            // one nanoGRAM per PRIMES below it.
             const ton = genesisPairingTon(g);
             expect(ton / primes).toBeLessThanOrEqual(g.genesis_floor_price_ton_per_primes);
             expect(g.genesis_floor_price_ton_per_primes - ton / primes).toBeLessThan(1e-9);
             expect(g.market_over_floor_at_open).toBeCloseTo(1, 9);
-            expect(text).toContain(`${primes} PRIMES against ${ton} TON`);
+            expect(text).toContain(`${primes} PRIMES against ${ton} GRAM`);
 
             // The old shape, named so it can never come back by accident: the
-            // pair must NOT be the donation's own TON figure, and must NOT be
+            // pair must NOT be the donation's own GRAM figure, and must NOT be
             // priced at L.
-            expect(text).not.toContain(`PRIMES against ${g.genesis_donation_ton} TON`);
+            expect(text).not.toContain(`PRIMES against ${g.genesis_donation_ton} GRAM`);
             expect(ton).toBeLessThan(g.genesis_donation_ton);
         });
 
@@ -1190,7 +1190,7 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
                     presentation: { ...params.presentation, nftContentPrefix: 'https://primes.live/nft' },
                 })
             ).rejects.toThrow(/must end in "\/"/i);
-            expect(await genesis.getBalance()).toBe(balanceBefore); // not one nanoTON spent
+            expect(await genesis.getBalance()).toBe(balanceBefore); // not one nanoGRAM spent
         });
 
         // §4.3.2 / D-151 — THE SILENTLY INERT RESERVE, refused.
@@ -1213,7 +1213,7 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
             await expect(
                 deployAndWire(env, code, { ...params, tonstakersPool: genesis.address })
             ).rejects.toThrow(/tonstakersPool/);
-            expect(await genesis.getBalance()).toBe(balanceBefore); // not one nanoTON spent
+            expect(await genesis.getBalance()).toBe(balanceBefore); // not one nanoGRAM spent
         });
     });
 });

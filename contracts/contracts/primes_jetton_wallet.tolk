@@ -118,7 +118,7 @@ struct (0x595f07bc) Burn {
 // Measured on testnet 2026-09-16: DeDust's PRIMES vault received this
 // notification carrying a byte-perfect `deposit_liquidity#40e108d6` payload and
 // threw **exit 9, cell underflow**, aborting the jetton half of the pool seeding
-// while the TON half had already landed. The payload was never the problem; the
+// while the GRAM half had already landed. The payload was never the problem; the
 // envelope was.
 //
 // `InternalTransfer` above keeps the simpler always-a-ref shape on purpose —
@@ -157,7 +157,7 @@ struct (0xd53276db) Excesses {
 // notification, then its own excess return) rather than re-deriving
 // `gas_consumption()`/`min_tons_for_storage()` — an engineering constant, the
 // same class as `TRANSFER_GAS` elsewhere in this repo, not a sim-derived one.
-const FWD_OVERHEAD_GAS: coins = 10000000; // 0.01 TON
+const FWD_OVERHEAD_GAS: coins = 10000000; // 0.01 GRAM
 
 type AllowedMessage = InternalTransfer | Transfer | Burn
 
@@ -185,7 +185,7 @@ fun onInternalMessage(in: InMessage) {
             storage.save();
 
             // TEP-74 excess = attached − forward − fees, never the wallet's own
-            // TON. Keep exactly the balance held before this message, then let
+            // GRAM. Keep exactly the balance held before this message, then let
             // the notification and the change spend only what was attached. A
             // mode-64 excesses after a REGULAR notification re-sent the whole
             // inbound value, so every forward drained this wallet by
@@ -205,7 +205,7 @@ fun onInternalMessage(in: InMessage) {
                         forwardPayload: msg.forwardPayload,
                     }).toCell(),
                 // IGNORE_ERRORS: a notification that cannot pay its own forward fee
-                // (a `-1:` owner prices it at masterchain rates, ~0.011 TON against
+                // (a `-1:` owner prices it at masterchain rates, ~0.011 GRAM against
                 // the ledger's 0.005) must not abort the CREDIT above with it — that
                 // bounced every rebate minted to a masterchain wallet, after the
                 // ledger had already counted it into `S` (2026-11-08 audit).

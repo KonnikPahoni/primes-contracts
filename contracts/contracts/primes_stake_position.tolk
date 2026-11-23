@@ -37,10 +37,10 @@ tolk 1.4
 // the one message with no sender check: it moves no PRIMES — it banks the
 // prorated tail here and takes the weight out of the master's `totalWeight`.
 //
-// This contract holds no PRIMES and no TON beyond its own rent. It holds a RECORD.
+// This contract holds no PRIMES and no GRAM beyond its own rent. It holds a RECORD.
 // ============================================================================
 
-// 0.05 TON: this contract's own handling of an owner message.
+// 0.05 GRAM: this contract's own handling of an owner message.
 const POSITION_GAS: coins = 50000000;
 // MIRRORED from primes_stake.tolk: what the master asserts has ARRIVED for a
 // settle that may pay out (a transfer + the reply), and for an expire (the reply
@@ -48,8 +48,8 @@ const POSITION_GAS: coins = 50000000;
 const MASTER_SETTLE_GAS: coins = 150000000;
 const MASTER_EXPIRE_GAS: coins = 50000000;
 // The nominal figures a sender must forward. A real sender adds a margin.
-const POSITION_MIN_FORWARD: coins = POSITION_GAS + MASTER_SETTLE_GAS;  // 0.20 TON
-const EXPIRE_MIN_FORWARD: coins = POSITION_GAS + MASTER_EXPIRE_GAS;    // 0.10 TON
+const POSITION_MIN_FORWARD: coins = POSITION_GAS + MASTER_SETTLE_GAS;  // 0.20 GRAM
+const EXPIRE_MIN_FORWARD: coins = POSITION_GAS + MASTER_EXPIRE_GAS;    // 0.10 GRAM
 
 // `staking.tier_term_seconds` — ENFORCED here, divided by the D-139 divisor.
 // `staking.tier_weights` — used only by `getClaimable`, a read. Mirrored from
@@ -368,7 +368,7 @@ fun onInternalMessage(in: InMessage) {
         }
 
         else => {
-            // A plain TON top-up (rent) is accepted; nothing else is.
+            // A plain GRAM top-up (rent) is accepted; nothing else is.
             assert (in.body.isEmpty()) throw 101; // wrong_opcode
         }
     }

@@ -221,7 +221,7 @@ def sandwich_profitability(e: Engine) -> dict:
     and nothing more: while the market is under the floor, an attacker who is
     also the caller (D-143 lets it size the tranche) pumps, sizes the flush to
     the pumped pool, and sells back (D-190). What that costs is burn efficiency
-    -- PRIMES not burned per TON spent -- never `T`, `S` or `p_f`.
+    -- PRIMES not burned per GRAM spent -- never `T`, `S` or `p_f`.
     """
     total_flushed = e.swapped
     return {
@@ -275,7 +275,7 @@ def pending_growth_report(e: Engine) -> dict:
 
 
 def ton_to_lift_price(pool, target_price: float) -> float:
-    """TON that must be bought into a constant-product pool to raise its spot
+    """GRAM that must be bought into a constant-product pool to raise its spot
     price to `target_price`. x'/y' = target with x'y' = k (ignoring fee)."""
     x, y = pool.ton_reserve, pool.primes_reserve
     if x <= 0 or y <= 0 or target_price <= 0:

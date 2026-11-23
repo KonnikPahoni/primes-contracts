@@ -3,7 +3,7 @@
  *
  * `primes_ratchet.tolk` deposits idle `pending` above a liquid reserve into
  * Tonstakers, holds it as tsTON, counts it in `T` AT COST, exits by rule when
- * `flush()` needs the TON back, and once per 30 days sends the accrued tsTON to
+ * `flush()` needs the GRAM back, and once per 30 days sends the accrued tsTON to
  * the LP-governed treasury. `contracts/tests/RatchetStaking.spec.ts` proves all
  * of that in `@ton/sandbox`; this file is what proves it on a chain.
  *
@@ -34,20 +34,20 @@
  *
  * THE THRESHOLD, which used to decide this phase's whole budget. The liquid
  * reserve is 20% of the obligation, so `amount = pending − 0.2·pending` must
- * clear the stake minimum — which at the declared 500 TON means **`pending`
- * above 625 TON**, and `pending` is not fundable by a plain top-up (that
+ * clear the stake minimum — which at the declared 50 GRAM means **`pending`
+ * above 62.5 GRAM**, and `pending` is not fundable by a plain top-up (that
  * credits the gas buffer, deliberately not a term of `T`). The only
  * permissionless route in is `donate_floor#b000000c`, and §8 guarantees that
- * TON never comes back.
+ * GRAM never comes back.
  *
  * `DECISIONS.md` **D-153** made the minimum deploy-time: `PRIMES_STAKE_MIN_TON=3`
- * puts it at 2.976 TON and `stake` becomes legal at ~3.72 TON of `pending`,
+ * puts it at 2.976 GRAM and `stake` becomes legal at ~3.72 GRAM of `pending`,
  * which a run reaches in phase 1. **This file reads `getStakeMin()` and never a
  * constant**, so it is correct against a set deployed either way.
  *
  *   npx tsx contracts/scripts/testnet/tston.ts status
  *   npx tsx contracts/scripts/testnet/tston.ts refusals
- *   npx tsx contracts/scripts/testnet/tston.ts buffer <TON> [handle]
+ *   npx tsx contracts/scripts/testnet/tston.ts buffer <GRAM> [handle]
  *   npx tsx contracts/scripts/testnet/tston.ts rate <num> <den> [handle]
  *   npx tsx contracts/scripts/testnet/tston.ts stake [handle]
  *   npx tsx contracts/scripts/testnet/tston.ts yield <tsTON> [handle]
@@ -130,15 +130,15 @@ async function cmdStatus(c: Contracts) {
     const raw = await retry(() => c.ratchet.getStaking(), 'getStaking');
     const bal = await retry(() => treasuryOf(c).getTreasuryBalances(), 'getTreasuryBalances');
     console.log('--- §4.3.2, the staked reserve -------------------------------------');
-    console.log(`pending (liquid)   ${ton(s.pending)} TON`);
-    console.log(`stakedCost         ${ton(k.stakedCost)} TON`);
-    console.log(`exiting            ${ton(k.exiting)} TON`);
-    console.log(`realizedLoss       ${ton(k.realizedLoss)} TON`);
-    console.log(`obligation         ${ton(obligation(s))} TON  (reserveTarget ${ton(k.reserveTarget)})`);
+    console.log(`pending (liquid)   ${ton(s.pending)} GRAM`);
+    console.log(`stakedCost         ${ton(k.stakedCost)} GRAM`);
+    console.log(`exiting            ${ton(k.exiting)} GRAM`);
+    console.log(`realizedLoss       ${ton(k.realizedLoss)} GRAM`);
+    console.log(`obligation         ${ton(obligation(s))} GRAM  (reserveTarget ${ton(k.reserveTarget)})`);
     console.log(`tstonHeld          ${ton(k.tstonHeld)} tsTON`);
     // Printed as the PAIR it was learned as, never as a quotient we rounded:
     // `lastRateNum` nanotons of deposit minted `lastRateDen` nano-tsTON.
-    console.log(`lastRate           ${raw.lastRateNum} TON-nano per ${raw.lastRateDen} tsTON-nano`);
+    console.log(`lastRate           ${raw.lastRateNum} GRAM-nano per ${raw.lastRateDen} tsTON-nano`);
     console.log(`exitLeg            ${leg.leg}  inFlightExit ${ton(leg.inFlightExit)}`);
     console.log(`tsTON wallet       ${wallet.tstonWalletAddr.toString({ testOnly: true })} set=${wallet.walletSet}`);
     console.log(`harvest dest       ${dest.toString({ testOnly: true })}`);
@@ -197,7 +197,7 @@ async function cmdRefusals(c: Contracts) {
                       `${ton(stakeMin)} — stake is legal`
                     : `pending ${ton(s.pending)} − target ${ton(target)} = ${ton(stakeSize)} <= ` +
                       `${ton(stakeMin)}, so stake refuses 226 (ratchet_stake_below_min). This deploy ` +
-                      `needs pending above ${(Number(stakeMin) / 1e9 / 0.8).toFixed(4)} TON for a FIRST ` +
+                      `needs pending above ${(Number(stakeMin) / 1e9 / 0.8).toFixed(4)} GRAM for a FIRST ` +
                       `stake — D-153 sets the minimum at deploy time; see TESTNET_MASTER_PLAN.md §4c`,
         },
         {
@@ -229,9 +229,9 @@ async function cmdRefusals(c: Contracts) {
             getMethod: 'ratchet balance − getPending (the gas buffer, never a term of T)',
             after: ton(buffer),
             detail:
-                `D-146: no arm spends this any more — the caller attaches the pool's 1 TON deposit ` +
+                `D-146: no arm spends this any more — the caller attaches the pool's 1 GRAM deposit ` +
                 `fee + 0.3 stake gas (stake), the whole exit's gas (unstake) or the transfer gas ` +
-                `(harvest), and gets the change back. Buffer ${ton(buffer)} TON pays storage rent only`,
+                `(harvest), and gets the change back. Buffer ${ton(buffer)} GRAM pays storage rent only`,
         },
     ];
     A.print(results);
@@ -266,7 +266,7 @@ async function cmdBuffer(c: Contracts, amount: string, handle: string) {
             getMethod: 'account balance of PRIMES_RATCHET_ADDRESS',
             before: ton(before),
             after: ton(after),
-            detail: `a bare top-up is accepted by the catch-all and adds ${ton(after - before)} TON of gas buffer`,
+            detail: `a bare top-up is accepted by the catch-all and adds ${ton(after - before)} GRAM of gas buffer`,
         },
         {
             ok: s1.pending === s0.pending && s1.T === s0.T,
@@ -275,7 +275,7 @@ async function cmdBuffer(c: Contracts, amount: string, handle: string) {
             before: ton(s0.pending),
             after: ton(s1.pending),
             detail:
-                'TON sent with an empty body is gas, not floor backing: `pending` and `T` must both be ' +
+                'GRAM sent with an empty body is gas, not floor backing: `pending` and `T` must both be ' +
                 'unmoved, or a stranger could raise p_f without minting and the ratchet theorem would ' +
                 'be measuring a donation',
         },
@@ -298,7 +298,7 @@ async function cmdRate(c: Contracts, num: string, den: string, handle: string) {
     await pool.sendSetRate(w.sender, { rateNum: toNano(num), rateDen: toNano(den), value: GAS });
     await new Promise((r) => setTimeout(r, SETTLE_MS));
     const m = await retry(() => pool.getMockPoolConfig(), 'getMockPoolConfig');
-    console.log(`mock rate now ${m.rateNum}/${m.rateDen} (${Number(m.rateNum) / Number(m.rateDen)} TON per tsTON)`);
+    console.log(`mock rate now ${m.rateNum}/${m.rateDen} (${Number(m.rateNum) / Number(m.rateDen)} GRAM per tsTON)`);
 }
 
 // ---------------------------------------------------------------------------
@@ -326,12 +326,12 @@ async function cmdStake(c: Contracts, handle: string) {
     if (expected <= stakeMin) {
         throw new Error(
             `stake would refuse 226: pending ${ton(before.pending)} − reserve ${ton(target)} = ` +
-                `${ton(expected)} TON, and this deploy's minimum is ${ton(stakeMin)} (D-153). Raise ` +
+                `${ton(expected)} GRAM, and this deploy's minimum is ${ton(stakeMin)} (D-153). Raise ` +
                 `pending with PRIMES_DONATE_TON=<n> npx tsx contracts/scripts/donateFloor.ts — see ` +
                 `TESTNET_MASTER_PLAN.md §4c for what that costs and why the divisor exists.`
         );
     }
-    console.log(`${handle} staking ${ton(expected)} TON (pending ${ton(before.pending)} − reserve ${ton(target)})`);
+    console.log(`${handle} staking ${ton(expected)} GRAM (pending ${ton(before.pending)} − reserve ${ton(target)})`);
     await c.ratchet.sendStake(w.sender, { value: STAKE_VALUE }); // D-146: caller pays the pool's fees
     await new Promise((r) => setTimeout(r, SETTLE_MS));
     const after = await snapshot(c);
@@ -378,7 +378,7 @@ async function cmdStake(c: Contracts, handle: string) {
  *
  * tsTON does not rebase, so real yield shows up as the rate rising and the
  * sandbox proves it by staking twice across a `SetRate`. A second stake here
- * would need `pending` back above 750 TON, which is the same unrecoverable
+ * would need `pending` back above 75 GRAM, which is the same unrecoverable
  * donation a second time. The contract offers a cheaper door that is not a
  * cheat: tsTON arriving with no stake and no exit outstanding, and nothing
  * written off, is credited to `tstonHeld` at ZERO COST (`creditStakeArrival`;
@@ -546,12 +546,12 @@ async function cmdHarvest(c: Contracts, handle: string) {
  * `primes_ratchet.tolk`'s `DedustPayout` arm asserts the sender is
  * `venue.dedustNativeVault` (throw 100). So leg 2's FILL needs the mock to BE
  * that field — which is exactly what the mock's own header says it exists for —
- * and `handleFlush` sends its TON to the same field, so a set pointed at the
+ * and `handleFlush` sends its GRAM to the same field, so a set pointed at the
  * real DeDust native vault cannot also point it at the mock. One deployment, one
  * owner of that field.
  *
  * Staging the fill anyway is not a red transaction and a finding: the payout
- * aborts on 100, the TON stays on the ratchet as an unattributed gas buffer, and
+ * aborts on 100, the GRAM stays on the ratchet as an unattributed gas buffer, and
  * the machine is left at `EXIT_LEG_DEDUST` with `inFlightExit` outstanding —
  * which makes `stake`, `unstake` AND `flush` throw 230 until somebody nudges it
  * out by hand. So it is refused before anything is sent.
@@ -563,8 +563,8 @@ async function requireLeg2Fillable(c: Contracts, mockAddr: Address) {
         "leg 2's FILL branch is unreachable on this deployment. The mock pool " +
             `(${mockAddr.toString({ testOnly: true })}) pays the swap output from its own address, and the ` +
             `ratchet's DedustPayout arm only accepts venue.dedustNativeVault, which here is the real DeDust ` +
-            `native TON vault (${venue.dedustNativeVault.toString({ testOnly: true })}) because handleFlush ` +
-            'sends its TON there. The payout would abort on 100 (wrong_sender), the exit machine would stay ' +
+            `native GRAM vault (${venue.dedustNativeVault.toString({ testOnly: true })}) because handleFlush ` +
+            'sends its GRAM there. The payout would abort on 100 (wrong_sender), the exit machine would stay ' +
             'at EXIT_LEG_DEDUST with inFlightExit outstanding, and stake/unstake/flush would all throw 230 ' +
             "until it was nudged out by hand. On a real-DeDust set the reachable leg-2 behaviour is the " +
             'REFUSAL, which `tston.ts exit leg3` already drives through the same EXIT_LEG_DEDUST → ' +
@@ -590,27 +590,27 @@ async function cmdExit(c: Contracts, leg: string, handle: string) {
     const inFlight = await retry(() => c.ratchet.getExitLeg(), 'getExitLeg');
     if (inFlight.inFlightExit > 0n || inFlight.leg !== 0) {
         throw new Error(
-            `an exit is still in flight (leg ${inFlight.leg}, ${ton(inFlight.inFlightExit)} TON) — unstake would ` +
+            `an exit is still in flight (leg ${inFlight.leg}, ${ton(inFlight.inFlightExit)} GRAM) — unstake would ` +
                 `refuse 230. Close it first (\`tston.ts settle\`). Nothing sent.`
         );
     }
     const tranche = k0.reserveTarget - before.pending;
     // A DUST SHORTFALL IS NOT AN EXIT. Leg 1 refilled the reserve to within 1 nanoton on the
-    // G93 run; the shortfall still read "legal", `exit leg3` sized a 1e-9 TON tranche, it
+    // G93 run; the shortfall still read "legal", `exit leg3` sized a 1e-9 GRAM tranche, it
     // rounded to 0 tsTON and the contract refused 227. Decide on the size, not the sign.
     if (tranche < toNano('0.1')) {
         throw new Error(
-            `the reserve is short by only ${ton(tranche)} TON — a tranche that small rounds to no tsTON and ` +
+            `the reserve is short by only ${ton(tranche)} GRAM — a tranche that small rounds to no tsTON and ` +
                 `refuses 227. Spend pending first (one venue-sized flush), then re-run. Nothing sent.`
         );
     }
     // EVERY SEND BELOW IS PAID BY `w`, so the balance is decided before the FIRST one. The
     // staging sends used to go out and only the unstake hit `sender.ts`'s guard — on 20260929
     // `exit loss` left the shared mock slashed with no exit behind it, and the next leg 3
-    // redeemed at the slashed rate (a 0.875 TON realizedLoss nobody meant to stage).
+    // redeemed at the slashed rate (a 0.875 GRAM realizedLoss nobody meant to stage).
     const need = UNSTAKE_VALUE + 4n * GAS + toNano('0.1');
     const have = await retry(() => c.client.getBalance(w.wallet.address), 'getBalance');
-    if (have < need) throw new Error(`${handle} holds ${ton(have)} TON, short of the ${ton(need)} this exit spends — nothing sent`);
+    if (have < need) throw new Error(`${handle} holds ${ton(have)} GRAM, short of the ${ton(need)} this exit spends — nothing sent`);
     // THE RATE IS PINNED TO THIS SET'S OWN STAKE, never to the knob's current value: the mock
     // is shared across geneses, so its rate is whatever the last run left. Legs 1-3 redeem at
     // the learned (cost) rate and so realize nothing; `loss` redeems at half of it.
@@ -640,7 +640,7 @@ async function cmdExit(c: Contracts, leg: string, handle: string) {
     }
     await new Promise((r) => setTimeout(r, SETTLE_MS));
 
-    console.log(`${handle} unstaking ~${ton(tranche)} TON via ${leg}`);
+    console.log(`${handle} unstaking ~${ton(tranche)} GRAM via ${leg}`);
     await c.ratchet.sendUnstake(w.sender, { value: UNSTAKE_VALUE }); // D-146: prepays legs 1-3
     await new Promise((r) => setTimeout(r, SETTLE_MS));
 
@@ -658,7 +658,7 @@ async function cmdExit(c: Contracts, leg: string, handle: string) {
             after: `leg ${exit.leg} exiting ${ton(k1.exiting)}`,
             detail: parked
                 ? 'the tranche is a payout bill until the round closes — run `tston.ts settle` to close it'
-                : 'the TON came home inside the same round trip and `exiting` is back to zero',
+                : 'the GRAM came home inside the same round trip and `exiting` is back to zero',
         },
         {
             ok: parked ? after.pending === before.pending : after.pending > before.pending,
@@ -687,7 +687,7 @@ async function cmdExit(c: Contracts, leg: string, handle: string) {
     A.requireAll(results);
 }
 
-/** Leg 3's round end, without waiting ~36 hours for it. The bill pays its TON
+/** Leg 3's round end, without waiting ~36 hours for it. The bill pays its GRAM
  *  share as `payout_distributed_asset`, and THAT is the message with no
  *  authenticatable sender — see `cmdForge`. */
 /**
@@ -737,7 +737,7 @@ async function cmdSettle(c: Contracts, handle: string) {
     const before = await snapshot(c);
     const k0 = requireStaking(before);
     // The mock throws 1306 with no bill outstanding. A dust tranche can park the ratchet on
-    // leg 3 with a 0 TON bill (the G93 run) — that exit is closed by `recover`, not here.
+    // leg 3 with a 0 GRAM bill (the G93 run) — that exit is closed by `recover`, not here.
     const m0 = await retry(() => pool.getMockPoolConfig(), 'getMockPoolConfig');
     if (m0.pendingBill === 0n) {
         throw new Error('the mock holds no bill (pendingBill 0) — settle would throw 1306. A leg-3 exit with ' +
@@ -778,7 +778,7 @@ async function cmdSettle(c: Contracts, handle: string) {
             after: ton(k1.realizedLoss),
             detail:
                 loss > 0n
-                    ? `the counterparty paid ${ton(loss)} TON under cost. §5's ONE external risk to the ` +
+                    ? `the counterparty paid ${ton(loss)} GRAM under cost. §5's ONE external risk to the ` +
                       `ratchet theorem, published beside stakedCost and never netted into it — a reader ` +
                       `who finds it non-zero is looking at Tonstakers, not at a decision made here`
                     : 'redeemed at or above cost, so nothing to publish',
@@ -799,10 +799,10 @@ async function cmdSettle(c: Contracts, handle: string) {
  * whole claim is that it has none. The handler is therefore written to be SAFE
  * UNDER FORGERY instead: it credits `pending` and draws `exiting` down by the
  * same figure, both terms of `T`, so a forged message leaves `T` unchanged and
- * the TON backing the credit is the message value itself.
+ * the GRAM backing the credit is the message value itself.
  *
  * With the machine IDLE there is nothing outstanding, so the correct behaviour is
- * to keep the TON as gas buffer and move no term at all. Firing it from a wallet
+ * to keep the GRAM as gas buffer and move no term at all. Firing it from a wallet
  * with no authority is the only way to show that at a live node — and the
  * transaction must be GREEN, which is the other half: a non-bounceable reply the
  * catch-all throws 101 on is the 2026-09-17 failure class, where the balances
@@ -849,7 +849,7 @@ async function cmdForge(c: Contracts, handle: string) {
             before: `T ${before.T} pending ${ton(before.pending)}`,
             after: `T ${after.T} pending ${ton(after.pending)}`,
             detail:
-                'with the exit machine idle the TON is unattributable and stays as gas buffer. ' +
+                'with the exit machine idle the GRAM is unattributable and stays as gas buffer. ' +
                 'Forging is a donation that costs the forger exactly what it gives the ratchet — the ' +
                 'defence is arithmetic, not a check, and it is why leg 3 is buildable at all',
         },
@@ -877,7 +877,7 @@ async function main() {
         case 'refusals':
             return cmdRefusals(c);
         case 'buffer':
-            if (!rest[0]) throw new Error('usage: tston.ts buffer <TON> [handle]');
+            if (!rest[0]) throw new Error('usage: tston.ts buffer <GRAM> [handle]');
             return cmdBuffer(c, rest[0], rest[1] ?? 'K');
         case 'rate':
             if (!rest[0] || !rest[1]) throw new Error('usage: tston.ts rate <num> <den> [handle]');

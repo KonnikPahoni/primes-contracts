@@ -204,7 +204,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
         await master.sendSealAuthority(genesisScript.getSender(), { value: toNano('0.05') });
     });
 
-    /** CONCEPT §6 point 3: T₀ = 200 TON, S₀ = T₀·L·2, p_f0 = 1/20,000 at L = 10,000
+    /** CONCEPT §6 point 3: T₀ = 200 GRAM, S₀ = T₀·L·2, p_f0 = 1/20,000 at L = 10,000
      *  (D-41 took the bounty vault to 50% of seeded LP). */
     async function seedGenesis() {
         await ledger.sendGenesisSeed(genesisScript.getSender(), {
@@ -307,7 +307,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             const treasuryAfter = await treasuryWallet.getBalance();
 
             expect((await item.getNumberData()).owner.toString()).toBe(buyer.address.toString());
-            expect(treasuryAfter).toBe(treasuryBefore); // not one nanoTON
+            expect(treasuryAfter).toBe(treasuryBefore); // not one nanoGRAM
         });
 
         it('exposes get_collection_data / get_nft_address_by_index by their standard names', async () => {
@@ -368,7 +368,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
 
     describe('§4.1 gas-&-ops surplus sweep', () => {
         // Enough to put the ledger over OPS_RESERVE with room to spare, DERIVED from
-        // the reserve rather than written down beside it. It was a literal 60 TON,
+        // the reserve rather than written down beside it. It was a literal 60 GRAM,
         // which happened to equal the reserve until D-99 raised the reserve to 92 —
         // `fees.ops_reserve_ton` is a function of the measured per-mint gas draw, and
         // the score put that draw up. Every one of these tests then swept nothing and
@@ -487,7 +487,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             // compute-phase gas to process the credit — the same
             // unavoidable, much smaller margin V18 documented (measured here
             // at 20,601 nanoton) — so the tolerance tightens from
-            // "< 0.001 TON" (which also passed under the old, buggy
+            // "< 0.001 GRAM" (which also passed under the old, buggy
             // SEND_MODE_REGULAR forward-fee gap) to an order of magnitude
             // less, tight enough that a regression back to bare
             // SEND_MODE_REGULAR would fail it.
@@ -495,7 +495,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             expect(treasuryDelta).toBeLessThanOrEqual(fivePct);
             expect(fivePct - treasuryDelta).toBeLessThan(toNano('0.00003'));
             // The operator, by contrast, is exact: it received nothing at all.
-            // Since D-152 not one nanoTON of an ordinary mint is the
+            // Since D-152 not one nanoGRAM of an ordinary mint is the
             // operator's — their only per-mint claim is §6 point 2's 42%
             // forfeit remainder, and a prime mint cites no factors to forfeit.
             expect(await operatorWallet.getBalance()).toBe(operatorBefore);
@@ -547,8 +547,8 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             // compute phase runs. So the old code swept balance INCLUDING the
             // caller's own attached margin, handing that margin back to the
             // operator instead of leaving it as the caller's change. A caller
-            // attaching 1 TON instead of 0.05 TON moved the swept amount by
-            // ~0.95 TON. The fix subtracts `in.valueCoins` back out inside
+            // attaching 1 GRAM instead of 0.05 GRAM moved the swept amount by
+            // ~0.95 GRAM. The fix subtracts `in.valueCoins` back out inside
             // `handleSweepOps`; this test proves two sweeps against the same
             // quoted surplus, called with very different margins, pay the
             // same amount to the ops address.
@@ -562,11 +562,11 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             await ledger.sendSweepOps(stranger.getSender(), { value: toNano('1') });
             const opsDelta = (await ratchet.getPending()) - pendingBefore;
 
-            // Swept amount tracks the pre-sweep quote, not the quote plus the 1 TON attached.
+            // Swept amount tracks the pre-sweep quote, not the quote plus the 1 GRAM attached.
             expect(opsDelta).toBeLessThanOrEqual(quoted);
             expect(opsDelta).toBeGreaterThan(quoted - toNano('0.001'));
 
-            // The 1 TON margin itself was NOT swept along with the surplus —
+            // The 1 GRAM margin itself was NOT swept along with the surplus —
             // it sits on the ledger's balance as new sweepable headroom
             // (recoverable by a follow-up call), not lost and not handed to
             // the operator as a side effect of the caller's own gas choice.
@@ -629,8 +629,8 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             const operatorBefore = await operatorWallet.getBalance();
             const minterBefore = await minter.getBalance();
 
-            // A fat-fingered 10 TON mint: MINT_PRICE (1) + MINT_MARGIN (0.5) + a
-            // 8.5 TON overpayment that must come straight back.
+            // A fat-fingered 10 GRAM mint: MINT_PRICE (1) + MINT_MARGIN (0.5) + a
+            // 8.5 GRAM overpayment that must come straight back.
             const overpay = toNano('8.5');
             const sent = MINT_PRICE + MINT_MARGIN + overpay;
             const r = await ledger.sendMint(minter.getSender(), {
@@ -643,17 +643,17 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             });
 
             // `refund()` sends exactly `valueCoins - MINT_PRICE - MINT_MARGIN`, and
-            // `valueCoins` is what the contract receives AFTER TON deducts this
+            // `valueCoins` is what the contract receives AFTER GRAM deducts this
             // message's own forward fee (the same reason `FEE_MARGIN_NANOTON` exists
             // in `webapp/src/chain/values.ts`) — so the refund is a few nanoton under
             // the gross `overpay`, never over it, and the gap is one hop's forward
             // fee, not slippage in the contract's own arithmetic.
             expect(r.transactions).toHaveTransaction({ from: ledger.address, to: minter.address, success: true });
             const minterAfter = await minter.getBalance();
-            // The whole 8.5 TON overpayment comes back: the minter's net cost is
+            // The whole 8.5 GRAM overpayment comes back: the minter's net cost is
             // MINT_PRICE + MINT_MARGIN (what the mint actually keeps) plus dust —
             // one outbound hop's gas and the refund's own forward-fee shortfall —
-            // not the full 10 TON sent.
+            // not the full 10 GRAM sent.
             const netCost = minterBefore - minterAfter;
             expect(netCost).toBeGreaterThanOrEqual(MINT_PRICE + MINT_MARGIN);
             expect(netCost - (MINT_PRICE + MINT_MARGIN)).toBeLessThan(toNano('0.01'));
@@ -670,7 +670,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             expect(await operatorWallet.getBalance()).toBe(operatorBefore);
         });
 
-        it('a 1.05 TON send (within the margin) is untouched — no refund at all', async () => {
+        it('a 1.05 GRAM send (within the margin) is untouched — no refund at all', async () => {
             await seedGenesis();
 
             const r = await ledger.sendMint(minter.getSender(), {
@@ -679,7 +679,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
                 factors: [],
                 referralKey: 0,
                 beneficiary: null,
-                value: MINT_PRICE + toNano('0.05'), // the webapp's own 1.01 TON, padded further
+                value: MINT_PRICE + toNano('0.05'), // the webapp's own 1.01 GRAM, padded further
             });
 
             expect(r.transactions).not.toHaveTransaction({
@@ -689,7 +689,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
         });
 
         it('an overpayment too small to pay its own forward fee is dropped, not fatal — the mint still lands (2026-11-20)', async () => {
-            // `refund()` sent in mode REGULAR with no IGNORE_ERRORS, so a 1-nanoTON
+            // `refund()` sent in mode REGULAR with no IGNORE_ERRORS, so a 1-nanoGRAM
             // refund failed the ACTION phase: aborted, no bounce, the ledger kept the
             // whole value and the minter card never got its standing back — the same
             // shape as audit R2-L1's invite send, reachable by sending a hair over
@@ -707,7 +707,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
                 ).inMessage.info.value.coins;
 
             // The card hop's cost is fixed for a fixed state: measure it, rewind, and aim
-            // the ledger's received value at exactly one nanoTON over the kept margin.
+            // the ledger's received value at exactly one nanoGRAM over the kept margin.
             const snap = blockchain.snapshot();
             const probeValue = MINT_PRICE + MINT_MARGIN + toNano('0.1');
             const hop = probeValue - arrivedAtLedger(await mint(probeValue));
@@ -793,12 +793,12 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             //
             // Two things changed here and only one of them is this test's fault.
             // The seed is DERIVED from the file now instead of being a
-            // remembered 200 TON: `genesis.deploy_floor_primes_per_ton` moved
-            // 60,000 -> 2,857,142.857 when D-100 point 2 replaced D-92's 240 TON
-            // genesis donation with 4.20 TON, and a fixture that hard-codes the
-            // TON side cannot follow a floor that moves — which is precisely the
+            // remembered 200 GRAM: `genesis.deploy_floor_primes_per_ton` moved
+            // 60,000 -> 2,857,142.857 when D-100 point 2 replaced D-92's 240 GRAM
+            // genesis donation with 4.20 GRAM, and a fixture that hard-codes the
+            // GRAM side cannot follow a floor that moves — which is precisely the
             // drift this assertion exists to catch, so it must not itself be a
-            // source of it. `seedGenesis()`'s own 200 TON stays where it is: it
+            // source of it. `seedGenesis()`'s own 200 GRAM stays where it is: it
             // is a synthetic seed the rest of this file's fee arithmetic is
             // written against, and it never claimed to be the deploy floor.
             // (Real genesis seeds `seedT = 0` and opens `T` with the donation —
@@ -942,7 +942,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             // The split is asserted on the two CUMULATIVE meters rather than on
             // balances, because the meters are exact: a balance delta is the
             // send value minus the hop's own forwarding fee, so no balance
-            // reading can pin a double-paid recipient's share to the nanoTON.
+            // reading can pin a double-paid recipient's share to the nanoGRAM.
             const forfeitTotal = f2 + f7;
             const meters = await ledger.getOperatorTotals();
             const treasuryTook = meters.treasuryPaidTotal - metersBefore.treasuryPaidTotal;
@@ -954,7 +954,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             expect(treasuryShare).toBe((forfeitTotal * 5800n) / 10_000n);
             // ...and the remainder — SUBTRACTED, never multiplied a second time,
             // which is why the two sides close to the whole exactly. This is the
-            // no-dust-lost assertion: not one nanoTON of the forfeit stayed on
+            // no-dust-lost assertion: not one nanoGRAM of the forfeit stayed on
             // the ledger undeclared.
             expect(operatorShare).toBe(forfeitTotal - treasuryShare);
             expect(treasuryShare + operatorShare).toBe(forfeitTotal);
@@ -969,7 +969,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             // receiving wallet's own compute-phase gas (one hop each,
             // measured at 20,601 nanoton), not a forward fee — the tolerance
             // tightens the same way the operator 5% line's does above, and
-            // the treasury leg's forward-fee-era "< 0.001 TON" bound would
+            // the treasury leg's forward-fee-era "< 0.001 GRAM" bound would
             // have passed even a regression back to SEND_MODE_REGULAR, so it
             // was never proof of the fix.
             const treasuryDelta = (await treasuryWallet.getBalance()) - treasuryBefore;
@@ -1036,7 +1036,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
          * the operator's vest as an operations runway.
          *
          * The claim under test is the one the decision makes: a STRANGER can
-         * raise the floor for every holder, with their own TON, and be minted
+         * raise the floor for every holder, with their own GRAM, and be minted
          * the matching PRIMES to pair with.
          */
         it("a stranger's donation raises p_f for everyone, and mints them the pair side", async () => {
@@ -1063,14 +1063,14 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             expect(sAfter).toBe(sBefore + emitted);
             // §5: the floor STRICTLY rose. tAfter/sAfter > tBefore/sBefore.
             expect(tAfter * sBefore).toBeGreaterThan(tBefore * sAfter);
-            // The TON really left for the ratchet as `pending` rather than
+            // The GRAM really left for the ratchet as `pending` rather than
             // being credited to T and kept here.
             expect(await ratchet.getPending()).toBe(pendingBefore + donation);
 
             // D-100 point 1 — THE DOUBLE-COUNT, ASSERTED IN THE OTHER
             // DIRECTION. This used to read `expect(getSeedT()).toBe(seedBefore +
             // donation)`, which was the contract's own bug written down as an
-            // expectation: the same TON was credited to `seedT` AND forwarded to
+            // expectation: the same GRAM was credited to `seedT` AND forwarded to
             // `pending`, so `T = seedT + swapped + pending` gained 2x the
             // donation on the right against 1x on the left, and the live testnet
             // ratchet panel reported it as `beyond T`. `seedT` is the one-shot
@@ -1112,13 +1112,13 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
          *
          * `emitted = min(X·L, X·S/T)`. Below `p_f = 1/L` the flat `L` is the
          * smaller of the two and nothing changes; above it, `X·S/T` is smaller
-         * and the donor is minted LESS for the same TON. Error 217
+         * and the donor is minted LESS for the same GRAM. Error 217
          * (`ledger_donation_would_dilute`) used to refuse this transaction
          * outright; D-91's own closing note pre-approved the clamp and D-100
          * point 1 takes it, so the guard has nothing left to guard and is gone.
          *
          * The seed here is the whole setup: `S₀ = 1,000,000 PRIMES` against
-         * `T₀ = 200 TON` puts `p_f` at 2e-4, twice `1/L = 1e-4`, which is the
+         * `T₀ = 200 GRAM` puts `p_f` at 2e-4, twice `1/L = 1e-4`, which is the
          * side of the boundary the old contract refused to operate on.
          */
         it('D-100 point 1: above 1/L the donation mints at the FLOOR rate instead of throwing 217', async () => {
@@ -1158,7 +1158,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             expect(tAfter * sBefore).toBeGreaterThanOrEqual(tBefore * sAfter);
 
             // Same two D-100 point 1 corrections as the ordinary donation: the
-            // TON is `pending`, `seedT` never moves.
+            // GRAM is `pending`, `seedT` never moves.
             expect(await ledger.getSeedT()).toBe(seedBefore);
             expect(tAfter).toBe(
                 (await ledger.getSeedT()) + (await ratchet.getSwapped()) + (await ratchet.getPending())
@@ -1203,7 +1203,7 @@ describe('TON PRIMES — operator fee lines (CONCEPT §2.4, §3.1, §4.1)', () =
             // entirely, the same as a forfeit's treasury share.
             expect(await ledger.getFloorNum()).toBe(tBefore + ratchetShare);
             expect(await ledger.getFloorDen()).toBe(sBefore); // NOT ONE PRIMES EMITTED
-            // and the TON really arrived at the ratchet as `pending` (§6 point 3
+            // and the GRAM really arrived at the ratchet as `pending` (§6 point 3
             // / §11.17), rather than being credited to T and left here.
             expect(await ratchet.getPending()).toBe(pendingBefore + ratchetShare);
             // ...and the other half really left for the governed treasury —

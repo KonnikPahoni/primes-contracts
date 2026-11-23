@@ -21,6 +21,8 @@ from primes_sim import economics as econ
 
 COUNTS = range(0, econ.INVITE_MAX_COUNT + 1)
 V = econ.INVITE_TRANSFER_VALUE_TON
+# D-215: a sent invite costs the residual its value plus the fee allowance.
+S = V + econ.INVITE_SEND_FEE_TON
 
 
 def _split(count: int, served: int | None = None, price: float = 1.0):
@@ -39,10 +41,28 @@ def _split(count: int, served: int | None = None, price: float = 1.0):
 
 def test_the_line_is_the_owners_three_transfers_of_a_tenth():
     """Both numbers are OWNER-SET (TELEGRAM_INVITES_PLAN.md decision 1): up to 3
-    transfers of 0.1 TON, so the line is 0.30 TON at the full count."""
+    transfers of 0.1 GRAM, so the line is 0.30 GRAM at the full count."""
     assert econ.INVITE_MAX_COUNT == 3
     assert V == pytest.approx(0.1)
     assert econ.INVITE_MAX_COUNT * V == pytest.approx(0.30)
+    # D-215: the line pays its own fees on top, so it costs 3 x 0.101 = 0.303.
+    assert econ.INVITE_MAX_COUNT * S == pytest.approx(0.303)
+
+
+def test_d215_bounds_hold_the_worst_beta_whatever_the_operator_sets():
+    """D-215: count and value are operator-set on chain, inside a fixed cap, so the
+    lowest residual any terms can reach is the uninvited row minus the cap."""
+    assert econ.INVITE_LINE_CAP_TON == pytest.approx(0.31)
+    assert econ.INVITE_COUNT_CEILING == 100
+    assert econ.INVITE_SEND_FEE_TON == pytest.approx(0.001)
+    # the genesis terms fit inside the cap
+    assert econ.INVITE_MAX_COUNT * S <= econ.INVITE_LINE_CAP_TON
+    assert econ.beta_at_line_cap(False, True) == pytest.approx(0.24)
+    for prime in (False, True):
+        for referred in (False, True):
+            assert econ.beta_at_line_cap(prime, referred) > 0.0
+            assert econ.beta_at_line_cap(prime, referred) <= econ.beta(
+                prime, referred, invite_count=econ.INVITE_MAX_COUNT)
 
 
 @pytest.mark.parametrize("count", COUNTS)
@@ -68,8 +88,8 @@ def test_split_closed_at_100pct(count: int, price: float):
 @pytest.mark.parametrize("count", COUNTS)
 def test_beta_shrinks_by_the_line_and_nothing_else(count: int):
     base, r = _split(0), _split(count)
-    assert r.pool_injection == pytest.approx(base.pool_injection - count * V)
-    assert r.invite_paid == pytest.approx(count * V)
+    assert r.pool_injection == pytest.approx(base.pool_injection - count * S)
+    assert r.invite_paid == pytest.approx(count * S)
     # The five named lines are untouched at their stated rates (D-101 call 1).
     for line in ("treasury", "gas_ops", "tribute_paid", "flat_dividend",
                  "referral_paid"):
@@ -87,7 +107,7 @@ def test_unspent_slot_returns_to_beta(count: int):
         lower = _split(served)
         assert short.pool_injection == pytest.approx(lower.pool_injection)
         assert short.invite_paid == pytest.approx(lower.invite_paid)
-        assert short.invite_to_pool == pytest.approx((count - served) * V)
+        assert short.invite_to_pool == pytest.approx((count - served) * S)
 
 
 def test_count_zero_reproduces_the_beta_values():
@@ -108,10 +128,11 @@ def test_beta_at_max_count_is_the_rows_minus_030():
     for prime in (False, True):
         for referred in (False, True):
             full = econ.beta(prime, referred, invite_count=econ.INVITE_MAX_COUNT)
-            assert full == pytest.approx(econ.beta(prime, referred) - 0.30)
+            assert full == pytest.approx(econ.beta(prime, referred) - 3 * S)
             assert full > 0.0
-    # the plan's worst case: a referred composite keeps 0.25 for the ratchet
-    assert econ.beta(False, True, invite_count=econ.INVITE_MAX_COUNT) == pytest.approx(0.25)
+    # the genesis worst case: a referred composite keeps 0.247 for the ratchet
+    # (0.25 before D-215 made the line pay its own transfer fees)
+    assert econ.beta(False, True, invite_count=econ.INVITE_MAX_COUNT) == pytest.approx(0.247)
 
 
 def test_optin_rate_is_labelled_as_an_assumption():
@@ -121,7 +142,7 @@ def test_optin_rate_is_labelled_as_an_assumption():
     # The cohort mean sits `optin * count * V` below the uninvited row.
     mean = econ.beta_expected(False, True)
     assert mean == pytest.approx(0.75 - econ.SplitParams().gas_ops_pct
-                                 - econ.INVITE_OPTIN_RATE_ASSUMED * econ.INVITE_MAX_COUNT * V)
+                                 - econ.INVITE_OPTIN_RATE_ASSUMED * econ.INVITE_MAX_COUNT * S)
 
 
 @pytest.mark.parametrize("count", COUNTS)
@@ -161,23 +182,23 @@ def test_k_lt_1_and_the_ratchet_still_ratchets(count: int):
 def test_the_residual_must_stay_positive_and_says_so_when_it_does_not():
     """`I = beta*P > 0` is the one premise docs/math-note.md's theorem still
     needs. Every deduction but one is a RATE and so is price-free; the seventh
-    line is an ABSOLUTE 0.1 TON per slot, so at a low enough price and count 3
+    line is an ABSOLUTE 0.1 GRAM per slot, so at a low enough price and count 3
     it eats past the residual and the pool would fund the invitations.
-    Unreachable in the shipped game -- MINT_PRICE is a flat 1 TON and a prime's
+    Unreachable in the shipped game -- MINT_PRICE is a flat 1 GRAM and a prime's
     lane rests at `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` -- which is exactly why the guard
     belongs in the reference phase 2's ledger is written from.
 
-    The worst row is referred-composite. At 3 x 0.1 TON it breaks below
-    0.30 / 0.55 ~ 0.545 TON (it was ~0.19 TON at D-101's 5 x 0.025) -- still
-    below the flat 1 TON MINT_PRICE every mint splits on.
+    The worst row is referred-composite. At 3 x 0.1 GRAM it breaks below
+    0.30 / 0.55 ~ 0.545 GRAM (it was ~0.19 GRAM at D-101's 5 x 0.025) -- still
+    below the flat 1 GRAM MINT_PRICE every mint splits on.
     """
     def worst(price):
         # referred composite: the row with the smallest residual
         return econ.split_mint(price, {"alice": 1.0}, referral_owner=42,
                                minted_primes_count=51, invite_count=econ.INVITE_MAX_COUNT)
 
-    # the shipped price is clear: 1 - .05 - .10 - .10 - gas & ops - .30
-    assert worst(1.0).pool_injection == pytest.approx(0.45 - econ.SplitParams().gas_ops_pct)
+    # the shipped price is clear: 1 - .05 - .10 - .10 - gas & ops - .303 (D-215 fee on top)
+    assert worst(1.0).pool_injection == pytest.approx(0.447 - econ.SplitParams().gas_ops_pct)
     assert worst(0.6).pool_injection > 0.0
     for price in (0.5, 0.18, 0.10):
         with pytest.raises(AssertionError, match="residual is not positive"):
@@ -187,7 +208,7 @@ def test_the_residual_must_stay_positive_and_says_so_when_it_does_not():
 @pytest.mark.parametrize("bad", [2.5, "5", None, True])
 def test_invite_count_is_an_integer_not_merely_in_range(bad):
     """The count is the number of recipient addresses. Range-checking alone
-    accepted 2.5 and deducted TON for two and a half transfers."""
+    accepted 2.5 and deducted GRAM for two and a half transfers."""
     with pytest.raises(TypeError):
         econ.split_mint(1.0, None, referral_owner=None, invite_count=bad)
 
@@ -243,7 +264,7 @@ def test_rate_zero_deducts_nothing_and_is_reproducible():
 
 
 def test_rate_one_deducts_the_full_line_on_every_mint():
-    """3 x 0.1 TON off the residual of every mint, and NOTHING else changed.
+    """3 x 0.1 GRAM off the residual of every mint, and NOTHING else changed.
 
     The identical fingerprint is the check on the dedicated `_invite_rng`
     stream: had the draw come off `self.rng`, one extra draw per mint would
@@ -255,8 +276,8 @@ def test_rate_one_deducts_the_full_line_on_every_mint():
     assert all(ev.invite_count == econ.INVITE_MAX_COUNT for ev in on.mint_log)
     assert _fingerprint(on) == _fingerprint(off)
 
-    line = econ.INVITE_MAX_COUNT * V
-    assert line == pytest.approx(0.30)
+    line = econ.INVITE_MAX_COUNT * S
+    assert line == pytest.approx(0.303)
     for hot, cold in zip(on.mint_log, off.mint_log):
         assert cold.pool_injection - hot.pool_injection == pytest.approx(line, abs=1e-12)
 
@@ -271,9 +292,9 @@ def test_the_supply_cap_couples_k_to_the_invite_line():
     genesis the two runs differ in the seventh significant figure.
 
     MEASURED on this fixture: max relative deviation 1.306e-03 over 4,330 mints,
-    and ZERO sign violations (2026-11-07, at TELEGRAM_INVITES_PLAN.md's 3 x 0.1 TON
+    and ZERO sign violations (2026-11-07, at TELEGRAM_INVITES_PLAN.md's 3 x 0.1 GRAM
     line; it was 2.697e-04 at D-101's 5 x 0.025 -- the coupling scales with the
-    TON the line takes out of the residual). The bound below is that measurement plus headroom,
+    GRAM the line takes out of the residual). The bound below is that measurement plus headroom,
     not a guess -- a run that exceeds it has changed the coupling, not the noise.
 
     Direction matters more than magnitude. The invited run emits less, so its
@@ -291,7 +312,7 @@ def test_the_supply_cap_couples_k_to_the_invite_line():
 
 @pytest.mark.parametrize("rate", [0.0, 1.0])
 def test_the_engine_split_is_closed_at_100pct_either_way(rate: float):
-    """Per mint: the paid lines, the invite line and the residual are the 1 TON
+    """Per mint: the paid lines, the invite line and the residual are the 1 GRAM
     that went in. The unpaid lines (no factor owner, no referral key, a prime's
     tribute) are already inside `pool_injection` -- that IS SS4.1's "falls to
     the pool", and the closure is what proves nothing leaked to the team."""
@@ -299,7 +320,7 @@ def test_the_engine_split_is_closed_at_100pct_either_way(rate: float):
     sp = e.p.split
     for ev in e.mint_log:
         total = (ev.tribute_paid + ev.flat_dividend + ev.pool_injection
-                 + ev.invite_count * V
+                 + ev.invite_count * S
                  + sp.treasury_pct + sp.gas_ops_pct
                  + (sp.referral_pct if ev.referred else 0.0))
         assert total == pytest.approx(1.0, abs=1e-9)
@@ -314,7 +335,7 @@ def test_the_realised_optin_share_matches_the_assumption_it_was_drawn_from():
     share = sum(ev.invite_count > 0 for ev in e.mint_log) / len(e.mint_log)
     assert share == pytest.approx(econ.INVITE_OPTIN_RATE_ASSUMED, abs=0.05)
 
-    mean_line = sum(ev.invite_count for ev in e.mint_log) * V / len(e.mint_log)
+    mean_line = sum(ev.invite_count for ev in e.mint_log) * S / len(e.mint_log)
     analytic = (econ.beta(False, True, e.p.split, 0, 1.0)
                 - econ.beta_expected(False, True, e.p.split,
                                      econ.INVITE_MAX_COUNT,

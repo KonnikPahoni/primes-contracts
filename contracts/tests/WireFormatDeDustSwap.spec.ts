@@ -188,7 +188,7 @@ describe('GAUNTLET.md V2 — the DeDust swap body matches DeDust v2\'s own publi
         const s: Slice = swapMsg!.body.beginParse();
         expect(s.loadUint(32)).toBe(DEDUST_SWAP_OP); // swap#ea06185d
         expect(s.loadUint(64)).toBe(0); // query_id (Flush's default queryID)
-        expect(s.loadCoins()).toBe(pending); // amount — the TON side of the swap
+        expect(s.loadCoins()).toBe(pending); // amount — the GRAM side of the swap
 
         // SwapStep, inline (NOT a ref — DeDust's `_:SwapStep`)
         expect(s.loadAddress().equals(poolStub.address)).toBe(true); // pool_addr
@@ -300,9 +300,9 @@ describe('GAUNTLET.md V2 — the DeDust swap body matches DeDust v2\'s own publi
 
     it('a vault payout SMALLER than the swap in flight is not its refusal — a recipient_addr swap cannot inflate `pending`', async () => {
         // Anyone can make DeDust's native vault pay this contract: swap jetton ->
-        // TON with `recipient_addr` = the ratchet. Timed while our own swap is in
+        // GRAM with `recipient_addr` = the ratchet. Timed while our own swap is in
         // flight and about to FILL, that payout used to be read as the refusal and
-        // put the whole `inFlightFlush` back into `pending` after the TON had left.
+        // put the whole `inFlightFlush` back into `pending` after the GRAM had left.
         await ledger.sendMint(minter.getSender(), {
             n: OPENING_HEAD,
             kind: 0,

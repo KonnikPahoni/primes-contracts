@@ -215,7 +215,7 @@ def test_score_is_bounded_by_score_max_everywhere():
 
 
 def test_the_ladder_top_is_the_declared_ceiling():
-    """The clamp IS owner answer 9's 420 TON cap: nothing prices above it."""
+    """The clamp IS owner answer 9's 420 GRAM cap: nothing prices above it."""
     top = ta.p0_nanoton(W.SCORE_MAX) / ta.NANO
     assert 400.0 < top <= 420.5
     assert ta.C.SCORE_MAX == W.SCORE_MAX

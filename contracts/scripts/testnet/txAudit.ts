@@ -41,7 +41,7 @@
  * OPCODES ARE PRINTED BY NAME, and so is the fan-out. An explorer shows a mint
  * as `0xb0000002` with eight anonymous outbound legs; this shows
  *
- *   op mint 0xb0000002 1.01 TON -> mint_item 0xc0000001, forward_to_owner
+ *   op mint 0xb0000002 1.01 GRAM -> mint_item 0xc0000001, forward_to_owner
  *   0xc1000002, bare, bare, bare, mint_op 0xd0000001,
  *   pay_special_number_rebate 0xb0000072, pool_inject 0xb0000050
  *
@@ -181,7 +181,7 @@ function judge(tx: Transaction): Verdict {
 
 /**
  * A TEXT COMMENT from an address this set does not control is testnet faucet
- * SPAM — "get 300 testnet TON, tg: @…" — and every contract here refuses it with
+ * SPAM — "get 300 testnet GRAM, tg: @…" — and every contract here refuses it with
  * `wrong_opcode` (101) from the catch-all every Tolk contract in this repo ends
  * its `match` with. The refusal is correct behaviour and the trace is red on the
  * explorer anyway, so it is reported as spam rather than as a finding.
@@ -532,7 +532,7 @@ async function main() {
                 const value =
                     r.tx.inMessage?.info.type === 'internal' ? fromNano(r.tx.inMessage.info.value.coins) : '-';
                 console.log(
-                    `       ${new Date(r.tx.now * 1000).toISOString()} op ${opOf(r.tx)} ${value} TON` +
+                    `       ${new Date(r.tx.now * 1000).toISOString()} op ${opOf(r.tx)} ${value} GRAM` +
                         `${fanOf(r.tx)} ${VIEWER}${r.tx.hash().toString('hex')}`
                 );
             }

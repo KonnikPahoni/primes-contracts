@@ -7,7 +7,7 @@
  * This script used to send `amount = 0`, the wire value that means "contract, size
  * it yourself", and the contract's own auto size is `FLUSH_PCT x pending` — a figure
  * that knows nothing about the pool it is about to swap into. On the wave-5 set that
- * was a 6.63 TON tranche aimed at a pool holding 0.014 TON, so it could only ever
+ * was a 6.63 GRAM tranche aimed at a pool holding 0.014 GRAM, so it could only ever
  * REFUSE, and phase 5 recorded that refusal as coverage of the FILL branch. The
  * fillable size is a property of the VENUE, and `shared/dedustQuote.ts` is the one
  * place that solves the floor guard for it (`a_max = T*R_p/(S*(1+G)) - R_t/(1-f)`,
@@ -17,11 +17,11 @@
  * ledger's live pair, and `get_reserves`/`get_trade_fee` on the pool `getVenue()`
  * names.
  *
- * `FLUSH_MIN` (5 TON) DOES NOT BLOCK THIS. `handleFlush` clamps one-directionally —
+ * `FLUSH_MIN` (5 GRAM) DOES NOT BLOCK THIS. `handleFlush` clamps one-directionally —
  * `amount = min(msg.amount, autoSize)` — and asserts only `amount > 0` on the
  * caller's figure; `FLUSH_MIN` binds the auto path alone. A venue whose `a_max` is
- * under 5 TON is exactly the case D-143 exists for, and the wave-5 set is one:
- * `a_max` there is ~3.28 TON after the haircut.
+ * under 5 GRAM is exactly the case D-143 exists for, and the wave-5 set is one:
+ * `a_max` there is ~3.28 GRAM after the haircut.
  *
  * WHICH BRANCH RUNS IS DECIDED BY THE POOL, AND SAID OUT LOUD BEFORE THE SEND:
  *   - `a_max` positive  -> the market is below the floor: send it, expect FILL.
@@ -135,10 +135,10 @@ async function sizeTranche(
     const spot = reservePrimesNano === 0n ? 0 : Number(reserveTonNanoton) / Number(reservePrimesNano);
     const pf = sCache === 0n ? 0 : Number(tCache) / Number(sCache);
     console.log(`venue    ${venue.dedustPool.toString({ testOnly: true })}`);
-    console.log(`reserves ${fromNano(reserveTonNanoton)} TON / ${fromNano(reservePrimesNano)} PRIMES`);
-    console.log(`spot     ${spot.toExponential(4)} TON per PRIMES`);
-    console.log(`p_f      ${pf.toExponential(4)} TON per PRIMES   (tCache=${tCache} sCache=${sCache})`);
-    console.log(`pending  ${fromNano(pending)} TON   auto size ${fromNano(autoSize)} TON (FLUSH_PCT/FLUSH_MIN)`);
+    console.log(`reserves ${fromNano(reserveTonNanoton)} GRAM / ${fromNano(reservePrimesNano)} PRIMES`);
+    console.log(`spot     ${spot.toExponential(4)} GRAM per PRIMES`);
+    console.log(`p_f      ${pf.toExponential(4)} GRAM per PRIMES   (tCache=${tCache} sCache=${sCache})`);
+    console.log(`pending  ${fromNano(pending)} GRAM   auto size ${fromNano(autoSize)} GRAM (FLUSH_PCT/FLUSH_MIN)`);
 
     if (pending <= 0n) return { branch: 'SKIP', amount: 0n, why: 'pending is zero — there is nothing to flush' };
 
@@ -152,8 +152,8 @@ async function sizeTranche(
             branch: 'FILL',
             amount,
             why:
-                `a_max ${fromNano(venueMax)} TON (venue-sized, 2% haircut) vs auto size ` +
-                `${fromNano(autoSize)} TON -> sending ${fromNano(amount)} TON`,
+                `a_max ${fromNano(venueMax)} GRAM (venue-sized, 2% haircut) vs auto size ` +
+                `${fromNano(autoSize)} GRAM -> sending ${fromNano(amount)} GRAM`,
         };
     }
     if (pf > 0 && spot >= pf) {
@@ -169,7 +169,7 @@ async function sizeTranche(
         branch: 'SKIP',
         amount: 0n,
         why:
-            `the venue cannot be quoted (reserves ${fromNano(reserveTonNanoton)} TON / ` +
+            `the venue cannot be quoted (reserves ${fromNano(reserveTonNanoton)} GRAM / ` +
             `${fromNano(reservePrimesNano)} PRIMES, p_f ${pf.toExponential(4)}), so no tranche can be sized. ` +
             `Seed or trade the pool — see contracts/scripts/testnet/pool.ts`,
     };
@@ -283,7 +283,7 @@ async function main() {
     // is not the harness's funder and nothing funds it: its only income is §4.1's
     // operator line, which `DECISIONS.md` D-152 shrank to the (now 42%, D-166) remainder of an
     // unsold-prime tribute forfeit, so on a young set it holds pennies. Wave 5 hit
-    // it at 0.014 TON and this script died on `funding transfer not confirmed` —
+    // it at 0.014 GRAM and this script died on `funding transfer not confirmed` —
     // on a step `run.ts` runs FOUR times (phase 5 ×3, phase 10 ×1). The deploy
     // subwallet is `K`, the wallet `cast.ts fund` keeps `FUNDER_RESERVE` in for
     // exactly this, and `proveItemTopUpLive.ts` already funds its own stranger
@@ -300,10 +300,10 @@ async function main() {
     const freshWallet = WalletContractV4.create({ workchain: 0, publicKey: freshKeyPair.publicKey });
     console.log(`fresh wallet address: ${freshWallet.address.toString()} (never used before, no role in this deployment, no genesis mention, no treasury/keeper/deploy-subwallet identity)`);
 
-    // Fund it: D-146 makes the flush CALLER-PAID, so the fresh wallet needs the 0.27 TON a
+    // Fund it: D-146 makes the flush CALLER-PAID, so the fresh wallet needs the 0.27 GRAM a
     // flush attaches (0.25 swap gas + compute + margin, most of it the vault's) plus its own
     // deploy. 0.35 covers both; the change comes back as `excesses`.
-    console.log('funding fresh wallet with 0.35 TON from the keeper wallet...');
+    console.log('funding fresh wallet with 0.35 GRAM from the keeper wallet...');
     const keeperSeqno = await retry(() => keeperContract.getSeqno(), 'keeper-getSeqno');
     await retry(
         () =>
@@ -480,7 +480,7 @@ async function main() {
             before: beforeT.toString(),
             after: afterT.toString(),
             detail:
-                'a flush is a REARRANGEMENT: it moves TON from `pending` into `swapped` and a ' +
+                'a flush is a REARRANGEMENT: it moves GRAM from `pending` into `swapped` and a ' +
                 'refusal moves it back, so §5\'s `T = seeded + swapped + pending` must read the same ' +
                 'either side of it. `pending` alone is not assertable — the keeper flushes ' +
                 'mid-measurement — which is why the conserved term is the one being read',
@@ -496,7 +496,7 @@ async function main() {
             detail:
                 '`swapped` is credited OPTIMISTICALLY at send and given straight back by the refund ' +
                 'arm, so a `swapped` still up after the round trip has closed is the only proof the ' +
-                'TON reached the pool and came back as PRIMES — the branch that burns supply and ' +
+                'GRAM reached the pool and came back as PRIMES — the branch that burns supply and ' +
                 'advances the floor through the venue',
         });
     } else {
@@ -523,7 +523,7 @@ async function main() {
         asserts: fromAsserts(results),
     });
     console.log(
-        `\nBRANCH EXERCISED: ${plan.branch} — ${fromNano(plan.amount)} TON on the wire ` +
+        `\nBRANCH EXERCISED: ${plan.branch} — ${fromNano(plan.amount)} GRAM on the wire ` +
             `(${plan.amount === 0n ? 'auto-sized by the contract' : 'venue-sized by shared/dedustQuote.ts'}). ${plan.why}`
     );
     A.requireAll(results);

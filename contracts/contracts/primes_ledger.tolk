@@ -19,13 +19,13 @@ import "minter_standing"
 //                                       verifiable by reading ONE contract's
 //                                       outbound set.
 //   primes_registrar.tolk             — era trophies and the paid-annotation door.
-//                                       Holds no protocol TON at all.
+//                                       Holds no protocol GRAM at all.
 //
-// Two pools of TON, no third: `pending` on the ratchet and `owed` on the prime
+// Two pools of GRAM, no third: `pending` on the ratchet and `owed` on the prime
 // items. D-90 deleted the escrow (and its shard) — a won lot mints in the
 // transaction that closes it.
 //
-// The ledger no longer holds `pending`. Every TON that used to accumulate here
+// The ledger no longer holds `pending`. Every GRAM that used to accumulate here
 // as pool backing is forwarded to the ratchet in the same transaction via
 // `PoolInject` (0xb0000050), which also carries the (T, S) snapshot the ratchet
 // needs for §4.3.1's floor guard — TVM has no synchronous cross-contract read,
@@ -56,7 +56,7 @@ import "minter_standing"
 // D2. Referral payout: TVM has no synchronous cross-contract read, so the ledger
 //     cannot resolve "current owner of NFT #key" inside the mint transaction as
 //     CONCEPT.md §3.1 literally describes. This contract instead forwards the
-//     referral TON to the deterministic ItemAddress(key) with a new
+//     referral GRAM to the deterministic ItemAddress(key) with a new
 //     `ForwardToOwner` opcode (0xc1000002, not in /shared/opcodes.ts) — the item
 //     DOES know its own owner synchronously and relays the value onward. See
 //     primes_item.tolk's header comment.
@@ -124,28 +124,28 @@ import "minter_standing"
 // no message type in this contract writes to any of these).
 // ---------------------------------------------------------------------------
 
-const MINT_PRICE: coins = 1000000000; // 1 TON
+const MINT_PRICE: coins = 1000000000; // 1 GRAM
 // D-191 point 1: the value on the two ledger -> minter-card hops. A recruit
 // credit's value comes back with the card's `card_recruit_counted` reply (less
 // the card's deploy and compute); a prime credit's stays on the card as its
 // storage reserve. Both are paid by §4.1's gas & ops line and measured in
 // `GasRegression.spec.ts`'s worst case.
-const CARD_RECRUIT_GAS: coins = 20000000; // 0.02 TON
-const CARD_PRIME_GAS: coins = 5000000;    // 0.005 TON
-// The most of a mint's 1 TON the payer -> card -> ledger hop may consume before
+const CARD_RECRUIT_GAS: coins = 20000000; // 0.02 GRAM
+const CARD_PRIME_GAS: coins = 5000000;    // 0.005 GRAM
+// The most of a mint's 1 GRAM the payer -> card -> ledger hop may consume before
 // the ledger refuses it (`handleCardMint`). The heaviest honest body (ω = 12 factors
-// and a full invite list) costs 0.0012 TON, measured in `GasRegression.spec.ts`,
+// and a full invite list) costs 0.0012 GRAM, measured in `GasRegression.spec.ts`,
 // which also asserts that the heaviest mint with its hop replaced by this whole
 // allowance — a body padded to make the forward dear — still fits §4.1's line.
-const CARD_HOP_ALLOWANCE: coins = 3000000; // 0.003 TON
+const CARD_HOP_ALLOWANCE: coins = 3000000; // 0.003 GRAM
 // D-109: a wire constant of RES_GAS's kind (shared/opcodes.ts LEDGER.MINT_MARGIN_NANOTON),
 // not a params.json economic parameter. `handleMint` keeps up to MINT_PRICE + MINT_MARGIN
-// and refunds the rest, so a fat-fingered send funds nobody. 0.5 TON, not a tighter figure,
-// because the webapp pads its own send to MINT_PRICE + 0.01 TON
-// (`webapp/src/chain/values.ts` FEE_MARGIN_NANOTON) and `smokeMintLive.ts` to +0.05 TON —
+// and refunds the rest, so a fat-fingered send funds nobody. 0.5 GRAM, not a tighter figure,
+// because the webapp pads its own send to MINT_PRICE + 0.01 GRAM
+// (`webapp/src/chain/values.ts` FEE_MARGIN_NANOTON) and `smokeMintLive.ts` to +0.05 GRAM —
 // a tight ceiling would partial-refund an intentionally padded send, which is a worse
 // failure than the one this closes.
-const MINT_MARGIN: coins = 500000000; // 0.5 TON
+const MINT_MARGIN: coins = 500000000; // 0.5 GRAM
 // D-188 point 4: the bookmark a prime sold ahead of the head is born with
 // (see `executeMint`). Above any `divAcc` the ledger can reach, so
 // `div_acc − entry[p]` is never positive until `CreditDividend.base` lands.
@@ -156,11 +156,11 @@ const TREASURY_AMOUNT: coins = 50000000;   // 5% — D-152: paid to the governed
 // D-117 (signed 2026-09-22): 20%, DERIVED by the sim (`sim/primes_sim/gas.py`
 // `gas_ops_line`) from the heaviest mint this contract can perform, measured on
 // its own balance by GasRegression.spec.ts — an omega = 12 composite with every
-// leg firing drains 0.186 TON (0.184 before D-180's factored rebate) — rounded up to the owner-set 5% step. What a mint
+// leg firing drains 0.186 GRAM (0.184 before D-180's factored rebate) — rounded up to the owner-set 5% step. What a mint
 // does not spend, `sweep_ops` returns to the ratchet pool (no emission). It was a fixed
 // 10% reconciled against a hand-kept hop list that missed the special-number
 // rebate, the era trophy, the ratchet hop and the fee legs' forward fees; the
-// ledger really spent 0.110 TON on the omega = 3 primorial. SimCrossCheck pins
+// ledger really spent 0.110 GRAM on the omega = 3 primorial. SimCrossCheck pins
 // this constant to `shared/params.json` `mint.gas_ops_pct`.
 const GAS_OPS_AMOUNT: coins = 200000000;   // 20%
 
@@ -193,8 +193,8 @@ const BPS_DEN: int = 10000;
 // 20% accrues to `div_acc` as the flat prime dividend, split equally across
 // all π(n) minted primes. Rounding remainders on BOTH halves fold into the
 // pool (the documented no-dust-leak rule), never to the team.
-const TRIBUTE_DIVISOR_AMOUNT: coins = 80000000; // 0.08 TON per composite mint
-const TRIBUTE_FLAT_AMOUNT: coins = 20000000;    // 0.02 TON per composite mint
+const TRIBUTE_DIVISOR_AMOUNT: coins = 80000000; // 0.08 GRAM per composite mint
+const TRIBUTE_FLAT_AMOUNT: coins = 20000000;    // 0.02 GRAM per composite mint
 
 // GAUNTLET V3: CONCEPT.md §3.2's bound on ω(n), the count of DISTINCT prime
 // factors — "sizing work must use ω ≤ 12; ω ≤ 8 is a statement about what the
@@ -242,7 +242,7 @@ const K_CEIL: int = 950000000;         // 0.95 (params.json rebate.K_CEIL)
 // rework (math-note.md §2 is agnostic to WHY k < 1).
 const S_MAX: int = 1200000000000000000;  // 1.2e9 PRIMES in nano (params.json rebate.S_MAX_nanoprimes, D-156)
 
-// D-106 deleted patron mode and its split line; recruiting pays no TON. The
+// D-106 deleted patron mode and its split line; recruiting pays no GRAM. The
 // recruit ladder and the era trophy survive, driven by §4.5 gift mints — see
 // `recruitRankTier` and the recruit edge in `executeMint`.
 // §5 / D-98: k(t) climbs LINEARLY from K_MIN and reaches k_max exactly here,
@@ -278,7 +278,7 @@ const K_MAX_NUMERATOR: int = K_MAX_CAP * N0_LOG10;
 // FLUSH_PCT / FLUSH_COOLDOWN / FLUSH_MIN moved to primes_ratchet.tolk together
 // with `pending` and the DeDust leg (§3.4 decomposition).
 
-// `SETTLE_GAS` (primes_market.tolk), the 0.025 TON slice of the market's
+// `SETTLE_GAS` (primes_market.tolk), the 0.025 GRAM slice of the market's
 // `RES_GAS`, rides here with the lot CLOSE (D-90: the win mints in the closing
 // transaction). It pays for the confirmation `handleSettle` sends back, and it
 // is why §4.1's gas & ops line carries no lot-close cost.
@@ -286,26 +286,42 @@ const K_MAX_NUMERATOR: int = K_MAX_CAP * N0_LOG10;
 // Config 43's `max_msg_cells`: no message, so no parked body, is larger. A protocol
 // limit, not an economic parameter (V24's `retryItemMinValue`).
 const MAX_MSG_CELLS = 8192;
-const ITEM_DEPLOY_VALUE: coins = 25000000;   // 0.025 TON, right-sized per docs/phase0-report.md §5 verdict
+const ITEM_DEPLOY_VALUE: coins = 25000000;   // 0.025 GRAM, right-sized per docs/phase0-report.md §5 verdict
 
-// §4.1's SEVENTH SPLIT LINE (D-101 as DECISIONS.md D-202 rewrote it).
-// The minter may fund 0..INVITE_MAX_COUNT plain transfers of INVITE_TRANSFER_VALUE
-// each, to addresses THE MINTER names in the mint body -- no operator signature.
-// Each carries the fixed text comment below, so a Telegram wallet shows it as a
-// message from this contract. Both numbers are OWNER-SET (D-202), carried by the
-// sim as params.json `invites.max_count` and `invites.transfer_value_ton`, and
-// pinned against this file by SimCrossCheck.spec.ts.
+// §4.1's SEVENTH SPLIT LINE (D-101 as DECISIONS.md D-202 rewrote it, and D-215
+// made its terms operator-set). The minter may fund 0..`Config.inviteCount` plain
+// transfers of `Config.inviteValue` each, to addresses THE MINTER names in the
+// mint body -- no operator signature. Each carries the operator's words (D-211)
+// as a text comment, so a Telegram wallet shows it as a message from this contract.
+//
+// D-215: the operator (`FeeDests.operatorAddr`) sets count, value and words with
+// `set_invite_terms`, inside three numbers this file fixes and no message moves.
+// They are carried by the sim as params.json `invites.count_ceiling`,
+// `invites.line_cap_ton` and `invites.send_fee_allowance_ton`, and pinned against
+// this file by SimCrossCheck.spec.ts:
+//   INVITE_COUNT_CEILING -- at most 100 transfers per mint. TON caps one
+//                           transaction at 255 out actions, and a mint sends its own.
+//   INVITE_LINE_CAP      -- sent * (value + INVITE_SEND_FEE) <= 0.31 GRAM, checked at
+//                           the setter AND at every invite mint, so whatever the
+//                           operator writes, the residual beta never drops below the
+//                           sim's worst case (0.24 on a referred composite).
+//   INVITE_SEND_FEE      -- the per-transfer allowance the line pays for its own
+//                           forward fee and this loop's compute. The transfer is sent
+//                           PAY_FEES_SEPARATELY so `value` arrives whole (a Telegram
+//                           wallet pushes for 0.1 GRAM received, not for 0.0999 --
+//                           measured on mainnet 2026-11-22). Measured in
+//                           GasRegression.spec.ts; whatever it overstates stays on this
+//                           balance, outside every liability, so `sweep_ops` carries
+//                           it to the ratchet pool.
 //
 // UNSPENT SLOTS FALL TO BETA and to nothing else. The deduction below is
 // computed from the transfers ACTUALLY SENT, never from the declared count, so a
 // slot with no address is simply never subtracted -- there is no refund term, no
 // credit, no carry-forward, and no path by which an unspent slot reaches the
 // team. The split stays closed at 100%.
-//
-// `invites.line_ton_at_max_count` = 0.30 = 3 * 0.1 is a CONSEQUENCE of these two,
-// not a third number.
-const INVITE_MAX_COUNT: int = 3;
-const INVITE_TRANSFER_VALUE: coins = 100000000;   // 0.1 TON
+const INVITE_COUNT_CEILING: int = 100;
+const INVITE_LINE_CAP: coins = 310000000;   // 0.31 GRAM
+const INVITE_SEND_FEE: coins = 1000000;     // 0.001 GRAM
 
 // CONCEPT §6 point 0. Number 1 — neither prime nor composite, and therefore
 // outside every rule in §3 through §5 that classifies a number.
@@ -316,26 +332,26 @@ const RARITY_UNITY: int = 0x0001;
 // One `launch_open` hop, to the market, whose handler does one storage write —
 // the same shape and size as HEAD_SYNC_GAS below. Spent once by `ignite` (and
 // again only by a `sync_launch` repair).
-const LAUNCH_HOP_GAS: coins = 10000000;      // 0.01 TON
-const CREDIT_TRIBUTE_VALUE: coins = 8000000;  // 0.008 TON per credit_tribute send
+const LAUNCH_HOP_GAS: coins = 10000000;      // 0.01 GRAM
+const CREDIT_TRIBUTE_VALUE: coins = 8000000;  // 0.008 GRAM per credit_tribute send
 // GAUNTLET B1.1: the minimum a caller must fund `claim_dividend`/`retry_credit`
 // with. Both are permissionless and both do real local compute (dict writes,
 // two `save*` calls) on top of forwarding `CREDIT_TRIBUTE_VALUE` onward, so the
 // guard cannot be `CREDIT_TRIBUTE_VALUE` alone — measured on `@ton/sandbox`,
-// attaching 0.004 TON drained ~0.00509 TON of the ledger's own balance, i.e. the
-// real break-even is ~0.0091 TON, not 0.008. Rounded up to the same 0.01 TON
+// attaching 0.004 GRAM drained ~0.00509 GRAM of the ledger's own balance, i.e. the
+// real break-even is ~0.0091 GRAM, not 0.008. Rounded up to the same 0.01 GRAM
 // scale every other single-hop gas guard in this file uses (`HEAD_SYNC_GAS`,
 // `SWEEP_GAS`), which comfortably covers the measured gap. D-188 point 4 made
 // `claim_dividend` a round trip carried on the claimant's value (ledger ->
-// item `credit_dividend` -> ledger `dividend_credited`): measured at ~0.0017 TON
+// item `credit_dividend` -> ledger `dividend_credited`): measured at ~0.0017 GRAM
 // of fees for all three legs, so the same 0.01 still covers it
 // (`PrimesGenesisMint.spec.ts` "GAUNTLET B1.1" claims at exactly this value).
-const CLAIM_DIVIDEND_MIN_VALUE: coins = 10000000;  // 0.01 TON
+const CLAIM_DIVIDEND_MIN_VALUE: coins = 10000000;  // 0.01 GRAM
 // What a permissionless, caller-funded arm must ALSO bring for its own compute
 // and forward fees, on top of what it sends on: `donate_floor` sent out exactly
 // what it required, and `retry_credit` required less than its hop, so each call
 // was paid from the float `sweep_ops` would otherwise pool (audit Low).
-const CALLER_COMPUTE_GAS: coins = 10000000;  // 0.01 TON
+const CALLER_COMPUTE_GAS: coins = 10000000;  // 0.01 GRAM
 
 // §3.4 decomposition hop costs, both drawn from the GAS_OPS_AMOUNT line (§4.1's
 // 20%, D-117), NOT from the pool injection — the ratchet credits `pending` by the
@@ -347,7 +363,7 @@ const CALLER_COMPUTE_GAS: coins = 10000000;  // 0.01 TON
 // the ledger's DEFERRED obligations — the ones a mint cannot pay at mint time:
 // `owed` storage rent and lot-close (`mint_won_lot`) gas. (Amortized flush gas was
 // a third until D-146: every permissionless ratchet leg is caller-paid now, so
-// the sim's re-derivation dropped the term — it was ~0.000002 TON a mint and
+// the sim's re-derivation dropped the term — it was ~0.000002 GRAM a mint and
 // did not move the rounded reserve.)
 //
 // DERIVED, not chosen — `params.json fees.ops_reserve_ton`, and the whole
@@ -359,9 +375,9 @@ const CALLER_COMPUTE_GAS: coins = 10000000;  // 0.01 TON
 // D-90 moved it 58 -> 60: the settlement leg is measured across a lot CLOSE
 // plus this contract's `mint_won_lot`. This is a FLOAT, not a price: nothing a
 // player pays moved (D-90.4).
-// D-99 raises this from 60 to 92 TON, and it is the score's bill.
+// D-99 raises this from 60 to 92 GRAM, and it is the score's bill.
 // `fees.ops_reserve_ton` is DERIVED from the measured per-mint gas draw, and
-// that draw went 0.0668 -> 0.0699 TON when `scoreOf` joined the mint path
+// that draw went 0.0668 -> 0.0699 GRAM when `scoreOf` joined the mint path
 // (GasRegression: composite mint 70918 -> 102669 units). The reserve is the
 // balance the ops sweep may never dip below, so a mint that costs more to
 // execute has to leave more behind. Re-derived by the sim, not chosen here.
@@ -371,35 +387,35 @@ const CALLER_COMPUTE_GAS: coins = 10000000;  // 0.01 TON
 // comparing this constant to a derivation priced off an old
 // `mint_won_lot` gas figure. Regenerated the baseline
 // (`GAS_BASELINE_UPDATE=1 pnpm --filter ton-primes-contracts test -- GasRegression`)
-// and re-ran `sim/scripts/run_phase1.py`: the fresh derivation is 90 TON, down
-// from 91 (settlement gas per mint 0.008591 -> 0.008439 TON). Moved here to
+// and re-ran `sim/scripts/run_phase1.py`: the fresh derivation is 90 GRAM, down
+// from 91 (settlement gas per mint 0.008591 -> 0.008439 GRAM). Moved here to
 // match, per this item's own resolution rule (move the contract to the fresh
 // figure, don't hand-edit the baseline).
 // D-146 re-run (2026-09-22): 90 -> 96. NOT D-146's own effect -- dropping the
-// amortized-flush term moved the derivation by 0.02 TON. The re-run also picked up
+// amortized-flush term moved the derivation by 0.02 GRAM. The re-run also picked up
 // `ledger.mint_won_lot` at the gas the committed baseline already
 // recorded (125,440, not the 115,818 the last params.json was priced on), which is
-// settlement 0.00846 -> 0.00910 TON a mint and 89.35 -> 95.75 TON over the horizon.
+// settlement 0.00846 -> 0.00910 GRAM a mint and 89.35 -> 95.75 GRAM over the horizon.
 // (GAUNTLET T15 found the same 90 -> 96 staleness independently, 2026-09-22.)
 // D-117 re-run (2026-09-22): 96 -> 90. The held split moved the split sends out of
 // `executeMint` into `mint_confirmed`, so `ledger.mint_won_lot` fell
-// 125,440 -> 115,669 gas (settlement 0.00910 -> 0.00845 TON a mint); the moved
+// 125,440 -> 115,669 gas (settlement 0.00910 -> 0.00845 GRAM a mint); the moved
 // compute is now on the gas & ops line, where GasRegression measures it.
 // Merge with main (D-166/D-167/D-168) re-run, 2026-09-23: 90 -> 88 from the regenerated
 // derivation (settlement gas and `owed` rent over the horizon; see params.json).
 // D-20 baseline migration + C15 re-run (D-180), 2026-09-24: 88 -> 94. The baseline now
 // counts `owed` entries for primes bought off the Dutch lane as well as at the head.
 // Re-run 2026-09-26: 94 -> 96. The sim picked up `ledger.mint_won_lot` = 122,019 gas from
-// the committed baseline (fd96c77e): settlement 91.16 + `owed` rent 4.70 = 95.86 TON, rounded up.
+// the committed baseline (fd96c77e): settlement 91.16 + `owed` rent 4.70 = 95.86 GRAM, rounded up.
 // V24 re-run (2026-09-26): 96 -> 98. The verified factor map costs `mint_won_lot`
-// 122,019 -> 125,104 gas: settlement 93.21 + `owed` rent 4.70 = 97.91 TON, rounded up.
+// 122,019 -> 125,104 gas: settlement 93.21 + `owed` rent 4.70 = 97.91 GRAM, rounded up.
 // V26.4 re-run (2026-09-26, D-191 point 1): 98 -> 99. The minter card's code in ConfigA and
 // the card-derived sends cost `mint_won_lot` 125,104 -> 125,529 gas: settlement 93.50 +
-// `owed` rent 4.70 = 98.20 TON, rounded up.
-const OPS_RESERVE: coins = 99000000000;      // 99 TON
+// `owed` rent 4.70 = 98.20 GRAM, rounded up.
+const OPS_RESERVE: coins = 99000000000;      // 99 GRAM
 // Left behind on the sweep message so the sweep itself never eats into the
 // reserve it is protecting.
-const SWEEP_GAS: coins = 10000000;            // 0.01 TON
+const SWEEP_GAS: coins = 10000000;            // 0.01 GRAM
 
 // ledger -> ratchet, every mint. D-146 (signed 2026-09-22) cut it 0.005 -> 0.001.
 // The old figure was not the hop's cost: ~0.0006 of it paid the hop (PoolInject's
@@ -407,19 +423,19 @@ const SWEEP_GAS: coins = 10000000;            // 0.01 TON
 // up as the ratchet's gas buffer, which is what paid DeDust and Tonstakers for
 // every flush, stake, exit and harvest. Caller-pays moved those bills to the
 // caller, so the buffer now funds only the ratchet's own storage rent and this
-// hop need carry only itself plus that rent — 0.0004 TON of margin per mint
-// against a rent measured in thousandths of a TON a year. The 0.004 TON a mint
+// hop need carry only itself plus that rent — 0.0004 GRAM of margin per mint
+// against a rent measured in thousandths of a GRAM a year. The 0.004 GRAM a mint
 // this frees on §4.1's gas & ops line is what D-117's held split hop is paid from
 // (the owner's budget rule, same session). `GasRegression.spec.ts` asserts the
 // ratchet's buffer does not fall across a mint, which is the property this
 // figure has to keep.
-const RATCHET_HOP_GAS: coins = 1000000;     // 0.001 TON
+const RATCHET_HOP_GAS: coins = 1000000;     // 0.001 GRAM
 // D-91 point 4: the floor-donation op's emission rate, `params.json
-// genesis.genesis_lp_ratio_primes_per_ton` (D-29's L = 10,000 PRIMES/TON).
+// genesis.genesis_lp_ratio_primes_per_ton` (D-29's L = 10,000 PRIMES/GRAM).
 // Both sides are nano-denominated with the same 9 decimals, so `X * L` in
 // nanotons IS the nano-PRIMES figure — no scale conversion.
 const LP_RATIO_PRIMES_PER_TON: int = 10000;
-// 0.02 TON, the same wallet-deploy + forward budget the rebate mint carries
+// 0.02 GRAM, the same wallet-deploy + forward budget the rebate mint carries
 // on this contract's only other JettonMint send.
 const DONATE_MINT_GAS: coins = 20000000;
 // TEP-74 `forward_ton_amount` on EVERY JettonMint this contract sends, and the
@@ -434,30 +450,30 @@ const DONATE_MINT_GAS: coins = 20000000;
 //
 // PAID FROM THE MASTER'S OWN SLACK, so §4.1's gas & ops line does not move:
 // `primes_jetton_master.tolk`'s `deployAndCredit` attaches
-// `ton("0.012") + forwardTonAmount`, and the 0.02 TON hop above already leaves
-// the master ~0.0183 TON per mint (0.0073 retained + 0.0109 returned as
+// `ton("0.012") + forwardTonAmount`, and the 0.02 GRAM hop above already leaves
+// the master ~0.0183 GRAM per mint (0.0073 retained + 0.0109 returned as
 // `excesses`). At 0.005 that becomes ~0.0130 — still positive, still one
 // message, and the ledger's outgoing value is unchanged.
 //
 // NOT SMALLER: the notification is sent in mode 0, so its forward fee (~0.0006
-// TON, measured) comes out of this value and an amount below it fails the
+// GRAM, measured) comes out of this value and an amount below it fails the
 // recipient wallet's action phase — which is exactly the bounce that made the
 // first non-zero attempt here delivery no PRIMES at all. 0.005 is ~8x that fee.
-const MINT_NOTIFY_TON: coins = 5000000;     // 0.005 TON
+const MINT_NOTIFY_TON: coins = 5000000;     // 0.005 GRAM
 // The rebate mint's hop to the jetton master, named and shaved from 0.02 in the
 // same change that added the notification above. The master's `deployAndCredit`
 // spends `ton("0.010") + forwardTonAmount` = 0.015 of it and pays ~0.0006 in
 // fees, so 0.018 leaves ~0.0023 of margin BEFORE the recipient wallet's
 // `excesses` comes home — and the master was previously retaining ~0.0183 of
-// the 0.02 per mint, TON that piles up on that contract and is swept by
+// the 0.02 per mint, GRAM that piles up on that contract and is swept by
 // nothing. §4.1's gas & ops line is what pays this hop and it is measured
 // against `GasRegression.spec.ts`'s reconciliation, which the notification's
 // own ~0.00038 of fees pushed 0.166% over until this came down.
-const REBATE_MINT_GAS: coins = 18000000;    // 0.018 TON
-const REGISTRAR_HOP_GAS: coins = 6000000;   // 0.006 TON, ledger -> registrar (the era trophy award, primorial mints only)
+const REBATE_MINT_GAS: coins = 18000000;    // 0.018 GRAM
+const REGISTRAR_HOP_GAS: coins = 6000000;   // 0.006 GRAM, ledger -> registrar (the era trophy award, primorial mints only)
 // One `head_update` hop, to the market. NOT on the mint path — spent only by the
 // permissionless `sync_head`, whose caller must attach at least this much.
-const HEAD_SYNC_GAS: coins = 10000000;      // 0.01 TON
+const HEAD_SYNC_GAS: coins = 10000000;      // 0.01 GRAM
 // D-189: the head-advance walk stops at the first unwalked position once the
 // transaction has consumed this much gas (GASCONSUMED, not a step count: a
 // prime near AUCTIONABLE_MAX costs ~18x an auctioned composite). Sized against
@@ -468,9 +484,9 @@ const HEAD_SYNC_GAS: coins = 10000000;      // 0.01 TON
 const WALK_GAS_STOP: int = 450000;
 // D-189: the least a caller attaches to `advance_head`. Its gas limit is
 // value / gas price (400 nanoton per gas, config 21), and a walk can end at
-// WALK_GAS_STOP plus one step; 0.3 TON buys 750k. Whatever it does not burn
+// WALK_GAS_STOP plus one step; 0.3 GRAM buys 750k. Whatever it does not burn
 // goes back to the caller.
-const ADVANCE_HEAD_VALUE: coins = 300000000; // 0.3 TON
+const ADVANCE_HEAD_VALUE: coins = 300000000; // 0.3 GRAM
 // D-196: THE IMPORT WINDOW, in 256-number blocks. Marks for a block below the
 // frontier (`LOT_BLOCK_WINDOW_BLOCKS + Aux.lotBlocksImported`) live here; marks
 // for one beyond it live on that block's `primes_lot_block.tolk` child until
@@ -481,24 +497,24 @@ const LOT_BLOCK_WINDOW_BLOCKS: int = 26;
 // D-196: the least a caller attaches to `import_lot_block`. It carries the child
 // deploy (for a block no lot touched) and both legs of the round trip; what the
 // round trip does not burn stays in this contract's gas float. A gas constant.
-const IMPORT_LOT_BLOCK_VALUE: coins = 50000000; // 0.05 TON
+const IMPORT_LOT_BLOCK_VALUE: coins = 50000000; // 0.05 GRAM
 // D-196: the value of the ledger's own `lot_block_sold_prime` hop, sent when a
 // prime beyond the frontier sells. Prime settles only (no tribute fan-out), so it
 // never touches the heaviest mint §4.1's gas & ops line is sized against.
-const LOT_BLOCK_HOP_VALUE: coins = 10000000; // 0.01 TON
+const LOT_BLOCK_HOP_VALUE: coins = 10000000; // 0.01 GRAM
 // LOW-4: the value of the ledger's `lot_block_release` hop. A flushed block keeps
-// only a 0.01 TON rent floor, so this hop pays the rent accrued since the block was
-// last touched (~0.007 TON/year at its densest), refills the floor and still sends
+// only a 0.01 GRAM rent floor, so this hop pays the rent accrued since the block was
+// last touched (~0.007 GRAM/year at its densest), refills the floor and still sends
 // the answer; the lot block returns the rest with the bookmark. 0.1 matches config
-// 21's basechain freeze_due_limit (0.1 TON): a debt past it has frozen the block.
-const LOT_BLOCK_RELEASE_VALUE: coins = 100000000; // 0.1 TON
+// 21's basechain freeze_due_limit (0.1 GRAM): a debt past it has frozen the block.
+const LOT_BLOCK_RELEASE_VALUE: coins = 100000000; // 0.1 GRAM
 // D-198: what `flush_unsold` must carry — one batch of at most FLUSH_MAX_ROWS rows
 // on this account, plus the hop. Measured (LotBlock.spec.ts, a full 26-block window
 // of 857 rows, every one with a forfeit row): the worst batch is 268,726 gas
-// = 0.018 TON, so with the 0.06 hop and its forward fee a call spends ~0.079.
+// = 0.018 GRAM, so with the 0.06 hop and its forward fee a call spends ~0.079.
 // The ~1.9x margin absorbs a config 21 gas price rise; the surplus stays in this
 // contract's gas float, which `sweep_ops` returns to the pool.
-const FLUSH_UNSOLD_VALUE: coins = 150000000; // 0.15 TON
+const FLUSH_UNSOLD_VALUE: coins = 150000000; // 0.15 GRAM
 // The hop's FIXED value: the lot block's merge of one batch (<= 59k gas, measured), sized
 // on the merge because a merge out of gas has nothing left to bounce. A refusal bounces
 // ~0.058 back; the restore of 16 rows on a full window costs 0.018 (LOW-5, measured).
@@ -506,7 +522,7 @@ const FLUSH_UNSOLD_VALUE: coins = 150000000; // 0.15 TON
 // the action phase would fail and the WHOLE flush roll back here, instead of a starved
 // lot block losing the rows in a transaction too poor to bounce. What the lot block does
 // not burn above its LOT_BLOCK_RENT_FLOOR comes back here as an empty-body top-up (LOW-4).
-const LOT_BLOCK_BOOKMARKS_VALUE: coins = 60000000; // 0.06 TON
+const LOT_BLOCK_BOOKMARKS_VALUE: coins = 60000000; // 0.06 GRAM
 // Rows one `flush_unsold` moves at most. A block holds up to 55 unsold primes and
 // each row costs ~13-17k gas on a dictionary of up to ~27 blocks' rows (measured,
 // with forfeit rows), so the densest block in one call would cost ~0.85-0.95M of
@@ -535,7 +551,7 @@ struct UnroutedCredit {
 // sub-struct, `ConfigD` (D4/D12).
 // `swapped` / `inFlightFlush` moved to primes_ratchet.tolk. What replaces them
 // here is the ledger's OWN declared liability (§3.4's one-get-call solvency
-// property): the TON this contract legitimately holds after a transaction
+// property): the GRAM this contract legitimately holds after a transaction
 // settles is (a) §3.2's accrued tribute, credited to items as `owed` but
 // CUSTODIED HERE, (b) tribute credits that bounced and are owed to a retry and
 // (c) accrued flat dividends not yet claimed. Everything else is forwarded in
@@ -544,13 +560,13 @@ struct UnroutedCredit {
 //
 // B-1: (a) used to be missing from this list AND from both consumers of it,
 // which is the whole bug — `credit_tribute` moves a NUMBER to the item and
-// leaves the TON here, so every composite mint parked 0.08 TON of player money
+// leaves the GRAM here, so every composite mint parked 0.08 GRAM of player money
 // outside the declared liability, where `sweep_ops` was entitled to pay it to
 // the operator. The three lines below are the complete set; a fourth kind of
-// retained TON is a solvency break, not a feature.
+// retained GRAM is a solvency break, not a feature.
 struct Meters {
     // §3.2 / §3.4: tribute credited to items as `owed` and not yet claimed —
-    // the exact TON `claim_tribute` will pay out of this contract's balance.
+    // the exact GRAM `claim_tribute` will pay out of this contract's balance.
     // Maintained O(1) against `sum_p item.owed` so getSolvency stays one call.
     //
     // The five transitions, in full, because an unpaired one silently re-opens
@@ -565,11 +581,11 @@ struct Meters {
     // `unroutedHeld` and back, and is never counted in both at once.
     tributeOwed: coins
     // Sum of live UnroutedCredit.amount PLUS, since D-117, the held split of every
-    // `MintItem` parked in `Aux2.unroutedItems` — both are TON held for a
+    // `MintItem` parked in `Aux2.unroutedItems` — both are GRAM held for a
     // permissionless retry of a send that bounced, owed to nobody until then.
     unroutedHeld: coins
-    // D-52 — PRIMES, NOT TON, and therefore not a fourth kind of retained TON:
-    // the header's "three lines" claim above is about this contract's TON
+    // D-52 — PRIMES, NOT GRAM, and therefore not a fourth kind of retained GRAM:
+    // the header's "three lines" claim above is about this contract's GRAM
     // liability and is untouched by this field.
     //
     // `S` is incremented BEFORE the `JettonMint` that pays it out (`executeMint`
@@ -585,7 +601,7 @@ struct Meters {
     // when `retry_mint` re-sends it (`handleRetryMint`) — the same two-legged
     // shape as `unroutedHeld`, so the amount is in exactly one lane at a time.
     unmintedHeld: coins
-    // §3.2: flat-dividend TON accrued but not yet converted into item `owed`
+    // §3.2: flat-dividend GRAM accrued but not yet converted into item `owed`
     // via ClaimDividend — Σ_p (div_acc − entry[p]) maintained O(1) so
     // getSolvency stays a single get-call (§3.4). Incremented by the accrued
     // total on each composite mint, decremented by the claimed amount when a
@@ -678,7 +694,7 @@ struct Meters {
     // D-106: the event counted is the RECRUIT EDGE — a §4.5 gift mint to a
     // wallet whose minter card is FRESH (D-191 point 1). That test is the whole
     // sybil guard: repeat gifts to the same wallet count once, so a recruit
-    // costs a fresh address AND a full 1 TON mint, which is the same price
+    // costs a fresh address AND a full 1 GRAM mint, which is the same price
     // §8.1 already argued a fake recruit has to pay.
     // In its own ref'd cell for the usual reason (Meters is within 50 bits of
     // the 1023-bit ceiling with these inline), and at no cost on the hot path:
@@ -755,6 +771,11 @@ struct EraSeason {
 //                       counter would let a reader sum two things that were
 //                       never meant to be read together. Zero until the first
 //                       auction lot with a premium clears.
+// D-215: seven `coins` (124 bits each at their declared maximum) and three uint64
+// are 1060 bits on paper, past the 1023 ceiling, so the bound check is suppressed.
+// In fact every `coins` here is a lifetime GRAM total well under 2^64 nanoGRAM, so
+// each serializes to at most 68 bits and the cell stays under ~670.
+@overflow1023_policy("suppress")
 struct OperatorMeters {
     operatorPaidTotal: coins
     treasuryPaidTotal: coins
@@ -774,6 +795,12 @@ struct OperatorMeters {
     // than asserted. `getInviteSpend` publishes all of it.
     inviteSlotsFunded: uint64
     inviteTransfersSent: uint64
+    //   inviteValuePaid      -- the GRAM those transfers DELIVERED, lifetime (D-215:
+    //                           the value is operator-set, so it is summed, not
+    //                           multiplied back out). uint64 nanoGRAM, not `coins`:
+    //                           this cell has seven `coins` and a 124-bit eighth would
+    //                           break its 1023-bit bound; 2^64 nanoGRAM is ~1.8e10 GRAM.
+    inviteValuePaid: uint64
     // G81: fee legs too small to send, HELD until they are not. A message worth
     // less than the basechain `flat_gas_price` buys its receiver no compute and
     // lands `skipped (no_gas)`, aborted -- red in every explorer, though the value
@@ -877,11 +904,15 @@ struct Config {
     a: Cell<ConfigA>
     b: Cell<ConfigB>
     d: Cell<ConfigD>
+    // D-215: §4.1's invite terms -- how many transfers a mint may fund and what
+    // each delivers. Written at deploy and by `set_invite_terms` from
+    // `FeeDests.operatorAddr`, nothing else, always inside INVITE_COUNT_CEILING
+    // and INVITE_LINE_CAP. Read only by a mint that funds an invite.
+    inviteCount: uint7
+    inviteValue: coins
     // D-211: the words of §4.1's invite comment — bytes only, no op, no refs, at
     // most INVITE_TEXT_MAX_BYTES. `inviteComment(n)` appends the link itself, so
-    // this cell can never drop the referral key. Written at deploy and by
-    // `set_invite_text` from `FeeDests.operatorAddr`, nothing else. Read only by a
-    // mint that funds an invite, so an uninvited mint never loads it.
+    // this cell can never drop the referral key. Same writers as the terms above.
     inviteText: cell
 }
 
@@ -964,7 +995,7 @@ struct Aux2 {
     // this contract grows with the number of wallets.
     // D-117: the retry lane for a bounced `MintItem`, keyed by n, holding the
     // ORIGINAL message body (held split included). `retry_item` re-sends it; the
-    // held split's TON is declared in `Meters.unroutedHeld` while it waits here.
+    // held split's GRAM is declared in `Meters.unroutedHeld` while it waits here.
     // Empty on every mint that deploys its item, so it costs one bit. BOUND: one
     // row per item deploy the collection REFUSED, deleted by the permissionless
     // `retry_item`; bodies are rebuilt from checked keys (D-188 point 1).
@@ -1014,13 +1045,13 @@ struct Storage {
     //
     // §5 states `T = seeded + swapped + pending`. `swapped` and `pending` live
     // on the ratchet; `seeded` is the founder capital CONCEPT §6 point 3 credits
-    // straight into `T` at genesis. That TON is real and it backs `S` — it sits
+    // straight into `T` at genesis. That GRAM is real and it backs `S` — it sits
     // in the DeDust LP — but it never passes through the ratchet's `pending`, so
     // a two-term reading of the identity reports a permanent, false solvency gap
-    // (the live testnet reported exactly 1.000000000 TON of it).
+    // (the live testnet reported exactly 1.000000000 GRAM of it).
     //
     // Written at genesis by `handleGenesisSeed` and again by every
-    // `DonateFloor` (D-91 point 4 — the donated TON is seeded backing by the
+    // `DonateFloor` (D-91 point 4 — the donated GRAM is seeded backing by the
     // same definition: it goes to the LP, not through the ratchet's
     // `pending`). D-91 point 5 retires the earlier claim that this field is
     // immutable for the life of the deployment; what is one-shot is GENESIS,
@@ -1040,7 +1071,7 @@ struct Storage {
     primesCount: uint32
     lastMintTime: uint64
     // BOUND: one row per `credit_tribute` that BOUNCED, deleted by the
-    // permissionless `retry_credit`; its TON is declared in `unroutedHeld`.
+    // permissionless `retry_credit`; its GRAM is declared in `unroutedHeld`.
     unroutedCredits: map<uint64, UnroutedCredit>
     // D-52: bounced `JettonMint` emissions, keyed by `addrKey(to)` and summed
     // per recipient — a second bounce for the same wallet adds to the entry
@@ -1070,8 +1101,8 @@ fun loadConfigD(storage: Storage): ConfigD {
     return storage.aux.load().config.load().d.load();
 }
 
-fun loadInviteText(storage: Storage): cell {
-    return storage.aux.load().config.load().inviteText;
+fun loadInviteConfig(storage: Storage): Config {
+    return storage.aux.load().config.load();
 }
 
 fun saveConfigD(mutate storage: Storage, d: ConfigD) {
@@ -1421,8 +1452,8 @@ fun isPrimeMR(n: int): bool {
 // `BIT_PERFECT` at 40.
 //
 // THE CAP IS THE CEILING. `SCORE_MAX = 87` because
-// `MINT_PRICE · 2^(87/10) = 415.87 TON` — the highest price this game can ask
-// for anything, and it lands just under owner answer 9's 420 TON ceiling. (The
+// `MINT_PRICE · 2^(87/10) = 415.87 GRAM` — the highest price this game can ask
+// for anything, and it lands just under owner answer 9's 420 GRAM ceiling. (The
 // plan's §1.1 says 420.4; that is 2^8.716, and the arithmetic is wrong. The
 // conclusion is not: 87 is the largest clamp whose ladder stays under 420, and
 // 88 would reach 445.7.) There is no other ceiling anywhere — the same
@@ -1714,7 +1745,7 @@ fun isFactorialN(n: int): bool {
 //
 // A 65-entry TABLE was tried for Fibonacci and is MEASURABLY WORSE: 65
 // comparisons against 257-bit literals cost more in TVM than the roots, and
-// pushed the primorial mint from 0.0998 to 0.1000 TON, over §4.1's gas & ops
+// pushed the primorial mint from 0.0998 to 0.1000 GRAM, over §4.1's gas & ops
 // line.
 fun fibLucasOf(n: int): (bool, bool) {
     if (n < 1) { return (false, false); }
@@ -1825,7 +1856,7 @@ fun isLandmarkPrime(n: int): bool {
 // count `d` the caller already walked rather than a flat `||` chain. That last
 // point is not a style note — measured, the two tables below cost 1,311,067
 // nanoton more as flat chains, 61% of this whole batch's bill against §4.1's
-// gas & ops line (0.10 TON when measured; 0.20 since D-117).
+// gas & ops line (0.10 GRAM when measured; 0.20 since D-117).
 // ---------------------------------------------------------------------------
 
 // Sum of each digit raised to the digit COUNT. Early-exits the moment the
@@ -2343,9 +2374,9 @@ fun factorSummaryOf(n: int, factors: map<uint8, FactorEntry>): (int, int, int, i
 // per exponent step. Calling `scoreOfFrom` there instead would walk the
 // dictionary a SECOND time, which measured at ~1,300 gas on the worst-case mint
 // and was not affordable when measured: §4.1's gas & ops line was a fixed 0.10
-// TON with the invite fan-out (D-101) at 99.79 of it. D-117 (2026-09-22) resized
-// the line to the measured worst case (0.20 TON), which is what this walk must
-// still fit inside; the headroom there is ~0.014 TON, not a budget for a second walk.
+// GRAM with the invite fan-out (D-101) at 99.79 of it. D-117 (2026-09-22) resized
+// the line to the measured worst case (0.20 GRAM), which is what this walk must
+// still fit inside; the headroom there is ~0.014 GRAM, not a budget for a second walk.
 @inline
 fun scoreOfWithSummary(n: int, omega: int, distinct: int, maxExponent: int, minExponent: int,
                        expGcd: int, maxPrime: int, sigma: int, korselt: int,
@@ -2484,7 +2515,7 @@ struct FactorEntry {
     s: uint128
 }
 
-// THE mint message (D8): one signature, one transaction, 1 TON attached.
+// THE mint message (D8): one signature, one transaction, 1 GRAM attached.
 //
 // Suppressed: the compiler's worst-case estimate treats `factors`
 // (map<uint8,FactorEntry>, at most 8 entries per CONCEPT §3.2's omega(n)<=8
@@ -2493,16 +2524,18 @@ struct FactorEntry {
 // (n,beneficiary,referralKey,kind,queryId) alone total ~620 bits, safely under
 // 1023. Verified empirically by the mint round-trip tests exercising the
 // maximum omega=8 case (docs/phase3-report.md).
-// §4.1's invite line (D-202). Up to INVITE_MAX_COUNT addresses THE MINTER names,
-// keyed BY SLOT 1..INVITE_MAX_COUNT; holes allowed. A slot with no address funds
+// §4.1's invite line (D-202). Up to `Config.inviteCount` addresses THE MINTER names,
+// keyed BY SLOT 1..inviteCount; holes allowed. A slot with no address funds
 // nothing and its share stays in the residual. No signature: the comment the
 // transfer carries is fixed in this contract, so a minter-chosen recipient can be
-// sent nothing but the game's own text and 0.1 TON (D-202).
+// sent nothing but the game's own text and `Config.inviteValue` (D-202, D-215).
 //
 // In a ref and not inline: three worst-case 267-bit addresses is 801 bits on
-// its own, and as a Maybe-ref it costs ONE BIT on an uninvited mint.
+// its own, and as a Maybe-ref it costs ONE BIT on an uninvited mint. A dict of
+// up to 100 addresses spills into child cells, which the minter's message pays
+// to forward.
 struct InviteList {
-    addresses: map<uint3, address>
+    addresses: map<uint7, address>
 }
 
 // D-191 point 1: a player sends this to the BENEFICIARY'S MINTER CARD, never to
@@ -2517,11 +2550,10 @@ struct (0xb0000002) Mint {
     kind: uint1              // 0 = composite, 1 = prime
     factors: map<uint8, FactorEntry>
     referralKey: uint32
-    // §4.1's invite line. 0..INVITE_MAX_COUNT, SET BY THE MINTER -- there is no
-    // governance over it and no default the contract supplies. uint3 makes 4..7
-    // representable; the `invite_count_over_max` check below is what makes
-    // them unreachable.
-    inviteCount: uint3
+    // §4.1's invite line. 0..`Config.inviteCount`, SET BY THE MINTER within the
+    // operator's terms (D-215). uint7 holds INVITE_COUNT_CEILING (100); the
+    // `invite_count_over_max` check below refuses anything over the live count.
+    inviteCount: uint7
     invites: Cell<InviteList>?      // null on an uninvited mint
 }
 
@@ -2666,7 +2698,7 @@ struct (0xb0000040) GenesisSeed {
 //
 // It is an NFT and a fact about who started the game. That is the whole of it.
 //
-// WHAT IT COSTS. Nothing but gas. Unity is not a mint: no 1 TON, no five-way
+// WHAT IT COSTS. Nothing but gas. Unity is not a mint: no 1 GRAM, no five-way
 // split, no ratchet injection, no PRIMES emitted. Charging for it would put
 // founder capital through the split at `n = 1`, where `k_max(n) = 2.7/log₁₀(n)`
 // is undefined — which is the arithmetic saying the same thing this comment does.
@@ -2717,12 +2749,17 @@ struct (0xb0000041) SetPeers {
 //   does not move, so every premium is a pure floor step — the reason §11.17
 //   is closed. This is NOT a mint: nothing is emitted, nobody is credited, and
 //   the only observable effect is that `p_f = T/S` rises.
-// D-211: §4.1's invite words, from `FeeDests.operatorAddr` only. `text` is the
-// bytes `inviteComment(n)` writes before its own link: no refs, whole bytes, at
-// most INVITE_TEXT_MAX_BYTES, else invite_text_bad (237). Takes effect on the next
-// invite mint; `getInviteText()` publishes the live words.
-struct (0xb0000085) SetInviteText {
+// D-211 + D-215: §4.1's invite terms, from `FeeDests.operatorAddr` only, all three
+// at once. `text` is the bytes `inviteComment(n)` writes before its own link: no
+// refs, whole bytes, at most INVITE_TEXT_MAX_BYTES, else invite_text_bad (237).
+// `count`/`value` must satisfy 1 <= value, count <= INVITE_COUNT_CEILING and
+// count * (value + INVITE_SEND_FEE) <= INVITE_LINE_CAP, else invite_terms_bad
+// (238); count 0 switches the line off. Takes effect on the next invite mint;
+// `getInviteTerms()` and `getInviteText()` publish the live terms.
+struct (0xb0000086) SetInviteTerms {
     queryId: uint64
+    count: uint7
+    value: coins
     text: cell
 }
 
@@ -2734,7 +2771,7 @@ struct (0xb0000009) ClearingCleared {
 
 // D-128: a secondary royalty's RATCHET HALF, from the two royalty-bearing
 // collections only. `clearing_cleared`'s two effects with the market's door
-// swapped for the collections' — `T += amount`, `S` untouched, the TON forwarded
+// swapped for the collections' — `T += amount`, `S` untouched, the GRAM forwarded
 // to the ratchet as `pending` — so a royalty is a pure floor step exactly as a
 // clearing is. It is deliberately NOT `DonateFloor`, which also mints PRIMES to
 // its sender and raises `S`: on this path that would emit supply to a collection
@@ -2747,7 +2784,7 @@ struct (0xb0000079) RoyaltyToRatchet {
     amount: coins
 }
 
-// D-91 point 4: the permissionless floor donation. TON in, PRIMES out, nothing
+// D-91 point 4: the permissionless floor donation. GRAM in, PRIMES out, nothing
 // ever out but PRIMES — §8's no-admin-withdraw rule is untouched because there
 // is no withdraw here to gate. `amount` is the donation; the message must carry
 // it plus the two hops' gas, exactly as `clearing_cleared` must.
@@ -2761,7 +2798,7 @@ struct (0xb000000c) DonateFloor {
 
 // D-117: the item-side retry lane. A bounced `MintItem` parked its original
 // body in `Aux2.unroutedItems` and its held split in `unroutedHeld`; this re-sends
-// that body — same n, same owner, same held split — with the held split's TON and a
+// that body — same n, same owner, same held split — with the held split's GRAM and a
 // fresh `ITEM_DEPLOY_VALUE` the CALLER pays, so the number is minted to the
 // owner it was sold to and every split line is paid exactly once, on the
 // `mint_confirmed` that follows. Permissionless and cheap-failing, the same
@@ -2775,7 +2812,7 @@ fun handleRetryItem(valueCoins: coins, msg: RetryItem) {
     if (!look.isFound) { return; } // cheap-fail: already retried, or never bounced
     val body = look.loadValue();
     // V24: the CALLER funds every leg a failed retry burns. Those legs are paid out
-    // of TON the bounce arm then re-declares in full as `unroutedHeld`, so any fee
+    // of GRAM the bounce arm then re-declares in full as `unroutedHeld`, so any fee
     // the caller did not cover was a draw on the ledger's own balance, once per
     // round, for as long as the deploy keeps bouncing.
     assert (valueCoins >= retryItemMinValue(body)) throw 103; // insufficient_value
@@ -2915,7 +2952,7 @@ struct (0xb0000020) MintWonLot {
 
 // D-20 — inbound, from the market only, on a DESCENDING prime lot's sale (the
 // lot a prime opens at its turn, D-88). A DIRECT, off-head mint: it runs the ordinary §4.1 five-way
-// split on the nominal MINT_PRICE (CONCEPT §6 point 1's "the nominal 1 TON
+// split on the nominal MINT_PRICE (CONCEPT §6 point 1's "the nominal 1 GRAM
 // runs through the ordinary split like any composite mint") and, in the same
 // transaction, deletes `n`'s `unsoldPrimes` and `forfeited` rows and hands both
 // values to the new item (D-188) — the one place that forfeiture stops. The premium above MINT_PRICE is NOT carried here; the
@@ -2955,7 +2992,7 @@ struct (0xe0000032) MarkRejected {
 }
 
 // outbound, ledger -> bounty vault (CONCEPT §7 primorial era ceremony).
-// DENOMINATION_PLAN P4: the vault's schedule is TON-denominated, so the body
+// DENOMINATION_PLAN P4: the vault's schedule is GRAM-denominated, so the body
 // carries this mint's POST-MINT (T, S) and the vault converts at the floor the
 // mint just set. Opcode moved 0xb0000031 -> 0xb0000032 so a stale sender is
 // rejected rather than mis-parsed (primes_bounty_vault.tolk D22).
@@ -2970,7 +3007,7 @@ struct (0xb0000032) PayEraBounty {
 // outbound, ledger -> bounty vault. D-99 §1.5. Every special number pays its
 // rebate at most once, on whichever acquisition route first assigns it an owner. `kind` is REBATE_COMPOSITE_PER_POINT (0) or REBATE_PRIME_FAMILY
 // (1); `points` is D(n) on the first and ignored on the second. The vault's own
-// genesis-fixed `rebateSchedule` decides the TON value — the ledger decides
+// genesis-fixed `rebateSchedule` decides the GRAM value — the ledger decides
 // ELIGIBILITY and SIZE-IN-POINTS only, the same D22 trust shape `PayEraBounty`
 // uses. `n` doubles as the vault's idempotency key (`paidSpecials`).
 const REBATE_COMPOSITE_PER_POINT: int = 0;
@@ -3018,7 +3055,7 @@ struct (0xc0000001) MintItem {
     // every prime it crosses, and that walk is invisible from the collection's
     // side — counting `mint_item`s undercounts by pi(n). Carried on a message
     // that already exists rather than as a `head_update` hop, so the mint path
-    // gains no send (EARN_PLAN risk 3 — the gas & ops line has 0.021 TON of
+    // gains no send (EARN_PLAN risk 3 — the gas & ops line has 0.021 GRAM of
     // headroom and this spends none of it).
     //
     // uint64, not uint256: `MintItem` is within 1023 bits of the single-cell
@@ -3050,7 +3087,7 @@ struct (0xc0000001) MintItem {
 // that could have sent it, so the split is paid only by an item that exists.
 // The held split rides INLINE in this root cell, not as a ref: a message's root
 // bits are free of forward fee and a ref cell is not, and the difference
-// (~0.00014 TON a mint, measured) is what keeps the worst-case mint inside
+// (~0.00014 GRAM a mint, measured) is what keeps the worst-case mint inside
 // §4.1's gas & ops line. The held split is at most ~710 bits (omega = 12, the
 // factors' bits summing to log2(n) < 82), and `n` is `coins` (n < 2^82,
 // `executeMint`'s MR bound) rather than uint256 so the root stays under 1023.
@@ -3077,7 +3114,7 @@ struct (0xb0000030) CreditTribute {
     // no way to recover which item it had been for, so `onBouncedMessage` filed
     // the amount under `p = 0`. `handleRetryCredit` then re-sent it to
     // `itemAddress(0)` forever — a contract that is not an item and cannot
-    // accept it — so the TON sat in `unroutedHeld` for good while
+    // accept it — so the GRAM sat in `unroutedHeld` for good while
     // `getLiabilityBreakdown` went on reporting it as owed. A published solvency
     // figure that overstates what is recoverable is exactly the failure §3.4's
     // "balance ~ declared liability, checkable in one get-call" exists to
@@ -3200,7 +3237,7 @@ struct (0x9b000001) CardMint {
 }
 
 // ledger -> card: a lost race. The refund rides through the card, which gives
-// the mint's window units back before passing the TON on to `payer`.
+// the mint's window units back before passing the GRAM on to `payer`.
 struct (0x9b000005) CardMintRefunded {
     queryId: uint64
     payer: address
@@ -3237,7 +3274,7 @@ type AllowedMessage =
     | DonateFloor | RoyaltyToRatchet | MintConfirmed | RetryItem
     | AdvanceHead
     | ImportLotBlock | LotBlockWords | LotBlockRefused | MintItemRefused
-    | FlushUnsold | LotBlockBookmark | SetInviteText;
+    | FlushUnsold | LotBlockBookmark | SetInviteTerms;
 
 // `isPrimorial` lives in the D-99 score block above (bit 14) — one list, one copy.
 
@@ -3247,11 +3284,11 @@ type AllowedMessage =
 // number being minted, in decimal as a referral key, so §4.1's 10% referral line
 // pays the minter when an invitee mints. Nothing in it is minter-written, which
 // is why the minter may name any recipient: the worst a minter can send a
-// stranger from this contract is the operator's words, the link and 0.1 TON.
+// stranger from this contract is the operator's words, the link and 0.1 GRAM.
 //
 // One cell: 4 + words (<= INVITE_TEXT_MAX_BYTES = 86) + 18 + digits + 3 bytes <= 127,
 // so it holds any n below 10^16.
-// ponytail: a head at or past 10^16 (that many TON minted) would overflow the cell
+// ponytail: a head at or past 10^16 (that many GRAM minted) would overflow the cell
 // and refuse invite mints; snake the digits into a ref if the line ever gets there.
 const INVITE_TEXT_MAX_BYTES = 86;
 
@@ -3278,7 +3315,7 @@ fun refund(dest: address, amount: coins, queryId: int) {
         body: beginCell().storeUint(0, 32).storeUint(queryId, 64).endCell(),
     // IGNORE_ERRORS (2026-11-20, audit R2-L1's sibling): the forward fee comes out
     // of `amount`, and an amount too small to pay it failed the ACTION phase (40)
-    // — aborted, no bounce. From `handleCardMint` that was a mint sent 1 nanoTON
+    // — aborted, no bounce. From `handleCardMint` that was a mint sent 1 nanoGRAM
     // over MINT_PRICE + MINT_MARGIN: the ledger kept the whole value and the card
     // never got its standing back. Dust that cannot be sent is dropped instead and
     // stays on this balance, which `sweep_ops` carries to the pool. Both callers
@@ -3314,7 +3351,7 @@ fun handleClaimTribute(senderAddress: address, msg: LedgerClaimTribute) {
     // B-1: this is where the custodied tribute actually leaves, so this is
     // where the declared liability has to fall. The balance check is not
     // belt-and-braces for its own sake: without it an under-funded ledger fails
-    // in the ACTION phase with TVM's generic "not enough TON" (37), which reads
+    // in the ACTION phase with TVM's generic "not enough GRAM" (37), which reads
     // as a gas problem rather than as insolvency — and, the part this comment
     // had wrong until 2026-11-20, does NOT bounce: only a compute-phase throw
     // does. So the assert is what lets the item restore `owed` (see
@@ -3372,7 +3409,7 @@ fun handleClaimDividend(valueCoins: coins, msg: ClaimDividend) {
 }
 
 // The item's report for `CreditDividend`. B-1: a TRANSFER between two liability
-// lines, not a discharge — the TON stays custodied here, now owed as tribute.
+// lines, not a discharge — the GRAM stays custodied here, now owed as tribute.
 @inline
 fun handleDividendCredited(senderAddress: address, msg: DividendCredited) {
     var storage = lazy Storage.load();
@@ -3493,12 +3530,12 @@ fun handleIgnite(senderAddress: address, valueCoins: coins, msg: Ignite) {
     assert (b.sinksSet == 1) throw 233;           // ledger_sinks_unset
     assert (meters.genesisSeeded == 1) throw 233; // ledger_sinks_unset
     // ...and the floor must actually be BACKED, which `genesisSeeded` does not
-    // give it: the seed writes `T = 0` (D-46 point 2 — no founder TON is
+    // give it: the seed writes `T = 0` (D-46 point 2 — no founder GRAM is
     // deposited) and D-92's `donate_floor` is what creates the floor, as a
     // separate permissionless call. Opening minting in between is not a
     // cosmetic ordering slip. The rebate is `R = k*I*S/T`, unbounded as
     // `T -> 0`: the mint after the first one emits ~20% of the genesis supply
-    // for 1 TON, against 0.28% once the donation has landed — measured in
+    // for 1 GRAM, against 0.28% once the donation has landed — measured in
     // `contracts/tests/UnbackedFloorLaunch.spec.ts`. So the launch order is
     // seed -> donate -> ignite, and it is structural rather than a step in a
     // runbook. `> 0` and not a target floor on purpose: the donation is
@@ -3613,8 +3650,8 @@ fun handleGenesisSeed(senderAddress: address, msg: GenesisSeed) {
     //
     // It failed loudly at the wrong thing. `T` does not need a mint to become
     // non-zero: `handleRoyaltyToRatchet` raises it on any TEP-66 royalty, and
-    // the collection sweeps TON that merely ARRIVES at it. So any stranger
-    // who sends the numbers collection a fraction of a TON
+    // the collection sweeps GRAM that merely ARRIVES at it. So any stranger
+    // who sends the numbers collection a fraction of a GRAM
     // between its deploy and this message makes the seed throw 104 and the
     // genesis unrecoverable — the assert can never be satisfied again, on a
     // ledger that cannot be re-deployed to the same address. On testnet a
@@ -3686,7 +3723,7 @@ fun handleClearingCleared(senderAddress: address, valueCoins: coins, msg: Cleari
     // The clearing must arrive WITH its money, covering BOTH legs this
     // handler is about to send (the ratchet hop's gas margin plus the
     // treasury share). Crediting `T` against a message that did not carry
-    // the TON would inflate the floor with backing the ratchet never
+    // the GRAM would inflate the floor with backing the ratchet never
     // receives — the one way this handler could break the §5 ratchet
     // theorem, so it is an assert and not a clamp.
     assert (valueCoins >= msg.amount + RATCHET_HOP_GAS) throw 103; // insufficient_value
@@ -3770,7 +3807,7 @@ fun handleRoyaltyToRatchet(senderAddress: address, valueCoins: coins, msg: Royal
     val configA = loadConfigA(storage);
     assert (senderAddress == configA.collectionAddr) throw 100;  // wrong_sender
     // The royalty must arrive WITH its money, for `handleClearingCleared`'s reason
-    // exactly: crediting `T` against a message that did not carry the TON inflates
+    // exactly: crediting `T` against a message that did not carry the GRAM inflates
     // the floor with backing the ratchet never receives, which is the one way this
     // handler could break the §5 ratchet theorem. An assert, not a clamp.
     assert (valueCoins >= msg.amount + RATCHET_HOP_GAS) throw 103;  // insufficient_value
@@ -3783,7 +3820,7 @@ fun handleRoyaltyToRatchet(senderAddress: address, valueCoins: coins, msg: Royal
 }
 
 // D-91 point 4: the pool's PRIMES side is minted HERE, not at genesis. Anyone
-// may call it. `X` TON in; `T += X`, `S`
+// may call it. `X` GRAM in; `T += X`, `S`
 // rises by the emission computed below, and those PRIMES are minted to the
 // sender, who pairs and burns on DeDust themselves (D-91 point 6 names that
 // gap: the pair-and-burn is not atomic and cannot be, until a DeDust deposit
@@ -3795,8 +3832,8 @@ fun handleRoyaltyToRatchet(senderAddress: address, valueCoins: coins, msg: Royal
 // shape is `handleClearingCleared`'s — which forwards `X` to the ratchet, where
 // `PoolInject` does `pending += X`. This contract implemented both, so every
 // donation raised the identity's right-hand side by `2X` against `X` on the
-// left, and the live testnet ratchet panel reported `beyond T 4.000 TON`
-// against `seedT = 4.000 TON`: the alarm was right and the books were wrong.
+// left, and the live testnet ratchet panel reported `beyond T 4.000 GRAM`
+// against `seedT = 4.000 GRAM`: the alarm was right and the books were wrong.
 //
 // A donation lands in `pending`. `seedT` therefore means exactly what D-26 said
 // and nothing else — capital credited STRAIGHT into `T` that never passes
@@ -3804,7 +3841,7 @@ fun handleRoyaltyToRatchet(senderAddress: address, valueCoins: coins, msg: Royal
 // assignment. Anything that adds to `seedT` here is that double-count again.
 //
 // Incremental by construction, unlike `handleGenesisSeed`'s virgin-ledger
-// assert: send 1 TON, verify, then send the rest. It takes money in and never
+// assert: send 1 GRAM, verify, then send the rest. It takes money in and never
 // out.
 @inline
 fun handleDonateFloor(senderAddress: address, valueCoins: coins, msg: DonateFloor) {
@@ -3815,7 +3852,7 @@ fun handleDonateFloor(senderAddress: address, valueCoins: coins, msg: DonateFloo
     //
     // The donation must arrive WITH its money, for `handleClearingCleared`'s
     // reason exactly: crediting `T` against a message that did not carry the
-    // TON inflates the floor with backing the ratchet never receives, which is
+    // GRAM inflates the floor with backing the ratchet never receives, which is
     // the one way this handler could break the §5 ratchet theorem.
     assert (valueCoins >= msg.amount + RATCHET_HOP_GAS + DONATE_MINT_GAS + CALLER_COMPUTE_GAS) throw 103; // insufficient_value
     assert (msg.amount > 0) throw 103; // insufficient_value
@@ -3867,7 +3904,7 @@ fun handleDonateFloor(senderAddress: address, valueCoins: coins, msg: DonateFloo
     emitted = storage.S < S_MAX ? emitted * (S_MAX - storage.S) / S_MAX : 0;
     // The taper alone does NOT bound `S`: `e·(S_MAX − S)/S_MAX <= S_MAX − S`
     // only while `e <= S_MAX`, and `e` grows with the donation, uncapped — a
-    // donation past `max(S_MAX/L, p_f·S_MAX)` (120,000 TON at L) would carry
+    // donation past `max(S_MAX/L, p_f·S_MAX)` (120,000 GRAM at L) would carry
     // `S` over the cap. So the headroom itself is the last clamp. Emitting less
     // only raises `(T+X)/(S+E)`, so §5's floor guarantee is untouched.
     if (emitted > S_MAX - storage.S) {
@@ -3875,7 +3912,7 @@ fun handleDonateFloor(senderAddress: address, valueCoins: coins, msg: DonateFloo
     }
 
     // A donation so small that the floor rate rounds it to nothing is refused
-    // rather than silently taking the TON for zero PRIMES.
+    // rather than silently taking the GRAM for zero PRIMES.
     //
     // D-156 CONSEQUENCE, STATED RATHER THAN DISCOVERED: once `S` reaches `S_MAX`
     // the taper drives `emitted` to zero and this op refuses PERMANENTLY. That
@@ -3887,7 +3924,7 @@ fun handleDonateFloor(senderAddress: address, valueCoins: coins, msg: DonateFloo
     // permissionless way to donate to the floor at all.
     //
     // D-156 ACCEPTS THAT rather than adding an op for it. Nobody loses money —
-    // the assert throws, the message bounces, the TON goes home — and the cap
+    // the assert throws, the message bounces, the GRAM goes home — and the cap
     // binds at a head around 4·10⁹, so an op built for it now would be built on
     // no information. If that day comes it is a new decision with real data,
     // not a speculative handler carried until then.
@@ -3924,18 +3961,23 @@ fun handleSetPeers(senderAddress: address, msg: SetPeers) {
     storage.save();
 }
 
-// D-211: the operator rewrites §4.1's invite words. Moves no value and touches no
-// term of the split; the link and `n` stay this contract's (`inviteComment`).
+// D-211 + D-215: the operator rewrites §4.1's invite terms. Moves no value; the
+// only split term it touches is the invite line, and only inside INVITE_LINE_CAP.
+// The link and `n` stay this contract's (`inviteComment`).
 @inline
-fun handleSetInviteText(senderAddress: address, msg: SetInviteText) {
+fun handleSetInviteTerms(senderAddress: address, msg: SetInviteTerms) {
     var storage = lazy Storage.load();
     val feeDests = loadConfigA(storage).feeDests.load();
     assert (senderAddress == feeDests.operatorAddr) throw 100; // wrong_sender
     val s = msg.text.beginParse();
     val bits = s.remainingBitsCount();
     assert (s.remainingRefsCount() == 0 && bits % 8 == 0 && bits <= INVITE_TEXT_MAX_BYTES * 8) throw 237; // invite_text_bad
+    assert (msg.value >= 1 && msg.count <= INVITE_COUNT_CEILING
+            && msg.count * (msg.value + INVITE_SEND_FEE) <= INVITE_LINE_CAP) throw 238; // invite_terms_bad
     var aux = storage.aux.load();
     var config = aux.config.load();
+    config.inviteCount = msg.count;
+    config.inviteValue = msg.value;
     config.inviteText = msg.text;
     aux.config = config.toCell();
     storage.aux = aux.toCell();
@@ -4209,7 +4251,7 @@ fun handleSyncHead(valueCoins: coins, msg: SyncHead) {
 // D-189, PERMISSIONLESS: finishes a head-advance walk a mint left unfinished
 // (`walkPending`), one gas-bounded stretch per call. A no-op when nothing is
 // pending, so a keeper racing a mint loses only gas. Whatever the walk does not
-// burn rides back to the caller. Moves no TON and mints nothing: it does
+// burn rides back to the caller. Moves no GRAM and mints nothing: it does
 // exactly the bookkeeping the mint that stopped would have done.
 @inline
 fun handleAdvanceHead(senderAddress: address, valueCoins: coins, msg: AdvanceHead) {
@@ -4267,7 +4309,7 @@ fun onInternalMessage(in: InMessage) {
             // split on the nominal MINT_PRICE (CONCEPT §6 point 1). The
             // seventh, invite line (D-101) is zero here and on every settle
             // path: an invite is something a MINTER funds out of their own
-            // 1 TON, and this message carries no list to fund one with.
+            // 1 GRAM, and this message carries no list to fund one with.
             var storage = lazy Storage.load();
             val configA = loadConfigA(storage);
             val d = loadConfigD(storage);
@@ -4300,7 +4342,7 @@ fun onInternalMessage(in: InMessage) {
             // ack arrives, so this send is what makes it safe to release.
             createMessage({
                 bounce: BounceMode.NoBounce,
-                value: 15000000, // 0.015 TON, same figure `handleSettle` uses
+                value: 15000000, // 0.015 GRAM, same figure `handleSettle` uses
                 dest: in.senderAddress,
                 body: (SettleConfirmed { queryId: msg.queryId, n: msg.n }).toCell(),
             }).send(SEND_MODE_REGULAR);
@@ -4318,7 +4360,7 @@ fun onInternalMessage(in: InMessage) {
         MintWonLot => { handleSettle(in.senderAddress, in.valueCoins, msg); }
         MintConfirmed => { handleMintConfirmed(in.senderAddress, msg); }
         RetryItem => { handleRetryItem(in.valueCoins, msg); }
-        SetInviteText => { handleSetInviteText(in.senderAddress, msg); }
+        SetInviteTerms => { handleSetInviteTerms(in.senderAddress, msg); }
         else => {
             assert (in.body.isEmpty()) throw 101; // wrong_opcode
         }
@@ -4354,7 +4396,7 @@ fun handleCardMint(senderAddress: address, valueCoins: coins, card: CardMint) {
         // value minus gas, never burned or kept.
         //
         // D-191 point 1: the refund rides back THROUGH THE CARD, which gives the
-        // window units this mint took back before passing the TON on to the payer.
+        // window units this mint took back before passing the GRAM on to the payer.
         // Carry-all, so this transaction's gas comes out of the refunded value and
         // a lost race costs the ledger's balance nothing (GAUNTLET V6's rule; the
         // fixed LOST_RACE_GAS deduction that enforced it is deleted — the mode
@@ -4369,7 +4411,7 @@ fun handleCardMint(senderAddress: address, valueCoins: coins, card: CardMint) {
     }
 
     // D-191 point 1: the card refused anything under MINT_PRICE before forwarding,
-    // and its own compute and forward fee come out of that — the 1 TON is all-in,
+    // and its own compute and forward fee come out of that — the 1 GRAM is all-in,
     // so the hop is paid by §4.1's gas & ops line, like every other hop of a mint.
     // CARD_HOP_ALLOWANCE bounds how much: a body padded to make the forward dear
     // arrives short and is refused here, and the card gives the standing back.
@@ -4389,68 +4431,76 @@ fun handleCardMint(senderAddress: address, valueCoins: coins, card: CardMint) {
     }
 
     // §4.1's SEVENTH LINE (D-202), and the only path that can fund it: an
-    // invite is something a MINTER buys with their own 1 TON, so no settlement
+    // invite is something a MINTER buys with their own 1 GRAM, so no settlement
     // or clearing path carries one. The minter names the recipients; there is
     // no signature to check, because nothing in the transfer is minter-written
     // but the destination -- the comment is `inviteComment(n)`: the operator's
     // words (D-211) and this contract's link.
-    // A mint with inviteCount == 0 pays nothing.
-    assert (msg.inviteCount <= INVITE_MAX_COUNT) throw 221; // invite_count_over_max
+    // A mint with inviteCount == 0 pays nothing and never loads the terms.
     var inviteSpend: coins = 0;
     val listRef = msg.invites;
-    if (msg.inviteCount > 0 && listRef != null) {
-        val addresses = listRef!.load().addresses;
-        // Built once: every slot of this mint carries the same text.
-        val comment = inviteComment(msg.n, loadInviteText(storage));
+    if (msg.inviteCount > 0) {
+        val terms = loadInviteConfig(storage);
+        assert (msg.inviteCount <= terms.inviteCount) throw 221; // invite_count_over_max
+        if (listRef != null) {
+            val addresses = listRef!.load().addresses;
+            // Built once: every slot of this mint carries the same text.
+            val comment = inviteComment(msg.n, terms.inviteText);
 
-        // One plain transfer per FUNDED slot; a slot the dictionary has no
-        // address for is skipped, and its INVITE_TRANSFER_VALUE is simply never
-        // deducted below -- that is the whole of "unspent slots fall to beta",
-        // implemented by subtraction that does not happen rather than by a
-        // refund that would have to be routed somewhere.
-        //
-        // NoBounce, so a Telegram wallet that is not deployed yet still receives
-        // it (an uninit account keeps the value of a non-bounceable message).
-        // Mode REGULAR: the forward fee comes out of the 0.1 TON, so the line
-        // costs exactly `sent * INVITE_TRANSFER_VALUE` and the gas & ops line
-        // pays only this loop's compute.
-        //
-        // Sent from here rather than from `executeMint` because it is a
-        // mint-message-only line: a throw anywhere later in this transaction
-        // discards these messages along with every other effect.
-        var slot = 1;
-        var sent = 0;
-        while (slot <= msg.inviteCount) {
-            val look = addresses.get(slot as uint3);
-            if (look.isFound) {
-                val invitee = look.loadValue();
-                // Audit R2-L1 (2026-11-19): BASECHAIN ONLY, refused HERE. A send to a
-                // workchain that does not exist fails in the ACTION phase (code 36):
-                // the transaction aborts with no bounce, the ledger keeps the payer's
-                // 1 TON and the card never gets its standing back. A compute-phase
-                // throw bounces to the card, which gives back and refunds. It also
-                // discards the transfers already queued above, so checking in the
-                // loop is checking every slot before anything is kept. Masterchain is
-                // refused by choice, not need: a -1 invitee was delivered before this.
-                assert (invitee.getWorkchain() == BASECHAIN) throw 236; // invite_bad_workchain
-                createMessage({
-                    bounce: BounceMode.NoBounce,
-                    value: INVITE_TRANSFER_VALUE,
-                    dest: invitee,
-                    body: comment,
-                }).send(SEND_MODE_REGULAR);
-                sent += 1;
+            // One plain transfer per FUNDED slot; a slot the dictionary has no
+            // address for is skipped, and its share is simply never deducted
+            // below -- that is the whole of "unspent slots fall to beta",
+            // implemented by subtraction that does not happen rather than by a
+            // refund that would have to be routed somewhere.
+            //
+            // NoBounce, so a Telegram wallet that is not deployed yet still receives
+            // it (an uninit account keeps the value of a non-bounceable message).
+            // PAY_FEES_SEPARATELY (D-215): the forward fee comes off this balance, so
+            // the invitee receives `inviteValue` whole. The line pays for it out of
+            // its own INVITE_SEND_FEE per transfer, deducted below with the value, so
+            // the gas & ops line carries none of it.
+            //
+            // Sent from here rather than from `executeMint` because it is a
+            // mint-message-only line: a throw anywhere later in this transaction
+            // discards these messages along with every other effect.
+            var slot = 1;
+            var sent = 0;
+            while (slot <= msg.inviteCount) {
+                val look = addresses.get(slot as uint7);
+                if (look.isFound) {
+                    val invitee = look.loadValue();
+                    // Audit R2-L1 (2026-11-19): BASECHAIN ONLY, refused HERE. A send to a
+                    // workchain that does not exist fails in the ACTION phase (code 36):
+                    // the transaction aborts with no bounce, the ledger keeps the payer's
+                    // 1 GRAM and the card never gets its standing back. A compute-phase
+                    // throw bounces to the card, which gives back and refunds. It also
+                    // discards the transfers already queued above, so checking in the
+                    // loop is checking every slot before anything is kept. Masterchain is
+                    // refused by choice, not need: a -1 invitee was delivered before this.
+                    assert (invitee.getWorkchain() == BASECHAIN) throw 236; // invite_bad_workchain
+                    createMessage({
+                        bounce: BounceMode.NoBounce,
+                        value: terms.inviteValue,
+                        dest: invitee,
+                        body: comment,
+                    }).send(SEND_MODE_REGULAR | SEND_MODE_PAY_FEES_SEPARATELY);
+                    sent += 1;
+                }
+                slot += 1;
             }
-            slot += 1;
-        }
-        // Exact integer multiple of a nanoTON figure -- no division, so unlike
-        // the tribute lines this one leaves no remainder to fold into the pool.
-        inviteSpend = sent * INVITE_TRANSFER_VALUE;
+            // Exact integer multiple of nanoGRAM figures -- no division, so unlike
+            // the tribute lines this one leaves no remainder to fold into the pool.
+            inviteSpend = sent * (terms.inviteValue + INVITE_SEND_FEE);
+            // INVITE_LINE_CAP holds here too, not only at the setter: the bound is a
+            // property of every mint, whatever terms a deploy wrote.
+            assert (inviteSpend <= INVITE_LINE_CAP) throw 238; // invite_terms_bad
 
-        var opMeters = meters.operatorMeters.load();
-        opMeters.inviteSlotsFunded += msg.inviteCount;
-        opMeters.inviteTransfersSent += sent;
-        meters.operatorMeters = opMeters.toCell();
+            var opMeters = meters.operatorMeters.load();
+            opMeters.inviteSlotsFunded += msg.inviteCount;
+            opMeters.inviteTransfersSent += sent;
+            opMeters.inviteValuePaid += sent * terms.inviteValue;
+            meters.operatorMeters = opMeters.toCell();
+        }
     }
 
     executeMint(mutate storage, mutate meters, configA, msg.queryId, msg.n, msg.kind,
@@ -4525,7 +4575,7 @@ fun handleSettle(senderAddress: address, valueCoins: coins, msg: MintWonLot) {
     // `head`, so there is nothing new to announce.
     createMessage({
         bounce: BounceMode.NoBounce,
-        // 0.015 TON, sized when the confirmation was two hops (market + the
+        // 0.015 GRAM, sized when the confirmation was two hops (market + the
         // shard D-90 deleted). Shrinking it is a gas-budget question for
         // `GasRegression.spec.ts`, not a comment fix.
         value: 15000000,
@@ -4534,7 +4584,7 @@ fun handleSettle(senderAddress: address, valueCoins: coins, msg: MintWonLot) {
     }).send(SEND_MODE_REGULAR);
 }
 
-// §3.4 B1: the ONE place TON leaves the ledger as pool backing. Every caller
+// §3.4 B1: the ONE place GRAM leaves the ledger as pool backing. Every caller
 // routes through here, so "what can move the pool" is a single grep. The value
 // carried is `amount + RATCHET_HOP_GAS`; the ratchet credits `pending` by the
 // nominal `amount` field only and keeps the surplus as its own gas buffer.
@@ -4628,7 +4678,7 @@ fun payHeldSplit(mutate meters: Meters, configA: ConfigA, itemDefault: Cell<Item
         } else if (share > 0) {
             // D-60: a share that rounds to 0 is skipped rather than paying
             // CREDIT_TRIBUTE_VALUE gas to credit nothing. B-1: the message
-            // carries gas and `share` as a NUMBER — the TON stays here until the
+            // carries gas and `share` as a NUMBER — the GRAM stays here until the
             // owner claims it, and declaring it is what stops `sweep_ops` from
             // treating it as surplus.
             val creditId = meters.nextCreditId;
@@ -4650,7 +4700,7 @@ fun payHeldSplit(mutate meters: Meters, configA: ConfigA, itemDefault: Cell<Item
     // BOUNCEABLE, unlike the fee legs: a key below the head can still name an
     // item that is undeployed (parked for `retry_item`) or unpopulated (squatted
     // empty state, or overtaken by this relay — 307). Either way the bounce
-    // brings the TON back here, `onBouncedMessage` has no arm for it, and it sits
+    // brings the GRAM back here, `onBouncedMessage` has no arm for it, and it sits
     // as surplus until `sweep_ops` returns it to the pool — never on an address
     // that is not the owner's.
     if (referralKey != 0) {
@@ -4670,17 +4720,17 @@ fun payHeldSplit(mutate meters: Meters, configA: ConfigA, itemDefault: Cell<Item
     // operator; D-152 reversed that, so the line is protocol revenue paid to the
     // contract with no key, and the operator's only claim on a mint is §6 point
     // 2's 42% forfeit remainder below (D-166). NoBounce on every value-bearing fee leg:
-    // TON credited to an uninitialised address accumulates as its balance rather
+    // GRAM credited to an uninitialised address accumulates as its balance rather
     // than vanishing. (NoBounce, and this is the reason EVERY value-bearing fee
     // leg in this file uses it: the destination may not be initialised yet, and
-    // TON credited to an uninitialised address accumulates as its balance rather
+    // GRAM credited to an uninitialised address accumulates as its balance rather
     // than vanishing. A bounce would be the wrong reversal — nothing here is a
     // state change to roll back; the legs that DO need one, the item deploy and
     // the tribute credit, are RichBounce.) The send is below, in one message with
     // the forfeit's treasury share (G81).
 
     // 4b. the forfeit. THE REMAINDER IS SUBTRACTED, NEVER MULTIPLIED A SECOND
-    // TIME: two truncations would leave up to a nanoTON here with nothing
+    // TIME: two truncations would leave up to a nanoGRAM here with nothing
     // declaring it (RoundingDust.spec.ts).
     val forfeitToTreasury: coins = forfeitTotal * FORFEIT_TREASURY_BPS / BPS_DEN;
     val forfeitToOperator: coins = forfeitTotal - forfeitToTreasury;
@@ -4688,7 +4738,7 @@ fun payHeldSplit(mutate meters: Meters, configA: ConfigA, itemDefault: Cell<Item
     opMeters.forfeitedBeyondWindow += forfeitUnattributed;
 
     // G81: the 5% line, the forfeit's treasury share and any premium half held
-    // for the treasury go in ONE message. A forfeit of a few thousand nanoTON (a
+    // for the treasury go in ONE message. A forfeit of a few thousand nanoGRAM (a
     // tiny unsold prime cited beside a huge one) is never a leg of its own that
     // cannot pay its receiver's gas. V18a: PAY_FEES_SEPARATELY, so the recipient
     // receives the declared amount and not the amount less its forward fee.
@@ -4770,7 +4820,7 @@ fun parkRefusedMintItem(mutate storage: Storage, body: cell) {
 // D-189: the walk is RESUMABLE. It stops before a step once the transaction has
 // consumed WALK_GAS_STOP, parks `head` on the first unwalked position and sets
 // `walkPending`; `advance_head` calls this again from there. Unbounded, a run of
-// ~55 auctioned composites (~60 TON of lots) pushed the one mint that crossed it
+// ~55 auctioned composites (~60 GRAM of lots) pushed the one mint that crossed it
 // past the 1M-gas cap, every retry walked the same run, and the head was frozen
 // for good. Returns whether `aux2` was written.
 //
@@ -4784,7 +4834,7 @@ fun parkRefusedMintItem(mutate storage: Storage, body: cell) {
 // both whether to loop and whether to mark doubled it for nothing (see
 // `Storage.anyOffHead`'s comment for the other half of that gas fix). D-99
 // deleted SS3's special-composite skip: a composite the head reaches mints at
-// 1 TON, whatever its score.
+// 1 GRAM, whatever its score.
 fun walkHead(mutate storage: Storage, mutate meters: Meters, mutate aux2: Aux2,
              offHeadBitmap: map<uint64, uint256>, frontierN: int, from: int): bool {
     var aux2Dirty = false;
@@ -4841,7 +4891,7 @@ fun executeMint(
     factors: map<uint8, FactorEntry>,
     referralKey: int,
     beneficiary: address,
-    // §4.5 / D-106: the RECRUITER identity — the wallet spending the TON,
+    // §4.5 / D-106: the RECRUITER identity — the wallet spending the GRAM,
     // distinct from the beneficiary the NFT, rebate and rank follow. When the
     // two differ this mint is a gift, and the recruit edge below may credit the
     // payer with a recruit.
@@ -4851,7 +4901,7 @@ fun executeMint(
     // forwarded, so the beneficiary stands in: `payer == beneficiary`, a lot
     // win is never a gift and never credits a recruit. It can only under-count.
     payer: address,
-    // D-99 §1.5 — TRUE only on the sequential head mint, the 1 TON path. The
+    // D-99 §1.5 — TRUE only on the sequential head mint, the 1 GRAM path. The
     // per-point composite rebate pays on that route and on no other: an
     // auction-won composite gets nothing, because the premium it paid IS the
     // price of not waiting. Passed explicitly rather than inferred from
@@ -4867,7 +4917,7 @@ fun executeMint(
     // (`handleSettle`, `SettlePrimeClearing`) pass `false`.
     advanceHead: bool,
     // §4.1's SEVENTH LINE (D-101). ALREADY SPENT by the time this function
-    // runs: `handleMint` sent the deploys and counted them, and passes the TON
+    // runs: `handleMint` sent the deploys and counted them, and passes the GRAM
     // those sends actually carried. Zero on every other path.
     //
     // Passed as a settled figure rather than as (count, addresses) so that this
@@ -5125,10 +5175,10 @@ fun executeMint(
     // `fresh` IS THE WHOLE SYBIL GUARD: no accepted event — a mint for that
     // wallet, a prime bought for it, a recruit credited to it — had touched the
     // card. Gifting the same wallet twice counts once, so a recruit costs a FRESH
-    // ADDRESS plus a full 1 TON mint — the price §8.1 already argued a fake
+    // ADDRESS plus a full 1 GRAM mint — the price §8.1 already argued a fake
     // recruit has to pay.
     //
-    // NOTE WHAT IS NOT HERE: no TON. D-106 deleted §4.1's patron line, so the
+    // NOTE WHAT IS NOT HERE: no GRAM. D-106 deleted §4.1's patron line, so the
     // split does not know this edge exists — same tribute, same referral, same
     // treasury, same gas, same injection, same ratchet step. A recruit is paid
     // in k_max uplift (`recruitRankUplift`) and in nothing else.
@@ -5216,7 +5266,7 @@ fun executeMint(
     // The headroom is the last clamp, as in `handleDonateFloor`. The taper keeps
     // `rebate` under `S_MAX − S` only while `I <= p_f·S_MAX`, and nothing on this
     // path enforces that: `ignite` asks only `T > 0`, so a launch on a dust
-    // donation (p_f·S_MAX < 0.65 TON) let the first mint carry `S` past the cap
+    // donation (p_f·S_MAX < 0.65 GRAM) let the first mint carry `S` past the cap
     // (2026-11-08 audit). Emitting less only raises the floor (§5).
     if (rebate > S_MAX - storage.S) {
         rebate = S_MAX - storage.S;
@@ -5288,7 +5338,7 @@ fun executeMint(
     // 1. D-117 — THE HELD SPLIT. Every line this mint owes a third party is written
     // into one cell here and paid by `payHeldSplit` when the collection
     // confirms the item deploy — never in this transaction. `heldSplitValue` is the
-    // TON those lines carry, and it leaves WITH the `MintItem` below, so while
+    // GRAM those lines carry, and it leaves WITH the `MintItem` below, so while
     // the deploy is in flight the money is in the message and on no contract's
     // balance: nothing can sweep it, and nothing is paid for a number whose item
     // never exists. (CONCEPT §4.1, "the held split".)
@@ -5355,7 +5405,7 @@ fun executeMint(
             }
         }
         // rounding remainder folds into the pool (documented: no dust leak, T
-        // absorbs the sub-nanoTON-division remainder rather than losing it)
+        // absorbs the sub-nanoGRAM-division remainder rather than losing it)
         if (distributed < TRIBUTE_DIVISOR_AMOUNT) {
             storage.T += (TRIBUTE_DIVISOR_AMOUNT - distributed);
             poolToRatchet += (TRIBUTE_DIVISOR_AMOUNT - distributed);
@@ -5434,7 +5484,7 @@ fun executeMint(
     if (dCfg.peersSet == 1 && isPrimorial(n)) {
         createMessage({
             bounce: BounceMode.NoBounce,
-            value: 15000000, // 0.015 TON, gas for the vault's transfer leg
+            value: 15000000, // 0.015 GRAM, gas for the vault's transfer leg
             dest: dCfg.bountyVaultAddr,
             // `storage.T` / `storage.S` are already this mint's FINAL values
             // (both were incremented above), so the ceremony is priced at the
@@ -5481,7 +5531,7 @@ fun executeMint(
         // at. Both legs now read one number. A prime reaches here with an empty
         // list, and `scoreOfFrom` on an empty list is exactly `scoreOf(n)`, so
         // the prime-family branch is unchanged. The second dictionary walk this
-        // costs fits D-117's measured 0.20 TON gas & ops line.
+        // costs fits D-117's measured 0.20 GRAM gas & ops line.
         val (score, flags) = scoreOfFrom(n, factors);
         var rebateKind: int = -1;
         var rebatePoints: int = 0;
@@ -5494,7 +5544,7 @@ fun executeMint(
         if (rebateKind >= 0) {
             createMessage({
                 bounce: BounceMode.NoBounce,
-                value: 15000000, // 0.015 TON, gas for the vault's transfer leg
+                value: 15000000, // 0.015 GRAM, gas for the vault's transfer leg
                 dest: dCfg.bountyVaultAddr,
                 body: (PaySpecialNumberRebate {
                     queryId: queryId,
@@ -5523,7 +5573,7 @@ fun executeMint(
     //
     //     Deliberately NOT a slice of the era bounty. The bounty above still
     //     pays 100% to the primorial's minter; the trophy costs the protocol
-    //     nothing but one dictionary entry on a contract that holds no TON,
+    //     nothing but one dictionary entry on a contract that holds no GRAM,
     //     which is the whole reason D-36 kept it while dropping the dividend.
     //
     //     Gated on `sinksSet` (the registrar), not on `peersSet` (the bounty
@@ -5605,7 +5655,7 @@ fun onBouncedMessage(in: InMessageBounced) {
         // D-117 (signed 2026-09-22) CLOSES BOTH HALVES, and neither by moving
         // `head`. The split lines no longer leave beside the deploy — they ride
         // IN it (`MintItem.heldSplit`) and are paid only by `MintConfirmed` — so a
-        // bounce means none of them was paid, and their TON is in this bounce.
+        // bounce means none of them was paid, and their GRAM is in this bounce.
         // The number is not orphaned either: the ORIGINAL body is parked in
         // `Aux2.unroutedItems` under `n`, its held split declared in `unroutedHeld`,
         // and the permissionless `retry_item(n)` re-sends it — same owner, same
@@ -5635,7 +5685,7 @@ fun onBouncedMessage(in: InMessageBounced) {
         // sum is `forfeitedBeyondWindow`.
         //
         // An item that EXISTS but was never populated is no owner either: its
-        // empty state is public, so anyone can deploy it for ~0.02 TON to catch
+        // empty state is public, so anyone can deploy it for ~0.02 GRAM to catch
         // these credits and then win the lot. The item refuses with 307, which
         // lands here exactly like "no account".
         //
@@ -5781,7 +5831,7 @@ fun onBouncedMessage(in: InMessageBounced) {
         storage.save();
     }
     // `forward_to_owner` (0xc1000002) has NO arm, on purpose: a refused referral
-    // writes nothing, and its TON stays as surplus for `sweep_ops` to pool.
+    // writes nothing, and its GRAM stays as surplus for `sweep_ops` to pool.
     // The DeDust-swap bounce branch (0xea06185d) moved to primes_ratchet.tolk
     // with `pending`. It is the ONLY bounce path the floor guard rides (§4.3.1):
     // a would-be-above-floor flush and a sandwiched one are indistinguishable
@@ -5824,7 +5874,7 @@ get fun getMaxSupply(): int {
 //     S - getUnmintedHeld() == master.totalSupply + sink cumulative burns
 //
 // It should read 0 for the life of the deployment. A non-zero value is not a
-// loss of backing — the TON is unaffected and `p_f` is understated, never
+// loss of backing — the GRAM is unaffected and `p_f` is understated, never
 // overstated — it is emission owed to a wallet, recoverable by anyone calling
 // `retry_mint` for that address once whatever made the mint bounce is fixed.
 get fun getUnmintedHeld(): int {
@@ -5902,7 +5952,7 @@ get fun getClaimableDividend(p: int): int {
 //
 //   1. `tributeOwed`   — §3.2 tribute credited to items as `owed`, custodied
 //                        here, payable on `claim_tribute`. THE BIG ONE: 0.08
-//                        TON per composite mint, and the one B-1 found missing.
+//                        GRAM per composite mint, and the one B-1 found missing.
 //   2. `unroutedHeld`  — credits that bounced, owed to a `retry_credit`.
 //   3. `divOutstanding`— flat dividends accrued and not yet claimed.
 //
@@ -6062,44 +6112,50 @@ get fun getFeeDests(): (slice, slice, int) {
 // §4.1's invite line / §9.1 (D-202): the whole invite line, lifetime, in one
 // call. CUMULATIVE and never decremented.
 //
-// Returns (slotsFunded, transfersSent, slotsToPool, linePaid):
-//   slotsFunded   -- slots minters DECLARED, ever.
-//   transfersSent -- invite transfers actually SENT, ever.
-//   slotsToPool   -- their difference: the slots that fell to beta. This is the
-//                    number that makes "unspent slots go to the pool, never to
-//                    the team" checkable from outside instead of asserted.
-//   linePaid      -- the TON the line actually cost, and it is `transfersSent *
-//                    INVITE_TRANSFER_VALUE` EXACTLY, because the line is an integer
-//                    multiple with no division and therefore no remainder.
-get fun getInviteSpend(): (int, int, int, coins) {
+// Returns (slotsFunded, transfersSent, slotsToPool, valueDelivered, linePaid):
+//   slotsFunded    -- slots minters DECLARED, ever.
+//   transfersSent  -- invite transfers actually SENT, ever.
+//   slotsToPool    -- their difference: the slots that fell to beta. This is the
+//                     number that makes "unspent slots go to the pool, never to
+//                     the team" checkable from outside instead of asserted.
+//   valueDelivered -- the GRAM invitees RECEIVED, summed at each mint's live value.
+//   linePaid       -- what the line took off beta: valueDelivered plus
+//                     INVITE_SEND_FEE per transfer, EXACTLY -- integer multiples,
+//                     no division, no remainder. The fee part it did not spend is
+//                     in `opsSweptTotal`, not here.
+get fun getInviteSpend(): (int, int, int, int, int) {
     val storage = lazy Storage.load();
     val opMeters = loadMeters(storage).operatorMeters.load();
     return (
         opMeters.inviteSlotsFunded,
         opMeters.inviteTransfersSent,
         opMeters.inviteSlotsFunded - opMeters.inviteTransfersSent,
-        opMeters.inviteTransfersSent * INVITE_TRANSFER_VALUE,
+        opMeters.inviteValuePaid,
+        opMeters.inviteValuePaid + opMeters.inviteTransfersSent * INVITE_SEND_FEE,
     );
 }
 
-// §4.1's invite line / §9.1 (D-202): the line's two owner-set terms, so the
-// checkout's "3 x 0.1 TON" is read off the contract that spends it.
-// Returns (maxCount, transferValue).
-get fun getInviteTerms(): (int, coins) {
-    return (INVITE_MAX_COUNT, INVITE_TRANSFER_VALUE);
+// §4.1's invite line / §9.1 (D-202, D-215): the live operator-set terms and the
+// three fixed bounds they sit inside, so the checkout's "3 x 0.1 GRAM" is read off
+// the contract that spends it.
+// Returns (count, value, sendFee, lineCap, countCeiling).
+get fun getInviteTerms(): (int, coins, coins, coins, int) {
+    val storage = lazy Storage.load();
+    val config = loadInviteConfig(storage);
+    return (config.inviteCount, config.inviteValue, INVITE_SEND_FEE, INVITE_LINE_CAP, INVITE_COUNT_CEILING);
 }
 
 // The exact body an invite transfer for a mint of `n` carries (D-202), so a
 // client can show the text before it is sent and an auditor can check it.
 get fun getInviteComment(n: int): cell {
     val storage = lazy Storage.load();
-    return inviteComment(n, loadInviteText(storage));
+    return inviteComment(n, loadInviteConfig(storage).inviteText);
 }
 
-// D-211: the live invite words alone, as `set_invite_text` last wrote them.
+// D-211: the live invite words alone, as `set_invite_terms` last wrote them.
 get fun getInviteText(): cell {
     val storage = lazy Storage.load();
-    return loadInviteText(storage);
+    return loadInviteConfig(storage).inviteText;
 }
 
 get fun getSinks(): (slice, slice, int) {
@@ -6273,7 +6329,7 @@ get fun getPeers(): (slice, slice, int) {
 }
 
 // CONCEPT §6 point 2 / §9.1 (D-20): the forfeit counter WHILE `p` HAS NO
-// OWNER. Returns the nanoTON of `p`'s tribute line that has fallen to the
+// OWNER. Returns the nanoGRAM of `p`'s tribute line that has fallen to the
 // treasury and operator because `p` had no owner when a mint cited it. D-188
 // point 4: the sale moves the row to the item (`item(p).getForfeited()`), so
 // a prime's lifetime total is that plus this — and this is 0 for an owned

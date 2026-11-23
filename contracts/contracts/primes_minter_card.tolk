@@ -63,18 +63,18 @@ import "minter_standing"
 // its race and the second gift was accepted, nobody was credited and the
 // newcomer's window closed — a real recruit cancelled, by a lost race or by a
 // gift built to fail. So for EDGE_HOLD after an edge is sent, a gift from ANY
-// payer is refused (its TON bounces home); the edge's refusal clears the hold at
+// payer is refused (its GRAM bounces home); the edge's refusal clears the hold at
 // once, so the next gift is the edge. Never held: the owner's own mints, which
 // recruit no one. The edge's own payer is held too (re-audit): their failing
 // gift plus an accepted one would still close the newcomer's window unpaid.
 //
-// This contract holds no TON beyond what passes through it and no PRIMES. It
+// This contract holds no GRAM beyond what passes through it and no PRIMES. It
 // holds a RECORD.
 // ============================================================================
 
 // params.json mint.mint_price_ton — primes_ledger.tolk's MINT_PRICE, pinned to it
 // by `SimCrossCheck.spec.ts`'s constant sweep.
-const CARD_MIN_VALUE: coins = 1000000000; // 1 TON
+const CARD_MIN_VALUE: coins = 1000000000; // 1 GRAM
 
 // How long an unresolved recruit edge holds other payers' gifts off. The edge's
 // answer (a refund or a bounce) is two hops away and clears the hold when it
@@ -300,7 +300,7 @@ fun onInternalMessage(in: InMessage) {
     }
 }
 
-// A `card_mint` the ledger threw on: give the units back, and the TON to the payer.
+// A `card_mint` the ledger threw on: give the units back, and the GRAM to the payer.
 fun onBouncedMessage(in: InMessageBounced) {
     val rich = lazy RichBounceBody.fromSlice(in.bouncedBody);
     val original = rich.originalBody.beginParse();

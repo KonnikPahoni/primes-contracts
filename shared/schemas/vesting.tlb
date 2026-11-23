@@ -31,10 +31,10 @@
 ;; else. The cost, stated rather than discovered: a lost beneficiary key strands
 ;; the unreleased remainder forever.
 ;;
-;; TOUCHES NO ECONOMIC STATE. Nothing here mints, burns or moves TON beyond its
+;; TOUCHES NO ECONOMIC STATE. Nothing here mints, burns or moves GRAM beyond its
 ;; own message gas. `S` counted this allocation at genesis and does not move
 ;; (§3.3); `T` never saw it. `p_f = T/S` is identical with and without this
-;; contract. Zero TON liability, so it is absent from the §3.4 solvency check.
+;; contract. Zero GRAM liability, so it is absent from the §3.4 solvency check.
 ;;
 ;; Trust edges:
 ;;   - set_wallet: sender MUST equal the genesis script; one-shot. Also stamps
@@ -125,7 +125,7 @@ release#95000002
 ;;
 ;; Throws 1140 (vest_wallet_unset), 1141 (vest_nothing_due — covers both "the
 ;; clock has not started" and "nothing new has matured"), 103 if the caller
-;; underfunds the send — which since D-100 point 6 costs 0.15 TON, not 0.1: the
+;; underfunds the send — which since D-100 point 6 costs 0.15 GRAM, not 0.1: the
 ;; 0.1 transfer hop plus a 0.05 `forward_ton_amount` (see the outbound section).
 
 ;; ---- outbound: TEP-74 transfer, to the lock's own jetton wallet ----
@@ -133,7 +133,7 @@ release#95000002
 ;; transfer#0f8a7ea5, standard TEP-74 body. Sent on `release` ONLY, with
 ;; destination = response_destination = `beneficiary`.
 ;;
-;; `forward_ton_amount` = 0.05 TON, ALWAYS, and `forward_payload` empty.
+;; `forward_ton_amount` = 0.05 GRAM, ALWAYS, and `forward_payload` empty.
 ;; D-100 point 6 made the allocation payable to `primes_treasury.tolk` (all of it
 ;; since D-166) — a
 ;; CONTRACT with no key — and a jetton wallet emits its `transfer_notification`
@@ -147,7 +147,7 @@ release#95000002
 ;; PRIMES wallet) and reads no tag on that edge.
 ;;
 ;; The CALLER funds it: `release` is permissionless, so the 103 floor is the
-;; whole hop, 0.15 TON.
+;; whole hop, 0.15 GRAM.
 ;;
 ;; On bounce the PRIMES never left the wallet, so `released_amount` rolls back by
 ;; the bounced `amount` (field 2, well inside what RichBounce preserves) and the

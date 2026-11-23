@@ -3,7 +3,7 @@
  *
  * Same single-source-of-truth argument as `voucher.ts` and `invites.ts`, and it
  * is the sharpest case of the three: this is the proof a player submits to mint
- * a COMPOSITE for 1 TON. `primes_ledger.tolk:2078` parses it as
+ * a COMPOSITE for 1 GRAM. `primes_ledger.tolk:2078` parses it as
  *
  *     struct FactorEntry { primeNumber: uint256; exponent: uint8; s: uint128 }
  *
@@ -14,7 +14,7 @@
  * (`contracts/wrappers/PrimesLedger.ts`, and `PrimesMarket.ts` through it) and the
  * webapp that attaches it to the mint body the player signs. If they ever disagree
  * the failure mode is not a crash and not a caught test: the sandbox proves the
- * WRAPPER's bytes while the player spends 1 TON through the WEBAPP's, so a drifted
+ * WRAPPER's bytes while the player spends 1 GRAM through the WEBAPP's, so a drifted
  * field width or key order ships green and reverts a real mint on chain.
  *
  * So the codec is built HERE, once, and both importers use it. The wrapper

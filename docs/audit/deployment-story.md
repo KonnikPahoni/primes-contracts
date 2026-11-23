@@ -10,11 +10,11 @@ which private key can do what.**
 
 ## 1. What is live right now
 
-Network: TON **testnet only** (`CLAUDE.md` "Project status: pre-launch" — no mainnet
+Network: GRAM **testnet only** (`CLAUDE.md` "Project status: pre-launch" — no mainnet
 deployment exists). **Current genesis: 2026-11-21**, deployed by
 `contracts/scripts/deployGenesis.ts --skew-safe` at commit `58fc759e` from subwallet
 `20261123` of the keeper mnemonic, floor-donated (D-92/D-93, mandatory before ignition —
-see §2; 50 TON on this set, a testnet-only shortfall against D-204's 200 recorded under the LIVE table), then **ignited the same
+see §2; 50 GRAM on this set, a testnet-only shortfall against D-204's 200 recorded under the LIVE table), then **ignited the same
 day** (`scripts/ignite.ts --skew-safe` minted Unity and opened every player-facing path).
 **Fifteen contracts** in the address table (D-212 deleted the burn sink; D-166 deleted the operator's vesting lock; D-168's
 stake master replaced the dormant staking sink in the same row; G76/D-170/D-171 added three voucher instances; D-202 deleted the generators and constellations collections), a mandatory floor donation, an
@@ -159,7 +159,7 @@ shape); **`release` on both locks** for tranche 0 — the one that matures at `s
 itself, run here so `flush()` has PRIMES to trade against from block one rather than
 waiting on day 90 (§6 point 3); `master.seal_authority` (**irreversible** — no more
 genesis-mint budget after this); `ledger.genesis_seed` (writes `T = 0`, `seedT = 0` — D-46
-point 2, no real TON is deposited at deploy — and `S`, and walks the head to the first
+point 2, no real GRAM is deposited at deploy — and `S`, and walks the head to the first
 composite, `n = 4` under D-20); and `timelock.queue` (a queue, not an execute —
 permissionless thereafter, and maturing in 30 days at the mainnet clock or ~4.3 hours at
 the testnet `clockDivisor` D-139 added).
@@ -167,16 +167,16 @@ the testnet `clockDivisor` D-139 added).
 **Between deploy and ignition: the floor donation, and it is mandatory (D-92/D-93).**
 `genesis_seed` leaves `T = 0`, so `p_f = T/S` does not exist yet.
 `scripts/donateFloor.ts` (`donate_floor#b000000c`, D-91 point 4) is what creates it —
-**132.50 TON**, owner-set by `DECISIONS.md` **D-154** and read out of `shared/params.json`
+**132.50 GRAM**, owner-set by `DECISIONS.md` **D-154** and read out of `shared/params.json`
 (`genesis.genesis_donation_ton`), which the sim consumes and does not choose; a smaller,
 incremental sum on testnet, since the op takes any amount from anyone at any time. D-154
-front-loads what D-100 point 2 had split into 4.20 TON at genesis plus up to 150 TON
+front-loads what D-100 point 2 had split into 4.20 GRAM at genesis plus up to 150 GRAM
 afterwards, because D-140 pins the DeDust pair AT the floor and so makes opening depth
 quadratic in this figure. `donate_floor` stays permissionless and incremental for anyone
 afterwards. `ignite` **refuses to run while `T = 0`** — enforced on chain (error 218,
 `ledger_floor_unbacked`) and in both ignite scripts' preflight, not merely documented —
 because a mint against an unbacked floor emits roughly 20% of the genesis supply for 1
-TON where the same mint after the donation emits ~0.28%
+GRAM where the same mint after the donation emits ~0.28%
 (`contracts/tests/UnbackedFloorLaunch.spec.ts`).
 
 **Ignition is a separate, deliberate step**, not part of genesis: `deployGenesis` /
@@ -190,7 +190,7 @@ generated data, not sequence.
 
 ## 3. Who holds what key
 
-Four private keys/credentials exist across the whole stack; nothing else can move TON or
+Four private keys/credentials exist across the whole stack; nothing else can move GRAM or
 change protocol state.
 
 | Key | Held by | Custodies / authorises | Compromise blast radius |
@@ -206,7 +206,7 @@ honesty only, `docs/audit/scope.md` §2); the Telegram bot (`bot/`) — confirme
 (`mnemonic|privateKey|WalletContractV`) across `bot/src`, zero hits, every money-adjacent
 action is a call into an in-scope backend package (`docs/audit/scope.md`'s I1 finding);
 and the deployed contracts themselves, none of which have an admin-withdraw path on any
-TON balance (CONCEPT.md §8, confirmed structurally by `docs/audit/withdraw-surface.md`'s
+GRAM balance (CONCEPT.md §8, confirmed structurally by `docs/audit/withdraw-surface.md`'s
 73-send classification: the `operator` class is exactly 4 sites, none of them a raw
 withdraw).
 

@@ -68,7 +68,7 @@ VANITY_RULES: tuple[VanityRule, ...] = (
                "largest rule-expressible vanity cohort on the line -- roughly "
                "22,000 numbers between 100,000 and 404,000 are somebody's "
                "birthday, anniversary, or the day they shipped something. It is "
-               "also the cohort the flat 1 TON price gives away for free."),
+               "also the cohort the flat 1 GRAM price gives away for free."),
     VanityRule("palindrome10", "Palindrome", 1.4,
                "Priced again here, separately from its rarity, because "
                "palindromes sell on how they look and not on how rare they are."),
@@ -161,7 +161,7 @@ class PriceParams:
     mint_price_ton: float = 1.0
     # No prime ever opens below what anyone pays for a composite at the head.
     # Below this the auction is theatre: a bidder would simply wait for the
-    # head to arrive and mint it for 1 TON.
+    # head to arrive and mint it for 1 GRAM.
     floor_ton: float = 1.0
     # Out-of-table primes: past the horizon the divisor line pays ~0.08/p per
     # mint, which rounds to nothing, and only the flat prime dividend is left.
@@ -172,14 +172,14 @@ class PriceParams:
 
 def reserve_ton(npv_ton: float, rarity_bits: float, vanity: float,
                 pp: PriceParams = PriceParams()) -> float:
-    """The anchor is the *larger* of measured tribute NPV and the 1 TON anyone
+    """The anchor is the *larger* of measured tribute NPV and the 1 GRAM anyone
     pays at the head, and the two multipliers apply to that -- not to the NPV
     alone with a floor clamped on afterwards.
 
     The difference matters and it is the whole reason the tag layer exists.
     Above ~10^4 the discounted tribute of a single prime rounds to nothing, so
     clamping after the multiply would flatten every large prime to exactly
-    1 TON and the taxonomy would price nothing at all. Anchoring at the floor
+    1 GRAM and the taxonomy would price nothing at all. Anchoring at the floor
     first means a six-digit Sophie Germain palindrome opens above a six-digit
     nobody, which is the entire point of tagging them.
     """
@@ -194,7 +194,7 @@ def reserve_ton(npv_ton: float, rarity_bits: float, vanity: float,
 #   * D-30/D-33 deleted RES_PREMIUM as a fee -- there is no book to buy a place in, and
 #     opening IS the first bid at `P0(n)`, so the clearing price is the auction's, not a
 #     formula's. `trophy_auction.py` is the model that replaced this one.
-#   * D-90 deleted the reservation escrow, so there is no "1 TON escrow plus RES_FEE"
+#   * D-90 deleted the reservation escrow, so there is no "1 GRAM escrow plus RES_FEE"
 #     first-come race left for a premium to convert into an auction.
 #   * D-102 deleted the burn sink this was denominated in. The docstring's claim that
 #     "a burn that decrements S raises the floor directly" contradicts the invariant

@@ -137,10 +137,16 @@ def test_shipped_invite_block_is_owned_here_and_labels_its_assumption(params):
         assert gone not in inv
     assert inv["optin_rate_assumed"] == 1.0   # the checkout always fills 3 (D-180)
     assert inv["_optin_rate_source"].startswith("ASSUMED")
-    assert inv["line_ton_at_max_count"] == 0.3   # exact: the app prints it
+    assert inv["line_ton_at_max_count"] == 0.303   # exact: 3 x (0.1 + 0.001 fee), D-215
+    # D-215: the operator-set terms' fixed bounds, and the worst beta they allow
+    assert inv["count_ceiling"] == 100
+    assert inv["line_cap_ton"] == 0.31
+    assert inv["send_fee_allowance_ton"] == 0.001
+    assert "OWNER-SET" in inv["_bounds_source"] and "D-215" in inv["_bounds_source"]
+    assert inv["worst_beta_at_line_cap"] == pytest.approx(0.75 - params["mint"]["gas_ops_pct"] - 0.31)
 
     # The SS4.1 table is unchanged for a mint that does not opt in, and every
-    # row loses exactly the line at the full count -- an absolute TON deduction,
+    # row loses exactly the line at the full count -- an absolute GRAM deduction,
     # not a rate, so the delta is the same on every row. Four rows since D-106
     # deleted the conditional patron line and the phi1/phi2 rows with it.
     rows = inv["beta_table"]
@@ -148,9 +154,10 @@ def test_shipped_invite_block_is_owned_here_and_labels_its_assumption(params):
     steady = next(r for r in rows if r["row"] == "composite, referred")
     g = params["mint"]["gas_ops_pct"]  # D-117: sim-derived
     assert steady["beta_no_invite"] == pytest.approx(0.75 - g)
-    assert steady["beta_full_invite"] == pytest.approx(0.45 - g)
+    assert steady["beta_full_invite"] == pytest.approx(0.447 - g)
     for r in rows:
-        assert r["delta_full_invite"] == pytest.approx(-0.30)
+        assert r["delta_full_invite"] == pytest.approx(-0.303)
+        assert r["beta_at_line_cap"] == pytest.approx(r["beta_no_invite"] - 0.31)
         assert r["beta_full_invite"] > 0.0
         lo = min(r["beta_no_invite"], r["beta_full_invite"])
         hi = max(r["beta_no_invite"], r["beta_full_invite"])
@@ -298,7 +305,7 @@ def test_the_invite_block_measures_the_horizon_under_the_line(params):
     # all-or-nothing at max_count, so slots = invited x 3
     assert hs["invite_slots_deployed"] == hs["invited_mints"] * inv["max_count"]
     assert hs["ton_deducted_over_the_horizon"] == pytest.approx(
-        hs["invite_slots_deployed"] * inv["transfer_value_ton"])
+        hs["invite_slots_deployed"] * (inv["transfer_value_ton"] + inv["send_fee_allowance_ton"]))
     assert hs["mean_line_ton_per_mint"] == pytest.approx(
         hs["ton_deducted_over_the_horizon"] / hs["simulated_mints"])
     assert hs["mean_line_ton_per_mint"] == pytest.approx(
@@ -312,8 +319,8 @@ def test_the_invite_block_measures_the_horizon_under_the_line(params):
     # invited row and below the largest uninvited one. Outside that bracket the
     # engine is splitting on rates the table does not describe.
     #
-    # The key is TON, not a rate: `pool_injection` is `beta * price`. The two are
-    # comparable here only because every mint in the run prices at 1 TON, which
+    # The key is GRAM, not a rate: `pool_injection` is `beta * price`. The two are
+    # comparable here only because every mint in the run prices at 1 GRAM, which
     # is asserted rather than assumed.
     assert params["mint"]["mint_price_ton"] == pytest.approx(1.0), (
         "mean_pool_injection_ton_measured is only comparable to a beta at price 1")
@@ -375,6 +382,8 @@ def test_treasury_block_is_governance_only(params):
     # D-168 Q13: the four terms that vote; tiers 0-2 are deleted.
     assert t["tier_term_seconds"] == [2592000, 7776000, 15552000, 31536000]
     assert t["vote_multipliers"] == [1, 3, 10, 30]
+    # D-214: the forever total votes x100 and is not a tier.
+    assert t["forever_vote_multiplier"] == 100
     assert len(t["tier_labels"]) == len(t["tier_term_seconds"]) == len(t["vote_multipliers"])
     assert t["vote_eligible_min_tier_index"] == 0
     assert t["proposal_cap_bps"] == 2500
@@ -447,7 +456,7 @@ def test_genesis_floor_is_derived_from_the_donation_not_from_L(params):
     """DECISIONS.md D-100 point 2. Before it, the genesis floor was
     `1 / (L * (1 + vault_pct))` -- a pure function of the denomination -- because
     D-92 chose the donation to reproduce exactly that. D-100 unpins the two: the
-    donation is 4.20 TON by owner decision and the floor is whatever `T0 / S0`
+    donation is 4.20 GRAM by owner decision and the floor is whatever `T0 / S0`
     falls out to.
 
     Asserting the DERIVATION rather than the number is deliberate. A test that
@@ -474,7 +483,7 @@ def test_genesis_floor_is_derived_from_the_donation_not_from_L(params):
     assert t0 > 0
     assert g["genesis_floor_price_ton_per_primes"] == pytest.approx(t0 / s0, rel=1e-12)
     assert g["deploy_floor_price_ton_per_primes"] == pytest.approx(t0 / s0, rel=1e-12)
-    # No longer `1 / (L * (1 + vault_pct))`: that identity died with D-92's 240 TON.
+    # No longer `1 / (L * (1 + vault_pct))`: that identity died with D-92's 240 GRAM.
     l = g["genesis_lp_ratio_primes_per_ton"]
     pct = g["bounty_vault_pct_of_genesis_lp"]
     assert g["genesis_floor_price_ton_per_primes"] != pytest.approx(1.0 / (l * (1.0 + pct)))
@@ -567,10 +576,10 @@ def test_the_score_block_is_owner_declared_and_top_level(params):
 
 
 def test_the_naming_fees_are_the_owners_and_the_generator_emits_them_verbatim(params):
-    """D-212: a naming costs TON (the owner's 50 EUR, then 200 TON), and the
+    """D-212: a naming costs GRAM (the owner's 50 EUR, then 200 GRAM), and the
     PRIMES burn block it replaced is gone with the sink. `naming_block()` is pure,
     so the committed block must equal it exactly -- the proof the JSON came from
-    the generator without re-running the sim. No TON figure for the first naming
+    the generator without re-running the sim. No GRAM figure for the first naming
     may appear: it is chosen on genesis day (`PRIMES_NAME_FEE_TON`)."""
     from primes_sim import acquisition as acq
 

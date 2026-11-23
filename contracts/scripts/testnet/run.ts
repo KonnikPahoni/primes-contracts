@@ -56,7 +56,7 @@ const S = (what: string, script: string, args: string[] = [], optional = false):
  * **PHASE 10 IS LAST.** Since D-153 the reason is mild — its `flush` competes
  * with the pool price phase 5 stages — but on a set deployed WITHOUT that
  * decision's `stakeDivisor` it is absolute: `stake` then needs `pending` above
- * 625 TON, the only permissionless route in is `donate_floor`, and a donation
+ * 62.5 GRAM, the only permissionless route in is `donate_floor`, and a donation
  * that size raises `p_f = T/S` by roughly two orders of magnitude, invalidating
  * every price relationship phases 3, 5 and 9 stage against the DeDust pool.
  * See `TESTNET_MASTER_PLAN.md` §4c.
@@ -155,17 +155,17 @@ export const PHASES: Phase[] = [
             // -13, "account not initialised": `L` had no PRIMES jetton wallet at
             // all. PRIMES reach a wallet only by §4.1 EMISSION, the rebate is paid
             // to whoever PAID for the mint, and `L` never mints — `cast.ts fund`
-            // gives it TON and nothing gives it PRIMES. A wallet-level TEP-74
+            // gives it GRAM and nothing gives it PRIMES. A wallet-level TEP-74
             // transfer from the funder is the only route in, the same reason
             // phase 7 moves PRIMES to the namer.
             //
             // THE FIGURE. The two sells below are literals: 2,000,000 + 1,000,000
             // = 3,000,000. The `deposit` step's PRIMES leg is not a literal —
             // `lpGovernance.ts deposit` sizes it off the pool's live ratio as
-            // `5 TON x primesRes/tonRes`. D-140/D-154 open the pair AT `p_f`
-            // (1.2045e-05 TON/PRIMES since D-166, `shared/params.json`), so that leg is
+            // `5 GRAM x primesRes/tonRes`. D-140/D-154 open the pair AT `p_f`
+            // (1.2045e-05 GRAM/PRIMES since D-166, `shared/params.json`), so that leg is
             // ~415,000 PRIMES at the open and larger afterwards, because every
-            // step before it pushes the price DOWN, i.e. more PRIMES per TON.
+            // step before it pushes the price DOWN, i.e. more PRIMES per GRAM.
             // 1,500,000 covers it several times over. Total 4,500,000, against
             // the ~7.5M `K` holds from phase 3's head-walk rebates. The `buy`
             // step hands PRIMES back to `L` mid-phase, but nothing here may
@@ -176,36 +176,36 @@ export const PHASES: Phase[] = [
             // holding from the last one must send nothing rather than fail on a `K`
             // that phases 5-7 have since drained.
             //
-            // RESIZED 2026-09-24 for a 132.50 TON genesis (D-154). The figures above were measured
-            // on 75 TON sets: at the full donation `p_f` opens ~1.7x higher, every rebate is ~half
+            // RESIZED 2026-09-24 for a 132.50 GRAM genesis (D-154). The figures above were measured
+            // on 75 GRAM sets: at the full donation `p_f` opens ~1.7x higher, every rebate is ~half
             // the PRIMES, and the 20-mint walk left `K` ~430,000, not 7.5M. The pool also opens AT
             // the floor now (G67), so a 300,000 sell already puts it under. Hence 400,000 here,
-            // sells of 300,000 and 600,000 (the second out of the 15 TON buy's proceeds), and a
-            // 2 TON deposit. The three flush branches are unchanged.
+            // sells of 300,000 and 600,000 (the second out of the 15 GRAM buy's proceeds), and a
+            // 2 GRAM deposit. The three flush branches are unchanged.
             S('fund the lever: K -> L, the only route PRIMES take here', 'testnet/primes.ts', [
                 'ensure',
                 'K',
                 'L',
-                // 900,000 since 20261121: on a shallow pool (1.44 TON seeded) the 15 TON buy
+                // 900,000 since 20261121: on a shallow pool (1.44 GRAM seeded) the 15 GRAM buy
                 // takes it to ~110x the floor and returns only ~215k PRIMES, so the second sell
                 // (500,000) needs ~585k more than 400,000 leaves. K held ~1.4M after the walk.
                 '900000',
             ]),
             // THE SWAP LEVER, AND WHY THE ORDER IS NOT NEGOTIABLE. A fresh
             // genesis opens the pool ~287x ABOVE `p_f` (S carries the 12M-PRIMES
-            // bounty vault against one 4.2 TON donation), so the FIRST flush can
+            // bounty vault against one 4.2 GRAM donation), so the FIRST flush can
             // only ever REFUSE. Until 2026-09-20 this phase ran `report` and one
             // flush and called it covered: the FILL branch — the only branch that
             // moves `swapped`, burns PRIMES and advances the floor through the
             // venue — had never been driven on purpose on any set.
             S('sell PRIMES into the pool: price DOWN, under p_f', 'testnet/pool.ts', ['sell', 'L', '300000']),
             S('flush #1 — FILLS (permissionless)', 'proveFlushPermissionlessLive.ts'),
-            S('buy PRIMES with TON: price UP, over the floor guard', 'testnet/pool.ts', ['buy', 'L', '15']),
+            S('buy PRIMES with GRAM: price UP, over the floor guard', 'testnet/pool.ts', ['buy', 'L', '15']),
             // The assert is the `payout#474f86cf` ARRIVING, not `lastOutcome`.
             // Every flush this project sent before 2026-09-17 was rejected by the
             // vault on forward-fee arithmetic and read as a floor-guard refusal.
             S('flush #2 — REFUSES, and the payout comes home', 'proveFlushPermissionlessLive.ts'),
-            // 500,000, not 600,000: on the G93 set the 15 TON buy returned ~442,000 PRIMES, so L held
+            // 500,000, not 600,000: on the G93 set the 15 GRAM buy returned ~442,000 PRIMES, so L held
             // 541,919 at this step and the larger literal stopped the phase.
             S('sell again: price back under the floor', 'testnet/pool.ts', ['sell', 'L', '500000']),
             S('flush #3 — FILLS again (a refusal does not brick the ratchet)', 'proveFlushPermissionlessLive.ts'),
@@ -231,7 +231,7 @@ export const PHASES: Phase[] = [
             // `last` resolves the seq off chain: a literal id is wrong on any set that
             // has seen a proposal before. (This step read `['propose', 'L', '0']` until
             // 2026-09-28 and failed the 4-argument usage check on every run.)
-            S('propose within the cap (R15): 0.1 TON to F', 'testnet/lpGovernance.ts', ['propose', 'L', '0', '0.1', 'F'], true),
+            S('propose within the cap (R15): 0.1 GRAM to F', 'testnet/lpGovernance.ts', ['propose', 'L', '0', '0.1', 'F'], true),
             S('vote the position', 'testnet/lpGovernance.ts', ['vote', 'L', 'last'], true),
             S('execute once the vote closes', 'testnet/lpGovernance.ts', ['execute', 'L', 'last'], true),
         ],
@@ -277,9 +277,9 @@ export const PHASES: Phase[] = [
             ]),
             // The literal, not `-`: an auction mints off-head, so `annotate.ts who`'s walk over
             // the sequential line cannot see the prime the step above just won.
-            // D-212: the OWNER names it for TON through the collection (`nameFee` the first
+            // D-212: the OWNER names it for GRAM through the collection (`nameFee` the first
             // time). The fee goes to the floor; no PRIMES are needed.
-            S('name the prime just won, for TON — the fee goes to the floor (§4.7.1, D-212)', 'testnet/annotate.ts', [
+            S('name the prime just won, for GRAM — the fee goes to the floor (§4.7.1, D-212)', 'testnet/annotate.ts', [
                 'name',
                 '899809363',
                 'A',
@@ -344,13 +344,13 @@ export const PHASES: Phase[] = [
             // prove a refusal the sandbox already covers (§2.5 rule 1).
             S('the whole §4.3.2 read surface, and the mock behind it', 'testnet/tston.ts', ['status']),
             S('the four named refusals, computed and not fired', 'testnet/tston.ts', ['refusals']),
-            // The counterparty's flat 1 TON deposit fee comes out of the GAS
+            // The counterparty's flat 1 GRAM deposit fee comes out of the GAS
             // BUFFER and never out of `pending` — a fee taken from the staked
             // amount would drop `T` on every stake and `p_f` with it. The buffer
-            // accrues at RATCHET_HOP_GAS (0.005 TON/mint) and a run does not mint
+            // accrues at RATCHET_HOP_GAS (0.005 GRAM/mint) and a run does not mint
             // enough to fill it, so it is topped up explicitly.
             S('top up the ratchet gas buffer (never `pending`)', 'testnet/tston.ts', ['buffer', '4', 'K']),
-            // No donation step. It ran `donateFloor.ts` with NO amount, i.e. the full 132.50 TON
+            // No donation step. It ran `donateFloor.ts` with NO amount, i.e. the full 132.50 GRAM
             // genesis donation (D-154), on every set whether or not D-153's divisor made it
             // pointless; on 20260929 it was stopped only by `K` being unable to afford it. A set
             // deployed WITHOUT the divisor needs a deliberate, sized `donateFloor.ts` run by hand

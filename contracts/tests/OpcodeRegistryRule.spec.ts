@@ -90,7 +90,7 @@ const ALLOWED = [
     // `mock_tonstakers_pool.tolk` exist only under `@ton/sandbox` and are never
     // deployed to testnet or mainnet. These nine are the knobs the harness turns
     // on them — set a price, go silent, set an LP rate, set a staking rate, set
-    // the pool's free-TON buffer, set leg 2's DeDust depth, settle an outstanding
+    // the pool's free-GRAM buffer, set leg 2's DeDust depth, settle an outstanding
     // payout bill, switch optimistic deposits, settle a deposit bill. (`SetDedustTon` is separate from `SetBuffer` because the case
     // §4.3.2's exit machine exists for is "the pool cannot fill now but the DEX
     // can", which one shared buffer cannot express.) No deployed

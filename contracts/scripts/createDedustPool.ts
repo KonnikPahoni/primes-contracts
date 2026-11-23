@@ -1,5 +1,5 @@
 /**
- * TON PRIMES — create the PRIMES/TON DeDust v2 pool. RUN THIS BEFORE GENESIS.
+ * TON PRIMES — create the PRIMES/GRAM DeDust v2 pool. RUN THIS BEFORE GENESIS.
  *
  * WHY BEFORE. Genesis step 25b (`lpSink.set_wallet`, `treasury.set_wallets`,
  * D-100 point 4) calls `get_wallet_address` ON THE POOL — a DeDust pool IS the
@@ -107,7 +107,7 @@ async function main() {
     console.log(`deploy subwallet:     ${fmt(wallet.address)}  (id ${walletId ?? '<default>'})`);
     console.log(`PRIMES jetton master: ${fmt(master)}  (undeployed until genesis)`);
     console.log(`DeDust factory:       ${fmt(DEDUST_FACTORY)}`);
-    console.log(`PRIMES/TON pool:      ${fmt(pool)}`);
+    console.log(`PRIMES/GRAM pool:      ${fmt(pool)}`);
     console.log(`PRIMES jetton vault:  ${fmt(jettonVault)}  (created later, by seedDedustLiquidity.ts)`);
 
     if (await client.isContractDeployed(pool)) {
@@ -116,11 +116,11 @@ async function main() {
         const balance = Number(await client.getBalance(wallet.address)) / 1e9;
         if (balance < 0.5) {
             throw new Error(
-                `deploy subwallet holds ${balance} TON; creating the pool costs ` +
-                    `${Number(CREATE_POOL_VALUE) / 1e9} TON. Fund ${fmt(wallet.address)} first.`
+                `deploy subwallet holds ${balance} GRAM; creating the pool costs ` +
+                    `${Number(CREATE_POOL_VALUE) / 1e9} GRAM. Fund ${fmt(wallet.address)} first.`
             );
         }
-        console.log(`\nsending create_volatile_pool#97d51f2f (${Number(CREATE_POOL_VALUE) / 1e9} TON) ...`);
+        console.log(`\nsending create_volatile_pool#97d51f2f (${Number(CREATE_POOL_VALUE) / 1e9} GRAM) ...`);
         const wc = client.open(wallet);
         await wc.sendTransfer({
             seqno: await wc.getSeqno(),

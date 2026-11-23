@@ -8,7 +8,7 @@ than by estimate:
   * the `owed` dictionary (`uint32 -> uint128`) at **2.00 cells/entry**, so a
     single-account `owed` map cannot pass ~32,768 entries -> pi(x) = 32,768 ->
     **n = 386,093**;
-  * config 18 rent on basechain: ~10.20 TON/year at pi(1e6) entries.
+  * config 18 rent on basechain: ~10.20 GRAM/year at pi(1e6) entries.
 
 v5 makes this **worse**, not better: SS3.2's flat prime dividend adds an
 `entry[p]` stamp per prime. Carried in the same dictionary value the entry
@@ -19,7 +19,7 @@ fits one cell, so the measured 2.00 cells/entry is the right planning figure and
 Config 20/21 (gas prices/limits) are **not** the binding constraint and this
 module says so with a number rather than by omission: the ledger's per-mint work
 is omega(n) <= 8 dictionary writes plus one `div_acc` addition, and Phase 0
-measured Miller-Rabin -- far heavier -- at 0.026 TON even at the 3.3e24
+measured Miller-Rabin -- far heavier -- at 0.026 GRAM even at the 3.3e24
 exactness bound. Sharding changes the per-mint cost by one message hop per
 shard touched, which is the number Phase B must benchmark against the 10% gas
 line; it does not change the O(log n) dictionary cost materially, since a shard's
@@ -126,7 +126,7 @@ def report(targets=(386_093, 1_000_000, 2_000_000, 10_000_000)) -> dict:
                                     "for, on the claim path instead of the mint path.",
             "config_20_21_note": "Gas limits are not binding: the per-mint ledger work is "
                                  "omega(n) <= 8 dict writes plus one addition, against a "
-                                 "Miller-Rabin cost Phase 0 measured at 0.026 TON. Sharding "
+                                 "Miller-Rabin cost Phase 0 measured at 0.026 GRAM. Sharding "
                                  "adds one message hop per shard touched (<= omega(n)); that "
                                  "hop count is the Phase B gas-benchmark input, and it is the "
                                  "only part of this decision Phase A cannot close.",

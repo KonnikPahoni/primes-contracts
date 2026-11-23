@@ -151,7 +151,7 @@ def lifetime_ceiling_table(horizon: int, spf: np.ndarray | None = None, primes=(
         ceiling = 0.10 * horizon / p
         row = {"p": p, "multiples": mult, "ceiling_ton": ceiling}
         for m, acc in modes.items():
-            # each mint pays 0.10 TON of tribute line; shares above are per-mint fractions
+            # each mint pays 0.10 GRAM of tribute line; shares above are per-mint fractions
             row[m + "_ton"] = acc.get(p, 0.0) * 0.10
             row[m + "_pct_of_ceiling"] = row[m + "_ton"] / ceiling * 100.0 if ceiling else 0.0
         rows.append(row)
@@ -178,7 +178,7 @@ def prime_tribute_npv(
     Returns {"npv": {p: ton}, "undiscounted": {p: ton},
              "repay_head_multiple": {p: c or None}} where `c` is the multiple of
     p the head must reach for cumulative *undiscounted* tribute to repay the
-    1 TON mint price (SS5.1's "about 12p / 20p" claim).
+    1 GRAM mint price (SS5.1's "about 12p / 20p" claim).
     """
     if spf is None:
         spf = spf_sieve(horizon)
@@ -245,7 +245,7 @@ def repayment_head_multiples(
     price_ton: float = 1.0,
 ) -> dict:
     """SS5.1: the head multiple `c` at which prime p's cumulative undiscounted
-    tribute repays its 1 TON mint price, plus SS3.2's equal-multiplicative-age
+    tribute repays its 1 GRAM mint price, plus SS3.2's equal-multiplicative-age
     table (earnings at head = 2p, 5p, 10p, 50p, 100p)."""
     if spf is None:
         spf = spf_sieve(horizon)
@@ -414,7 +414,7 @@ def flat_dividend_decay(
 
     SS3.2 proposes `f = 0.2` and states the accrual (`div_acc += f*0.10/pi(n)`)
     without ever stating its shape. The shape is the point: aggregate flat
-    dividend paid per mint is a constant `f * 0.10` TON, so the *line* does not
+    dividend paid per mint is a constant `f * 0.10` GRAM, so the *line* does not
     decay at all -- but it is divided among pi(n) primes, so **per prime it
     decays like `1/pi(n)` ~ `ln(n)/n`**, which is faster than any other leg in
     the design. This is one of the three qualifiers SS5.4 owes the reader.

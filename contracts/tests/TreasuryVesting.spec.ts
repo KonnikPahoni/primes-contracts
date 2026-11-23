@@ -52,8 +52,8 @@ const LAST_UNLOCK = (VEST_TRANCHES - 1) * VEST_INTERVAL;
 
 const START = 1_770_000_000;
 /**
- * 0.2 TON. The contract's floor is `TRANSFER_GAS + NOTIFY_GAS` = 0.15 — the
- * 0.1 TON transfer hop plus the 0.05 TON that rides it as `forwardTonAmount` so
+ * 0.2 GRAM. The contract's floor is `TRANSFER_GAS + NOTIFY_GAS` = 0.15 — the
+ * 0.1 GRAM transfer hop plus the 0.05 GRAM that rides it as `forwardTonAmount` so
  * a CONTRACT beneficiary gets a `transfer_notification` (D-100 point 6; see
  * block 5). This sends the floor plus a margin rather than the floor exactly,
  * which is the repo's standing rule for any on-chain send (CLAUDE.md: nominal
@@ -371,8 +371,8 @@ describe.each(INSTANCES)('TON PRIMES — vesting lock: $label', (instance) => {
         expect(r.transactions).toHaveTransaction({ to: vesting.address, exitCode: 103 }); // insufficient_value
         expect((await vesting.getVesting()).releasedAmount).toBe(0n);
 
-        // 0.12 TON: ABOVE the 0.1 TON transfer hop and BELOW the 0.15 the send
-        // now costs, because D-100 point 6 put a 0.05 TON `forwardTonAmount` on
+        // 0.12 GRAM: ABOVE the 0.1 GRAM transfer hop and BELOW the 0.15 the send
+        // now costs, because D-100 point 6 put a 0.05 GRAM `forwardTonAmount` on
         // it (see block 5). This value funded a release before that change and
         // must not fund one after it — a caller who kept paying the old figure
         // has to be refused, not paid a transfer whose notification leg the
@@ -473,12 +473,12 @@ describe.each(INSTANCES)('TON PRIMES — vesting lock: $label', (instance) => {
 // contract would have been permanently uncounted, which is why it had to be
 // fixed BEFORE genesis rather than after the first tranche.
 //
-// The fix is `NOTIFY_GAS` in `primes_vesting.tolk`: 0.05 TON forwarded on every
+// The fix is `NOTIFY_GAS` in `primes_vesting.tolk`: 0.05 GRAM forwarded on every
 // release, unconditionally — the lock cannot tell a wallet beneficiary from a
 // contract one, and a deploy-time flag saying which it is would be exactly the
 // configurable surface that file exists to prove the absence of. The caller
 // funds it (`release` is permissionless), and the 103 floor moved from 0.1 to
-// 0.15 TON with it.
+// 0.15 GRAM with it.
 //
 // So the assertions below are now all four load-bearing, and the last two are
 // the ones that would have shipped a dead treasury: the transfer lands, the

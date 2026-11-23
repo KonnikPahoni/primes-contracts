@@ -54,7 +54,7 @@ export interface BootstrapWire<P> {
 
 /** Secondary-market figures for one collection (read-proxy `lakeMarket.ts`). */
 export interface CollectionMarketWire {
-  /** All-time realised, TON-denominated, SECONDARY only. */
+  /** All-time realised, GRAM-denominated, SECONDARY only. */
   volumeNanoton: string;
   /** Sales behind `volumeNanoton`. */
   trades: number;
@@ -67,7 +67,7 @@ export interface CollectionMarketWire {
 }
 
 /** Why a card's `market` is null. `not-indexed`: the marketplace index does not cover this
- *  network (the TON data lake is mainnet-only). */
+ *  network (the GRAM data lake is mainnet-only). */
 export type MarketAbsence = "not-configured" | "not-computed-yet" | "unavailable" | "not-indexed";
 
 /** One key since D-202 deleted the generators and constellations collections. */
@@ -151,7 +151,7 @@ export interface QuestStateWire {
   description: string;
   rewardTon: number;
   /** Which of `rewardTon` / `rewardPrimesQuote` is the fixed one (D-42). Always PRIMES since
-   *  D-118's 2026-11-20 amendment folded the last TON-denominated quest (the story quest) into
+   *  D-118's 2026-11-20 amendment folded the last GRAM-denominated quest (the story quest) into
    *  the social board; the field stays so a client reads the unit rather than assuming it. */
   rewardDenomination: "primes";
   rewardPrimesQuote: number;

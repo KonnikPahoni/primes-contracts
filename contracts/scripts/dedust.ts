@@ -18,7 +18,7 @@
  * was UPGRADED IN PLACE, so the two chains run different code at one address.
  * Comparing code hashes says "different contract"; comparing addresses says
  * "same deployment". Both vault and pool creation are permissionless on
- * testnet, for 0.1 and 0.25 TON.
+ * testnet, for 0.1 and 0.25 GRAM.
  */
 import { Address, Cell, TupleItem, TupleReader, beginCell, toNano } from '@ton/core';
 import type { TonClient } from '@ton/ton';
@@ -27,7 +27,7 @@ import type { TonClient } from '@ton/ton';
 export const DEDUST_FACTORY = Address.parse('EQBfBWT7X2BHg9tXAxzhz2aKiNTU1tpt5NsiK0uSDW_YAJ67');
 
 /**
- * The native TON vault. Unlike the factory this is a per-network deployment
+ * The native GRAM vault. Unlike the factory this is a per-network deployment
  * with its own address, and the testnet one is live with real traffic.
  */
 export const DEDUST_NATIVE_VAULT_TESTNET = Address.parse('kQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNIJE1');
@@ -44,7 +44,7 @@ export const DedustOps = {
     swapNative: 0xea06185d,
     /** jetton vault swap, in a TEP-74 forward payload — NOT the same opcode */
     swapJetton: 0xe3a0d482,
-    /** a refused swap's TON handed back. NOT a bounce — see primes_ratchet.tolk */
+    /** a refused swap's GRAM handed back. NOT a bounce — see primes_ratchet.tolk */
     payout: 0x474f86cf,
     jettonTransfer: 0x0f8a7ea5,
 } as const;
@@ -112,7 +112,7 @@ export async function getVaultAddress(client: TonClient, asset: DedustAsset): Pr
     return res.stack.readAddress();
 }
 
-/** `create_vault#21cfe02b query_id:uint64 asset:Asset` — 0.1 TON is DeDust's own figure. */
+/** `create_vault#21cfe02b query_id:uint64 asset:Asset` — 0.1 GRAM is DeDust's own figure. */
 export function createVaultBody(asset: DedustAsset, queryId = 0): Cell {
     const b = beginCell().storeUint(DedustOps.createVault, 32).storeUint(queryId, 64);
     storeAsset(b, asset);
@@ -233,18 +233,18 @@ export async function jettonVaultIsReady(client: TonClient, vault: Address): Pro
 /**
  * GAUNTLET G67 — THE OPENING PRICE OF AN EMPTY POOL, FROM THE LEDGER.
  *
- * `seedDedustLiquidity.ts` posts `PRIMES × p_f` TON, and on an empty pool that ratio IS
+ * `seedDedustLiquidity.ts` posts `PRIMES × p_f` GRAM, and on an empty pool that ratio IS
  * the price. It used to take `p_f` from `params.json`'s `genesis_floor_price_ton_per_primes`,
- * the floor D-154's 132.50 TON donation WOULD make. The `20260927`/`20260928` sets donated
- * 75 TON, so the live floor was 6.3867e-6 against the 1.2045e-5 posted: the book opened at
+ * the floor D-154's 132.50 GRAM donation WOULD make. The `20260927`/`20260928` sets donated
+ * 75 GRAM, so the live floor was 6.3867e-6 against the 1.2045e-5 posted: the book opened at
  * 1.886x `p_f` and every flush took the floor guard's REFUSE branch (§4.3.1).
  *
  * So the live pair `T/S` (`getFloorNum`/`getFloorDen`, what `ignite` checks) is the figure.
- * When it and the params figure disagree by more than a nanoTON of rounding, nothing is
+ * When it and the params figure disagree by more than a nanoGRAM of rounding, nothing is
  * chosen silently: `choice` (`PRIMES_LP_FLOOR=live|params`) must name the one to use.
  *
- * Returns nanoTON per WHOLE PRIMES, rounded DOWN — a book a nanoTON under `p_f` is one
- * `flush()` fills, a nanoTON over is one it refuses.
+ * Returns nanoGRAM per WHOLE PRIMES, rounded DOWN — a book a nanoGRAM under `p_f` is one
+ * `flush()` fills, a nanoGRAM over is one it refuses.
  */
 export function openingFloorNanotonPerPrimes(
     live: { t: bigint; s: bigint },
@@ -261,7 +261,7 @@ export function openingFloorNanotonPerPrimes(
     const gap = liveNano - paramsNanotonPerPrimes;
     if (gap >= -1n && gap <= 1n) return { nanotonPerPrimes: liveNano, source: 'live' };
     throw new Error(
-        `the ledger's live floor is ${liveNano} nanoTON/PRIMES but params.json says ${paramsNanotonPerPrimes} ` +
+        `the ledger's live floor is ${liveNano} nanoGRAM/PRIMES but params.json says ${paramsNanotonPerPrimes} ` +
             `(${(Number(paramsNanotonPerPrimes) / Number(liveNano)).toFixed(3)}x). An empty pool's first deposit sets ` +
             'its price for good. Set PRIMES_LP_FLOOR=live to open at p_f, or PRIMES_LP_FLOOR=params to open at the ' +
             "sim's figure on purpose."

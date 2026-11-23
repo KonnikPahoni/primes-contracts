@@ -29,7 +29,7 @@ for an oversight.
   does not), and it is what makes Miller–Rabin overflow-safe here: at n < 2⁴⁶ a squared
   residue stays under 2⁹², four orders inside int257, so the 78-digit argument that threw
   exit 4 as `P2.C1` has no reachable value left. **Reaching it is a horizon, not a risk:**
-  mints are strictly sequential at 1 TON each, so the head arriving at the cap would mean
+  mints are strictly sequential at 1 GRAM each, so the head arriving at the cap would mean
   ~4.29·10¹³ mints. Listed here because a reviewer reading the app sees an unbounded
   number line and either misses the ceiling or finds it in the contract and reports it as
   undisclosed. Bound to the contract by `contracts/tests/ReservableCap.spec.ts` — the
@@ -75,7 +75,7 @@ for an oversight.
   D-57 itself, deserves to be told where it went rather than find it silently absent.
   **What replaced it:** §4.7's recruit ladder now runs on the §4.5 gift-mint edge — a
   gift to an address the ledger's `minterState` has never seen credits the payer +1
-  recruit — which pays **no TON at all**, so the negative-EV question this entry asked
+  recruit — which pays **no GRAM at all**, so the negative-EV question this entry asked
   has no referent. There is no cap to decay, because nothing is paid back.
 - **A Telegram alert page can be silently dropped if two ERROR/CRITICAL lines land in
   the same fluent-bit flush window** — the second is coalesced away before it reaches
@@ -83,10 +83,10 @@ for an oversight.
   clone of a `docker.*` record, so the full record still reaches Cloud Logging via that
   parallel route regardless of whether the Telegram page itself lands — a human paged by
   the surviving alert can always pull the complete picture there.
-- **Special composites above 1 TON is a named, bounded exception, not a lane leak.**
-  `CLAUDE.md`'s "no lane may terminate above 1 TON" invariant carries one signed carve-out
+- **Special composites above 1 GRAM is a named, bounded exception, not a lane leak.**
+  `CLAUDE.md`'s "no lane may terminate above 1 GRAM" invariant carries one signed carve-out
   (**D-47**/**D-64**, §9.6): a special number's post-decay parked price may remain above
-  1 TON until bought, via a vault purchase and re-listing rather than a lane exception.
+  1 GRAM until bought, via a vault purchase and re-listing rather than a lane exception.
   `C6`/`C6.1` pin that this is the only exception in the route-selection function.
 - **`STAKE_UPLIFT_MAX = 0`.** Staking ships live but buys nothing — signed **D-34**
   (2026-08-19), gated pending a future sim answer on headroom sizing. **B11** proved the
@@ -125,7 +125,7 @@ for an oversight.
   weight held since the proposal's own second, so the proposer cannot top up during the notice
   and the defenders move last. A proposer who locked more BEFORE proposing than the defenders
   can lock in a day still passes, and `w` wallets take `1 − 0.75^w` in the same two days
-  (D-130). It reaches the treasury's TON, PRIMES and tsTON only — never `pending`, `owed`, `T`
+  (D-130). It reaches the treasury's GRAM, PRIMES and tsTON only — never `pending`, `owed`, `T`
   or `S`. A quorum was weighed and declined twice (D-100 point 8, D-173 2026-11-19: an empty
   electorate would pass nothing). The only mitigation is operational: launch gate M4's
   proposal alert and standing LP lock (`docs/mainnet-launch-gates.md`). Bound by
@@ -140,7 +140,7 @@ whoever signs one can grep straight to it.
 | ID | One line | Where it bites |
 |----|----------|----------------|
 | **D-48** | Delete `primes_item.getRarityFlags()`/`getIsUnity`, or keep them? | Dead-code question, no economic exposure. |
-| **D-50** | `open_head_lot` lets anyone permanently occupy contract storage for ~0.02 TON gas — bound it how? | A storage-griefing vector on the auction lane, cheap to execute, not yet capped. `B3.1b` is blocked on this and on a second, sharper conflict: `CLAUDE.md` rule 3 (never invent an economic parameter) versus D-50's own delegation of "size the deposit/cap" to the implementing iteration — this loop cannot pick a number under its own standing authority. |
+| **D-50** | `open_head_lot` lets anyone permanently occupy contract storage for ~0.02 GRAM gas — bound it how? | A storage-griefing vector on the auction lane, cheap to execute, not yet capped. `B3.1b` is blocked on this and on a second, sharper conflict: `CLAUDE.md` rule 3 (never invent an economic parameter) versus D-50's own delegation of "size the deposit/cap" to the implementing iteration — this loop cannot pick a number under its own standing authority. |
 | **D-51** | A bounced `MintItem` leaves the registrar's naming rights and prime rank permanently wrong. | Reachability proven on a real test (`RecordMintBounceGap.spec.ts`, **B5.1**); the owner signed a direction (bounce-aware registrar) but a later mechanism-clarification pass (iter #9) found the signed brief pointed at the wrong contract's `onBouncedMessage` and left the undo semantics (unconditional clear vs. guarded) unresolved — still open pending a second, sharper sign-off. |
 | **D-52** | A bounced rebate mint is silently lost and permanently inflates `S`. | The ratchet's own floor denominator can drift upward against value nobody received. Signed once (`S` rollback + retry re-send), then found not-yet-safe-to-implement-as-signed at iter #10 — a live conflict note, not a stalled brief. |
 | **D-53** | A bounced era/special-number bounty is marked paid but never delivered. | Same shape as D-52, three siblings (`B12.1`, `B5.3`, `B11.1`) folded into one decision so the owner answers "retry journal or accept the loss" once. |
@@ -156,7 +156,7 @@ whoever signs one can grep straight to it.
 ## 3. Structural gaps — real, not a decision away, blocked on time or resources
 
 Not owner-decision items. These need either real wall-clock time to elapse on the live
-testnet deployment, or more TON in a wallet than this loop has authority to mint from
+testnet deployment, or more GRAM in a wallet than this loop has authority to mint from
 nothing (`CLAUDE.md` rule 3 — a gauntlet iteration cannot fund itself an economic input).
 
 - **H4/H5 — the ascending lot's CLOSE, which mints, unproven on the current genesis.**
@@ -190,11 +190,11 @@ nothing (`CLAUDE.md` rule 3 — a gauntlet iteration cannot fund itself an econo
   the redeploy. `getHead()` = **16** (live-read 2026-09-04), so **14 more composite
   mints** away (skipping auto-skipped primes), a smaller gap than pre-redeploy but not
   a closed one. The combined balance of every keeper/treasury/deploy-subwallet this
-  mnemonic controls is **≈1.23 TON**, against the ~14.7 TON the remaining mints plus a
+  mnemonic controls is **≈1.23 GRAM**, against the ~14.7 GRAM the remaining mints plus a
   gift-mint→primorial-mint→`sendTransferTrophy` sequence need — a figure measured when
   that sequence still carried D-106's now-deleted claim and activation legs, so the true
   requirement is *lower* than 14.7 and has not been re-measured —
-  funding is *further* from sufficient than the pre-redeploy reading (~5.81 TON right
+  funding is *further* from sufficient than the pre-redeploy reading (~5.81 GRAM right
   after R6 ignited), because other loops' proofs (H8a's patron-line proof, concurrent
   minting) have been spending down the same shared wallets since. Neither wallet can be
   topped up by this loop under its own authority (an owner/faucet action, the same
@@ -206,7 +206,7 @@ nothing (`CLAUDE.md` rule 3 — a gauntlet iteration cannot fund itself an econo
   just this one.
 - **H12 — a bounty vault that is short of `TRANSFER_GAS` forfeits a one-shot payout in
   silence, and cannot retry it.** Filed 2026-09-16, open, `GAUNTLET.md` H12. The vault
-  spends 0.1 TON of its own balance on each jetton hop; below that the compute phase
+  spends 0.1 GRAM of its own balance on each jetton hop; below that the compute phase
   succeeds (`exit 0`) and the ACTION phase fails with result 37, reverting the whole
   transaction. The mint that triggered it survives — the ledger's leg is deliberately
   `BounceMode.NoBounce` so that a vault failure never unwinds a mint — so nothing reports
@@ -215,8 +215,8 @@ nothing (`CLAUDE.md` rule 3 — a gauntlet iteration cannot fund itself an econo
   failure is not a bounce. Each trigger is one-shot, so the payout is permanently forfeit.
   **The funding half of this finding is FIXED and must not be read as open**
   (`GAUNTLET.md` H11, closed 2026-09-16): `payOut`'s `responseAddr` now names the vault, so
-  TEP-74's excess comes home and each payout nets **+0.0124 TON** — measured on the live
-  2026-09-14b set across eight consecutive payouts, vault balance 2.13 TON after 11. The
+  TEP-74's excess comes home and each payout nets **+0.0124 GRAM** — measured on the live
+  2026-09-14b set across eight consecutive payouts, vault balance 2.13 GRAM after 11. The
   vault therefore cannot drain itself into this state any more; it can only be short if it
   starts short. What remains open is the choice between adding a pre-send balance check that
   journals without sending (a contract change and a redeploy) and accepting the hole with
@@ -265,7 +265,7 @@ documented trade-off. None moves `T`, `S` or `pending` against holders.
 - **Established players can still be "recruited"** (`primes_minter_card.tolk`). A card turns
   `seen` only on a mint, a prime bought or a recruit credited; a wallet that won a composite
   lot, holds generators or builds constellations is still fresh. Each recruit still costs a
-  full 1 TON mint, so the sybil price is unchanged; the ladder can be farmed from existing
+  full 1 GRAM mint, so the sybil price is unchanged; the ladder can be farmed from existing
   players.
 - **`recover_exit` on legs 1–2 may restore tsTON that was really sold**
   (`primes_ratchet.tolk`, D-155). The in-code note says the shortfall surfaces at the next
@@ -278,22 +278,22 @@ documented trade-off. None moves `T`, `S` or `pending` against holders.
 - **Staking reward rounding** (`primes_stake.tolk:400-617`): `debtAt` rounds down, and
   nano-scale overpayments can briefly leave `unclaimedTotal` below one position's banked
   reward, stalling its settle until another budget accrues. Self-healing.
-- **A won near-cap prime lot costs the market float ~0.035 TON** (`RES_GAS`, D-113). `RES_GAS`
+- **A won near-cap prime lot costs the market float ~0.035 GRAM** (`RES_GAS`, D-113). `RES_GAS`
   is a params-derived economic constant (`LOT_FLOOR` = 1.07); re-sizing it is a sim run,
   not a code fix.
 - **A lost `lot_block_release` cannot be re-requested** (D-198, `primes_ledger.tolk` sale
   path). A flushed unsold prime's sale asks its lot block for the bookmark with a fixed
-  0.1 TON, non-bounceable hop, which also pays the block's accrued rent (LOW-4: the block
-  keeps only a 0.01 TON floor, so ~0.08 TON of debt, a dozen idle years at its densest,
+  0.1 GRAM, non-bounceable hop, which also pays the block's accrued rent (LOW-4: the block
+  keeps only a 0.01 GRAM floor, so ~0.08 GRAM of debt, a dozen idle years at its densest,
   is the ceiling). If that hop ever failed (a frozen lot block), the buyer's
   item would stay unstamped and that prime's flat dividend would sit, still counted in
   `divOutstanding`, unclaimable. The lot block keeps the row (marked released), so a
   permissionless re-request is a small addition if it is ever observed.
 - **A refused `lot_block_bookmarks` batch is restored from its bounce** (LOW-5, D-198,
   `primes_ledger.tolk` bounce arm `0x9c000004`). Measured on the heaviest state (a full
-  26-block window, forfeit rows on every prime): the bounce brings ~0.058 TON back and
-  restoring 16 rows costs 270,553 gas = 0.018 TON, a 3.2× margin that only a config 21 gas
-  price rise past it would eat. The trigger is a frozen lot block, which needs 0.1 TON of
+  26-block window, forfeit rows on every prime): the bounce brings ~0.058 GRAM back and
+  restoring 16 rows costs 270,553 gas = 0.018 GRAM, a 3.2× margin that only a config 21 gas
+  price rise past it would eat. The trigger is a frozen lot block, which needs 0.1 GRAM of
   rent debt on a block the head has only just left. A merge out of gas sends no bounce at
   all, so the hop is sized on the merge (≤ 59k gas). `LotBlock.spec.ts` pins the restore
   under half the bounce value, and the re-flush afterwards.
@@ -312,11 +312,11 @@ documented trade-off. None moves `T`, `S` or `pending` against holders.
   `primes_market.tolk` `ParkLots`; `backend/keeper/src/cycle.ts` `runParkLane`). A descending
   lot keeps its 1.83-cell row until `park_lots` folds it into a bit, and nothing on chain sends
   that. The keeper pages `getParkScan(from)` one call a cycle (16 rows a call, worst 106,434
-  gas ≈ 0.007 TON, paid by the sender, change returned). If it stops and nobody else folds,
+  gas ≈ 0.007 GRAM, paid by the sender, change returned). If it stops and nobody else folds,
   rows accumulate one per unsold prime opened, toward the ~35k-row freeze D-200 exists to
   prevent. Watch: `getParkScan(0)` answering a non-zero fold count for more than a few cycles.
 - **A parked prime's purchase recomputes its score** (D-200, `parkedLot`). 182,778 gas at
-  n = 509, out of `RES_GAS`'s 0.045 TON float share; near `AUCTIONABLE_MAX` the score alone is
+  n = 509, out of `RES_GAS`'s 0.045 GRAM float share; near `AUCTIONABLE_MAX` the score alone is
   ~680k gas (V34), about all of it. No modelled head reaches such an `n`.
 - **Build Prove is offered to non-owners in the webapp.** Since the consent fix the item
   refuses a stranger's proof (300); the Build page still shows the button, so a non-owner
@@ -336,7 +336,7 @@ rebate notification, the newcomer window lent to an unresolved edge, the burn ta
   remains needs the venue itself to drop a swap. **The close is lazy:** nothing happens at the
   hour; the trip closes only when `flush`, `stake` or `unstake` next runs. Until one does, a
   refund from the trip's own vault still restores `pending`, however late
-  (`RatchetStaking.spec.ts`). After the close the same refund credits nothing: its TON joins
+  (`RatchetStaking.spec.ts`). After the close the same refund credits nothing: its GRAM joins
   the gas buffer, `getSolvency`'s delta is higher, and no arm moves it back into `pending`
   (refused 100 if the venue has moved since, accepted and ignored otherwise).
 - **A late refund can restore the wrong trip, but never overstate `pending`** (audit R2-L3;
@@ -349,17 +349,17 @@ rebate notification, the newcomer window lent to an unresolved edge, the burn ta
   `value >= inFlightFlush`. A late refund of trip A therefore restores a newer trip B only when
   A >= B, and the net is +A − B >= 0 — a misattribution between the terms, never `pending`
   above its backing. R2-M1's pin decides WHICH vault may answer, never which trip.
-- **OPEN, not accepted — a 1-nanoTON flush costs no cooldown** (no owner decision exists).
+- **OPEN, not accepted — a 1-nanoGRAM flush costs no cooldown** (no owner decision exists).
   `cooldownSec * amount / autoSize` floors to zero, so a dust flush is repeatable and holds the
   one in-flight slot (223, and 230 for stake/unstake) until it settles — seconds on a live
-  venue, the stale hour on a silent one — for about the 0.25 TON of venue gas its caller
+  venue, the stale hour on a silent one — for about the 0.25 GRAM of venue gas its caller
   attaches. It cannot delay a venue change (R2-M1) and cannot move `T`, `S` or `p_f`; what it
   leans on is flush and staking liveness. A minimum flush size would close it and is a
   parameter the sim must supply.
 - **A late ledger refusal charges the raiser, not the opener** (`primes_market.tolk`,
   `MarkRejected`). An open on a stale `headHint` is refused a round trip later; a raise in
   that gap refunds the opener whole and the unwind refunds the raiser `highBid − REJECT_GAS`
-  (0.1 TON). The window is seconds, so only automated bidders are exposed. A fix needs the
+  (0.1 GRAM). The window is seconds, so only automated bidders are exposed. A fix needs the
   ledger to confirm an accepted `mark_off_head`, a new message on every open.
 - **A refused `mint_won_lot` removes a composite ahead of the head for good**
   (`primes_market.tolk`, the `0xb0000020` bounce arm). The winner is refunded, but the
@@ -377,7 +377,7 @@ rebate notification, the newcomer window lent to an unresolved edge, the burn ta
     `recover_exit` writes off the residual `inFlightStake − stakeCredited` — the drift
     between the last learned rate and the pool's current one, published as `realizedLoss`.
     `flush()` is not held. The drift is small once a rate has been learned, but a FIRST
-    stake made non-optimistically is valued at the 1/1 seed: at the live ~1.18 TON per
+    stake made non-optimistically is valued at the 1/1 seed: at the live ~1.18 GRAM per
     tsTON that writes off ~15% of it as `realizedLoss`. The tsTON is still held, and the
     next authenticated (optimistic) fill restores the write-off from it before `harvest`
     can see it; until then a tranche that exits redeems above its written-down cost and
@@ -391,7 +391,7 @@ rebate notification, the newcomer window lent to an unresolved edge, the burn ta
     read as that stake's fill. It needs an optimistic-mode pool fault.
 - **The burn tally counts DeDust proceeds whose burn may still be dropped.** Since the fix
   only `transfer_notification`s whose jetton sender is the venue's PRIMES vault count, but a
-  third party's swap paid to the ratchet chooses its own forward TON; an underfunded one is
+  third party's swap paid to the ratchet chooses its own forward GRAM; an underfunded one is
   counted and its burn dropped by `IGNORE_ERRORS`. The PRIMES stay on the ratchet's wallet.
 
 ## 4. Frontend/mainnet-readiness notes, deferred on purpose

@@ -1469,7 +1469,7 @@
       "key": "date",
       "label": "Date-shaped",
       "multiplier": 1.8,
-      "note": "Six digits that parse as DDMMYY or MMDDYY. This is the single largest rule-expressible vanity cohort on the line -- roughly 22,000 numbers between 100,000 and 404,000 are somebody's birthday, anniversary, or the day they shipped something. It is also the cohort the flat 1 TON price gives away for free."
+      "note": "Six digits that parse as DDMMYY or MMDDYY. This is the single largest rule-expressible vanity cohort on the line -- roughly 22,000 numbers between 100,000 and 404,000 are somebody's birthday, anniversary, or the day they shipped something. It is also the cohort the flat 1 GRAM price gives away for free."
     },
     {
       "key": "palindrome10",

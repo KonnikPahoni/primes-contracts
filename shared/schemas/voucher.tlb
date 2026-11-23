@@ -30,10 +30,10 @@ set_vault#9a000003
 ;; Sender MUST equal the genesis-script address (100); one-shot (104).
 
 ;; ---- inbound: redeem, from the claimant's own wallet ----
-;; A claim attaches >= 0.15 TON (103 below it — a replay too, since the mark
+;; A claim attaches >= 0.15 GRAM (103 below it — a replay too, since the mark
 ;; now lives on the receipt), carried through the receipt and on to the vault
 ;; (mode 64) to fund its jetton hop. Measured (PrimesVoucher.spec.ts, V26.3):
-;; 0.1385 TON reaches the vault on a first claim (receipt deploy + its 0.01
+;; 0.1385 GRAM reaches the vault on a first claim (receipt deploy + its 0.01
 ;; storage reserve), 0.1485 on a later one; the vault needs 0.1 + ~0.0005.
 
 claim_voucher#9a000001
@@ -138,7 +138,7 @@ burn_signer#9a000002
 ;; holds the key may retire it and nobody else can, and holding the key is
 ;; already strictly more power than retiring it, so the burn adds no authority
 ;; that did not already exist. §8's "no admin withdraw path" is untouched: no
-;; message in this contract moves TON anywhere but gas, and none names a
+;; message in this contract moves GRAM anywhere but gas, and none names a
 ;; destination for PRIMES other than the sender.
 ;;
 ;; `claim_deadline >= now + BURN_MIN_GRACE` (90 days) is ASSERTED (714). That is

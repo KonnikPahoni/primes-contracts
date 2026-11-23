@@ -7,18 +7,18 @@ tolk 1.4
 // Child: /contracts/contracts/primes_lp_position.tolk.
 //
 // WHAT THIS CONTRACT IS. The team's money, under holder control. It holds
-// PRIMES (its 1,000,000-PRIMES vesting lock, D-100 point 6 / D-166), TON (58% of
+// PRIMES (its 1,000,000-PRIMES vesting lock, D-100 point 6 / D-166), GRAM (58% of
 // the unsold-prime forfeits, §4.1/§6 point 2) and, since D-151 / §4.3.2, tsTON —
 // the realized yield on the ratchet's staked `pending`, sent here by `harvest()`.
 // It is also the CUSTODY ADDRESS for LP that wants a vote: anyone deposits DeDust
-// PRIMES/TON LP into one of FOUR lock terms (30 d / 3 m / 6 m / 1 y) and, while
+// PRIMES/GRAM LP into one of FOUR lock terms (30 d / 3 m / 6 m / 1 y) and, while
 // the term runs, that position is the electorate that governs this contract.
 // LP CUSTODY EARNS NO PRIMES (D-168): the miner is deleted, and the treasury's
 // PRIMES reach holders instead through `distribute()` to the stake master
 // (§5.3), once per epoch, by rule.
 //
 // WHAT THIS CONTRACT IS NOT, AND THE DISTINCTION IS THE WHOLE OF §8. It holds no
-// PROTOCOL TON. `pending` is the ratchet's, `owed` is the prime owners', and
+// PROTOCOL GRAM. `pending` is the ratchet's, `owed` is the prime owners', and
 // neither is here — the §3.4 decomposition puts each protected pool in its own
 // account precisely so a contract that CAN spend can be told apart from one that
 // cannot at a glance. Nothing in this file can move `T`, `S`, `pending`, `owed`,
@@ -49,7 +49,7 @@ tolk 1.4
 // ---------------------------------------------------------------------------
 // THE TWO WAYS AN ASSET LEAVES (TR-2)
 // ---------------------------------------------------------------------------
-// 1. A PASSED PROPOSAL (`execute`, below) — TON, PRIMES or tsTON to a named
+// 1. A PASSED PROPOSAL (`execute`, below) — GRAM, PRIMES or tsTON to a named
 //    address, capped at `PROPOSAL_CAP_BPS` of that asset's balance at execute
 //    time (TR-3).
 // 2. `distribute()` (D-168, §5.5.3) — PRIMES to the stake master and nowhere
@@ -79,7 +79,7 @@ tolk 1.4
 // ---------------------------------------------------------------------------
 // GOVERNANCE (D-100 points 8, 9, 10)
 // ---------------------------------------------------------------------------
-// TWO PROPOSAL KINDS. (1) Transfer {TON | PRIMES | tsTON} to an address. Plain
+// TWO PROPOSAL KINDS. (1) Transfer {GRAM | PRIMES | tsTON} to an address. Plain
 // transfers. LP IS NOT A PROPOSABLE ASSET (D-167): every LP token this contract
 // holds is a depositor's. Capped at `PROPOSAL_CAP_BPS` of that asset's balance
 // AT EXECUTE TIME, not at open time (TR-3). (2) D-194: VENUE CONFIRM
@@ -115,7 +115,7 @@ tolk 1.4
 // one of the four terms votes (D-168).
 //
 // WHO HAS VOTED IS NOT RECORDED HERE (D-188 point 7). A book of one row per
-// (proposal, position) filled config 43's cell cap for ~650-900 TON of dust
+// (proposal, position) filled config 43's cell cap for ~650-900 GRAM of dust
 // votes and froze governance. The voter's own child records the vote before it
 // sends it and refuses a second (1155); this contract keeps only the totals and
 // refuses a vote whose proposal closes after the child's record lapses (1203),
@@ -149,24 +149,24 @@ tolk 1.4
 // Gas
 // ---------------------------------------------------------------------------
 
-// 0.1 TON: one jetton-wallet transfer hop plus the destination wallet's deploy.
+// 0.1 GRAM: one jetton-wallet transfer hop plus the destination wallet's deploy.
 const TRANSFER_GAS: coins = 100000000;
-// 0.05 TON: one hop to a position child, including its deploy on a first
+// 0.05 GRAM: one hop to a position child, including its deploy on a first
 // deposit (the credit carries the child's code as state-init).
 const CHILD_GAS: coins = 50000000;
 // The single figure a caller must forward, sized for the most expensive outcome
 // — a deposit that refunds (a transfer) or credits a child. A real sender adds a
 // margin on top (CLAUDE.md); this is the nominal floor.
 const TREASURY_MIN_FORWARD: coins = TRANSFER_GAS + CHILD_GAS;
-// 0.05 TON riding `distribute()`'s transfer as `forward_ton_amount`, so the
+// 0.05 GRAM riding `distribute()`'s transfer as `forward_ton_amount`, so the
 // stake master's wallet raises the notification the budget is read from. It
 // funds only the master's accrue-and-store — the master sends nothing back.
 const DISTRIBUTE_FORWARD_TON: coins = 50000000;
 // What a `distribute()` caller must attach: the transfer hop plus the forward.
 // The caller funds it (it is permissionless), and the unspent excess returns to
 // them as the transfer's `response_destination`.
-const DISTRIBUTE_MIN_FORWARD: coins = TRANSFER_GAS + DISTRIBUTE_FORWARD_TON; // 0.15 TON
-// 0.05 TON kept unspendable on this account so a TON proposal can never leave
+const DISTRIBUTE_MIN_FORWARD: coins = TRANSFER_GAS + DISTRIBUTE_FORWARD_TON; // 0.15 GRAM
+// 0.05 GRAM kept unspendable on this account so a GRAM proposal can never leave
 // the treasury unable to pay its own storage rent.
 const TON_RENT_FLOOR: coins = 50000000;
 
@@ -188,6 +188,10 @@ const VOTE_MULT_0: int = 1;
 const VOTE_MULT_1: int = 3;
 const VOTE_MULT_2: int = 10;
 const VOTE_MULT_3: int = 30;
+// D-214: `treasury.forever_vote_multiplier` — what LP locked forever through a
+// position votes with. NOT a tier (no term, no deposit, no relock); MIRRORED in
+// primes_lp_position.tolk, and SimCrossCheck binds both to params.json.
+const VOTE_MULT_FOREVER: int = 100;
 
 // `treasury.tier_term_seconds` = [2592000, 7776000, 15552000, 31536000]. LOCK
 // TERMS measured from the deposit (D-147). Enforced on the CHILD; mirrored here
@@ -237,8 +241,8 @@ const ASSET_TSTON: int = 2;
 const ASSET_VENUE: int = 3;
 // D-194: what an `execute` of a venue-confirm proposal must attach — the hop to
 // the timelock and its confirm handler, carried on by mode 64, so the treasury's
-// own TON pays nothing for it.
-const VENUE_CONFIRM_GAS: coins = 30000000; // 0.03 TON
+// own GRAM pays nothing for it.
+const VENUE_CONFIRM_GAS: coins = 30000000; // 0.03 GRAM
 
 // The `forwardPayload` tag on an inbound LP transfer, followed by `tier:uint3`.
 // The ONLY LP tag: D-167 deleted the donate tag with the treasury's own LP.
@@ -253,7 +257,7 @@ const STAKE_ACTION_BUDGET: int = 0x53424754;     // "SBGT"
 // component survives a rich bounce because `queryId` is field 1.
 const QTAG_EXECUTE: int = 1;     // | seq
 const QTAG_DISTRIBUTE: int = 2;  // | the PREVIOUS lastDistributeTime (40 bits)
-const QTAG_LP_MOVE: int = 3;     // | (tier << 32) | position id
+const QTAG_LP_MOVE: int = 3;     // | (toSink << 40) | (tier << 32) | position id
 const QTAG_REFUND: int = 4;
 
 // ---------------------------------------------------------------------------
@@ -543,9 +547,11 @@ struct (0x96000013) RestorePosition {
     positionId: uint32
     amount: coins
     tier: uint8
+    // D-214: 1 for a bounced sink-forward — the child un-credits its forever total.
+    fromSink: uint8
 }
 
-// Outbound, TON, on `execute` of an asset-0 proposal. It carries a body for one
+// Outbound, GRAM, on `execute` of an asset-0 proposal. It carries a body for one
 // reason: the bounce handler needs the proposal sequence back.
 struct (0x96000014) TonPayout {
     queryId: uint64
@@ -609,6 +615,8 @@ struct PositionInit {
     positionCount: uint32
     voteWeight: uint120
     voted: cell?
+    foreverAmount: coins
+    foreverSince: uint40
     // D-139 — LAST, because this cell IS the child's address.
     clockDivisor: uint16
 }
@@ -641,6 +649,8 @@ fun positionStateInit(cfg: TreasuryConfig, owner: address): AutoDeployAddress {
                 positionCount: 0,
                 voteWeight: 0,
                 voted: null,
+                foreverAmount: 0,
+                foreverSince: 0,
                 clockDivisor: cfg.clockDivisor,
             }).toCell(),
         },
@@ -827,8 +837,12 @@ fun onInternalMessage(in: InMessage) {
             // Zero if an `ExpireVote` already took it out; decrementing twice
             // would quietly shrink the proposal-threshold denominator.
             val dropVote = msg.expired == 1 ? 0 : msg.amount * voteMultiplier(msg.tier);
+            // D-214: a sink-forward does not leave the electorate — its LP votes
+            // on as the child's forever total, so its forever weight comes in as
+            // the term's goes out. The bounce arm takes it back out.
+            val addVote = msg.toSink == 1 ? msg.amount * VOTE_MULT_FOREVER : 0;
             gov.eligibleWeight = (gov.eligibleWeight > dropVote
-                ? gov.eligibleWeight - dropVote : 0) as uint128;
+                ? gov.eligibleWeight - dropVote + addVote : addVote) as uint128;
             var bal = storage.bal.load();
             bal.lpHeld = (bal.lpHeld > msg.amount ? bal.lpHeld - msg.amount : 0) as coins;
             storage.gov = gov.toCell();
@@ -836,12 +850,12 @@ fun onInternalMessage(in: InMessage) {
             storage.save();
 
             val dest = msg.toSink == 1 ? cfg.sinkAddr : msg.owner;
-            // A sink-forward MUST forward TON with the transfer: the sink counts
+            // A sink-forward MUST forward GRAM with the transfer: the sink counts
             // locked depth from the notification its own wallet raises, and a
             // transfer with `forwardTonAmount = 0` raises none.
             val fwd: coins = (msg.toSink == 1 ? 20000000 : 0) as coins;
             sendJetton(w.lpJettonWallet,
-                       packQueryId(QTAG_LP_MOVE, msg.tier, msg.positionId),
+                       packQueryId(QTAG_LP_MOVE, msg.tier, msg.positionId) | (msg.toSink << 40),
                        msg.amount, dest,
                        // The OWNER, always — see `sendJetton`.
                        msg.owner, fwd, TRANSFER_GAS);
@@ -1013,7 +1027,7 @@ fun onInternalMessage(in: InMessage) {
             }
 
             // The EXECUTOR pays the payout's hop: the jetton branch sends
-            // TRANSFER_GAS and the TON branch pays its forward fee separately,
+            // TRANSFER_GAS and the GRAM branch pays its forward fee separately,
             // both out of this balance. Without the floor a passed proposal whose
             // `dest` bounces (which resets `executed`) could be re-executed for
             // compute alone, the treasury paying the hop every time (audit Low).
@@ -1070,7 +1084,7 @@ fun onInternalMessage(in: InMessage) {
                     // PAY_FEES_SEPARATELY so the destination receives EXACTLY the
                     // amount the proposal named. Under the default mode the
                     // forward fee comes out of the transfer, and a proposal for
-                    // 10 TON that delivers 9.99992 would make the get-method and
+                    // 10 GRAM that delivers 9.99992 would make the get-method and
                     // the payment two different numbers (§9.1). The fee is paid
                     // from the executor's own forwarded value, which is the right
                     // party: they chose to push it.
@@ -1157,7 +1171,7 @@ fun onInternalMessage(in: InMessage) {
         }
 
         else => {
-            // PLAIN TON IN — the 58% forfeit share (§4.1, §6 point 2, D-100
+            // PLAIN GRAM IN — the 58% forfeit share (§4.1, §6 point 2, D-100
             // point 6, D-166) and any other bare value transfer. It simply
             // accumulates; the balance IS the counter.
             assert (in.body.isEmpty()) throw 101; // wrong_opcode
@@ -1177,7 +1191,7 @@ fun onBouncedMessage(in: InMessageBounced) {
     val tag = qid >> 56;
 
     if (opcode == 0x96000014 || opcode == 0xa0000006) {
-        // A TON PAYOUT BOUNCED, or (D-194) a venue confirmation the timelock
+        // A GRAM PAYOUT BOUNCED, or (D-194) a venue confirmation the timelock
         // refused. The value came back with the bounce — reset
         // `executed` and the proposal is re-executable by anyone.
         var storage = lazy Storage.load();
@@ -1250,12 +1264,23 @@ fun onBouncedMessage(in: InMessageBounced) {
         var bal = storage.bal.load();
         bal.lpHeld += original.amount;
         storage.bal = bal.toCell();
+        // D-214: a bounced SINK-forward credited forever weight on the way out;
+        // the LP never reached the sink, so that weight leaves `eligibleWeight`
+        // here and the child's forever total via `fromSink`.
+        val fromSink = (qid >> 40) & 1;
+        if (fromSink == 1) {
+            var gov = storage.gov.load();
+            val v = original.amount * VOTE_MULT_FOREVER;
+            gov.eligibleWeight = (gov.eligibleWeight > v ? gov.eligibleWeight - v : 0) as uint128;
+            storage.gov = gov.toCell();
+        }
         storage.save();
         sendToChild(storage.cfg.load(), original.responseAddr, (RestorePosition {
             queryId: qid,
             positionId: (qid & 0xffffffff) as uint32,
             amount: original.amount,
             tier: ((qid >> 32) & 0xff) as uint8,
+            fromSink: fromSink as uint8,
         }).toCell(), CHILD_GAS);
         return;
     }
@@ -1287,7 +1312,7 @@ get fun getDistribution(): (int, int, int, int, int, address) {
 // (tonBalance, primesBalance, lpHeld, primesIn, tstonBalance).
 //
 // `tonBalance` is this account's real balance less the rent floor — the figure a
-// TON proposal's cap is measured against. `lpHeld` is the depositors' LP, all of
+// GRAM proposal's cap is measured against. `lpHeld` is the depositors' LP, all of
 // the LP this contract holds, and never proposable (TR-5, D-167).
 get fun getTreasuryBalances(): (int, int, int, int, int) {
     val storage = lazy Storage.load();
@@ -1414,6 +1439,12 @@ get fun getVoteMultipliers(): (int, int, int, int) {
     return (VOTE_MULT_0, VOTE_MULT_1, VOTE_MULT_2, VOTE_MULT_3);
 }
 
+// D-214. What LP locked forever through a position votes with,
+// `treasury.forever_vote_multiplier`. Not a tier, so not in the ladder above.
+get fun getForeverVoteMultiplier(): int {
+    return VOTE_MULT_FOREVER;
+}
+
 // The four lock terms in seconds, `treasury.tier_term_seconds`, DIVIDED by the
 // D-139 divisor exactly as the child divides the term it enforces.
 get fun getTierTerms(): (int, int, int, int) {
@@ -1435,7 +1466,7 @@ get fun getTreasuryActions(): int {
     return TREASURY_ACTION_DEPOSIT;
 }
 
-// (treasuryMinForward, distributeMinForward) — the nominal TON a deposit/child
+// (treasuryMinForward, distributeMinForward) — the nominal GRAM a deposit/child
 // message and a `distribute()` must carry. A real sender adds a margin.
 get fun getTreasuryMinForward(): (int, int) {
     return (TREASURY_MIN_FORWARD, DISTRIBUTE_MIN_FORWARD);

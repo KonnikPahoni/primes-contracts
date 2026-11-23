@@ -23,7 +23,7 @@
 //      TypeScript mirror. Two implementations of one rule is how a transcription
 //      slip inside 500 lines of Tolk gets caught.
 //   B. Acceptance check 1 — the birthday, and the date that never happened.
-//   C. Acceptance check 2 — the clamp IS the 420 TON ceiling.
+//   C. Acceptance check 2 — the clamp IS the 420 GRAM ceiling.
 //   D. §9.1 — the weight table is published, and the sum recomputes from it.
 //   E. §5.1 — D-96's rebate family is NARROWED, not deleted: no points, no bit.
 //   F. Acceptance check 6 — the vault's two-entry rebate schedule.
@@ -278,22 +278,22 @@ describe('D-99 — the score (PRICING_MODEL_PLAN.md §1, DECISIONS.md D-99)', ()
             // FORM.digitsum_prime pays 2, because 1+9+7+2+0+9+0+9 = 37 is prime.
             // 34 in total.
             //
-            // §8's acceptance check 1 quotes "≈ 9.2 TON", which is ladder(32) —
+            // §8's acceptance check 1 quotes "≈ 9.2 GRAM", which is ladder(32) —
             // it is the plan's own §1.4 row, and that row is one of the ones
             // §1.4's closing note warns about: "The FORM columns for the larger
             // primes were filled by hand and may miss a sub-family bit;
             // `SpecialNumbers.spec.ts` REGENERATES this table from the contract
             // and the checked-in table is corrected to match, never the reverse."
             // The hand-filled row missed the digit-sum bit. So the assertion is
-            // the derived number, 34 → 10.55 TON, and the plan's table is what
-            // owes an edit. The gift-grade band answer 11 asked for (6–10 TON for
+            // the derived number, 34 → 10.55 GRAM, and the plan's table is what
+            // owes an edit. The gift-grade band answer 11 asked for (6–10 GRAM for
             // a plain birthday) is unchanged in substance.
             const expectedScore =
                 SCORE_TERMS.LEN_W * (SCORE_TERMS.LEN_REF - 8) + POINTS[BIT.YYYYMMDD] + POINTS[BIT.DIGITSUM_PRIME];
             expect(expectedScore).toBe(34);
             expect(score).toBe(expectedScore);
             expect(flagKeys(flags).sort()).toEqual(['digitsum_prime', 'yyyymmdd']);
-            // ladder(34) = (1 TON << 3) · FRAC[4] >> 16 = 10.55… TON. Computed
+            // ladder(34) = (1 GRAM << 3) · FRAC[4] >> 16 = 10.55… GRAM. Computed
             // from the published FRAC table, never a copied round figure (10.556…,
             // not a rounded 10.55 — the integer ladder is exact and the test
             // must not launder it through a decimal).
@@ -306,11 +306,11 @@ describe('D-99 — the score (PRICING_MODEL_PLAN.md §1, DECISIONS.md D-99)', ()
             expect(life.map((b) => b.key)).toEqual(['yyyymmdd']);
         });
 
-        it('a birthday that carries the LIFE bit and nothing else lands on §8 check 1\'s 9.2 TON', async () => {
+        it('a birthday that carries the LIFE bit and nothing else lands on §8 check 1\'s 9.2 GRAM', async () => {
             // 20201207 is the plan's second birthday witness and the one whose
             // hand-filled §1.4 row is exactly right: digit sum 14 is composite,
             // so LIFE.YYYYMMDD is the only bit, D = 2 + 30 = 32, and
-            // ladder(32) = 9.189… TON. This is where acceptance check 1's
+            // ladder(32) = 9.189… GRAM. This is where acceptance check 1's
             // headline figure actually holds, unmodified.
             const { p0, score, flags } = await market.getLotPrice(20_201_207n);
             expect(score).toBe(32);
@@ -331,7 +331,7 @@ describe('D-99 — the score (PRICING_MODEL_PLAN.md §1, DECISIONS.md D-99)', ()
             expect(bitsOf(impossible.flags).filter((b) => lifeBits.includes(b))).toEqual([]);
             // What is left over is only what the DIGITS happen to be worth: one
             // trailing zero (8) and a prime digit sum (2 + 0 + 2 + 4 + 0 + 2 + 3
-            // + 0 = 13, prime, 2), plus LEN's 2. Twelve points, 2.30 TON — a
+            // + 0 = 13, prime, 2), plus LEN's 2. Twelve points, 2.30 GRAM — a
             // quarter of what the same date-shaped number earns when the date is
             // real, which is the whole content of "a birthday that did not
             // happen is not a gift". The comparison against 20240229, the leap
@@ -349,11 +349,11 @@ describe('D-99 — the score (PRICING_MODEL_PLAN.md §1, DECISIONS.md D-99)', ()
     // =======================================================================
     // C. ACCEPTANCE CHECK 2 — the clamp IS the ceiling
     // =======================================================================
-    describe('C. §8 check 2 — one clamp on the sum, and it is the 420 TON ceiling', () => {
-        /** Owner answer 9: composites open at no more than 420 TON. */
+    describe('C. §8 check 2 — one clamp on the sum, and it is the 420 GRAM ceiling', () => {
+        /** Owner answer 9: composites open at no more than 420 GRAM. */
         const CEILING = toNano('420.5');
 
-        it('the clamp and the ladder agree: ladder(SCORE_MAX) sits under 420.5 TON', () => {
+        it('the clamp and the ladder agree: ladder(SCORE_MAX) sits under 420.5 GRAM', () => {
             // 2^(87/10) = 415.87 — `SCORE_MAX = 87` was CHOSEN so that the single
             // clamp on the summed score is the price ceiling, the same
             // one-clamp-over-a-sum discipline §5 gives `K_CEIL`. There is no
@@ -364,7 +364,7 @@ describe('D-99 — the score (PRICING_MODEL_PLAN.md §1, DECISIONS.md D-99)', ()
             expect(ladder(SCORE_MAX + 1)).toBeGreaterThan(CEILING);
         });
 
-        it('no composite in the sweep opens above 420.5 TON', async () => {
+        it('no composite in the sweep opens above 420.5 GRAM', async () => {
             for (const n of SWEEP) {
                 if (isPrimeMR(n)) continue;
                 if (PRIMORIALS.includes(n)) continue; // refused outright, see block A
@@ -1047,7 +1047,7 @@ const payout = (bountyTon: bigint, cap: bigint, mult: bigint, t = T_AT_GENESIS, 
 // they set the shape of the arithmetic this file asserts, not the deployed
 // figures. When the params block lands, import it and delete these.
 // ---------------------------------------------------------------------------
-/** Owner answer 16: 0.005 TON of PRIMES per point of D(n). */
+/** Owner answer 16: 0.005 GRAM of PRIMES per point of D(n). */
 const REBATE_PER_POINT_TON = toNano('0.005');
 /** §1.5: the flat family figure, today's `free` tier value pending the re-size. */
 const REBATE_PRIME_FAMILY_TON = toNano('0.132');

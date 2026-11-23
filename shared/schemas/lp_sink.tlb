@@ -5,7 +5,7 @@
 // Contract: contracts/contracts/primes_lp_sink.tolk.
 // Opcodes: shared/opcodes.ts `LP_SINK`.
 //
-// DeDust PRIMES/TON LP receipts are transferred to this contract's own LP
+// DeDust PRIMES/GRAM LP receipts are transferred to this contract's own LP
 // jetton wallet and are never seen again. One bootstrap, one deposit handler,
 // two counters.
 //
@@ -22,9 +22,9 @@
 //
 // LOCKED DEPTH IS NEVER SUMMED INTO `T`. A COPY CONSTRAINT, NOT A COMMENT
 // (D-100 point 4), and it binds every surface that reads this schema. An LP
-// receipt is a claim on a pool whose TON/PRIMES composition moves with every
+// receipt is a claim on a pool whose GRAM/PRIMES composition moves with every
 // trade, so any figure derived from it is non-monotonic; `T` is the ratchet's
-// TON side and §5's theorem is that `p_f = T/S` only ever rises. THE FLOOR
+// GRAM side and §5's theorem is that `p_f = T/S` only ever rises. THE FLOOR
 // (redemption ratio, monotone) and LIQUIDITY (locked forever here / committed
 // >= 30 d in custody / withdrawable in custody) are two guarantees on two
 // panels. No UI string, API field or doc line may present locked depth as
@@ -37,8 +37,8 @@
 // maintains and an argument that no other burner exists. A sink's locked depth
 // IS its wallet balance, at any block, with no trusted counter.
 //
-// §3.4: this contract declares ZERO TON liability — absent, not zero-valued —
-// so it appears in no reconciliation row and exposes no `getSolvency`. TON sent
+// §3.4: this contract declares ZERO GRAM liability — absent, not zero-valued —
+// so it appears in no reconciliation row and exposes no `getSolvency`. GRAM sent
 // here is likewise unrecoverable; it is rent, not a liability. `S` (§3.3) and
 // the five-way split (§4.1) are untouched: no opcode here is one the ledger, the
 // ratchet or the splitter recognises.
@@ -110,7 +110,7 @@ transfer_notification#7362d09c
 
 // Any other opcode -> error 101 wrong_opcode. An EMPTY body is accepted: it is
 // how the contract is deployed and how anyone tops up its storage rent, and
-// that TON can no more leave than the LP can.
+// that GRAM can no more leave than the LP can.
 
 // ---------------------------------------------------------------------------
 // Outbound
@@ -132,6 +132,6 @@ transfer_notification#7362d09c
 //                         one-shot has fired.
 //
 // THERE IS DELIBERATELY NO `getSolvency`, for sink.tlb's reason: the declared
-// TON liability is ABSENT rather than zero-valued, and a zero row would invite
+// GRAM liability is ABSENT rather than zero-valued, and a zero row would invite
 // a future reader to add it to the §3.4 aggregate.
 // ---------------------------------------------------------------------------

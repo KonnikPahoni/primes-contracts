@@ -75,7 +75,7 @@ update_venue#b0000010
 ;; identical body to ratchet.tlb's `update_venue`.
 
 ;; ---- inbound: permissionless redelivery (D10, primes_venue_timelock.tolk header) ----
-;; The caller pays: >= 0.03 TON attached (103 below it), carried on to the
+;; The caller pays: >= 0.03 GRAM attached (103 below it), carried on to the
 ;; ratchet (mode 64), so a repeat costs this contract nothing.
 
 retry_update_venue#a0000004

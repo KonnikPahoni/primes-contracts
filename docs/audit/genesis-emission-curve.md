@@ -1,4 +1,4 @@
-# Genesis emission curve — the first 100 mints after a 200.00 TON donation
+# Genesis emission curve — the first 100 mints after a 200.00 GRAM donation
 
 **Measured** 2026-11-11 · **generator** `sim/scripts/run_phase1.py` (seed 20260814) · **decision** `DECISIONS.md` D-100 point 2, D-154, D-204 · **spec** `CONCEPT.md` §5, §6 point 3
 
@@ -6,13 +6,13 @@ This is a **measurement record**, not a work list. Nothing in it is a to-do.
 
 ## Why this file exists
 
-D-100 point 2 replaced D-92's 240 TON genesis donation with 4.20 TON, and
-D-154 and then D-204 raised it to **200.00 TON**. The derivation method is unchanged through
+D-100 point 2 replaced D-92's 240 GRAM genesis donation with 4.20 GRAM, and
+D-154 and then D-204 raised it to **200.00 GRAM**. The derivation method is unchanged through
 both; only its input moves. The consequence the decision commits to
 publishing *before deploy* is this one:
 
 > a mint's rebate is `R = k · I · S / T` PRIMES (§5), and `S / T` is `1 / p_f`.
-> A smaller genesis floor makes every TON of injection buy proportionally
+> A smaller genesis floor makes every GRAM of injection buy proportionally
 > more PRIMES, so the donation also sizes the front-loaded emission below.
 
 The **ratchet theorem is untouched** — `k < 1` still makes `p_f = T/S` strictly
@@ -24,10 +24,10 @@ the second one.
 
 | quantity | value | where it comes from |
 |---|---|---|
-| `T₀` (`seedT`) | **200.00 TON** | D-100 point 2, owner-set. After D-100 point 1 a donation is the *only* thing that lands in `seedT`. |
+| `T₀` (`seedT`) | **200.00 GRAM** | D-100 point 2, owner-set. After D-100 point 1 a donation is the *only* thing that lands in `seedT`. |
 | `S₀` | **18,572,333 PRIMES** | 15,600,000 bounty vault (D-204) + 1,000,000 vested to the treasury (D-100 point 6; D-166 deleted the operator's 1 M) + the donor's `donate_floor` mint, `T₀ · L` tapered by D-156 (D-100 point 1). |
-| `p_f0` | **1.076871e-05 TON/PRIMES** | `T₀ / S₀`. D-92's figure was 1.667e-5 — this is 1.55× lower. |
-| `L` | 10,000 PRIMES/TON | D-39, untouched: a denomination knob, not a price. |
+| `p_f0` | **1.076871e-05 GRAM/PRIMES** | `T₀ / S₀`. D-92's figure was 1.667e-5 — this is 1.55× lower. |
+| `L` | 10,000 PRIMES/GRAM | D-39, untouched: a denomination knob, not a price. |
 
 ## Method
 
@@ -39,7 +39,7 @@ genesis state is exact arithmetic rather than a re-simulation.
 
 The run is on the **D-20** model: primes are not head mints, so the table lists
 composites only and opens at **n = 4**. A prime's Dutch lot raises `T` with zero
-emission (§5.1, D-7); the replay leaves that TON out, which understates the floor
+emission (§5.1, D-7); the replay leaves that GRAM out, which understates the floor
 and so overstates emission — the conservative direction for this file.
 
 ## What the curve shows
@@ -57,12 +57,12 @@ deliberately not used: mint 10 may be a prime, and a prime emits nothing at all
 ## The honest reading
 
 The per-mint emission does fall fast. It is a `k·β / T` term and `T` grows by `β`
-every mint from a base of only 200.00 TON, so the denominator runs away from the
+every mint from a base of only 200.00 GRAM, so the denominator runs away from the
 numerator almost immediately. Over the first 100 mints:
 
-- `T` grows **1.1×**, to 226.30 TON;
+- `T` grows **1.1×**, to 226.30 GRAM;
 - `S` grows **1.05×**, to 19,411,786 PRIMES — a cumulative emission of **4.5% of `S₀`**;
-- `p_f` rises **1.08×**, to 1.165787e-05 TON/PRIMES;
+- `p_f` rises **1.08×**, to 1.165787e-05 GRAM/PRIMES;
 - mint 100 emits 0.0565% of `S₀`.
 
 What that costs, and what it does not. It is **not a solvency problem**: nothing
@@ -82,7 +82,7 @@ The number to carry away is the cumulative one: the first 100 mints multiply
 
 `k = 0` rows are prime mints (§5.1: primes emit nothing and ratchet ~11× harder).
 
-| # | n | kind | k | β (TON) | rebate (PRIMES) | % of `S₀` | T (TON) | S (PRIMES) | `p_f` | `p_f/p_f0` |
+| # | n | kind | k | β (GRAM) | rebate (PRIMES) | % of `S₀` | T (GRAM) | S (PRIMES) | `p_f` | `p_f/p_f0` |
 |--:|--:|---|--:|--:|--:|--:|--:|--:|--:|--:|
 | 1 | 4 | composite | 0.5343 | 0.2500 | 12,405 | 0.067% | 200.250 | 18,584,738 | 1.077e-05 | 1.0006 |
 | 2 | 6 | composite | 0.8861 | 0.3500 | 28,782 | 0.155% | 200.600 | 18,613,520 | 1.078e-05 | 1.0008 |
