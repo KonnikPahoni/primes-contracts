@@ -1062,10 +1062,13 @@ has a ceiling as well as a floor, so no industrial operator of a signal heads th
 candidate must be a plain user wallet (wallet v1 to v5) or a Telegram wallet, both by code hash,
 active in the last 12 months, and carry **no** label in the public `ton-labels` dataset — a
 label means an exchange, dApp, bot, fund or scammer, not a person. **Telegram wallets rank
-first**, in three tiers: Telegram wallets a signal names, then Telegram wallets active in the
-last 30 days that no signal names (activity alone makes a Telegram wallet a candidate, never a
-standard one), then standard wallets a signal names. Within a tier, ranking is by how many
-signals name the address, then by most recent activity. The daily job fails, keeping the
+first**, in three tiers (`DECISIONS.md` D-217): **funded** Telegram wallets — a last known balance
+of at least 1.2 GRAM in the lake's own `account_states` — then the other Telegram wallets, then
+standard wallets a signal names. A Telegram wallet is a candidate if a signal names it or it was
+active in the last 30 days (activity alone makes a Telegram wallet a candidate, never a standard
+one). Within a tier, ranking is by how many signals name the address — so a named Telegram
+wallet leads one that is only active — then by most recent activity. Every mint's list is taken
+from the current ranking, so a re-ranked day reaches the next mint. The daily job fails, keeping the
 previous lists, if no list holds a Telegram wallet, so a wallet-code change cannot drop them
 silently. The keeper then drops, from this repo's own index, every
 address that has already minted (it is not a newcomer — and since `DECISIONS.md` D-191 the

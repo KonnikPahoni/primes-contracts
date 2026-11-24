@@ -35,7 +35,7 @@ import path from 'path';
 import { Cell, WalletContractV4 } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
 import { dryRunGenesisMasterAddress } from './genesisPipeline';
-import { hydrateProcessEnv, deploySubwalletId, envValue, loadEnvFile, readNetworkConfig } from './envFile';
+import { hydrateProcessEnv, deploySubwalletId, loadEnvFile, readNetworkConfig, scriptNetwork } from './envFile';
 import { resolvePresentation } from './deployGenesis';
 
 // `tsx` loads no `.env`; every `process.env.PRIMES_*` read below depends on this.
@@ -75,7 +75,7 @@ async function main() {
 
     // The metadata URI is in the master's init data, so it moves the address: read it from
     // the file of the network the pool will be created on, exactly as genesis will.
-    const network = envValue(loadEnvFile(), 'PRIMES_NETWORK') === 'mainnet' ? 'mainnet' : 'testnet';
+    const { network } = scriptNetwork();
     const presentation = resolvePresentation(readNetworkConfig(network));
     console.log(`network config: shared/networks/${network}.yaml`);
     const jettonMasterCode = loadCode('PrimesJettonMaster');

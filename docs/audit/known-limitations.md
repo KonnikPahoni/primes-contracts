@@ -128,7 +128,7 @@ for an oversight.
   (D-130). It reaches the treasury's GRAM, PRIMES and tsTON only — never `pending`, `owed`, `T`
   or `S`. A quorum was weighed and declined twice (D-100 point 8, D-173 2026-11-19: an empty
   electorate would pass nothing). The only mitigation is operational: launch gate M4's
-  proposal alert and standing LP lock (`docs/mainnet-launch-gates.md`). Bound by
+  proposal alert (`docs/mainnet-launch-gates.md`); a no-voter's lock made during the notice votes. Bound by
   `Treasury.spec.ts` (the R2-H1 tests) and `VenueGovernance.spec.ts`.
 
 ## 2. Open decisions — brief written, owner has not yet chosen

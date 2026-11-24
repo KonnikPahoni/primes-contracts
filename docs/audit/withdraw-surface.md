@@ -54,41 +54,41 @@ reach — not `T`, `S`, `pending`, `owed`, `k`, `K_CEIL` or the split.
 | `primes_jetton_wallet.tolk` | 219 | InternalTransfer → onInternalMessage | `respondTo` | player | `0` |
 | `primes_jetton_wallet.tolk` | 253 | Transfer → onInternalMessage | `AutoDeployAddress { ... }` | deploy | `0` |
 | `primes_jetton_wallet.tolk` | 280 | Burn → onInternalMessage | `storage.jettonMaster` | peer | `0` |
-| `primes_ledger.tolk` | 2836 | handleRetryItem | `configA.collectionAddr` | peer | `item.mintValue + held` |
-| `primes_ledger.tolk` | 3299 | refund | `dest` | via-helper | `amount` |
-| `primes_ledger.tolk` | 3388 | handleClaimDividend | `itemAddress(configA, msg.p)` | peer | `0` |
-| `primes_ledger.tolk` | 3445 | handleRetryCredit | `itemAddress(configA, credit.p)` | peer | `CREDIT_TRIBUTE_VALUE` |
-| `primes_ledger.tolk` | 3480 | handleRetryMint | `configA.jettonMasterAddr` | peer | `DONATE_MINT_GAS` |
-| `primes_ledger.tolk` | 3558 | handleIgnite | `configA.collectionAddr` | peer | `ITEM_DEPLOY_VALUE` |
-| `primes_ledger.tolk` | 3584 | handleIgnite | `d.marketAddr` | peer | `LAUNCH_HOP_GAS` |
-| `primes_ledger.tolk` | 3615 | handleSyncLaunch | `d.marketAddr` | peer | `0` |
-| `primes_ledger.tolk` | 3760 | handleClearingCleared | `feeDests.treasuryAddr` | peer | `treasuryDue` |
-| `primes_ledger.tolk` | 3925 | handleDonateFloor | `configA.jettonMasterAddr` | peer | `DONATE_MINT_GAS` |
-| `primes_ledger.tolk` | 4034 | replyMarkRejected | `dest` | via-helper | `0` |
-| `primes_ledger.tolk` | 4074 | handleMarkOffHead | `lotBlockStateInit(loadConfigA(storage).lotBlockCode, block)` | deploy | `0` |
-| `primes_ledger.tolk` | 4120 | handleFlushUnsold | `lotBlockStateInit(loadConfigA(storage).lotBlockCode, block)` | deploy | `LOT_BLOCK_BOOKMARKS_VALUE` |
-| `primes_ledger.tolk` | 4146 | handleLotBlockBookmark | `itemAddress(configA, msg.n)` | peer | `CLAIM_DIVIDEND_MIN_VALUE` |
-| `primes_ledger.tolk` | 4174 | handleImportLotBlock | `lotBlockStateInit(loadConfigA(storage).lotBlockCode, block)` | deploy | `0` |
-| `primes_ledger.tolk` | 4231 | handleSyncHead | `d.marketAddr` | peer | `0` |
-| `primes_ledger.tolk` | 4260 | handleAdvanceHead | `senderAddress` | player | `0` |
-| `primes_ledger.tolk` | 4331 | SettlePrimeClearing → onInternalMessage | `in.senderAddress` | player | `15000000` |
-| `primes_ledger.tolk` | 4392 | handleCardMint | `senderAddress` | player | `0` |
-| `primes_ledger.tolk` | 4469 | handleCardMint | `invitee` | player | `terms.inviteValue` |
-| `primes_ledger.tolk` | 4564 | handleSettle | `senderAddress` | player | `15000000` |
-| `primes_ledger.tolk` | 4582 | forwardToRatchet | `b.ratchetAddr` | peer | `amount + RATCHET_HOP_GAS` |
-| `primes_ledger.tolk` | 4675 | payHeldSplit | `itemAddressWith(configA, itemDefault, p)` | peer | `CREDIT_TRIBUTE_VALUE` |
-| `primes_ledger.tolk` | 4695 | payHeldSplit | `itemAddressWith(configA, itemDefault, referralKey)` | peer | `REFERRAL_AMOUNT` |
-| `primes_ledger.tolk` | 4733 | payHeldSplit | `feeDests.treasuryAddr` | peer | `TREASURY_AMOUNT + forfeitToTreasury + opMeters.treasuryHeld` |
-| `primes_ledger.tolk` | 4745 | payHeldSplit | `feeDests.operatorAddr` | operator | `operatorDue` |
-| `primes_ledger.tolk` | 5054 | executeMint | `lotBlockStateInit(configA.lotBlockCode, primeBlock)` | deploy | `LOT_BLOCK_HOP_VALUE` |
-| `primes_ledger.tolk` | 5099 | executeMint | `lotBlockStateInit(configA.lotBlockCode, primeBlock)` | deploy | `LOT_BLOCK_RELEASE_VALUE` |
-| `primes_ledger.tolk` | 5182 | executeMint | `cardStateInit(configA.cardCode, payer)` | deploy | `CARD_RECRUIT_GAS` |
-| `primes_ledger.tolk` | 5232 | executeMint | `cardStateInit(configA.cardCode, beneficiary)` | deploy | `CARD_PRIME_GAS` |
-| `primes_ledger.tolk` | 5428 | executeMint | `configA.collectionAddr` | peer | `itemValue + heldSplitValue` |
-| `primes_ledger.tolk` | 5449 | executeMint | `configA.jettonMasterAddr` | peer | `REBATE_MINT_GAS` |
-| `primes_ledger.tolk` | 5473 | executeMint | `dCfg.bountyVaultAddr` | peer | `15000000` |
-| `primes_ledger.tolk` | 5533 | executeMint | `dCfg.bountyVaultAddr` | peer | `15000000` |
-| `primes_ledger.tolk` | 5580 | executeMint | `bCfg.registrarAddr` | peer | `REGISTRAR_HOP_GAS` |
+| `primes_ledger.tolk` | 2840 | handleRetryItem | `configA.collectionAddr` | peer | `item.mintValue + held` |
+| `primes_ledger.tolk` | 3303 | refund | `dest` | via-helper | `amount` |
+| `primes_ledger.tolk` | 3392 | handleClaimDividend | `itemAddress(configA, msg.p)` | peer | `0` |
+| `primes_ledger.tolk` | 3449 | handleRetryCredit | `itemAddress(configA, credit.p)` | peer | `CREDIT_TRIBUTE_VALUE` |
+| `primes_ledger.tolk` | 3484 | handleRetryMint | `configA.jettonMasterAddr` | peer | `DONATE_MINT_GAS` |
+| `primes_ledger.tolk` | 3562 | handleIgnite | `configA.collectionAddr` | peer | `ITEM_DEPLOY_VALUE` |
+| `primes_ledger.tolk` | 3588 | handleIgnite | `d.marketAddr` | peer | `LAUNCH_HOP_GAS` |
+| `primes_ledger.tolk` | 3619 | handleSyncLaunch | `d.marketAddr` | peer | `0` |
+| `primes_ledger.tolk` | 3764 | handleClearingCleared | `feeDests.treasuryAddr` | peer | `treasuryDue` |
+| `primes_ledger.tolk` | 3929 | handleDonateFloor | `configA.jettonMasterAddr` | peer | `DONATE_MINT_GAS` |
+| `primes_ledger.tolk` | 4038 | replyMarkRejected | `dest` | via-helper | `0` |
+| `primes_ledger.tolk` | 4078 | handleMarkOffHead | `lotBlockStateInit(loadConfigA(storage).lotBlockCode, block)` | deploy | `0` |
+| `primes_ledger.tolk` | 4124 | handleFlushUnsold | `lotBlockStateInit(loadConfigA(storage).lotBlockCode, block)` | deploy | `LOT_BLOCK_BOOKMARKS_VALUE` |
+| `primes_ledger.tolk` | 4150 | handleLotBlockBookmark | `itemAddress(configA, msg.n)` | peer | `CLAIM_DIVIDEND_MIN_VALUE` |
+| `primes_ledger.tolk` | 4178 | handleImportLotBlock | `lotBlockStateInit(loadConfigA(storage).lotBlockCode, block)` | deploy | `0` |
+| `primes_ledger.tolk` | 4235 | handleSyncHead | `d.marketAddr` | peer | `0` |
+| `primes_ledger.tolk` | 4264 | handleAdvanceHead | `senderAddress` | player | `0` |
+| `primes_ledger.tolk` | 4335 | SettlePrimeClearing → onInternalMessage | `in.senderAddress` | player | `15000000` |
+| `primes_ledger.tolk` | 4396 | handleCardMint | `senderAddress` | player | `0` |
+| `primes_ledger.tolk` | 4473 | handleCardMint | `invitee` | player | `terms.inviteValue` |
+| `primes_ledger.tolk` | 4568 | handleSettle | `senderAddress` | player | `15000000` |
+| `primes_ledger.tolk` | 4586 | forwardToRatchet | `b.ratchetAddr` | peer | `amount + RATCHET_HOP_GAS` |
+| `primes_ledger.tolk` | 4679 | payHeldSplit | `itemAddressWith(configA, itemDefault, p)` | peer | `CREDIT_TRIBUTE_VALUE` |
+| `primes_ledger.tolk` | 4699 | payHeldSplit | `itemAddressWith(configA, itemDefault, referralKey)` | peer | `REFERRAL_AMOUNT` |
+| `primes_ledger.tolk` | 4737 | payHeldSplit | `feeDests.treasuryAddr` | peer | `TREASURY_AMOUNT + forfeitToTreasury + opMeters.treasuryHeld` |
+| `primes_ledger.tolk` | 4749 | payHeldSplit | `feeDests.operatorAddr` | operator | `operatorDue` |
+| `primes_ledger.tolk` | 5058 | executeMint | `lotBlockStateInit(configA.lotBlockCode, primeBlock)` | deploy | `LOT_BLOCK_HOP_VALUE` |
+| `primes_ledger.tolk` | 5103 | executeMint | `lotBlockStateInit(configA.lotBlockCode, primeBlock)` | deploy | `LOT_BLOCK_RELEASE_VALUE` |
+| `primes_ledger.tolk` | 5186 | executeMint | `cardStateInit(configA.cardCode, payer)` | deploy | `CARD_RECRUIT_GAS` |
+| `primes_ledger.tolk` | 5237 | executeMint | `cardStateInit(configA.cardCode, beneficiary)` | deploy | `CARD_PRIME_GAS` |
+| `primes_ledger.tolk` | 5433 | executeMint | `configA.collectionAddr` | peer | `itemValue + heldSplitValue` |
+| `primes_ledger.tolk` | 5454 | executeMint | `configA.jettonMasterAddr` | peer | `REBATE_MINT_GAS` |
+| `primes_ledger.tolk` | 5478 | executeMint | `dCfg.bountyVaultAddr` | peer | `15000000` |
+| `primes_ledger.tolk` | 5538 | executeMint | `dCfg.bountyVaultAddr` | peer | `15000000` |
+| `primes_ledger.tolk` | 5585 | executeMint | `bCfg.registrarAddr` | peer | `REGISTRAR_HOP_GAS` |
 | `primes_lot_block.tolk` | 91 | returnChange | `storage.ledgerAddr` | peer | `0` |
 | `primes_lot_block.tolk` | 170 | LotBlockClaim → onInternalMessage | `storage.ledgerAddr` | peer | `0` |
 | `primes_lot_block.tolk` | 193 | LotBlockImport → onInternalMessage | `storage.ledgerAddr` | peer | `0` |

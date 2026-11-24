@@ -5,13 +5,16 @@
  *   - the deploy SUBWALLET address for `PRIMES_DEPLOY_SUBWALLET_ID` and its live balance,
  *     against the 13 GRAM pipeline floor (gotcha 10 in docs/testnet-deployment.md) — this is
  *     the address to fund before the run;
- *   - `shared/networks/testnet.yaml` (parsed and genesis-ready) and every per-run env var
+ *   - `shared/networks/<network>.yaml` (parsed and genesis-ready) and every per-run env var
  *     the runner `requireAddr`s, and whether it is set;
  *   - whether `PRIMES_PROPOSER_ADDR` IS the subwallet (gotcha 8 — the venue timelock bakes
  *     it in and the 2026-08-17 / 2026-08-29 runs died at the last step when it wasn't);
- *   - whether `testnet.yaml`'s `operator_addr` IS `.owner.json`'s key as v4R2 (TESTNET_MASTER_PLAN.md §4b).
+ *   - on testnet, whether `testnet.yaml`'s `operator_addr` IS `.owner.json`'s key as v4R2 (TESTNET_MASTER_PLAN.md §4b).
  *
- *   npx tsx contracts/scripts/genesisPrep.ts            # report
+ * Network: `--mainnet` / `--testnet`, else PRIMES_NETWORK, else testnet (`scriptNetwork`, G96) —
+ * the same value the deploy that follows is given.
+ *
+ *   npx tsx contracts/scripts/genesisPrep.ts [--mainnet]   # report
  *
  * (The invite signer pair and `--keygen` are gone: D-202 deleted the signature.)
  * Exit 1 on any refusal the runner would also make, so this is safe to run repeatedly.
@@ -28,12 +31,14 @@ import {
     clockDivisorOf,
     readNetworkConfig,
     resolveStakeMin,
+    scriptNetwork,
     MAINNET_AUCTION_SECONDS,
     assertBuildFresh,
 } from './envFile';
 import { getPoolAddress, jettonAsset } from './dedust';
 import { readOwnerEntry } from './testnet/cast';
-import { dryRunGenesisMasterAddress } from './genesisPipeline';
+import { dryRunGenesisMasterAddress, genesisDonationTon, genesisPairingPrimes } from './genesisPipeline';
+import params from '../../shared/params.json';
 import { resolvePresentation } from './deployGenesis';
 import { Cell } from '@ton/core';
 import { requireGenesisReady } from '../../shared/networkConfig';
@@ -45,13 +50,31 @@ const REPO = path.resolve(__dirname, '..', '..');
 const PIPELINE_GAS_FLOOR_TON = 13;
 /**
  * With `PRIMES_DEDUST_LP_STANDIN=0` the run does not stop at genesis: it is
- * followed by `donateFloor.ts` (the D-154 donation, 132.50 GRAM) and
- * `seedDedustLiquidity.ts` (the same figure again as the pool's GRAM side, plus
- * the jetton vault and the deposit/transfer hops). Those come out of this same
- * wallet, so the floor has to cover them or the run dies halfway with the pool
- * half-seeded and the LP receipt unforwarded.
+ * followed by `donateFloor.ts` (the donation itself) and `seedDedustLiquidity.ts`
+ * (the pool's GRAM side, plus the jetton vault and the deposit/transfer hops). Those
+ * come out of this same wallet, so the floor has to cover them or the run dies
+ * halfway with the pool half-seeded and the LP receipt unforwarded. This constant
+ * is the hops' gas only; the two amounts are computed below from params.json.
  */
-const SEEDING_BUDGET_TON = 10;
+const SEEDING_HOPS_TON = 10;
+
+/**
+ * The GRAM `donateFloor.ts` and `seedDedustLiquidity.ts` move by default (G96 follow-up:
+ * this was a flat 10 GRAM, against a 200 GRAM mainnet donation, D-204).
+ *   donation — `test_overrides.donate_ton` (testnet only), else `genesis_donation_ton`,
+ *              the same default `donateFloor.ts` resolves.
+ *   pairing  — the seeder's PRIMES side × p_f after the donation. Bounded ABOVE by
+ *              `pairing × donation / S₀`: leaving the donor's own mint out of S only
+ *              overstates the price, and a funding floor errs high.
+ */
+export function seedingTon(
+    cfg: { testOverrides: { donateTon?: number } },
+    g: typeof params.genesis
+): { donation: number; pairing: number } {
+    const donation = cfg.testOverrides.donateTon ?? genesisDonationTon(g);
+    const pairing = (genesisPairingPrimes(g) * donation) / g.genesis_supply_primes;
+    return { donation, pairing: Math.ceil(pairing * 100) / 100 };
+}
 
 const BUILD = path.resolve(__dirname, '..', 'build');
 function loadCode(name: string): Cell {
@@ -62,9 +85,11 @@ function loadCode(name: string): Cell {
 async function main() {
     assertBuildFresh();
     const env = loadEnvFile();
-    // Testnet-only preflight (its client is hardwired to testnet). Throws on a stale
-    // retired env var or a malformed file: both would also stop the runner.
-    const cfg = readNetworkConfig('testnet');
+    // Throws on a stale retired env var or a malformed file (both would also stop the
+    // runner), and on mainnet while `mainnet.yaml` still has a genesis-day null.
+    const net = scriptNetwork(env);
+    const fmtA = (a: Address) => a.toString({ testOnly: net.testOnly });
+    const cfg = readNetworkConfig(net.network);
     requireGenesisReady(cfg);
     let fail = false;
     const refuse = (msg: string) => { console.log(`  !! ${msg}`); fail = true; };
@@ -79,20 +104,24 @@ async function main() {
     const wallet = WalletContractV4.create({ workchain: 0, publicKey: keyPair.publicKey, walletId });
     const addr = wallet.address;
 
-    const client = new TonClient({
-        endpoint: 'https://testnet.toncenter.com/api/v2/jsonRPC',
-        apiKey: env.get('TONCENTER_API_KEY_TESTNET') || undefined,
-    });
+    const client = new TonClient({ endpoint: net.endpoint, apiKey: net.apiKey });
     const balance = Number(await client.getBalance(addr)) / 1e9;
     const deployed = await client.isContractDeployed(addr);
 
+    console.log(`network:             ${net.network}`);
     console.log(`deploy subwallet id: ${walletIdRaw ?? '<default>'}`);
-    console.log(`deploy subwallet:    ${addr.toString({ testOnly: true })}`);
+    console.log(`deploy subwallet:    ${fmtA(addr)}`);
     const standIn = env.get('PRIMES_DEDUST_LP_STANDIN') === '1';
-    const floorTon = standIn ? PIPELINE_GAS_FLOOR_TON : PIPELINE_GAS_FLOOR_TON + SEEDING_BUDGET_TON;
+    const seed = seedingTon(cfg, params.genesis);
+    const floorTon = standIn
+        ? PIPELINE_GAS_FLOOR_TON
+        : Math.ceil(PIPELINE_GAS_FLOOR_TON + seed.donation + seed.pairing + SEEDING_HOPS_TON);
     console.log(
         `balance:             ${balance} GRAM (floor ${floorTon}` +
-            (standIn ? '' : ` = ${PIPELINE_GAS_FLOOR_TON} pipeline + ${SEEDING_BUDGET_TON} donate/seed`) +
+            (standIn
+                ? ''
+                : ` = ${PIPELINE_GAS_FLOOR_TON} pipeline + ${seed.donation} donation + ` +
+                  `≤${seed.pairing} pool GRAM side + ${SEEDING_HOPS_TON} hops`) +
             ')'
     );
     if (!walletIdRaw) refuse('PRIMES_DEPLOY_SUBWALLET_ID unset — every genesis needs a FRESH id (gotcha 6)');
@@ -123,7 +152,7 @@ async function main() {
         refuse(`could not derive this run's jetton master (is contracts/build populated? run pnpm build): ${String(e)}`);
     }
     if (master) {
-        const fmt = master.toString({ testOnly: true });
+        const fmt = fmtA(master);
         if (await client.isContractDeployed(master)) {
             refuse(
                 `the jetton master this run would deploy (${fmt}) is ALREADY on chain — this subwallet id ` +
@@ -136,7 +165,7 @@ async function main() {
     if (deployed) {
         console.log('  note this subwallet has sent transactions before (expected: createDedustPool.ts).');
     }
-    if (balance < floorTon) console.log(`  -> FUND IT: send >= ${floorTon} GRAM to the address above, then re-run this script`);
+    if (balance < floorTon) refuse(`FUND IT: send >= ${floorTon} GRAM to ${fmtA(addr)}, then re-run this script`);
 
     // GOTCHA 6, ENFORCED — a FRESH subwallet id per genesis.
     //
@@ -156,7 +185,7 @@ async function main() {
     // itself. Refusing on equality is the whole fix.
     const deployDoc = fs.readFileSync(path.join(REPO, 'docs', 'testnet-deployment.md'), 'utf8');
     const liveId = deployDoc.match(/deploy subwallet `(\d+)`/)?.[1];
-    if (liveId && walletIdRaw === liveId) {
+    if (net.testOnly && liveId && walletIdRaw === liveId) {
         refuse(
             `PRIMES_DEPLOY_SUBWALLET_ID=${liveId} is the id the LIVE set was deployed from ` +
                 `(docs/testnet-deployment.md's status line). Gotcha 6: use a FRESH id per genesis — ` +
@@ -190,7 +219,7 @@ async function main() {
                 : `  — \`stake\` needs \`pending\` above ${(stake.effectiveTon / 0.8).toFixed(4)} GRAM`)
     );
 
-    console.log(`network config:      shared/networks/testnet.yaml (name fee ${cfg.nameFeeTon} GRAM)`);
+    console.log(`network config:      shared/networks/${net.network}.yaml (name fee ${cfg.nameFeeTon} GRAM)`);
     console.log('per-run env:');
     for (const k of [
         'PRIMES_PROPOSER_ADDR',
@@ -202,13 +231,19 @@ async function main() {
         console.log(`  ${v ? 'ok ' : '-- '} ${k}${v ? '' : '  (UNSET)'}`);
         if (!v) refuse(`${k} is required by the runner`);
     }
-    // THE OPERATOR IS THE OWNER'S KEY, AS v4R2. `.owner.json` holds the human's seed as
+    if (standIn && !net.testOnly) {
+        refuse('PRIMES_DEDUST_LP_STANDIN=1 is testnet-only: deployGenesis refuses it on mainnet (R17)');
+    }
+    // THE OPERATOR IS THE OWNER'S KEY, AS v4R2 — on testnet (TESTNET_MASTER_PLAN.md §4b).
+    // Mainnet's operator_addr is owner-signed in mainnet.yaml (D-209) and printed as-is. `.owner.json` holds the human's seed as
     // a W5 wallet; the forfeit remainder and the TEP-66 royalty go to the SAME seed's
     // v4R2 default-subwallet account instead — one key, two accounts, and a genesis that
     // stamps any other address into `ConfigA.operatorAddr` is refused here.
-    const owner = readOwnerEntry();
+    const owner = net.testOnly ? readOwnerEntry() : undefined;
     const opAddr = cfg.operatorAddr;
-    if (!owner) {
+    if (!net.testOnly) {
+        console.log(`  ok  operator_addr ${opAddr} (mainnet.yaml, D-209)`);
+    } else if (!owner) {
         refuse(".owner.json is missing — testnet.yaml's operator_addr must be its key as v4R2");
     } else if (opAddr) {
         const ownerV4 = WalletContractV4.create({
@@ -257,8 +292,8 @@ async function main() {
             if (!expected.equals(Address.parse(pool))) {
                 refuse(
                     `PRIMES_DEDUST_POOL_ADDR is ${pool}, but the pool for the jetton master THIS run will ` +
-                        `deploy (${master.toString({ testOnly: true })}) is ` +
-                        `${expected.toString({ testOnly: true })}. The subwallet id has changed since the pool ` +
+                        `deploy (${fmtA(master)}) is ` +
+                        `${fmtA(expected)}. The subwallet id has changed since the pool ` +
                         'was created. Re-run createDedustPool.ts and use the address it prints.'
                 );
             } else {
@@ -272,7 +307,7 @@ async function main() {
             const res = await client.runMethod(Address.parse(pool), 'get_wallet_address', [
                 { type: 'slice', cell: beginCell().storeAddress(addr).endCell() },
             ]);
-            console.log(`  ok  DeDust pool ${pool} answers get_wallet_address -> ${res.stack.readAddress().toString({ testOnly: true })}`);
+            console.log(`  ok  DeDust pool ${pool} answers get_wallet_address -> ${fmtA(res.stack.readAddress())}`);
         } catch (e) {
             refuse(
                 `PRIMES_DEDUST_LP_STANDIN is not 1, so the pool must be live, but ` +
@@ -301,11 +336,11 @@ async function main() {
     }
     const proposer = env.get('PRIMES_PROPOSER_ADDR');
     if (proposer && !Address.parse(proposer).equals(addr)) {
-        refuse(`PRIMES_PROPOSER_ADDR is not this subwallet — set it to ${addr.toString({ testOnly: true })} (gotcha 8)`);
+        refuse(`PRIMES_PROPOSER_ADDR is not this subwallet — set it to ${fmtA(addr)} (gotcha 8)`);
     }
 
-    console.log(fail ? 'NOT READY — fix the lines above.' : `ready: fund ${addr.toString({ testOnly: true })} if needed, then run deployGenesis.ts --skew-safe backgrounded.`);
+    console.log(fail ? 'NOT READY — fix the lines above.' : `ready: fund ${fmtA(addr)} if needed, then run deployGenesis.ts --skew-safe${net.testOnly ? '' : ' --mainnet'} backgrounded.`);
     process.exit(fail ? 1 : 0);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+if (require.main === module) main().catch((e) => { console.error(e); process.exit(1); });

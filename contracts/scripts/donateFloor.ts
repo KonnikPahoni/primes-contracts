@@ -1,5 +1,5 @@
 /**
- * TON PRIMES — testnet utility: raise the floor by donating GRAM to the ledger.
+ * TON PRIMES — genesis step: raise the floor by donating GRAM to the ledger.
  *
  * CONCEPT §6 point 3 / DECISIONS D-91 point 4, D-100 point 1. Sends
  * `donate_floor#b000000c`: `T` rises by the donation and it is forwarded to the
@@ -29,13 +29,14 @@
  * Amount: `--ton <n>` on the command line, else `testnet.yaml`'s
  * `test_overrides.donate_ton`, else the genesis donation above. D-100 point 3's further
  * outlay, up to 150 GRAM, comes through this same message a tranche at a time (`--ton`).
- * This script's client is testnet-only, so it reads `shared/networks/testnet.yaml`.
+ * Network: `--mainnet` / `--testnet`, else PRIMES_NETWORK, else testnet (`scriptNetwork`, G96);
+ * it reads that network's `shared/networks/<network>.yaml`, and mainnet's has no `test_overrides`.
  *
  * Env:
  *   PRIMES_LEDGER_ADDRESS    — the deployed ledger (docs/testnet-deployment.md)
  *   PRIMES_FROM_SUBWALLET_ID — source subwallet id (default: wallet v4 default)
  *
- *   ../bot/node_modules/.bin/tsx scripts/donateFloor.ts [--ton <n>]
+ *   ../bot/node_modules/.bin/tsx scripts/donateFloor.ts [--ton <n>] [--mainnet]
  */
 import fs from 'fs';
 import path from 'path';
@@ -46,7 +47,7 @@ import { LedgerOpcodes } from '../wrappers/PrimesLedger';
 // that leaves `T = 0` — one definition, so this script and the rehearsal cannot
 // disagree.
 import { genesisDonationTon } from './genesisPipeline';
-import { deploySubwalletId, hydrateProcessEnv, loadEnvFile, readNetworkConfig } from './envFile';
+import { deploySubwalletId, hydrateProcessEnv, loadEnvFile, readNetworkConfig, scriptNetwork } from './envFile';
 
 // `tsx` loads no `.env`; every `process.env.PRIMES_*` read below depends on this.
 hydrateProcessEnv();
@@ -67,7 +68,8 @@ async function floor(client: TonClient, ledger: Address) {
 async function main() {
     const genesis = JSON.parse(fs.readFileSync(path.join(REPO, 'shared', 'params.json'), 'utf8')).genesis;
     const lpRatio = BigInt(genesis.genesis_lp_ratio_primes_per_ton);
-    const cfg = readNetworkConfig('testnet');
+    const net = scriptNetwork();
+    const cfg = readNetworkConfig(net.network);
     const flag = process.argv.indexOf('--ton');
     const cliTon = flag >= 0 ? process.argv[flag + 1] : undefined;
     if (flag >= 0 && !(Number(cliTon) > 0)) throw new Error(`--ton needs a positive GRAM amount, got ${cliTon}`);
@@ -104,22 +106,19 @@ async function main() {
         : deploySubwalletId(loadEnvFile());
     const wallet = WalletContractV4.create({ workchain: 0, publicKey: keyPair.publicKey, walletId });
 
-    const apiKey = readEnv('TONCENTER_API_KEY_TESTNET');
-    const client = new TonClient({
-        endpoint: 'https://testnet.toncenter.com/api/v2/jsonRPC',
-        apiKey: apiKey || undefined,
-    });
+    const client = new TonClient({ endpoint: net.endpoint, apiKey: net.apiKey });
 
     const before = await floor(client, ledger);
-    console.log('ledger:', ledger.toString({ testOnly: true }));
-    console.log('from:  ', wallet.address.toString({ testOnly: true }));
+    console.log('network:', net.network);
+    console.log('ledger:', ledger.toString({ testOnly: net.testOnly }));
+    console.log('from:  ', wallet.address.toString({ testOnly: net.testOnly }));
     console.log(`before: T=${before.t} S=${before.s} seedT=${before.seed} p_f=${before.pf.toExponential(4)}`);
     // MISTAKES.md 2026-11-07: run straight after genesis with `.env` still naming the
     // PREVIOUS ledger, this sent 60 GRAM into a dead set. A genesis donation always meets
     // T = 0, so a non-zero T means either the wrong ledger or a deliberate top-up — say which.
     if (before.t > 0n && readEnv('PRIMES_DONATE_TOP_UP') !== '1') {
         throw new Error(
-            `ledger ${ledger.toString({ testOnly: true })} already holds T=${before.t}: not a fresh genesis. ` +
+            `ledger ${ledger.toString({ testOnly: net.testOnly })} already holds T=${before.t}: not a fresh genesis. ` +
                 'If .env still names the previous set, paste the new addresses first (runbook step 6). ' +
                 'For a deliberate top-up, set PRIMES_DONATE_TOP_UP=1.',
         );

@@ -51,25 +51,25 @@ The throw code is not part of the test: `throw 100` is the common case, but
 | `primes_jetton_wallet.tolk` | 169 | `InternalTransfer` | compares sender | inline |
 | `primes_jetton_wallet.tolk` | 228 | `Transfer` | compares sender | inline |
 | `primes_jetton_wallet.tolk` | 274 | `Burn` | compares sender | inline |
-| `primes_ledger.tolk` | 4272 | `CardMint` | compares sender | via `handleCardMint` |
-| `primes_ledger.tolk` | 4273 | `CardRecruitCounted` | compares sender | via `handleCardRecruitCounted` |
-| `primes_ledger.tolk` | 4274 | `LedgerClaimTribute` | compares sender | via `handleClaimTribute` |
-| `primes_ledger.tolk` | 4276 | `DividendCredited` | compares sender | via `handleDividendCredited` |
-| `primes_ledger.tolk` | 4277 | `MintItemRefused` | compares sender | via `handleMintItemRefused` |
-| `primes_ledger.tolk` | 4280 | `SetSinks` | compares sender | via `handleSetSinks` |
-| `primes_ledger.tolk` | 4281 | `Ignite` | compares sender | via `handleIgnite` |
-| `primes_ledger.tolk` | 4283 | `GenesisSeed` | compares sender | via `handleGenesisSeed` |
-| `primes_ledger.tolk` | 4284 | `ClearingCleared` | compares sender | via `handleClearingCleared` |
-| `primes_ledger.tolk` | 4285 | `RoyaltyToRatchet` | compares sender | via `handleRoyaltyToRatchet` |
-| `primes_ledger.tolk` | 4294 | `SettlePrimeClearing` | compares sender | inline |
-| `primes_ledger.tolk` | 4338 | `SetPeers` | compares sender | via `handleSetPeers` |
-| `primes_ledger.tolk` | 4340 | `MarkOffHead` | compares sender | via `handleMarkOffHead` |
-| `primes_ledger.tolk` | 4344 | `LotBlockWords` | compares sender | via `handleLotBlockWords` |
-| `primes_ledger.tolk` | 4345 | `LotBlockRefused` | compares sender | via `handleLotBlockRefused` |
-| `primes_ledger.tolk` | 4347 | `LotBlockBookmark` | compares sender | via `handleLotBlockBookmark` |
-| `primes_ledger.tolk` | 4348 | `MintWonLot` | compares sender | via `handleSettle` |
-| `primes_ledger.tolk` | 4349 | `MintConfirmed` | compares sender | via `handleMintConfirmed` |
-| `primes_ledger.tolk` | 4351 | `SetInviteTerms` | compares sender | via `handleSetInviteTerms` |
+| `primes_ledger.tolk` | 4276 | `CardMint` | compares sender | via `handleCardMint` |
+| `primes_ledger.tolk` | 4277 | `CardRecruitCounted` | compares sender | via `handleCardRecruitCounted` |
+| `primes_ledger.tolk` | 4278 | `LedgerClaimTribute` | compares sender | via `handleClaimTribute` |
+| `primes_ledger.tolk` | 4280 | `DividendCredited` | compares sender | via `handleDividendCredited` |
+| `primes_ledger.tolk` | 4281 | `MintItemRefused` | compares sender | via `handleMintItemRefused` |
+| `primes_ledger.tolk` | 4284 | `SetSinks` | compares sender | via `handleSetSinks` |
+| `primes_ledger.tolk` | 4285 | `Ignite` | compares sender | via `handleIgnite` |
+| `primes_ledger.tolk` | 4287 | `GenesisSeed` | compares sender | via `handleGenesisSeed` |
+| `primes_ledger.tolk` | 4288 | `ClearingCleared` | compares sender | via `handleClearingCleared` |
+| `primes_ledger.tolk` | 4289 | `RoyaltyToRatchet` | compares sender | via `handleRoyaltyToRatchet` |
+| `primes_ledger.tolk` | 4298 | `SettlePrimeClearing` | compares sender | inline |
+| `primes_ledger.tolk` | 4342 | `SetPeers` | compares sender | via `handleSetPeers` |
+| `primes_ledger.tolk` | 4344 | `MarkOffHead` | compares sender | via `handleMarkOffHead` |
+| `primes_ledger.tolk` | 4348 | `LotBlockWords` | compares sender | via `handleLotBlockWords` |
+| `primes_ledger.tolk` | 4349 | `LotBlockRefused` | compares sender | via `handleLotBlockRefused` |
+| `primes_ledger.tolk` | 4351 | `LotBlockBookmark` | compares sender | via `handleLotBlockBookmark` |
+| `primes_ledger.tolk` | 4352 | `MintWonLot` | compares sender | via `handleSettle` |
+| `primes_ledger.tolk` | 4353 | `MintConfirmed` | compares sender | via `handleMintConfirmed` |
+| `primes_ledger.tolk` | 4355 | `SetInviteTerms` | compares sender | via `handleSetInviteTerms` |
 | `primes_lot_block.tolk` | 165 | `LotBlockClaim` | compares sender | inline |
 | `primes_lot_block.tolk` | 182 | `LotBlockSoldPrime` | compares sender | inline |
 | `primes_lot_block.tolk` | 189 | `LotBlockImport` | compares sender | inline |
@@ -146,17 +146,17 @@ No caller authorisation, by design. The spec enumerates this set by name.
 | `primes_item.tolk` | 622 | `TopUp` |
 | `primes_jetton_master.tolk` | 266 | `ProvideWalletAddress` |
 | `primes_jetton_master.tolk` | 289 | `Excesses` |
-| `primes_ledger.tolk` | 4275 | `ClaimDividend` |
-| `primes_ledger.tolk` | 4278 | `RetryCredit` |
-| `primes_ledger.tolk` | 4279 | `RetryMint` |
-| `primes_ledger.tolk` | 4282 | `SyncLaunch` |
-| `primes_ledger.tolk` | 4286 | `DonateFloor` |
-| `primes_ledger.tolk` | 4339 | `SweepOps` |
-| `primes_ledger.tolk` | 4341 | `SyncHead` |
-| `primes_ledger.tolk` | 4342 | `AdvanceHead` |
-| `primes_ledger.tolk` | 4343 | `ImportLotBlock` |
-| `primes_ledger.tolk` | 4346 | `FlushUnsold` |
-| `primes_ledger.tolk` | 4350 | `RetryItem` |
+| `primes_ledger.tolk` | 4279 | `ClaimDividend` |
+| `primes_ledger.tolk` | 4282 | `RetryCredit` |
+| `primes_ledger.tolk` | 4283 | `RetryMint` |
+| `primes_ledger.tolk` | 4286 | `SyncLaunch` |
+| `primes_ledger.tolk` | 4290 | `DonateFloor` |
+| `primes_ledger.tolk` | 4343 | `SweepOps` |
+| `primes_ledger.tolk` | 4345 | `SyncHead` |
+| `primes_ledger.tolk` | 4346 | `AdvanceHead` |
+| `primes_ledger.tolk` | 4347 | `ImportLotBlock` |
+| `primes_ledger.tolk` | 4350 | `FlushUnsold` |
+| `primes_ledger.tolk` | 4354 | `RetryItem` |
 | `primes_lp_position.tolk` | 611 | `Expire` |
 | `primes_market.tolk` | 2219 | `OpenLot` |
 | `primes_market.tolk` | 2371 | `OpenHeadLot` |

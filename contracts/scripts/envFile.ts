@@ -29,7 +29,9 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 import params from '../../shared/params.json';
+import { toncenterRpcEndpoint } from '../../shared/contracts';
 import {
+    type Network,
     type NetworkConfig,
     configNetworkFor,
     parseNetworkConfig,
@@ -110,6 +112,46 @@ export function readNetworkConfig(network: string): NetworkConfig {
     }
     const net = configNetworkFor(network);
     return parseNetworkConfig(fs.readFileSync(path.join(REPO, 'shared', 'networks', `${net}.yaml`), 'utf8'), net);
+}
+
+export interface ScriptNetwork {
+    network: Network;
+    /** `Address.toString({ testOnly })` for every address this run prints. */
+    testOnly: boolean;
+    endpoint: string;
+    apiKey?: string;
+}
+
+/**
+ * The network a deploy-side tsx script targets (GAUNTLET.md G96). It is the value the deploy
+ * itself was given, never a literal in the script: `--mainnet` / `--testnet` on the command
+ * line, the same flag blueprint's `deployGenesis` takes, else `PRIMES_NETWORK` from the shell
+ * or `/.env` — the one `createDedustPool.ts` reads before genesis and every later step reads
+ * after it. Default testnet. Never `TON_NETWORK`: that is the backend's selector (see
+ * `readNetworkConfig` above).
+ *
+ * Refuses a flag that contradicts `PRIMES_NETWORK`, and an endpoint that is not the network's:
+ * `TON_RPC_ENDPOINT` overrides `toncenterRpcEndpoint` whatever network it is asked for, so a
+ * testnet run with a mainnet override would otherwise send real GRAM.
+ */
+export function scriptNetwork(env = loadEnvFile(), argv: readonly string[] = process.argv): ScriptNetwork {
+    const flagged = (['testnet', 'mainnet'] as const).filter((n) => argv.includes(`--${n}`));
+    if (flagged.length > 1) throw new Error('pass one of --testnet / --mainnet, not both');
+    const declared = envValue(env, 'PRIMES_NETWORK')?.trim().toLowerCase() || undefined;
+    if (declared !== undefined && declared !== 'testnet' && declared !== 'mainnet') {
+        throw new Error(`PRIMES_NETWORK must be testnet or mainnet, got "${declared}"`);
+    }
+    if (flagged[0] && declared && flagged[0] !== declared) {
+        throw new Error(`--${flagged[0]} contradicts PRIMES_NETWORK=${declared}`);
+    }
+    const network: Network = flagged[0] ?? declared ?? 'testnet';
+    const testOnly = network === 'testnet';
+    const endpoint = toncenterRpcEndpoint(network);
+    if (/testnet/i.test(endpoint) !== testOnly) {
+        throw new Error(`RPC endpoint ${endpoint} is not a ${network} endpoint (check TON_RPC_ENDPOINT)`);
+    }
+    const apiKey = (envValue(env, testOnly ? 'TONCENTER_API_KEY_TESTNET' : 'TONCENTER_API_KEY') ?? '').trim();
+    return { network, testOnly, endpoint, apiKey: apiKey || undefined };
 }
 
 /** D-153's stake divisor for this network: `params.json`'s minimum, lowered only by `testnet.yaml`. */

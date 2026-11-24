@@ -3,7 +3,7 @@
  *
  *   npx blueprint run ignite --testnet --mnemonic
  *   npx blueprint run ignite --mainnet --tonconnect
- *   npx tsx scripts/ignite.ts --skew-safe        # testnet, clock-lagging machine
+ *   npx tsx scripts/ignite.ts --skew-safe [--mainnet]   # clock-lagging machine (G96)
  *
  * `--skew-safe` swaps blueprint's sender for `scriptHost.ts`'s +600s one (GAUNTLET.md
  * G55 folded the `igniteSkewSafe.ts` fork back into this file). It must be the SAME

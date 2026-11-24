@@ -12,7 +12,9 @@
  *   PRIMES_LEDGER_ADDRESS=… PRIMES_JETTON_MASTER_ADDRESS=… PRIMES_TIMELOCK_ADDRESS=…
  *   PRIMES_TREASURY_ADDRESS=… PRIMES_TREASURY_VESTING_ADDRESS=… PRIMES_RATCHET_ADDRESS=…
  *   PRIMES_DEDUST_*_ADDR=…
- *   PRIMES_DEPLOY_SUBWALLET_ID=… npx tsx scripts/resumeGenesisTail.ts
+ *   PRIMES_DEPLOY_SUBWALLET_ID=… npx tsx scripts/resumeGenesisTail.ts [--mainnet]
+ *
+ * Network: `--mainnet` / `--testnet`, else PRIMES_NETWORK, else testnet (`scriptNetwork`, G96).
  */
 import fs from 'fs';
 import path from 'path';
@@ -29,7 +31,7 @@ import { OPENING_HEAD } from './genesisPipeline';
 import { throttleClient } from './scriptHost';
 import params from '../../shared/params.json';
 
-import { clockDivisorOf, hydrateProcessEnv, readNetworkConfig } from './envFile';
+import { clockDivisorOf, hydrateProcessEnv, readNetworkConfig, scriptNetwork } from './envFile';
 import { requireValue } from '../../shared/networkConfig';
 
 // W10: `tsx` loads no `.env`, and every `process.env.PRIMES_*_ADDRESS` read below
@@ -64,16 +66,13 @@ async function main() {
     if (!walletId) throw new Error('PRIMES_DEPLOY_SUBWALLET_ID required (the run being resumed)');
     const wallet = WalletContractV4.create({ workchain: 0, publicKey: keyPair.publicKey, walletId });
 
-    const apiKey = (envFile.match(/^TONCENTER_API_KEY_TESTNET=(.*)$/m)?.[1] ?? '').trim();
-    const client = new TonClient({
-        endpoint: 'https://testnet.toncenter.com/api/v2/jsonRPC',
-        apiKey: apiKey || undefined,
-    });
+    const net = scriptNetwork();
+    const client = new TonClient({ endpoint: net.endpoint, apiKey: net.apiKey });
     throttleClient(client);
     const walletContract = client.open(wallet);
-    console.log('wallet:', wallet.address.toString({ testOnly: true }));
+    console.log(`network: ${net.network}  wallet: ${wallet.address.toString({ testOnly: net.testOnly })}`);
 
-    const r = await fetch(`https://testnet.toncenter.com/api/v2/getAddressInformation?address=${wallet.address.toString()}`);
+    const r = await fetch(`${net.endpoint.replace(/\/jsonRPC$/, '')}/getAddressInformation?address=${wallet.address.toString()}`);
     const chainNow = Number(((await r.json()) as any)?.result?.sync_utime);
     if (!chainNow) throw new Error('no sync_utime');
     const clockSkew = chainNow - Math.floor(Date.now() / 1000);
@@ -153,7 +152,7 @@ async function main() {
     if ((await timelock.getQueued()).hasQueued === 1) {
         console.log('venue timelock already queued');
     } else {
-        const cfg = readNetworkConfig('testnet'); // this script's client is testnet-only
+        const cfg = readNetworkConfig(net.network);
         const eta = Math.floor(Date.now() / 1000) + clockSkew + Math.floor(TIMELOCK_DELAY / clockDivisorOf(cfg)) + 300; // D-139: the divided delay
         await timelock.sendQueue(sender, {
             dedustNativeVault: Address.parse(requireValue(cfg, 'dedust_native_vault', cfg.dedustNativeVault)),

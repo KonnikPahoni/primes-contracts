@@ -10,7 +10,8 @@
  * 600s margin and then reads back the whole deployment's state via public
  * get-methods (§9.1: everything asserted here is reader-verifiable).
  *
- *   npx tsx scripts/completeGenesisQueue.ts   (tsx, NOT ts-node — ts-node fails
+ *   npx tsx scripts/completeGenesisQueue.ts [--mainnet]   (network: scriptNetwork, G96)
+ *                                              (tsx, NOT ts-node — ts-node fails
  *                                              with ERR_REQUIRE_ESM on shared/)
  */
 import fs from 'fs';
@@ -18,7 +19,6 @@ import path from 'path';
 import { Address, SendMode, TonClient, WalletContractV4, internal, toNano } from '@ton/ton';
 import type { Sender, SenderArguments } from '@ton/core';
 import { mnemonicToPrivateKey } from '@ton/crypto';
-import { toncenterRpcEndpoint } from '../../shared/contracts';
 import { PrimesVenueTimelock } from '../wrappers/PrimesVenueTimelock';
 import { PrimesLedger } from '../wrappers/PrimesLedger';
 import { PrimesJettonMaster } from '../wrappers/PrimesJettonMaster';
@@ -31,7 +31,7 @@ import { PrimesTreasury } from '../wrappers/PrimesTreasury';
 import { PrimesLpSink } from '../wrappers/PrimesLpSink';
 import { PrimesVesting } from '../wrappers/PrimesVesting';
 
-import { clockDivisorOf, hydrateProcessEnv, readNetworkConfig } from './envFile';
+import { clockDivisorOf, hydrateProcessEnv, readNetworkConfig, scriptNetwork } from './envFile';
 import { requireValue } from '../../shared/networkConfig';
 
 // W10: `tsx` loads no `.env`, and every `process.env.PRIMES_*_ADDRESS` read below
@@ -102,12 +102,10 @@ async function main() {
         ? Number(process.env.PRIMES_DEPLOY_SUBWALLET_ID)
         : undefined;
     const wallet = WalletContractV4.create({ workchain: 0, publicKey: keyPair.publicKey, walletId });
-    const apiKey = (envFile.match(/^TONCENTER_API_KEY_TESTNET=(.*)$/m)?.[1] ?? '').trim();
-    const client = new TonClient({
-        // GAUNTLET X4: one configured base for every consumer, scripts included.
-        endpoint: toncenterRpcEndpoint('testnet'),
-        apiKey: apiKey || undefined,
-    });
+    // GAUNTLET X4 + G96: the configured base for the network this run targets.
+    const net = scriptNetwork();
+    console.log('network:', net.network);
+    const client = new TonClient({ endpoint: net.endpoint, apiKey: net.apiKey });
     const walletContract = client.open(wallet);
 
     const sender: Sender = {
@@ -153,7 +151,7 @@ async function main() {
     const pre = await retry(() => timelock.getQueued(), 'getQueued(pre)');
     console.log('queued before:', pre.hasQueued);
     if (pre.hasQueued !== 1) {
-        const cfg = readNetworkConfig('testnet'); // this script's client is testnet-only
+        const cfg = readNetworkConfig(net.network);
         // 600s margin over the 30-day minimum: covers the ~113s local-clock lag
         const eta = Math.floor(Date.now() / 1000) + Math.floor(TIMELOCK_DELAY / clockDivisorOf(cfg)) + 600; // D-139: the divided delay
         await timelock.sendQueue(sender, {

@@ -523,6 +523,48 @@ describe('LP custody (§5.5.3, D-100 points 4/9, D-147, D-168)', () => {
         expect((await treasury.getProposal(0)).yes).toEqual(toNano('100') * mult(3));
     });
 
+    // GAUNTLET B43(c): the same restamp, landing in the NOTICE instead of the vote window.
+    // Bob's term predates the proposal, but sinking it moves `foreverSince` to the sink's
+    // second — after the proposal's own second, before `opens`. D-173 as amended 2026-11-21
+    // then gives that weight a NO and refuses it a YES, exactly as for a fresh lock in the notice.
+    it('D-214: LP sunk during the notice votes no on that proposal, never yes', async () => {
+        blockchain.now = 1800000100;
+        await deposit(alice, toNano('100'), 3);
+        await deposit(bob, toNano('100'), 3);
+        const alices = childOf(alice.address);
+        const bobs = childOf(bob.address);
+        await alices.sendPropose(alice.getSender(), {
+            asset: 0,
+            amount: 1n,
+            dest: bob.address,
+            positionId: 0,
+            value: FORWARD,
+        });
+        const prop = await treasury.getProposal(0);
+        blockchain.now = prop.opens - 10;
+        const sink = await bobs.sendToSink(bob.getSender(), { positionId: 0, value: FORWARD });
+        expect(sink.transactions).not.toHaveTransaction({ aborted: true });
+
+        blockchain.now = prop.opens;
+        const yes = await bobs.sendVote(bob.getSender(), {
+            seq: 0,
+            support: true,
+            positionId: FOREVER_POSITION_ID,
+            value: FORWARD,
+        });
+        expect(yes.transactions).toHaveTransaction({ to: treasury.address, exitCode: 1202 });
+        expect((await treasury.getProposal(0)).yes).toEqual(0n);
+
+        const no = await bobs.sendVote(bob.getSender(), {
+            seq: 0,
+            support: false,
+            positionId: FOREVER_POSITION_ID,
+            value: FORWARD,
+        });
+        expect(no.transactions).not.toHaveTransaction({ aborted: true });
+        expect((await treasury.getProposal(0)).no).toEqual(toNano('100') * FOREVER);
+    });
+
     it('publishes its own (owner, treasuryAddr) pair and the nominal forward, matching deploy config', async () => {
         await deposit(alice, toNano('10'), 0);
         const child = childOf(alice.address);

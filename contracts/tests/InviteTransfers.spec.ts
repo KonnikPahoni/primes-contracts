@@ -321,8 +321,15 @@ describe('D-202/D-215 — the invite line is plain text transfers from the ledge
         }
         expect(await s.ledger.getInviteSpend()).toEqual(spend(count, count, value));
         const margin = d1 - d0;
+        // The card -> ledger hop, as GasRegression's padded bound defines it: what of the
+        // 1 GRAM the long body cost before reaching the ledger (B43: the ledger's
+        // CARD_HOP_ALLOWANCE comment quotes this figure for the heaviest honest body).
+        const card = minterCardAddress(s.ledger.address, s.alice.address);
+        const arrived = r.transactions.find(
+            (t: any) => t.inMessage?.info?.src?.equals?.(card) && t.inMessage.info.dest.equals(s.ledger.address)
+        )!.inMessage!.info as any;
         // Recorded for the INVITE_SEND_FEE allowance (DECISIONS.md D-215).
-        console.log(`D-215 invite fee: count=${count} words=${Buffer.byteLength(words)}B margin=${margin} actual/invite=${(BigInt(count) * FEE - margin) / BigInt(count)}`);
+        console.log(`D-215 invite fee: count=${count} words=${Buffer.byteLength(words)}B margin=${margin} actual/invite=${(BigInt(count) * FEE - margin) / BigInt(count)} card hop=${MINT_PRICE + FEE_MARGIN_NANOTON - (arrived.value.coins as bigint)}`);
         return margin;
     }
 

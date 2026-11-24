@@ -8,7 +8,7 @@
  * and the sender is chosen at the command line:
  *
  *   npx blueprint run deployGenesis --testnet --mnemonic      # blueprint's sender
- *   npx tsx scripts/deployGenesis.ts --skew-safe               # the skew-safe sender
+ *   npx tsx scripts/deployGenesis.ts --skew-safe [--mainnet]   # the skew-safe sender
  *
  * WHY THE SKEW-SAFE SENDER EXISTS (docs/testnet-deployment.md, "this sandbox's clock lags real
  * time by ~113 seconds"): blueprint signs every external with the library-default
@@ -21,7 +21,8 @@
  * `contracts/build/` (`npx blueprint build --all` first; the skew-safe path does not compile).
  *
  * Key custody (skew-safe only): KEEPER_WALLET_MNEMONIC from /.env, subwallet
- * `PRIMES_DEPLOY_SUBWALLET_ID`. Testnet only: `assertTestnetOnly` on the endpoint.
+ * `PRIMES_DEPLOY_SUBWALLET_ID`. Network: `--mainnet` / `--testnet`, else PRIMES_NETWORK, else
+ * testnet (`envFile.ts`'s `scriptNetwork`, G96); a testnet run also passes `assertTestnetOnly`.
  *
  * USE `tsx`, NOT `ts-node`. ts-node chokes on this repo's ESM/TS config and the failure looks
  * like a compile error in the pipeline rather than a runner problem.
@@ -31,9 +32,8 @@ import path from 'path';
 import { Address, Cell, TonClient } from '@ton/ton';
 import type { Contract, OpenedContract, Sender, TupleItem, TupleReader } from '@ton/core';
 import { compile, NetworkProvider } from '@ton/blueprint';
-import { deploySubwalletId, envValue, loadEnvFile } from './envFile';
+import { deploySubwalletId, loadEnvFile, scriptNetwork } from './envFile';
 import { assertTestnetOnly, keeperMnemonic, openWallet, retry } from './testnet/sender';
-import { toncenterRpcEndpoint } from '../../shared/contracts';
 
 export interface ScriptHost {
     network: string;
@@ -120,12 +120,12 @@ export function throttleClient(client: TonClient, minIntervalMs = 1100, maxRetri
 const BUILD = path.resolve(__dirname, '..', 'build');
 
 export async function skewSafeHost(): Promise<ScriptHost> {
-    // GAUNTLET X4: through the shared helper, so `TON_RPC_ENDPOINT` repoints the run with
-    // every service; `assertTestnetOnly` refuses anything that is not a testnet endpoint.
-    const endpoint = toncenterRpcEndpoint('testnet');
-    assertTestnetOnly(endpoint);
-    const apiKey = (envValue(loadEnvFile(), 'TONCENTER_API_KEY_TESTNET') ?? '').trim();
-    const client = new TonClient({ endpoint, apiKey: apiKey || undefined });
+    // G96: the network is the one this deploy was given (`--mainnet` / PRIMES_NETWORK), and
+    // `scriptNetwork` refuses an endpoint that is not that network's. A testnet run still
+    // carries D-95's testnet-only guard on top.
+    const { network, testOnly, endpoint, apiKey } = scriptNetwork();
+    if (testOnly) assertTestnetOnly(endpoint);
+    const client = new TonClient({ endpoint, apiKey });
     throttleClient(client);
     // Every genesis contract's init embeds `genesisScriptAddr`, so REUSING a deploy wallet
     // re-derives the addresses of any contract whose other init fields are unchanged — the
@@ -135,7 +135,7 @@ export async function skewSafeHost(): Promise<ScriptHost> {
     // `genesisScriptAddr`).
     const walletId = deploySubwalletId(loadEnvFile());
     const { wallet, sender } = await openWallet(client, keeperMnemonic(), walletId);
-    console.log('wallet:', wallet.address.toString({ testOnly: true }));
+    console.log(`network: ${network}  wallet: ${wallet.address.toString({ testOnly })}`);
 
     // This machine's clock lags chain time (113s in 2026-08-16, 134s in 2026-08-27). The
     // signing timeout carries a 600s window for that, but `now()` must too: genesisPipeline
@@ -155,7 +155,7 @@ export async function skewSafeHost(): Promise<ScriptHost> {
     console.log(`clock skew vs chain: ${clockSkew}s (now() is offset by this)`);
 
     return {
-        network: 'testnet',
+        network,
         sender,
         address: wallet.address,
         walletId,

@@ -35,8 +35,7 @@ import { Address, Cell, SendMode, TonClient, WalletContractV4, beginCell, intern
 import { mnemonicToPrivateKey } from '@ton/crypto';
 import { dryRunGenesisMasterAddress } from './genesisPipeline';
 import { resolvePresentation } from './deployGenesis';
-import { assertBuildFresh, hydrateProcessEnv, deploySubwalletId, envValue, loadEnvFile, readNetworkConfig } from './envFile';
-import { toncenterRpcEndpoint } from '../../shared/contracts';
+import { assertBuildFresh, hydrateProcessEnv, deploySubwalletId, envValue, loadEnvFile, readNetworkConfig, scriptNetwork } from './envFile';
 import {
     CREATE_POOL_VALUE,
     DEDUST_FACTORY,
@@ -72,12 +71,9 @@ async function waitDeployed(client: TonClient, addr: Address, label: string, tri
 async function main() {
     assertBuildFresh();
     const env = loadEnvFile();
-    const testOnly = (envValue(env, 'PRIMES_NETWORK') ?? 'testnet') !== 'mainnet';
-    // GAUNTLET X4: through the shared helper, so `TON_RPC_ENDPOINT` switches this script's
-    // provider with every service's. A hardcoded URL here is a file somebody has to remember
-    // to edit during the outage that made the switch necessary.
-    const endpoint = toncenterRpcEndpoint(testOnly ? 'testnet' : 'mainnet');
-    const apiKey = envValue(env, testOnly ? 'TONCENTER_API_KEY_TESTNET' : 'TONCENTER_API_KEY') || undefined;
+    // GAUNTLET X4 + G96: `TON_RPC_ENDPOINT` switches this script's provider with every
+    // service's, and the network is the one the genesis is given (`scriptNetwork`).
+    const { testOnly, endpoint, apiKey } = scriptNetwork(env);
     const client = new TonClient({ endpoint, apiKey });
 
     const mnemonic = envValue(env, 'KEEPER_WALLET_MNEMONIC');

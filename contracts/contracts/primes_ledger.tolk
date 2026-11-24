@@ -133,10 +133,14 @@ const MINT_PRICE: coins = 1000000000; // 1 GRAM
 const CARD_RECRUIT_GAS: coins = 20000000; // 0.02 GRAM
 const CARD_PRIME_GAS: coins = 5000000;    // 0.005 GRAM
 // The most of a mint's 1 GRAM the payer -> card -> ledger hop may consume before
-// the ledger refuses it (`handleCardMint`). The heaviest honest body (ω = 12 factors
-// and a full invite list) costs 0.0012 GRAM, measured in `GasRegression.spec.ts`,
-// which also asserts that the heaviest mint with its hop replaced by this whole
-// allowance — a body padded to make the forward dear — still fits §4.1's line.
+// the ledger refuses it (`handleCardMint`). At genesis terms (3 invites) the hop costs
+// 0.0007–0.0012 GRAM (`InviteTransfers.spec.ts`, `GasRegression.spec.ts`). At D-215's
+// INVITE_COUNT_CEILING (100 invites) it costs 0.00375 — MORE than this allowance, and
+// the mint still lands because the sender's FEE_MARGIN (shared/values.ts, 0.01) pays
+// it before the value reaches here (`InviteTransfers.spec.ts`'s 100-invite case). So
+// a long list is paid by the sender, never by the line: whatever the body, the most
+// the line can lose is this allowance, and `GasRegression.spec.ts` asserts that the
+// heaviest mint with its hop replaced by the whole allowance still fits §4.1's line.
 const CARD_HOP_ALLOWANCE: coins = 3000000; // 0.003 GRAM
 // D-109: a wire constant of RES_GAS's kind (shared/opcodes.ts LEDGER.MINT_MARGIN_NANOTON),
 // not a params.json economic parameter. `handleMint` keeps up to MINT_PRICE + MINT_MARGIN
@@ -5198,8 +5202,9 @@ fun executeMint(
     // this at a 1.0 opt-in (params.json invites._horizon_simulated).
     //
     // IT CANNOT DRIVE β NEGATIVE. D-106 removed the patron line, so the worst
-    // case is now a referred composite with a full invite fan-out:
-    // 1.0 − 0.1 − 0.05 − 0.1 − 0.1 − 0.125 = 0.525.
+    // case is a referred composite with the invite line at D-215's fixed cap
+    // (tribute, treasury, gas & ops, referral, INVITE_LINE_CAP):
+    // 1.0 − 0.1 − 0.05 − 0.2 − 0.1 − 0.31 = 0.24.
     // (params.json invites.beta_table publishes the whole grid.)
     val poolInjection: coins = MINT_PRICE - TRIBUTE_AMOUNT - TREASURY_AMOUNT - GAS_OPS_AMOUNT - referralAmount - inviteSpend;
 

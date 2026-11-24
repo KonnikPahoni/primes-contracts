@@ -34,19 +34,19 @@ is mechanical and detected here; the second is a judgement call, enumerated in
 | `primes_jetton_master.tolk` | 162 | `deployAndCredit` | `InternalTransfer` | `ton("0.010") + forwardTonAmount` | dispatches 1 (0x178d4519) |
 | `primes_jetton_wallet.tolk` | 253 | `onInternalMessage` | `InternalTransfer` | `0` | dispatches 2 (0x178d4519, 0x7bdd97de) |
 | `primes_jetton_wallet.tolk` | 280 | `onInternalMessage` | `BurnNotification` | `0` | dispatches 2 (0x178d4519, 0x7bdd97de) |
-| `primes_ledger.tolk` | 2836 | `handleRetryItem` | `(unknown)` | `item.mintValue + held` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 3388 | `handleClaimDividend` | `CreditDividend` | `0` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 3445 | `handleRetryCredit` | `CreditTribute` | `CREDIT_TRIBUTE_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 3480 | `handleRetryMint` | `JettonMint` | `DONATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 3558 | `handleIgnite` | `MintItem` | `ITEM_DEPLOY_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 3925 | `handleDonateFloor` | `JettonMint` | `DONATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 4120 | `handleFlushUnsold` | `LotBlockBookmarks` | `LOT_BLOCK_BOOKMARKS_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 4146 | `handleLotBlockBookmark` | `CreditDividend` | `CLAIM_DIVIDEND_MIN_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 4174 | `handleImportLotBlock` | `LotBlockImport` | `0` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 4675 | `payHeldSplit` | `CreditTribute` | `CREDIT_TRIBUTE_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 4695 | `payHeldSplit` | `ForwardToOwner` | `REFERRAL_AMOUNT` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 5428 | `executeMint` | `MintItem` | `itemValue + heldSplitValue` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
-| `primes_ledger.tolk` | 5449 | `executeMint` | `JettonMint` | `REBATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 2840 | `handleRetryItem` | `(unknown)` | `item.mintValue + held` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 3392 | `handleClaimDividend` | `CreditDividend` | `0` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 3449 | `handleRetryCredit` | `CreditTribute` | `CREDIT_TRIBUTE_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 3484 | `handleRetryMint` | `JettonMint` | `DONATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 3562 | `handleIgnite` | `MintItem` | `ITEM_DEPLOY_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 3929 | `handleDonateFloor` | `JettonMint` | `DONATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 4124 | `handleFlushUnsold` | `LotBlockBookmarks` | `LOT_BLOCK_BOOKMARKS_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 4150 | `handleLotBlockBookmark` | `CreditDividend` | `CLAIM_DIVIDEND_MIN_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 4178 | `handleImportLotBlock` | `LotBlockImport` | `0` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 4679 | `payHeldSplit` | `CreditTribute` | `CREDIT_TRIBUTE_VALUE` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 4699 | `payHeldSplit` | `ForwardToOwner` | `REFERRAL_AMOUNT` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 5433 | `executeMint` | `MintItem` | `itemValue + heldSplitValue` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
+| `primes_ledger.tolk` | 5454 | `executeMint` | `JettonMint` | `REBATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
 | `primes_lp_position.tolk` | 396 | `forwardToTreasury` | `(unknown)` | `0` | single-message |
 | `primes_market.tolk` | 2170 | `closeLot` | `SettlePrimeClearing` | `MINT_PRICE + SETTLE_GAS` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
 | `primes_market.tolk` | 2188 | `closeLot` | `MintWonLot` | `MINT_PRICE + SETTLE_GAS` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
@@ -93,28 +93,28 @@ is mechanical and detected here; the second is a judgement call, enumerated in
 | `primes_jetton_master.tolk` | 275 | `onInternalMessage` | `TakeWalletAddress` | `0` |
 | `primes_jetton_wallet.tolk` | 196 | `onInternalMessage` | `TransferNotification` | `msg.forwardTonAmount` |
 | `primes_jetton_wallet.tolk` | 219 | `onInternalMessage` | `Excesses` | `0` |
-| `primes_ledger.tolk` | 3299 | `refund` | `(inline)` | `amount` |
-| `primes_ledger.tolk` | 3584 | `handleIgnite` | `LaunchOpenMarket` | `LAUNCH_HOP_GAS` |
-| `primes_ledger.tolk` | 3615 | `handleSyncLaunch` | `LaunchOpenMarket` | `0` |
-| `primes_ledger.tolk` | 3760 | `handleClearingCleared` | `(empty)` | `treasuryDue` |
-| `primes_ledger.tolk` | 4034 | `replyMarkRejected` | `MarkRejected` | `0` |
-| `primes_ledger.tolk` | 4074 | `handleMarkOffHead` | `LotBlockClaim` | `0` |
-| `primes_ledger.tolk` | 4231 | `handleSyncHead` | `HeadUpdate` | `0` |
-| `primes_ledger.tolk` | 4260 | `handleAdvanceHead` | `(inline)` | `0` |
-| `primes_ledger.tolk` | 4331 | `onInternalMessage` | `SettleConfirmed` | `15000000` |
-| `primes_ledger.tolk` | 4392 | `handleCardMint` | `CardMintRefunded` | `0` |
-| `primes_ledger.tolk` | 4469 | `handleCardMint` | `(unknown)` | `terms.inviteValue` |
-| `primes_ledger.tolk` | 4564 | `handleSettle` | `SettleConfirmed` | `15000000` |
-| `primes_ledger.tolk` | 4582 | `forwardToRatchet` | `PoolInject` | `amount + RATCHET_HOP_GAS` |
-| `primes_ledger.tolk` | 4733 | `payHeldSplit` | `(empty)` | `TREASURY_AMOUNT + forfeitToTreasury + opMeters.treasuryHeld` |
-| `primes_ledger.tolk` | 4745 | `payHeldSplit` | `(empty)` | `operatorDue` |
-| `primes_ledger.tolk` | 5054 | `executeMint` | `LotBlockSoldPrime` | `LOT_BLOCK_HOP_VALUE` |
-| `primes_ledger.tolk` | 5099 | `executeMint` | `LotBlockRelease` | `LOT_BLOCK_RELEASE_VALUE` |
-| `primes_ledger.tolk` | 5182 | `executeMint` | `CardAddRecruit` | `CARD_RECRUIT_GAS` |
-| `primes_ledger.tolk` | 5232 | `executeMint` | `CardPrimeMinted` | `CARD_PRIME_GAS` |
-| `primes_ledger.tolk` | 5473 | `executeMint` | `PayEraBounty` | `15000000` |
-| `primes_ledger.tolk` | 5533 | `executeMint` | `PaySpecialNumberRebate` | `15000000` |
-| `primes_ledger.tolk` | 5580 | `executeMint` | `AwardEraTrophy` | `REGISTRAR_HOP_GAS` |
+| `primes_ledger.tolk` | 3303 | `refund` | `(inline)` | `amount` |
+| `primes_ledger.tolk` | 3588 | `handleIgnite` | `LaunchOpenMarket` | `LAUNCH_HOP_GAS` |
+| `primes_ledger.tolk` | 3619 | `handleSyncLaunch` | `LaunchOpenMarket` | `0` |
+| `primes_ledger.tolk` | 3764 | `handleClearingCleared` | `(empty)` | `treasuryDue` |
+| `primes_ledger.tolk` | 4038 | `replyMarkRejected` | `MarkRejected` | `0` |
+| `primes_ledger.tolk` | 4078 | `handleMarkOffHead` | `LotBlockClaim` | `0` |
+| `primes_ledger.tolk` | 4235 | `handleSyncHead` | `HeadUpdate` | `0` |
+| `primes_ledger.tolk` | 4264 | `handleAdvanceHead` | `(inline)` | `0` |
+| `primes_ledger.tolk` | 4335 | `onInternalMessage` | `SettleConfirmed` | `15000000` |
+| `primes_ledger.tolk` | 4396 | `handleCardMint` | `CardMintRefunded` | `0` |
+| `primes_ledger.tolk` | 4473 | `handleCardMint` | `(unknown)` | `terms.inviteValue` |
+| `primes_ledger.tolk` | 4568 | `handleSettle` | `SettleConfirmed` | `15000000` |
+| `primes_ledger.tolk` | 4586 | `forwardToRatchet` | `PoolInject` | `amount + RATCHET_HOP_GAS` |
+| `primes_ledger.tolk` | 4737 | `payHeldSplit` | `(empty)` | `TREASURY_AMOUNT + forfeitToTreasury + opMeters.treasuryHeld` |
+| `primes_ledger.tolk` | 4749 | `payHeldSplit` | `(empty)` | `operatorDue` |
+| `primes_ledger.tolk` | 5058 | `executeMint` | `LotBlockSoldPrime` | `LOT_BLOCK_HOP_VALUE` |
+| `primes_ledger.tolk` | 5103 | `executeMint` | `LotBlockRelease` | `LOT_BLOCK_RELEASE_VALUE` |
+| `primes_ledger.tolk` | 5186 | `executeMint` | `CardAddRecruit` | `CARD_RECRUIT_GAS` |
+| `primes_ledger.tolk` | 5237 | `executeMint` | `CardPrimeMinted` | `CARD_PRIME_GAS` |
+| `primes_ledger.tolk` | 5478 | `executeMint` | `PayEraBounty` | `15000000` |
+| `primes_ledger.tolk` | 5538 | `executeMint` | `PaySpecialNumberRebate` | `15000000` |
+| `primes_ledger.tolk` | 5585 | `executeMint` | `AwardEraTrophy` | `REGISTRAR_HOP_GAS` |
 | `primes_lot_block.tolk` | 91 | `returnChange` | `(unknown)` | `0` |
 | `primes_lot_block.tolk` | 170 | `onInternalMessage` | `LotBlockRefused` | `0` |
 | `primes_lot_block.tolk` | 193 | `onInternalMessage` | `LotBlockWords` | `0` |

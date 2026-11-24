@@ -66,10 +66,9 @@ import fs from 'fs';
 import path from 'path';
 import { Address, Cell, SendMode, TonClient, WalletContractV4, beginCell, fromNano, internal, toNano } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
-import { toncenterRpcEndpoint } from '../../shared/contracts';
 import { dryRunGenesisMasterAddress, genesisPairingPrimes } from './genesisPipeline';
 import { resolvePresentation } from './deployGenesis';
-import { hydrateProcessEnv, deploySubwalletId, envValue, loadEnvFile, readNetworkConfig } from './envFile';
+import { hydrateProcessEnv, deploySubwalletId, envValue, loadEnvFile, readNetworkConfig, scriptNetwork } from './envFile';
 import { requireValue } from '../../shared/networkConfig';
 import { PrimesLpSink } from '../wrappers/PrimesLpSink';
 import { minReservesForTranche } from '../../shared/dedustQuote';
@@ -232,13 +231,12 @@ function reportFlushDepth(lpTon: bigint, lpPrimes: bigint, nanotonPerPrimes: big
 
 async function main() {
     const env = loadEnvFile();
-    const testOnly = (envValue(env, 'PRIMES_NETWORK') ?? 'testnet') !== 'mainnet';
-    const netCfg = readNetworkConfig(testOnly ? 'testnet' : 'mainnet');
-    const client = new TonClient({
-        // GAUNTLET X4: the shared helper, so `TON_RPC_ENDPOINT` moves this with everything else.
-        endpoint: toncenterRpcEndpoint(testOnly ? 'testnet' : 'mainnet'),
-        apiKey: envValue(env, testOnly ? 'TONCENTER_API_KEY_TESTNET' : 'TONCENTER_API_KEY') || undefined,
-    });
+    // GAUNTLET X4 + G96: `TON_RPC_ENDPOINT` moves this with everything else; the network is
+    // the one the genesis is given (`scriptNetwork`).
+    const net = scriptNetwork(env);
+    const testOnly = net.testOnly;
+    const netCfg = readNetworkConfig(net.network);
+    const client = new TonClient({ endpoint: net.endpoint, apiKey: net.apiKey });
     const fmt = (a: Address) => a.toString({ testOnly });
 
     const mnemonic = envValue(env, 'KEEPER_WALLET_MNEMONIC');
