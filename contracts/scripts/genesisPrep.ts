@@ -5,10 +5,11 @@
  *   - the deploy SUBWALLET address for `PRIMES_DEPLOY_SUBWALLET_ID` and its live balance,
  *     against the 13 GRAM pipeline floor (gotcha 10 in docs/testnet-deployment.md) — this is
  *     the address to fund before the run;
- *   - every deploy-time env var the runner `requireAddr`s, and whether it is set;
+ *   - `shared/networks/testnet.yaml` (parsed and genesis-ready) and every per-run env var
+ *     the runner `requireAddr`s, and whether it is set;
  *   - whether `PRIMES_PROPOSER_ADDR` IS the subwallet (gotcha 8 — the venue timelock bakes
  *     it in and the 2026-08-17 / 2026-08-29 runs died at the last step when it wasn't);
- *   - whether `PRIMES_OPERATOR_ADDR` IS `.owner.json`'s key as v4R2 (TESTNET_MASTER_PLAN.md §4b).
+ *   - whether `testnet.yaml`'s `operator_addr` IS `.owner.json`'s key as v4R2 (TESTNET_MASTER_PLAN.md §4b).
  *
  *   npx tsx contracts/scripts/genesisPrep.ts            # report
  *
@@ -24,7 +25,8 @@ import {
     hydrateProcessEnv,
     deploySubwalletId,
     loadEnvFile,
-    clockDivisorFromEnv,
+    clockDivisorOf,
+    readNetworkConfig,
     resolveStakeMin,
     MAINNET_AUCTION_SECONDS,
     assertBuildFresh,
@@ -34,6 +36,7 @@ import { readOwnerEntry } from './testnet/cast';
 import { dryRunGenesisMasterAddress } from './genesisPipeline';
 import { resolvePresentation } from './deployGenesis';
 import { Cell } from '@ton/core';
+import { requireGenesisReady } from '../../shared/networkConfig';
 
 // `tsx` loads no `.env`; every `process.env.PRIMES_*` read below depends on this.
 hydrateProcessEnv();
@@ -59,6 +62,10 @@ function loadCode(name: string): Cell {
 async function main() {
     assertBuildFresh();
     const env = loadEnvFile();
+    // Testnet-only preflight (its client is hardwired to testnet). Throws on a stale
+    // retired env var or a malformed file: both would also stop the runner.
+    const cfg = readNetworkConfig('testnet');
+    requireGenesisReady(cfg);
     let fail = false;
     const refuse = (msg: string) => { console.log(`  !! ${msg}`); fail = true; };
 
@@ -110,7 +117,7 @@ async function main() {
             addr,
             loadCode('PrimesJettonMaster'),
             loadCode('PrimesJettonWallet'),
-            resolvePresentation().jettonMetadataUri
+            resolvePresentation(cfg).jettonMetadataUri
         );
     } catch (e) {
         refuse(`could not derive this run's jetton master (is contracts/build populated? run pnpm build): ${String(e)}`);
@@ -163,7 +170,7 @@ async function main() {
     // D-139 — THE TEST CLOCK, printed because it is baked into three contracts'
     // addresses and there is no way to change it after the run. Throws here, on a
     // read-only preflight, rather than halfway through a genesis.
-    const divisor = clockDivisorFromEnv(env);
+    const divisor = clockDivisorOf(cfg);
     const auctionSeconds = MAINNET_AUCTION_SECONDS / divisor;
     console.log(
         `auction clock:       ${auctionSeconds}s (divisor ${divisor})` +
@@ -175,7 +182,7 @@ async function main() {
     // D-153 — THE TEST STAKE FLOOR, printed for the same reason: it is baked into
     // the ratchet's address and no message can change it. The EFFECTIVE figure is
     // printed, not the requested one, because the divisor is rounded.
-    const stake = resolveStakeMin(env);
+    const stake = resolveStakeMin(cfg);
     console.log(
         `stake minimum:       ${stake.effectiveTon} GRAM (divisor ${stake.divisor})` +
             (stake.divisor === 1
@@ -183,11 +190,10 @@ async function main() {
                 : `  — \`stake\` needs \`pending\` above ${(stake.effectiveTon / 0.8).toFixed(4)} GRAM`)
     );
 
-    console.log('deploy-time env:');
+    console.log(`network config:      shared/networks/testnet.yaml (name fee ${cfg.nameFeeTon} GRAM)`);
+    console.log('per-run env:');
     for (const k of [
-        'PRIMES_OPERATOR_ADDR',
         'PRIMES_PROPOSER_ADDR',
-        'PRIMES_DEDUST_VAULT_ADDR',
         'PRIMES_DEDUST_POOL_ADDR',
         'PRIMES_DEDUST_JETTON_VAULT_ADDR',
         'PRIMES_DEDUST_LP_STANDIN',
@@ -201,25 +207,25 @@ async function main() {
     // v4R2 default-subwallet account instead — one key, two accounts, and a genesis that
     // stamps any other address into `ConfigA.operatorAddr` is refused here.
     const owner = readOwnerEntry();
-    const opAddr = env.get('PRIMES_OPERATOR_ADDR');
+    const opAddr = cfg.operatorAddr;
     if (!owner) {
-        refuse('.owner.json is missing — PRIMES_OPERATOR_ADDR must be its key as v4R2');
+        refuse(".owner.json is missing — testnet.yaml's operator_addr must be its key as v4R2");
     } else if (opAddr) {
         const ownerV4 = WalletContractV4.create({
             workchain: 0,
             publicKey: (await mnemonicToPrivateKey(owner.mnemonic)).publicKey,
         }).address;
         if (Address.parse(opAddr).equals(ownerV4)) {
-            console.log(`  ok  PRIMES_OPERATOR_ADDR is .owner.json's key as v4R2`);
+            console.log(`  ok  operator_addr is .owner.json's key as v4R2`);
         } else {
             refuse(
-                `PRIMES_OPERATOR_ADDR must be .owner.json's key as v4R2: set it to ` +
+                `testnet.yaml's operator_addr must be .owner.json's key as v4R2: set it to ` +
                     ownerV4.toString({ testOnly: true, bounceable: false })
             );
         }
     }
-    if (env.get('PRIMES_TREASURY_ADDR') && !env.get('PRIMES_OPERATOR_ADDR')) {
-        refuse('PRIMES_TREASURY_ADDR is the pre-D-100 name — rename it to PRIMES_OPERATOR_ADDR (gotcha 5)');
+    if (env.get('PRIMES_TREASURY_ADDR')) {
+        refuse("PRIMES_TREASURY_ADDR is the pre-D-100 name — delete it; the operator is testnet.yaml's operator_addr (gotcha 5)");
     }
     // DeDust v2 IS deployed on TON testnet, at the SAME factory address as mainnet
     // (EQBfBWT7…J67 — mainnet's code has since been upgraded, testnet still runs the

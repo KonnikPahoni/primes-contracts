@@ -7,7 +7,7 @@
 An MCP server for [TON PRIMES](https://primes.live). Point an agent at it and it can read
 the game's published chain state and, with a local key, play.
 
-**23 tools: 14 reads and 9 writes.** The nine writes are every message a
+**25 tools: 14 reads and 11 writes.** The eleven writes are every message a
 program-player can send — there is no action in this game that the library can take and the
 model cannot. Each one **quotes before it spends** and sends only on `confirm: true`.
 
@@ -86,6 +86,8 @@ for a program that wants them.
 | `primes_name_number` | Name a number you own, for GRAM (D-212): `nameFee` first, `renameFee` after. The fee goes to the floor. |
 | `primes_annotate` | Engrave an era trophy (one of the eight primorials). The first engraving is free; later ones cost the registrar's rename fee in GRAM. |
 | `primes_flush` | Call `flush()`. Permissionless; TON has no scheduler. |
+| `primes_harvest` | Call `harvest()`: the staked reserve's yield to the treasury. Permissionless, caller-paid. |
+| `primes_sweep_ops` | Call `sweep_ops`: the gas & ops line's unspent balance into the floor pool. Permissionless. |
 
 **Every write tool quotes first and sends only on `confirm: true`.** The quote runs the
 same live chain reads the send does, so a refusal shows up before anything is signed — and
@@ -93,7 +95,7 @@ for the two that spend on a name (`primes_name_number`, `primes_annotate`) the q
 the live fee before it asks.
 
 The split is enforced rather than documented: `test/tools.test.ts` asserts that no read
-takes `confirm`, that every write does, that each of the SDK's nine actions has a tool
+takes `confirm`, that every write does, that each of the SDK's eleven actions has a tool
 behind it, and that no two tools share a name — a collision is silent in the registry and
 fatal at startup, and it has happened once.
 

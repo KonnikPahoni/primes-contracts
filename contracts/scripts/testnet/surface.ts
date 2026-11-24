@@ -40,7 +40,7 @@ import path from 'path';
 import { Address, TupleBuilder, beginCell } from '@ton/core';
 import { TonClient } from '@ton/ton';
 import { REPO, makeClient, retry } from './sender';
-import { addr, env, envOpt } from './chain';
+import { addr, env, envOpt, operatorAddr } from './chain';
 import { PrimesLedger } from '../../wrappers/PrimesLedger';
 import { fromAsserts, record } from './journal';
 import type { AssertResult } from './assert';
@@ -243,7 +243,7 @@ async function main() {
         // run, so it is the probe until the walk has put something past it.
         someNumber: head > 5n ? head - 1n : 1n,
         somePrime: 2n,
-        someOwner: Address.parse(env('PRIMES_OPERATOR_ADDR')),
+        someOwner: operatorAddr(),
     };
     console.log(`sweeping the get-method surface at head ${head} (probe number ${f.someNumber})\n`);
 

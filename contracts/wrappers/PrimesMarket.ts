@@ -72,7 +72,7 @@ export type MarketConfig = {
      * turns a 7-day lot into a 1-hour lot, which is the whole reason the field
      * exists: a full-protocol testnet run cannot wait out two 7-day auctions.
      * Deploy-time only — no message reaches it, so a running lot's clock cannot
-     * be shortened by anyone. Genesis reads it from `PRIMES_AUCTION_SECONDS`.
+     * be shortened by anyone. Genesis reads it from `testnet.yaml`'s `test_overrides.auction_seconds`.
      */
     clockDivisor?: number;
     /**

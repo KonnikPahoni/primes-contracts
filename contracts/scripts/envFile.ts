@@ -28,6 +28,16 @@
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
+import params from '../../shared/params.json';
+import {
+    type NetworkConfig,
+    configNetworkFor,
+    parseNetworkConfig,
+    retiredEnvVarsSet,
+    stakeMinOf,
+} from '../../shared/networkConfig';
+
+export { clockDivisorOf, MAINNET_AUCTION_SECONDS, type NetworkConfig } from '../../shared/networkConfig';
 
 const REPO = path.resolve(__dirname, '..', '..');
 
@@ -78,95 +88,33 @@ export function deploySubwalletId(env: Map<string, string>): number | undefined 
 }
 
 /**
- * D-139 — THE TEST CLOCK, read as a DURATION and published as a DIVISOR.
+ * The network's deploy facts, `shared/networks/<network>.yaml` (see `shared/networkConfig.ts`).
  *
- * `PRIMES_AUCTION_SECONDS` is the wall-clock length an ascending auction should
- * run on the set being deployed. Mainnet is `604800` (7 days) and that is the
- * default, so a `.env` without the key deploys exactly what it always did. A
- * testnet run sets `3600` and gets a 1-hour auction — and, because ONE divisor
- * drives every clock in the set, a ~8.5-minute flush cooldown and a
- * ~8.5-minute governance vote with it.
+ * `network` is the network THIS RUN TARGETS — blueprint's `provider.network()` or the
+ * skew-safe host's — never `TON_NETWORK`, which is the laptop `.env`'s backend selector and
+ * reads `testnet` during a `--mainnet` run. Anything that is not `testnet` gets mainnet's
+ * file and mainnet's rules.
  *
- * It is expressed in seconds rather than as the divisor because that is what
- * the operator actually wants to say; the divisor is derived, and refused if it
- * does not divide evenly, so nobody has to reason about a rounded auction
- * window. The ceiling is `BID_EXTENSION` (4020s): past it the anti-snipe
- * extension would floor to zero and an auction would stop extending at all.
+ * Refuses while any variable the YAML files replaced is still set, in the shell or in
+ * `/.env`: a stale `PRIMES_NAME_FEE_TON=0.5` must not sit beside the file looking like
+ * the thing that decides.
  */
-export const MAINNET_AUCTION_SECONDS = 604800;
-
-export function clockDivisorFromEnv(env: Map<string, string>): number {
-    const raw = envValue(env, 'PRIMES_AUCTION_SECONDS');
-    if (!raw) return 1;
-    const seconds = Number(raw);
-    if (!Number.isInteger(seconds) || seconds < 1 || seconds > MAINNET_AUCTION_SECONDS) {
+export function readNetworkConfig(network: string): NetworkConfig {
+    const env = loadEnvFile();
+    const stale = retiredEnvVarsSet((k) => envValue(env, k));
+    if (stale.length) {
         throw new Error(
-            `PRIMES_AUCTION_SECONDS must be an integer in 1..${MAINNET_AUCTION_SECONDS} (got ${raw})`
+            `${stale.join(', ')} ${stale.length === 1 ? 'is' : 'are'} set, but these values now live in ` +
+                'shared/networks/{testnet,mainnet}.yaml. Delete them from /.env (and the shell), then re-run.'
         );
     }
-    if (MAINNET_AUCTION_SECONDS % seconds !== 0) {
-        throw new Error(
-            `PRIMES_AUCTION_SECONDS must divide ${MAINNET_AUCTION_SECONDS} exactly ` +
-                `(got ${seconds}; try 604800, 86400, 7200, 3600, 1800 or 600)`
-        );
-    }
-    const divisor = MAINNET_AUCTION_SECONDS / seconds;
-    if (divisor > 4020) {
-        throw new Error(
-            `PRIMES_AUCTION_SECONDS=${seconds} implies a clock divisor of ${divisor}, ` +
-                `past the 4020 ceiling (the bid extension would floor to 0 seconds)`
-        );
-    }
-    return divisor;
+    const net = configNetworkFor(network);
+    return parseNetworkConfig(fs.readFileSync(path.join(REPO, 'shared', 'networks', `${net}.yaml`), 'utf8'), net);
 }
 
-/**
- * D-153 — THE TEST STAKE FLOOR, read as a MINIMUM and published as a DIVISOR.
- *
- * `PRIMES_STAKE_MIN_TON` is the smallest stake §4.3.2's `stake` should accept on
- * the set being deployed. Mainnet is `shared/params.json`'s
- * `staked_reserve.stake_min_ton`, read below rather than copied, and that is the
- * default: a `.env` without the key deploys exactly what the sim declares.
- *
- * WHY THE KEY EXISTS AT ALL. The liquid reserve is 20% of the ratchet's
- * obligation, so `amount = pending - target = 0.8 * pending` and the FIRST
- * `stake` is illegal until `pending` exceeds **1.25 × stake_min_ton** (625 GRAM
- * at the old 500, 62.5 at today's 50). On testnet the only
- * permissionless route into `pending` is `donate_floor`, and §8 guarantees no
- * key ever gets that GRAM back — so a wave that wanted to prove the staked
- * reserve had to burn that much unrecoverable GRAM, every wave. Same shape as the
- * nine-day wall clock D-139 solved, on the value axis instead of the time axis.
- *
- * Expressed as the MINIMUM rather than as the divisor for the same reason
- * `PRIMES_AUCTION_SECONDS` is a duration: it is what the operator wants to say.
- * Unlike the clock it need NOT divide evenly — `STAKE_MIN / divisor` is integer
- * division over nanotons, where a remainder is dust — so the resolver rounds to
- * the nearest divisor and the caller is expected to print the effective figure
- * (`resolveStakeMin` below returns both).
- */
-const MAINNET_STAKE_MIN_TON: number = JSON.parse(
-    fs.readFileSync(path.join(__dirname, '..', '..', 'shared', 'params.json'), 'utf8'),
-).staked_reserve.stake_min_ton;
-
-export function resolveStakeMin(env: Map<string, string>): { divisor: number; effectiveTon: number } {
-    const raw = envValue(env, 'PRIMES_STAKE_MIN_TON');
-    if (!raw) return { divisor: 1, effectiveTon: MAINNET_STAKE_MIN_TON };
-    const want = Number(raw);
-    if (!Number.isFinite(want) || want <= 0 || want > MAINNET_STAKE_MIN_TON) {
-        throw new Error(
-            `PRIMES_STAKE_MIN_TON must be a number in (0, ${MAINNET_STAKE_MIN_TON}] ` +
-                `(got ${raw}). It is a MINIMUM in GRAM, not a divisor, and it can only be ` +
-                `lowered from the declared figure — never raised.`
-        );
-    }
-    const divisor = Math.max(1, Math.round(MAINNET_STAKE_MIN_TON / want));
-    if (divisor > 65535) {
-        throw new Error(
-            `PRIMES_STAKE_MIN_TON=${want} implies a stake divisor of ${divisor}, past the ` +
-                `uint16 ceiling of 65535 (the smallest reachable minimum is ~0.0076 GRAM)`
-        );
-    }
-    return { divisor, effectiveTon: MAINNET_STAKE_MIN_TON / divisor };
+/** D-153's stake divisor for this network: `params.json`'s minimum, lowered only by `testnet.yaml`. */
+export function resolveStakeMin(cfg: NetworkConfig): { divisor: number; effectiveTon: number } {
+    return stakeMinOf(cfg, params.staked_reserve.stake_min_ton);
 }
 
 /**

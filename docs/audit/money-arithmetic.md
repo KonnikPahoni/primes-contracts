@@ -27,15 +27,15 @@ assumed safe.
 | `primes_jetton_wallet.tolk` | 240 | `onInternalMessage` | `storage.balance -= msg.amount;` | no |
 | `primes_jetton_wallet.tolk` | 277 | `onInternalMessage` | `storage.balance -= msg.amount;` | no |
 | `primes_ledger.tolk` | 2830 | `handleRetryItem` | `meters.unroutedHeld -= held;` | no |
-| `primes_ledger.tolk` | 3363 | `handleClaimTribute` | `meters.tributeOwed -= msg.amount;` | no |
-| `primes_ledger.tolk` | 3420 | `handleDividendCredited` | `meters.divOutstanding -= msg.amount;` | no |
-| `primes_ledger.tolk` | 3453 | `handleRetryCredit` | `meters.unroutedHeld -= credit.amount;` | no |
-| `primes_ledger.tolk` | 4658 | `payHeldSplit` | `meters.tributeOwed -= heldForfeit;` | no |
-| `primes_ledger.tolk` | 5739 | `onBouncedMessage` | `meters.tributeOwed -= original.amount;` | no |
-| `primes_ratchet.tolk` | 1708 | `onInternalMessage` | `storage.swapped -= storage.inFlightFlush;` | no |
-| `primes_ratchet.tolk` | 1882 | `handleStake` | `storage.pending -= amount;` | no |
-| `primes_ratchet.tolk` | 2312 | `handleFlush` | `storage.pending -= amount;` | no |
-| `primes_ratchet.tolk` | 2443 | `onBouncedMessage` | `storage.swapped -= storage.inFlightFlush;` | no |
+| `primes_ledger.tolk` | 3351 | `handleClaimTribute` | `meters.tributeOwed -= msg.amount;` | no |
+| `primes_ledger.tolk` | 3408 | `handleDividendCredited` | `meters.divOutstanding -= msg.amount;` | no |
+| `primes_ledger.tolk` | 3441 | `handleRetryCredit` | `meters.unroutedHeld -= credit.amount;` | no |
+| `primes_ledger.tolk` | 4646 | `payHeldSplit` | `meters.tributeOwed -= heldForfeit;` | no |
+| `primes_ledger.tolk` | 5727 | `onBouncedMessage` | `meters.tributeOwed -= original.amount;` | no |
+| `primes_ratchet.tolk` | 1840 | `onInternalMessage` | `storage.swapped -= storage.inFlightFlush;` | no |
+| `primes_ratchet.tolk` | 2060 | `handleStake` | `storage.pending -= amount;` | no |
+| `primes_ratchet.tolk` | 2514 | `handleFlush` | `storage.pending -= amount;` | no |
+| `primes_ratchet.tolk` | 2648 | `onBouncedMessage` | `storage.swapped -= storage.inFlightFlush;` | no |
 | `primes_stake.tolk` | 391 | `accrue` | `st.streamRemaining -= amt;` | no |
 | `primes_stake.tolk` | 428 | `settlePosition` | `st.unclaimedTotal -= excess;` | no |
 | `primes_stake.tolk` | 614 | `onInternalMessage` | `st.lockedTotal -= principal;` | no |
@@ -43,10 +43,10 @@ assumed safe.
 | `primes_stake.tolk` | 676 | `onBouncedMessage` | `t.claimedTotal -= original.amount;` | no |
 | `primes_stake.tolk` | 697 | `onBouncedMessage` | `t.claimedTotal -= reward;` | no |
 | `primes_stake_position.tolk` | 292 | `onInternalMessage` | `storage.stakedTotal -= pos.amount;` | no |
-| `primes_treasury.tolk` | 1067 | `onInternalMessage` | `bal.primesBalance -= prop.amount;` | no |
-| `primes_treasury.tolk` | 1069 | `onInternalMessage` | `bal.tstonBalance -= prop.amount;` | no |
-| `primes_treasury.tolk` | 1122 | `onInternalMessage` | `bal.primesBalance -= budget;` | no |
-| `primes_treasury.tolk` | 1249 | `onBouncedMessage` | `dist.distributedTotal -= original.amount;` | no |
+| `primes_treasury.tolk` | 1082 | `onInternalMessage` | `bal.primesBalance -= prop.amount;` | no |
+| `primes_treasury.tolk` | 1084 | `onInternalMessage` | `bal.tstonBalance -= prop.amount;` | no |
+| `primes_treasury.tolk` | 1137 | `onInternalMessage` | `bal.primesBalance -= budget;` | no |
+| `primes_treasury.tolk` | 1286 | `onBouncedMessage` | `dist.distributedTotal -= original.amount;` | no |
 | `primes_voucher.tolk` | 413 | `onBouncedMessage` | `storage.paidTotal = storage.paidTotal > amount ? storage.paidTotal - amount : 0 as coins;` | yes (ternary) |
 
 ## The three mechanisms

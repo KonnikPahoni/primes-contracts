@@ -29,7 +29,8 @@ import { OPENING_HEAD } from './genesisPipeline';
 import { throttleClient } from './scriptHost';
 import params from '../../shared/params.json';
 
-import { clockDivisorFromEnv, hydrateProcessEnv, loadEnvFile } from './envFile';
+import { clockDivisorOf, hydrateProcessEnv, readNetworkConfig } from './envFile';
+import { requireValue } from '../../shared/networkConfig';
 
 // W10: `tsx` loads no `.env`, and every `process.env.PRIMES_*_ADDRESS` read below
 // otherwise falls through to a hardcoded address from a genesis that is months dead
@@ -152,9 +153,10 @@ async function main() {
     if ((await timelock.getQueued()).hasQueued === 1) {
         console.log('venue timelock already queued');
     } else {
-        const eta = Math.floor(Date.now() / 1000) + clockSkew + Math.floor(TIMELOCK_DELAY / clockDivisorFromEnv(loadEnvFile())) + 300; // D-139: the divided delay
+        const cfg = readNetworkConfig('testnet'); // this script's client is testnet-only
+        const eta = Math.floor(Date.now() / 1000) + clockSkew + Math.floor(TIMELOCK_DELAY / clockDivisorOf(cfg)) + 300; // D-139: the divided delay
         await timelock.sendQueue(sender, {
-            dedustNativeVault: addr('PRIMES_DEDUST_VAULT_ADDR'),
+            dedustNativeVault: Address.parse(requireValue(cfg, 'dedust_native_vault', cfg.dedustNativeVault)),
             dedustPool: addr('PRIMES_DEDUST_POOL_ADDR'),
             primesJettonVault: addr('PRIMES_DEDUST_JETTON_VAULT_ADDR'),
             eta,

@@ -32,7 +32,7 @@ const agent = new PrimesAgent({
   referralKey: configuredReferralKey,
 });
 
-export const server = new McpServer({ name: "ton-primes", version: "0.4.0" });
+export const server = new McpServer({ name: "ton-primes", version: "0.6.0" });
 
 const json = (value: unknown) => ({
   content: [{ type: "text" as const, text: JSON.stringify(value, (_k, v) => (typeof v === "bigint" ? v.toString() : v), 2) }],
@@ -271,6 +271,16 @@ write("primes_flush", "Call flush() on the ratchet. Permissionless and gas-only:
     return `flush() on the ratchet, moving up to ${pending} nanoton toward the floor (gas only)`;
   },
   async () => await agent.flush());
+
+write("primes_harvest", "Call harvest() on the ratchet (§4.3.2): sends the staked reserve's accrued tsTON yield to the LP-governed treasury and moves no term of T. Permissionless and caller-paid, 0.17 GRAM with the change returned. Refused while an exit is open, inside the 30-day interval, and when the yield is under the dust floor.",
+  {},
+  async () => `harvest() on the ratchet, sending ${await agent.harvestable()} nano-tsTON of accrued yield to the treasury (0.17 GRAM attached, change returned)`,
+  async () => await agent.harvest());
+
+write("primes_sweep_ops", "Call sweep_ops on the ledger (D-117): pays the gas & ops line's unspent balance above OPS_RESERVE into the ratchet pool, raising T with no emission. Permissionless; the 0.03 GRAM attached stays on the ledger and is swept next time. Refused when nothing is sweepable, because the call would be a no-op.",
+  {},
+  async () => `sweep_ops on the ledger, paying ${await agent.sweepable()} nanoton into the ratchet pool (0.03 GRAM attached)`,
+  async () => await agent.sweepOps());
 
 write("primes_close_lot", "Close an ascending lot whose clock has run. Permissionless and gas-only — the winner is already decided, this is the message that settles it.",
   { n: decimal() },

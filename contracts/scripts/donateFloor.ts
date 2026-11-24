@@ -26,14 +26,16 @@
  * pool depth the sim models; no GRAM has ever moved for it. The two were equal by
  * construction until D-100 point 2 and are now 48× apart.
  *
+ * Amount: `--ton <n>` on the command line, else `testnet.yaml`'s
+ * `test_overrides.donate_ton`, else the genesis donation above. D-100 point 3's further
+ * outlay, up to 150 GRAM, comes through this same message a tranche at a time (`--ton`).
+ * This script's client is testnet-only, so it reads `shared/networks/testnet.yaml`.
+ *
  * Env:
- *   PRIMES_DONATE_TON        — amount in GRAM (default: the genesis donation above).
- *                              D-100 point 3's further outlay, up to 150 GRAM, comes
- *                              through this same message a tranche at a time.
  *   PRIMES_LEDGER_ADDRESS    — the deployed ledger (docs/testnet-deployment.md)
  *   PRIMES_FROM_SUBWALLET_ID — source subwallet id (default: wallet v4 default)
  *
- *   ../bot/node_modules/.bin/tsx scripts/donateFloor.ts
+ *   ../bot/node_modules/.bin/tsx scripts/donateFloor.ts [--ton <n>]
  */
 import fs from 'fs';
 import path from 'path';
@@ -44,7 +46,7 @@ import { LedgerOpcodes } from '../wrappers/PrimesLedger';
 // that leaves `T = 0` — one definition, so this script and the rehearsal cannot
 // disagree.
 import { genesisDonationTon } from './genesisPipeline';
-import { deploySubwalletId, hydrateProcessEnv, loadEnvFile } from './envFile';
+import { deploySubwalletId, hydrateProcessEnv, loadEnvFile, readNetworkConfig } from './envFile';
 
 // `tsx` loads no `.env`; every `process.env.PRIMES_*` read below depends on this.
 hydrateProcessEnv();
@@ -65,11 +67,19 @@ async function floor(client: TonClient, ledger: Address) {
 async function main() {
     const genesis = JSON.parse(fs.readFileSync(path.join(REPO, 'shared', 'params.json'), 'utf8')).genesis;
     const lpRatio = BigInt(genesis.genesis_lp_ratio_primes_per_ton);
-    const amountTon = process.env.PRIMES_DONATE_TON ?? genesisDonationTon(genesis).toFixed(9).replace(/0+$/, '0');
+    const cfg = readNetworkConfig('testnet');
+    const flag = process.argv.indexOf('--ton');
+    const cliTon = flag >= 0 ? process.argv[flag + 1] : undefined;
+    if (flag >= 0 && !(Number(cliTon) > 0)) throw new Error(`--ton needs a positive GRAM amount, got ${cliTon}`);
+    const fileTon = cfg.testOverrides.donateTon;
+    const amountTon =
+        cliTon ?? (fileTon !== undefined ? String(fileTon) : genesisDonationTon(genesis).toFixed(9).replace(/0+$/, '0'));
     const amount = toNano(amountTon);
-    if (!process.env.PRIMES_DONATE_TON) {
+    if (cliTon === undefined && fileTon !== undefined) {
+        console.log(`donating ${amountTon} GRAM: testnet.yaml test_overrides.donate_ton (spec ${genesis.genesis_donation_ton})`);
+    } else if (cliTon === undefined) {
         console.log(
-            `PRIMES_DONATE_TON unset — using D-100 point 2's owner-set genesis donation ${amountTon} GRAM, ` +
+            `no --ton and no test_overrides.donate_ton — using D-100 point 2's owner-set genesis donation ${amountTon} GRAM, ` +
                 `from which the sim derives p_f = ${genesis.genesis_floor_price_ton_per_primes.toExponential(4)}. ` +
                 `It mints you ${genesis.genesis_donation_ton * genesis.genesis_lp_ratio_primes_per_ton} PRIMES ` +
                 'at L (the clamp is inactive while T = 0) — that is the PRIMES side of the manual DeDust pair.'

@@ -31,7 +31,8 @@ import { PrimesTreasury } from '../wrappers/PrimesTreasury';
 import { PrimesLpSink } from '../wrappers/PrimesLpSink';
 import { PrimesVesting } from '../wrappers/PrimesVesting';
 
-import { clockDivisorFromEnv, hydrateProcessEnv, loadEnvFile } from './envFile';
+import { clockDivisorOf, hydrateProcessEnv, readNetworkConfig } from './envFile';
+import { requireValue } from '../../shared/networkConfig';
 
 // W10: `tsx` loads no `.env`, and every `process.env.PRIMES_*_ADDRESS` read below
 // otherwise falls through to a hardcoded address from a genesis that is months dead
@@ -152,10 +153,11 @@ async function main() {
     const pre = await retry(() => timelock.getQueued(), 'getQueued(pre)');
     console.log('queued before:', pre.hasQueued);
     if (pre.hasQueued !== 1) {
+        const cfg = readNetworkConfig('testnet'); // this script's client is testnet-only
         // 600s margin over the 30-day minimum: covers the ~113s local-clock lag
-        const eta = Math.floor(Date.now() / 1000) + Math.floor(TIMELOCK_DELAY / clockDivisorFromEnv(loadEnvFile())) + 600; // D-139: the divided delay
+        const eta = Math.floor(Date.now() / 1000) + Math.floor(TIMELOCK_DELAY / clockDivisorOf(cfg)) + 600; // D-139: the divided delay
         await timelock.sendQueue(sender, {
-            dedustNativeVault: Address.parse(process.env.PRIMES_DEDUST_VAULT_ADDR!),
+            dedustNativeVault: Address.parse(requireValue(cfg, 'dedust_native_vault', cfg.dedustNativeVault)),
             dedustPool: Address.parse(process.env.PRIMES_DEDUST_POOL_ADDR!),
             primesJettonVault: Address.parse(process.env.PRIMES_DEDUST_JETTON_VAULT_ADDR!),
             eta,

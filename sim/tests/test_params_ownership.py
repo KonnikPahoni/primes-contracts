@@ -580,7 +580,7 @@ def test_the_naming_fees_are_the_owners_and_the_generator_emits_them_verbatim(pa
     PRIMES burn block it replaced is gone with the sink. `naming_block()` is pure,
     so the committed block must equal it exactly -- the proof the JSON came from
     the generator without re-running the sim. No GRAM figure for the first naming
-    may appear: it is chosen on genesis day (`PRIMES_NAME_FEE_TON`)."""
+    may appear: it is chosen on genesis day (`name_fee_ton` in mainnet.yaml)."""
     from primes_sim import acquisition as acq
 
     assert "sinks" not in params, "D-212 deletes the burn sink and its block"

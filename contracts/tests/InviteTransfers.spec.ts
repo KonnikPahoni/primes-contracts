@@ -88,13 +88,11 @@ describe('D-202/D-215 — the invite line is plain text transfers from the ledge
         expect(V).toBe(100_000_000n);
         expect(INVITE_LINE_CAP_NANOTON).toBe(310_000_000n);
         expect(INVITE_COUNT_CEILING).toBe(100);
-        for (const n of [4n, 1234n, 4_294_967_296n]) {
-            const c: Cell = await s.ledger.getInviteComment(n);
-            expect(c.hash().equals(inviteCommentCell(n).hash())).toBe(true);
-            const p = c.beginParse();
-            expect(p.loadUint(32)).toBe(0); // a plain text comment
-            expect(p.loadStringTail()).toBe(inviteCommentText(n));
-        }
+        const c: Cell = await s.ledger.getInviteComment();
+        expect(c.hash().equals(inviteCommentCell().hash())).toBe(true);
+        const p = c.beginParse();
+        expect(p.loadUint(32)).toBe(0); // a plain text comment
+        expect(p.loadStringTail()).toBe(inviteCommentText());
     });
 
     it('0 slots: an uninvited mint sends nothing and counts nothing', async () => {
@@ -109,7 +107,7 @@ describe('D-202/D-215 — the invite line is plain text transfers from the ledge
             const invitees = await Promise.all(
                 Array.from({ length: count }, (_, i) => s.blockchain.treasury(`invitee${count}_${i}`))
             );
-            const { n, r } = await mintHead(s.alice, count, invitees.map((t, i) => [i + 1, t.address]));
+            const { r } = await mintHead(s.alice, count, invitees.map((t, i) => [i + 1, t.address]));
             expect(r.transactions).toHaveTransaction({ to: s.ledger.address, success: true });
             expect(r.transactions).not.toHaveTransaction({ aborted: true });
             for (const t of invitees) {
@@ -120,31 +118,31 @@ describe('D-202/D-215 — the invite line is plain text transfers from the ledge
                 // D-215, PAY_FEES_SEPARATELY: the forward fee is on top, so 0.1 arrives whole
                 // (a Telegram wallet pushes for 0.1 received, not for 0.0999).
                 expect(info.value.coins).toBe(V);
-                expect(got[0].inMessage.body.hash().equals(inviteCommentCell(n).hash())).toBe(true);
+                expect(got[0].inMessage.body.hash().equals(inviteCommentCell().hash())).toBe(true);
             }
             expect(await s.ledger.getInviteSpend()).toEqual(spend(count, count));
         });
     }
 
-    it('the comment bytes are exactly "<genesis words> primes.live/?ref=<n>_tg"', async () => {
+    it('the comment bytes are exactly the genesis words, with no link (D-215)', async () => {
         const bob = s.bob;
-        const { n, r } = await mintHead(s.alice, 1, [[1, bob.address]]);
+        const { r } = await mintHead(s.alice, 1, [[1, bob.address]]);
         const body = fromLedgerTo(r, bob.address)[0].inMessage.body.beginParse();
         expect(body.loadUint(32)).toBe(0);
         const text = body.loadStringTail();
-        expect(text).toBe(`${INVITE_TEXT_GENESIS} primes.live/?ref=${n}_tg`);
-        expect(text).toBe(inviteCommentText(n));
+        expect(text).toBe(INVITE_TEXT_GENESIS);
+        expect(text).toBe(inviteCommentText());
         expect(await s.ledger.getInviteText()).toBe(INVITE_TEXT_GENESIS);
     });
 
-    // ---- D-211/D-215: the operator's wallet sets the terms; the ledger keeps the link ----
+    // ---- D-211/D-215: the operator's wallet sets the terms; the words are the whole comment ----
     const operator = () => s.blockchain.treasury('treasury'); // the stack's FeeDests.operatorAddr
     const setTerms = async (via: SandboxContract<TreasuryContract>, count: number, inviteValue: bigint, words = INVITE_TEXT_GENESIS) =>
         s.ledger.sendSetInviteTerms(via.getSender(), { count, inviteValue, words, value: 50_000_000n });
     const termsBody = (count: number, value: bigint, text: Cell) =>
         beginCell().storeUint(LEDGER.set_invite_terms, 32).storeUint(0, 64).storeUint(count, 7).storeCoins(value).storeRef(text).endCell();
 
-    it('D-211: the operator rewrites the words; the next invite carries them, at the cap, with the link', async () => {
+    it('D-211: the operator rewrites the words; the next invite carries exactly them, at the cap', async () => {
         const op = await operator();
         const words = 'Ж'.repeat(INVITE_TEXT_MAX_BYTES / 2); // non-ASCII: 2 bytes each, exactly the cap
         const set = await setTerms(op, INVITE_GENESIS_COUNT, V, words);
@@ -152,11 +150,11 @@ describe('D-202/D-215 — the invite line is plain text transfers from the ledge
         expect(await s.ledger.getInviteText()).toBe(words);
 
         const bob = s.bob;
-        const { n, r } = await mintHead(s.alice, 3, [[1, bob.address]]);
+        const { r } = await mintHead(s.alice, 3, [[1, bob.address]]);
         expect(r.transactions).not.toHaveTransaction({ aborted: true });
         const body = fromLedgerTo(r, bob.address)[0].inMessage.body;
-        expect(body.hash().equals(inviteCommentCell(n, words).hash())).toBe(true);
-        expect((await s.ledger.getInviteComment(n)).hash().equals(inviteCommentCell(n, words).hash())).toBe(true);
+        expect(body.hash().equals(inviteCommentCell(words).hash())).toBe(true);
+        expect((await s.ledger.getInviteComment()).hash().equals(inviteCommentCell(words).hash())).toBe(true);
     });
 
     it('D-211: anyone but the operator is refused 100; over-long or ref-carrying words are refused 237', async () => {
@@ -312,14 +310,14 @@ describe('D-202/D-215 — the invite line is plain text transfers from the ledge
         const b1 = await balanceOf();
         // The webapp's send: MINT_PRICE + FEE_MARGIN (shared/values.ts). A long invite list
         // makes the card's forward dearer, and that margin is what pays for it.
-        const { n, r } = await mintHead(s.alice, count, invitees.map((t, i) => [i + 1, t.address]), null, MINT_PRICE + FEE_MARGIN_NANOTON);
+        const { r } = await mintHead(s.alice, count, invitees.map((t, i) => [i + 1, t.address]), null, MINT_PRICE + FEE_MARGIN_NANOTON);
         expect(r.transactions).not.toHaveTransaction({ aborted: true });
         const d1 = (await balanceOf()) - b1;
         for (const t of invitees) {
             const got = fromLedgerTo(r, t.address);
             expect(got.length).toBe(1);
             expect(got[0].inMessage.info.value.coins).toBe(value);
-            expect(got[0].inMessage.body.hash().equals(inviteCommentCell(n, words).hash())).toBe(true);
+            expect(got[0].inMessage.body.hash().equals(inviteCommentCell(words).hash())).toBe(true);
         }
         expect(await s.ledger.getInviteSpend()).toEqual(spend(count, count, value));
         const margin = d1 - d0;

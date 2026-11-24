@@ -328,11 +328,25 @@ const TONSTAKERS_DEPOSIT_FEE: coins = 1000000000;   // 1 GRAM
 // 0.3 for nothing (MISTAKES.md 2026-11-23).
 const STAKE_CREDIT_MARGIN: coins = 10000000;        // 0.01 GRAM
 
+// The least a stake's own `excesses` can carry (GAUNTLET.md B38). The query id
+// alone does not tell the pool's excess from one a stranger provokes: a 1-nano
+// tsTON transfer to this contract naming it as `response_destination`, with the
+// keeper's public query id, makes OUR wallet send a genuine `excesses` — which
+// used to consume the refund row and leave the real ~0.89 GRAM excess with no row
+// to match. Half the reserve sits well under the measured 0.887-0.897 and far
+// above anything a griefer would pay; an excess below it is ignored and the row
+// stays for the real one. Forcing past it costs the griefer more than the caller
+// loses, and pays the caller most of it.
+const STAKE_REFUND_MIN: coins = 500000000;          // 0.5 GRAM = TONSTAKERS_DEPOSIT_FEE / 2
+
 // The TEP-74 burn leg that IS a withdrawal request needs `msg_value > fwd_fee +
 // 2*gas_consumption + burn_notification` with `burn_notification = 0.75 GRAM`
 // (`jetton-wallet.func:19`, `:221`), and the pool then gates the withdrawal on
 // `WITHDRAWAL_FEE = ONE_TON / 2` (`pool.func:80`, `:189`). 0.8 GRAM clears both
-// and matches `staked_reserve.exit_fee_ton`.
+// and is what the caller attaches. A RESERVE, NOT A FEE (measured on mainnet,
+// 2026-11-23: a 1.05 GRAM burn gets 1.047 back inside the `withdrawal` payout),
+// so `refundExitPrepay` returns its change; `staked_reserve.exit_fee_ton` is
+// what an exit actually costs, not this.
 const TSTON_EXIT_GAS: coins = 800000000;            // 0.8 GRAM
 
 // Audit M1 (2026-11-19): harvest's transfer MUST forward GRAM, or a TEP-74 wallet
@@ -579,6 +593,20 @@ struct BurnStats {
     burnEvents: uint32        // how many burn orders that took
     jettonWalletAddr: address // this contract's own PRIMES wallet; the only counted sender
     walletSet: uint8          // 0 until the genesis script wires it; counter is idle at 0
+    // Who sent the last `flush`. DeDust's unspent swap gas comes home on the fill as two
+    // excesses — our PRIMES wallet's, and the jetton master's after the proceeds burn —
+    // and both are the caller's change (D-146: the caller pays the venue's gas), so both
+    // go back here (2026-11-23). Overwritten by the next flush, never cleared: a stale
+    // payee can only receive gas change, which is not a term of `T`.
+    flushCaller: address?
+    // The payee of the wallet excess that FOLLOWS a fill (GAUNTLET B40). The fill's
+    // notification lifts the flush lock one transaction before our wallet's excess
+    // lands, so a flush in between used to overwrite `flushCaller` and take the first
+    // caller's change. The fill copies `flushCaller` here; the excess pays this and
+    // clears it; `handleFlush` never writes it. Our wallet sends the notification and
+    // the excess in that order to the same address, so no other excess from it can
+    // arrive between them.
+    changeTo: address?
 }
 
 // §4.3.2's rate, clock, wallet and state machine. Split off `Staking` below for
@@ -641,17 +669,97 @@ struct StakeMeta {
 }
 
 // The one `excesses` that is the CALLER's money: from our tsTON wallet, echoing
-// the stake's query id. Written by every stake, cleared when paid, and cleared
-// wherever a stake ends without its excess (a bounce, a write-off) or another
-// arm starts (unstake, harvest): query ids are caller-chosen and the wrappers
-// default them to 0, so a stale row must never meet a later arm's excess.
+// the stake's query id, carrying at least STAKE_REFUND_MIN. Written by every
+// stake, cleared when paid, and cleared wherever a stake ends without its excess
+// (a bounce, a write-off) or unstake starts — the one other arm whose wallet
+// excess comes home here: query ids are caller-chosen and the wrappers default
+// them to 0, so a stale row must never meet a later arm's excess. NOT cleared by
+// harvest (GAUNTLET.md B39): harvest's transfer names its CALLER as
+// `response_destination`, so its excess never reaches this contract, and harvest
+// can run while a stake is open — clearing there lost that stake's refund.
+//
+// THE SAME ROW IS THE OPEN EXIT'S (2026-11-23, the withdrawal side of the same
+// finding). A stake and an exit are never open together (230 both ways), so while
+// `exitLeg != EXIT_IDLE` the row names the `unstake` caller and `held` is the part
+// of its prepay no leg has sent yet: EXIT_LATER_LEGS_GAS at the start, less each
+// later leg's gas as a reply sends it. Whichever arm ENDS the exit pays it back
+// (`refundExitPrepay`), with the answering leg's own change. Nothing pays out while
+// an exit is open. Two arrivals can ADD to `held`, each once and under the same B38
+// floor: the refused leg 1's wallet excess (`handleStakeRefund`) and leg 3's bill
+// `ownership_assigned` (its arm), which is where those legs' change comes home.
 struct StakeRefund {
     to: address?
     queryId: uint64
+    held: coins                // the exit's unspent prepay; 0 on a stake's row
+    changeIn: bool             // the refused leg 1's excess is already in `held`
+    billIn: bool               // leg 3's `ownership_assigned` change is already in `held`
 }
 
 fun noStakeRefund(): Cell<StakeRefund> {
-    return (StakeRefund { to: null, queryId: 0 }).toCell();
+    return (StakeRefund { to: null, queryId: 0, held: 0, changeIn: false, billIn: false }).toCell();
+}
+
+// A leg the exit machine is about to send spends that much of the caller's prepay.
+fun spendExitPrepay(mutate meta: StakeMeta, gas: int) {
+    var row = meta.stakeRefund.load();
+    row.held = (row.held > gas ? row.held - gas : 0) as coins;
+    meta.stakeRefund = row.toCell();
+}
+
+// THE EXIT'S UNSPENT PREPAY GOES BACK TO WHOEVER FRONTED IT (2026-11-23). Measured
+// on mainnet: a Tonstakers burn carrying 1.05 GRAM gets 1.047 back inside the
+// `withdrawal` payout, so TSTON_EXIT_GAS is a reserve, not a fee — the deposit
+// side's finding again — and until this fix that change, and the never-sent
+// EXIT_LATER_LEGS_GAS, stayed in the gas buffer, which nothing spends.
+//
+// `bonus` is the answering leg's change: the part of its arrival above what was
+// credited to `pending`, capped by `exitPayoutChangeCap`, or a bounce's value,
+// capped by `exitLegGas`. The caps are load-bearing: a tranche is sized at COST
+// and redeems at the pool's rate, so an arrival mixes returned gas with yield, and
+// without them this would pay yield to a wallet. A bounce carries no yield, and
+// under either cap the caller never gets back more than it attached. Forged arrivals cannot abuse it: the bonus comes out of the
+// arrival's own value, so a forger funds it, and an exit ends only on an
+// authenticated leg-1 payout, a fully-funded partial close, our own bounce, or
+// `recover_exit`. Change that comes home on an unauthenticated path (a refused
+// leg's re-mint excess beyond the first, a second `ownership_assigned`, leg 2's
+// wallet-hop excess) stays in the buffer.
+//
+// CALLER_COMPUTE_GAS stays behind: it pays this transaction's compute, so the
+// buffer ends no lower than it began (D-146). `room` is the balance above
+// `pending`, so this can never pay out backing.
+fun refundExitPrepay(mutate meta: StakeMeta, bonus: int, pending: int) {
+    val row = meta.stakeRefund.load();
+    meta.stakeRefund = noStakeRefund();
+    if (row.to == null) { return; }
+    var value = row.held + bonus - CALLER_COMPUTE_GAS;
+    val room = contract.getOriginalBalance() - pending - CALLER_COMPUTE_GAS;
+    if (value > room) { value = room; }
+    if (value <= 0) { return; }
+    createMessage({
+        bounce: BounceMode.NoBounce,
+        value: value,
+        dest: row.to!,
+        body: (Excesses { queryId: row.queryId }).toCell(),
+    }).send(SEND_MODE_REGULAR | SEND_MODE_IGNORE_ERRORS);
+}
+
+// What a leg's BOUNCE can bring home: the gas we sent with it, and nothing else.
+fun exitLegGas(leg: int): int {
+    return leg == EXIT_LEG_DEDUST ? DEDUST_JETTON_SWAP_GAS : TSTON_EXIT_GAS;
+}
+
+// What a leg's PAYOUT can carry home as change, as opposed to yield. Leg 1: the
+// burn's remaining value rides on `withdrawal` (mainnet: 1.047 of 1.05). Leg 2:
+// only the vault's forward rides on `payout`; the wallet hop's change comes back as
+// an `excesses`. Leg 3: nothing — its change arrived earlier, on the bill's
+// `ownership_assigned` (counted there), and the bill pays the pool's round-end
+// amount, so a surplus on it is the tranche's yield; refunding it would pay yield
+// to a wallet. Each cap is the most yield its leg can leak: the gap between the gas
+// attached and the change that really comes back (≈0.003 GRAM on leg 1).
+fun exitPayoutChangeCap(leg: int): int {
+    if (leg == EXIT_LEG_BURN_FOK) { return TSTON_EXIT_GAS; }
+    if (leg == EXIT_LEG_DEDUST) { return DEDUST_JETTON_FORWARD_TON; }
+    return 0;
 }
 
 struct Staking {
@@ -1112,8 +1220,10 @@ fun sendExitDedustSwap(stk: Staking, meta: StakeMeta, vs: VenueStaking, queryId:
 // gas into `pending`, and `pending` is a term of the ledger's `T`, which this
 // contract cannot move: the identity would break by exactly the change. The cap
 // keeps every credit matched by an equal debit of `exiting`, and the surplus
-// (returned gas, and any rate gain above cost) stays where unattributable GRAM
-// always stays here — the gas buffer, which is not a term of `T`.
+// (returned gas, and any rate gain above cost) stays off `T`: when the arrival
+// ends the exit, up to the answering leg's attached gas of it goes back to the
+// `unstake` caller (`refundExitPrepay`, 2026-11-23) and the rest stays where
+// unattributable GRAM always stays here — the gas buffer, not a term of `T`.
 //
 // THE SHORTFALL, when there is one, is the realized loss and it leaves `T`
 // overstated by exactly that much. It is recorded rather than hidden:
@@ -1198,6 +1308,12 @@ fun creditExitArrival(valueCoins: int, partial: bool) {
         stk.exiting -= stk.exitCostBasis;
         stk.exitCostBasis = 0;
     }
+    // The exit is over: the answering leg's change, up to its own gas, plus every
+    // later leg's gas it never needed, back to the caller.
+    var change = valueCoins - credited;
+    val cap = exitPayoutChangeCap(meta.exitLeg);
+    if (change > cap) { change = cap; }
+    refundExitPrepay(mutate meta, change, storage.pending);
     stk.inFlightExit = 0;
     meta.exitLeg = EXIT_IDLE as uint8;
     meta.exitStartedAt = 0;        // D-155: the timeout's clock is per-exit
@@ -1209,10 +1325,16 @@ fun creditExitArrival(valueCoins: int, partial: bool) {
 // The exit gave up: put the tranche back exactly where `unstake` found it. Used
 // by the bounce arms and by a leg 3 the pool re-minted, which is the one outcome
 // `wait_till_round_end = 1, fill_or_kill = 0` is not supposed to produce.
-fun abortExit(storage: Storage, stk: Staking, meta: StakeMeta) {
+// `bounced` is the value a bounce brought home (0 elsewhere); up to the refused
+// leg's gas it is the caller's change, refunded with the unspent prepay.
+fun abortExit(storage: Storage, stk: Staking, meta: StakeMeta, bounced: int) {
     var s = storage;
     var k = stk;
     var m = meta;
+    var change = bounced;
+    val legGas = exitLegGas(m.exitLeg);
+    if (change > legGas) { change = legGas; }
+    refundExitPrepay(mutate m, change, s.pending);
     k.tstonHeld += k.inFlightExit;
     k.stakedCost += k.exitCostBasis;
     k.exiting -= k.exitCostBasis;
@@ -1362,6 +1484,7 @@ fun handleTstonNotification(amount: coins, queryId: int, from: address?) {
             // bill. The gas leg 2 would have spent stays in the buffer.
             if (rateIsSeed(meta)) {
                 meta.exitLeg = EXIT_LEG_BILL as uint8;
+                spendExitPrepay(mutate meta, TSTON_EXIT_GAS);
                 stk.meta = meta.toCell();
                 storage.staking = stk.toCell();
                 storage.save();
@@ -1369,6 +1492,7 @@ fun handleTstonNotification(amount: coins, queryId: int, from: address?) {
                 return;
             }
             meta.exitLeg = EXIT_LEG_DEDUST as uint8;
+            spendExitPrepay(mutate meta, DEDUST_JETTON_SWAP_GAS);
             stk.meta = meta.toCell();
             storage.staking = stk.toCell();
             storage.save();
@@ -1382,6 +1506,7 @@ fun handleTstonNotification(amount: coins, queryId: int, from: address?) {
             // ~36 h. Waiting is precisely the right answer to a quote that could
             // not clear our cost basis.
             meta.exitLeg = EXIT_LEG_BILL as uint8;
+            spendExitPrepay(mutate meta, TSTON_EXIT_GAS);
             stk.meta = meta.toCell();
             storage.staking = stk.toCell();
             storage.save();
@@ -1394,7 +1519,7 @@ fun handleTstonNotification(amount: coins, queryId: int, from: address?) {
             // fails (`pool.func:193`, `:230-231`). There is no fourth leg, so the
             // tranche goes back where it came from and `unstake` is callable
             // again.
-            abortExit(storage, stk, meta);
+            abortExit(storage, stk, meta, 0);
             return;
         }
     }
@@ -1563,6 +1688,9 @@ fun onInternalMessage(in: InMessage) {
             // silently indistinguishable from "no burns yet".
             var storage = lazy Storage.load();
             var burn = storage.burn.load();
+            // The burn's change: the flush caller's on swap proceeds (see
+            // `BurnStats.flushCaller`), this contract's on anything else.
+            var respondTo = contract.getAddress();
             // GAUNTLET B2.1: this is also the FILL signal `handleFlush`'s own comment says
             // does not exist — a notification from the wallet arrives only because the swap
             // that emptied `inFlightFlush` really landed. Gated on the SAME authentication
@@ -1588,6 +1716,10 @@ fun onInternalMessage(in: InMessage) {
                 // The vault of the venue the open flush was SENT to (audit R2-M1).
                 val trip = flushReplyVenue(storage.venue.load(), storage.inFlightFlush);
                 if (jettonFrom != null && jettonFrom == trip.primesJettonVault) {
+                    if (burn.flushCaller != null) {
+                        respondTo = burn.flushCaller!;
+                        burn.changeTo = burn.flushCaller; // B40: pinned before the lock lifts
+                    }
                     // THE TALLY COUNTS SWAP PROCEEDS ONLY. A holder's own transfer to
                     // our wallet also notifies honestly, but it chooses the GRAM the
                     // burn rides on: at ~0.006 it paid this handler and not the burn,
@@ -1611,7 +1743,7 @@ fun onInternalMessage(in: InMessage) {
                 body: (JettonBurn {
                     queryId: msg.queryId,
                     amount: msg.amount,
-                    responseAddr: contract.getAddress(),
+                    responseAddr: respondTo,
                     // TEP-74's `custom_payload:(Maybe ^Cell)`, absent on THIS
                     // leg. The bit is written either way; §4.3.2's tsTON burn is
                     // the leg that fills it.
@@ -1792,11 +1924,34 @@ fun onInternalMessage(in: InMessage) {
         }
 
         PayoutOwnershipAssigned => {
-            // LEG 3's BILL MINTED. NO ACCOUNTING ACTION WHATSOEVER — nothing is
-            // credited, nothing unlocked, nothing counted. The outstanding exit
-            // is tracked by the `exiting` our own `unstake` credited, not by the
-            // arrival of an NFT anybody can send us, so a forged one changes no
-            // number. Accepting and ignoring IS the handler.
+            // LEG 3's BILL MINTED. NO ACCOUNTING ACTION ON ANY TERM — nothing is
+            // credited, nothing unlocked. The outstanding exit is tracked by the
+            // `exiting` our own `unstake` credited, not by the arrival of an NFT
+            // anybody can send us, so a forged one changes no number of `T`.
+            //
+            // BUT IT CARRIES THE BURN'S CHANGE (mainnet, 2026-11-23: the bill item
+            // sends this to the owner with 0.955 of a 1.05 burn). That is the
+            // caller's leg-3 gas, so it is counted into the exit's refund row once,
+            // capped at the 0.8 attached and floored like a stake refund (B38): a
+            // forger who lands first pays the caller at least STAKE_REFUND_MIN to
+            // displace it, out of the forger's own value. The floor is checked
+            // before any storage loads, so a dust forgery costs only itself.
+            if (in.valueCoins >= STAKE_REFUND_MIN) {
+                var storage = lazy Storage.load();
+                var stk = storage.staking.load();
+                var meta = stk.meta.load();
+                if (meta.exitLeg == EXIT_LEG_BILL) {
+                    var row = meta.stakeRefund.load();
+                    if (row.to != null && !row.billIn) {
+                        row.held += (in.valueCoins > TSTON_EXIT_GAS ? TSTON_EXIT_GAS : in.valueCoins) as coins;
+                        row.billIn = true;
+                        meta.stakeRefund = row.toCell();
+                        stk.meta = meta.toCell();
+                        storage.staking = stk.toCell();
+                        storage.save();
+                    }
+                }
+            }
         }
 
         PayoutDistributedAsset => {
@@ -1811,10 +1966,33 @@ fun onInternalMessage(in: InMessage) {
 
         Excesses => {
             // From either jetton wallet. The stake's own reply goes back to the
-            // caller who fronted it; every other one is accepted and ignored: the
-            // value is already on the balance by the time compute runs, where it
-            // joins the gas buffer, which is what paid for the message that earned it.
-            handleStakeRefund(msg.queryId, in.senderAddress);
+            // caller who fronted it, and our PRIMES wallet's goes to the last flush
+            // caller: on a fill it is DeDust's unspent swap gas, which that caller
+            // paid (D-146). Anything else is accepted and ignored: the value is
+            // already on the balance by the time compute runs, where it joins the
+            // gas buffer, which is what paid for the message that earned it.
+            var storage = lazy Storage.load();
+            var burn = storage.burn.load();
+            if (burn.walletSet == 1 && in.senderAddress == burn.jettonWalletAddr
+                    && (burn.changeTo != null || burn.flushCaller != null)) {
+                // B40: the caller the fill pinned, not whoever flushed since. Without a
+                // pin (an excess no fill preceded) it is the last caller, as before.
+                val caller: address = burn.changeTo != null ? burn.changeTo! : burn.flushCaller!;
+                if (burn.changeTo != null) {
+                    burn.changeTo = null;
+                    storage.burn = burn.toCell();
+                    storage.save();
+                }
+                // Mode 64: the reply's own value only — never this balance, which is `pending`.
+                createMessage({
+                    bounce: BounceMode.NoBounce,
+                    value: 0,
+                    dest: caller,
+                    body: (Excesses { queryId: msg.queryId }).toCell(),
+                }).send(SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE | SEND_MODE_IGNORE_ERRORS);
+            } else {
+                handleStakeRefund(msg.queryId, in.senderAddress, in.valueCoins);
+            }
         }
 
         else => {
@@ -1883,7 +2061,7 @@ fun handleStake(queryId: int, valueCoins: int, caller: address) {
     stk.stakedCost += amount;
     stk.inFlightStake = amount;
     meta.stakeStartedAt = blockchain.now() as uint32;
-    meta.stakeRefund = (StakeRefund { to: caller, queryId: queryId }).toCell();
+    meta.stakeRefund = (StakeRefund { to: caller, queryId: queryId, held: 0, changeIn: false, billIn: false }).toCell();
     stk.meta = meta.toCell();
     storage.staking = stk.toCell();
     storage.save();
@@ -1904,14 +2082,34 @@ fun handleStake(queryId: int, valueCoins: int, caller: address) {
 // INBOUND value only (CARRY_ALL_REMAINING_MESSAGE_VALUE, which also pays this
 // compute out of it), so the balance above `pending` ends where it began — D-146
 // holds and this is no withdraw path. Authenticated on the sender AND the query
-// id; anything else falls through to the plain ignore. The 0.1 notification
+// id, and floored on the value (STAKE_REFUND_MIN, B38); anything else falls
+// through to the plain ignore and leaves the row standing. The 0.1 notification
 // before it stays here: it pays the fill's own compute.
-fun handleStakeRefund(queryId: int, sender: address) {
+fun handleStakeRefund(queryId: int, sender: address, valueCoins: int) {
     var storage = lazy Storage.load();
     var stk = storage.staking.load();
     var meta = stk.meta.load();
-    val refund = meta.stakeRefund.load();
-    if (refund.to == null || refund.queryId != queryId || sender != meta.tstonWalletAddr) {
+    var refund = meta.stakeRefund.load();
+    if (refund.to == null || refund.queryId != queryId || sender != meta.tstonWalletAddr
+            || valueCoins < STAKE_REFUND_MIN) {
+        return;
+    }
+    if (meta.exitLeg != EXIT_IDLE) {
+        // AN OPEN EXIT'S ROW IS NEVER PAID FROM HERE; it is paid when the exit ends.
+        // What this can do is count the refused leg 1's change: the pool re-mints
+        // with the burn's remaining value, and our wallet sends the notification
+        // (which moved the machine off leg 1) and then this excess. Once per exit,
+        // capped at the 0.8 the caller attached, and floored like the stake's (B38):
+        // a stranger who provokes an earlier one pays the caller at least
+        // STAKE_REFUND_MIN to displace a ~0.75 change. On leg 1 itself nothing has
+        // been refused, so nothing is counted.
+        if (meta.exitLeg == EXIT_LEG_BURN_FOK || refund.changeIn) { return; }
+        refund.held += (valueCoins > TSTON_EXIT_GAS ? TSTON_EXIT_GAS : valueCoins) as coins;
+        refund.changeIn = true;
+        meta.stakeRefund = refund.toCell();
+        stk.meta = meta.toCell();
+        storage.staking = stk.toCell();
+        storage.save();
         return;
     }
     // The caller who fronted the reserve: `player` in withdraw-surface's terms.
@@ -1989,11 +2187,12 @@ fun handleUnstake(queryId: int, valueCoins: int, caller: address) {
     // D-146: THE CALLER PREPAYS THE WHOLE EXIT, not only leg 1. Legs 2 and 3
     // are sent later, by the replies that refuse the leg before them, and no
     // caller is present to pay then — so their gas is taken now and HELD (it is
-    // in `keep` below), and spent only if the machine gets that far. What the
-    // chain does not spend stays in the gas buffer: the caller overpays by up to
-    // `EXIT_LATER_LEGS_GAS` when leg 1 fills, and that is the honest price of a
-    // pessimistic prepay — the other direction would let a refused leg 1 spend
-    // the buffer, which is exactly what the owner's rule forbids.
+    // in `keep` below), and spent only if the machine gets that far. Prepaying
+    // pessimistically is what keeps a refused leg 1 off the buffer, which the
+    // owner's rule forbids. It is no longer an overpay (2026-11-23): what no leg
+    // sends, and the answering leg's change, go back to this caller when the exit
+    // ends (`refundExitPrepay`), so a leg-1 fill costs it compute and the pool's
+    // ~0.003 GRAM, not 1.95.
     assert (valueCoins >= TSTON_EXIT_GAS + EXIT_LATER_LEGS_GAS + CALLER_COMPUTE_GAS) throw 225; // ratchet_flush_gas
     val keep = contract.getOriginalBalance() - valueCoins + EXIT_LATER_LEGS_GAS;
 
@@ -2006,7 +2205,9 @@ fun handleUnstake(queryId: int, valueCoins: int, caller: address) {
     // D-155 — the ONLY write of the timeout's clock. Every later leg inherits
     // it, so the 72 hours are counted from the exit, not from the last hop.
     meta.exitStartedAt = blockchain.now() as uint32;
-    meta.stakeRefund = noStakeRefund();
+    // The caller's row: whoever fronts the prepay gets back what the exit never
+    // spends, on whichever arm ends it (`refundExitPrepay`).
+    meta.stakeRefund = (StakeRefund { to: caller, queryId: queryId, held: EXIT_LATER_LEGS_GAS, changeIn: false, billIn: false }).toCell();
     stk.meta = meta.toCell();
     storage.staking = stk.toCell();
     storage.save();
@@ -2069,7 +2270,7 @@ fun handleHarvest(queryId: int, valueCoins: int, caller: address) {
 
     stk.tstonHeld -= accrued;
     meta.lastHarvestTime = blockchain.now() as uint32;
-    meta.stakeRefund = noStakeRefund();
+    // The stake refund row is NOT cleared here (B39): see StakeRefund.
     stk.meta = meta.toCell();
     storage.staking = stk.toCell();
     storage.save();
@@ -2176,6 +2377,7 @@ fun handleRecoverExit() {
         stk.inFlightExit = 0;
         meta.exitLeg = EXIT_IDLE as uint8;
         meta.exitStartedAt = 0;
+        refundExitPrepay(mutate meta, 0, storage.pending);  // the exit is over; its unsent gas goes home
         stk.meta = meta.toCell();
         storage.staking = stk.toCell();
         storage.save();
@@ -2184,7 +2386,7 @@ fun handleRecoverExit() {
     // Legs 1 and 2: the tranche goes back into `tstonHeld`. Remember it, so the
     // leg's own late reply is not counted a second time (audit H2 nit 3).
     meta.recoveredExit = stk.inFlightExit;
-    abortExit(storage, stk, meta);
+    abortExit(storage, stk, meta, 0);
 }
 
 // A FLUSH THAT NEVER SETTLES EXPIRES. The round trip clears only on a fill
@@ -2351,6 +2553,9 @@ fun handleFlush(msg: Flush, valueCoins: int, caller: address) {
     storage.lastAttemptAmount = amount;
     storage.lastMinOut = minOut;
     storage.lastOutcome = FLUSH_FILLED as uint8;
+    var burnRow = storage.burn.load();
+    burnRow.flushCaller = caller;
+    storage.burn = burnRow.toCell();
     storage.save();
 
     // GAUNTLET V2 (2026-09-09): the payload this replaced — op, query_id,
@@ -2503,7 +2708,7 @@ fun onBouncedMessage(in: InMessageBounced) {
         // it can never arrive here.
         var stk = storage.staking.load();
         if (stk.inFlightExit > 0) {
-            abortExit(storage, stk, stk.meta.load());
+            abortExit(storage, stk, stk.meta.load(), in.valueCoins);
         }
         return;
     }
@@ -2515,7 +2720,7 @@ fun onBouncedMessage(in: InMessageBounced) {
         var stk = storage.staking.load();
         var meta = stk.meta.load();
         if (meta.exitLeg == EXIT_LEG_DEDUST && stk.inFlightExit > 0) {
-            abortExit(storage, stk, meta);
+            abortExit(storage, stk, meta, in.valueCoins);
             return;
         }
         // A bounced harvest. The tsTON never left, so give `tstonHeld` back the

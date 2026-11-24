@@ -555,7 +555,9 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             });
             expect(r.transactions).toHaveTransaction({ to: ledger.address, success: true });
             if (!sell) return;
-            await ledger.sendSyncHead(buyer.getSender(), { value: toNano('0.1') });
+            // The keeper's own figure (HEAD_SYNC_GAS 0.01 + 0.005): an under-funded head_update
+            // would leave headHint behind and every open_head_lot below would refuse 1024.
+            await ledger.sendSyncHead(buyer.getSender(), { value: toNano('0.015') });
             const newHead = await ledger.getHead();
             for (let p = 2n; p < newHead; p += 1n) {
                 if (!isPrime(p) || bought.has(p)) continue;
@@ -3122,6 +3124,12 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
                     const after = (await blockchain.getContract(m.address)).balance;
                     // Storage rent only; the fixed hop drained ~0.012 here.
                     expect(before - after).toBeLessThan(toNano('0.0001'));
+                    // 2026-11-23: and the caller gets the unspent floor back.
+                    expect(r.transactions).toHaveTransaction({
+                        from: m.address,
+                        to: buyer.address,
+                        value: (v?: bigint) => (v ?? 0n) > (p === 3n ? toNano('0.06') : 0n),
+                    });
                     if (m === far) {
                         // ...and the ledger's check is still funded.
                         expect(r.transactions).toHaveTransaction({

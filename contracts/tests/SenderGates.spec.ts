@@ -139,7 +139,6 @@ const PERMISSIONLESS: Record<string, string> = {
     // costs the forger exactly what it gives the ratchet.
     'primes_ratchet.tolk::PayoutOwnershipAssigned': '§4.3.2 leg 3 — takes NO accounting action; the bill collection`s address is salted with random() and cannot be whitelisted',
     'primes_ratchet.tolk::PayoutDistributedAsset': '§4.3.2 leg 3 — same unwhitelistable sender; only while leg 3 is open, credits `pending` and debits `exiting` and `exitCostBasis` by the same figure (2026-09-26), so a forgery is a donation',
-    'primes_ratchet.tolk::Excesses': 'TEP-74 excess return from a wallet this contract itself named in `response_destination`; moves nothing, writes nothing',
     'primes_ledger.tolk::SweepOps': '§4.1 — permissionless; pays a fixed formula to a fixed address (C9)',
     'primes_ledger.tolk::SyncHead': '§4.4 — pushes the market\'s lagging head hint',
     'primes_ledger.tolk::AdvanceHead': '§4.4, D-189 — finishes a gas-bounded head walk; moves no GRAM, returns the caller its own unburnt value',

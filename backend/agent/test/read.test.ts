@@ -107,6 +107,20 @@ const CASES: Case[] = [
     want: 50_000_000_000n,
   },
   {
+    name: "opsSweep() — what sweep_ops would pay the pool now",
+    body: enveloped({ sweepableNanoton: "7", opsReserveNanoton: "3" }),
+    url: `${PROXY}/ledger/ops-sweep`,
+    call: (r) => r.opsSweep(),
+    want: { sweepableNanoton: 7n, opsReserveNanoton: 3n },
+  },
+  {
+    name: "harvestGates() — the three gates staking() does not carry",
+    body: enveloped({ harvestIntervalSec: 2592000, harvestDustTston: "15950681", exitLeg: 0 }),
+    url: `${PROXY}/ratchet/harvest-gates`,
+    call: (r) => r.harvestGates(),
+    want: { harvestIntervalSec: 2592000, harvestDustTston: 15_950_681n, exitLeg: 0 },
+  },
+  {
     name: "swapped()",
     body: enveloped({ swappedNanoton: "12" }),
     url: `${PROXY}/ratchet/swapped`,
@@ -243,6 +257,13 @@ const CASES: Case[] = [
     url: `${PROXY}/ledger/seed-t`,
     call: (r) => r.seedT(),
     want: 200_000_000_000n,
+  },
+  {
+    name: "inviteTerms() — D-215's live count and value, then the three fixed bounds",
+    body: enveloped({ count: 2, valueNanoton: "150000000", sendFeeNanoton: "1000000", lineCapNanoton: "310000000", countCeiling: 100 }),
+    url: `${PROXY}/ledger/invite-terms`,
+    call: (r) => r.inviteTerms(),
+    want: { count: 2, valueNanoton: 150_000_000n, sendFeeNanoton: 1_000_000n, lineCapNanoton: 310_000_000n, countCeiling: 100 },
   },
   {
     name: "eraLeader()",

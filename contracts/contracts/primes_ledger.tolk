@@ -911,8 +911,8 @@ struct Config {
     inviteCount: uint7
     inviteValue: coins
     // D-211: the words of §4.1's invite comment — bytes only, no op, no refs, at
-    // most INVITE_TEXT_MAX_BYTES. `inviteComment(n)` appends the link itself, so
-    // this cell can never drop the referral key. Same writers as the terms above.
+    // most INVITE_TEXT_MAX_BYTES. `inviteComment` sends it after op 0 and adds
+    // nothing (D-215: no link). Same writers as the terms above.
     inviteText: cell
 }
 
@@ -2750,7 +2750,7 @@ struct (0xb0000041) SetPeers {
 //   is closed. This is NOT a mint: nothing is emitted, nobody is credited, and
 //   the only observable effect is that `p_f = T/S` rises.
 // D-211 + D-215: §4.1's invite terms, from `FeeDests.operatorAddr` only, all three
-// at once. `text` is the bytes `inviteComment(n)` writes before its own link: no
+// at once. `text` is the whole invite comment after op 0 (`inviteComment`): no
 // refs, whole bytes, at most INVITE_TEXT_MAX_BYTES, else invite_text_bad (237).
 // `count`/`value` must satisfy 1 <= value, count <= INVITE_COUNT_CEILING and
 // count * (value + INVITE_SEND_FEE) <= INVITE_LINE_CAP, else invite_terms_bad
@@ -3278,32 +3278,20 @@ type AllowedMessage =
 
 // `isPrimorial` lives in the D-99 score block above (bit 14) — one list, one copy.
 
-// §4.1's invite line (D-202, D-211): THE ONE TEXT an invite transfer carries. A
-// plain text comment (op 0, then the bytes): the operator-set words
-// (`Config.inviteText`), then a link this function writes itself -- `n`, the
-// number being minted, in decimal as a referral key, so §4.1's 10% referral line
-// pays the minter when an invitee mints. Nothing in it is minter-written, which
+// §4.1's invite line (D-202, D-211, D-215): THE ONE TEXT an invite transfer
+// carries. A plain text comment (op 0, then the operator-set words,
+// `Config.inviteText`) and nothing else. Nothing in it is minter-written, which
 // is why the minter may name any recipient: the worst a minter can send a
-// stranger from this contract is the operator's words, the link and 0.1 GRAM.
+// stranger from this contract is the operator's words and the live value.
+// There is NO link: D-215 point 4, closed by the owner 2026-11-23 -- a mainnet
+// probe of the genesis words with ` primes.live/?ref=<n>_tg` after them got no
+// Telegram Wallet push, the words alone did. So the comment does not depend on n.
 //
-// One cell: 4 + words (<= INVITE_TEXT_MAX_BYTES = 86) + 18 + digits + 3 bytes <= 127,
-// so it holds any n below 10^16.
-// ponytail: a head at or past 10^16 (that many GRAM minted) would overflow the cell
-// and refuse invite mints; snake the digits into a ref if the line ever gets there.
+// One cell: 4 + words (<= INVITE_TEXT_MAX_BYTES = 86) bytes <= 127.
 const INVITE_TEXT_MAX_BYTES = 86;
 
-fun inviteComment(n: int, words: cell): cell {
-    var div = 1;
-    while (div * 10 <= n) { div *= 10; }
-    var b = beginCell()
-        .storeUint(0, 32)
-        .storeSlice(words.beginParse())
-        .storeSlice(" primes.live/?ref=".literalSlice());
-    while (div > 0) {
-        b = b.storeUint(48 + (n / div) % 10, 8);
-        div /= 10;
-    }
-    return b.storeSlice("_tg".literalSlice()).endCell();
+fun inviteComment(words: cell): cell {
+    return beginCell().storeUint(0, 32).storeSlice(words.beginParse()).endCell();
 }
 
 fun refund(dest: address, amount: coins, queryId: int) {
@@ -3963,7 +3951,7 @@ fun handleSetPeers(senderAddress: address, msg: SetPeers) {
 
 // D-211 + D-215: the operator rewrites §4.1's invite terms. Moves no value; the
 // only split term it touches is the invite line, and only inside INVITE_LINE_CAP.
-// The link and `n` stay this contract's (`inviteComment`).
+// The comment is these words alone (`inviteComment`, D-215: no link).
 @inline
 fun handleSetInviteTerms(senderAddress: address, msg: SetInviteTerms) {
     var storage = lazy Storage.load();
@@ -4434,8 +4422,8 @@ fun handleCardMint(senderAddress: address, valueCoins: coins, card: CardMint) {
     // invite is something a MINTER buys with their own 1 GRAM, so no settlement
     // or clearing path carries one. The minter names the recipients; there is
     // no signature to check, because nothing in the transfer is minter-written
-    // but the destination -- the comment is `inviteComment(n)`: the operator's
-    // words (D-211) and this contract's link.
+    // but the destination -- the comment is `inviteComment`: the operator's
+    // words (D-211) and nothing else (D-215).
     // A mint with inviteCount == 0 pays nothing and never loads the terms.
     var inviteSpend: coins = 0;
     val listRef = msg.invites;
@@ -4445,7 +4433,7 @@ fun handleCardMint(senderAddress: address, valueCoins: coins, card: CardMint) {
         if (listRef != null) {
             val addresses = listRef!.load().addresses;
             // Built once: every slot of this mint carries the same text.
-            val comment = inviteComment(msg.n, terms.inviteText);
+            val comment = inviteComment(terms.inviteText);
 
             // One plain transfer per FUNDED slot; a slot the dictionary has no
             // address for is skipped, and its share is simply never deducted
@@ -6145,11 +6133,11 @@ get fun getInviteTerms(): (int, coins, coins, coins, int) {
     return (config.inviteCount, config.inviteValue, INVITE_SEND_FEE, INVITE_LINE_CAP, INVITE_COUNT_CEILING);
 }
 
-// The exact body an invite transfer for a mint of `n` carries (D-202), so a
-// client can show the text before it is sent and an auditor can check it.
-get fun getInviteComment(n: int): cell {
+// The exact body every invite transfer carries (D-202), so a client can show
+// the text before it is sent and an auditor can check it.
+get fun getInviteComment(): cell {
     val storage = lazy Storage.load();
-    return inviteComment(n, loadInviteConfig(storage).inviteText);
+    return inviteComment(loadInviteConfig(storage).inviteText);
 }
 
 // D-211: the live invite words alone, as `set_invite_terms` last wrote them.

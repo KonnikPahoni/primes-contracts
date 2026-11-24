@@ -36,6 +36,10 @@ const WIRED_ACTIONS: Record<string, keyof PrimesAgent> = {
   buildOpenHeadLotMessage: "openHeadLot",
   buildCloseLotMessage: "closeLot",
   buildFlushMessage: "flush",
+  // The other two permissionless ratchet/ledger pokes (D-151, D-117): caller-paid, each
+  // read-gated on the same figures its contract asserts.
+  buildHarvestMessage: "harvest",
+  buildSweepOpsMessage: "sweepOps",
   buildClaimTributeMessage: "claimTribute",
   // X3 / D-62's permissionless `top_up`: the one write anybody may make on ANY number.
   buildTopUpMessage: "topUp",
@@ -153,6 +157,7 @@ const WIRED_READS: Record<string, keyof PrimesRead> = {
   "/ledger/kmax": "kMax",
   "/ledger/last-mint-time": "lastMintTime",
   "/ledger/seed-t": "seedT",
+  "/ledger/invite-terms": "inviteTerms",
   "/ledger/era-leader": "eraLeader",
   "/ratchet/pending": "pending",
   "/ratchet/swapped": "swapped",
@@ -160,6 +165,8 @@ const WIRED_READS: Record<string, keyof PrimesRead> = {
   "/ratchet/floor-cache": "floorCache",
   "/ratchet/staking": "staking",
   "/ratchet/identity": "ratchetIdentity",
+  "/ratchet/harvest-gates": "harvestGates",
+  "/ledger/ops-sweep": "opsSweep",
   // --- read-proxy: one wallet ----------------------------------------------
   "/wallet/{address}/balance": "balance",
   "/wallet/{address}/seqno": "seqno",

@@ -22,9 +22,11 @@ import { PrimesRatchet } from '../../wrappers/PrimesRatchet';
 import { PrimesRegistrar } from '../../wrappers/PrimesRegistrar';
 import { PrimesMarket } from '../../wrappers/PrimesMarket';
 import { PrimesBountyVault } from '../../wrappers/PrimesBountyVault';
-import { loadEnvFile, envValue } from '../envFile';
+import { loadEnvFile, envValue, readNetworkConfig } from '../envFile';
+import { requireValue } from '../../../shared/networkConfig';
 import { makeClient, openDeployWallet, openWallet, retry, type Wallet } from './sender';
 import { readCast } from './cast';
+import { LEDGER } from '../../../shared/opcodes';
 
 export function env(name: string): string {
     const v = envValue(loadEnvFile(), name);
@@ -39,6 +41,23 @@ export function envOpt(name: string): string | undefined {
 
 export function addr(name: string): Address {
     return Address.parse(env(name));
+}
+
+/** `shared/networks/testnet.yaml` — the harness is testnet-only. */
+export function testnetConfig() {
+    return readNetworkConfig('testnet');
+}
+
+/** The operator wallet (forfeit remainder + royalty), from `testnet.yaml`. */
+export function operatorAddr(): Address {
+    const cfg = testnetConfig();
+    return Address.parse(requireValue(cfg, 'operator_addr', cfg.operatorAddr));
+}
+
+/** DeDust's native GRAM vault, from `testnet.yaml`. */
+export function dedustNativeVault(): Address {
+    const cfg = testnetConfig();
+    return Address.parse(requireValue(cfg, 'dedust_native_vault', cfg.dedustNativeVault));
 }
 
 /** `K` is the deploy subwallet (the funder); everything else is a cast handle. */
@@ -182,6 +201,34 @@ export async function snapshot(c: Contracts = contracts()): Promise<Snapshot> {
         liability,
         vaultPayouts,
     };
+}
+
+/**
+ * Σ `amount` of every successful `pool_inject#b0000050` the ratchet took between two
+ * snapshots. Every credit to T outside the staking arms (a mint, a lot clearing,
+ * `donate_floor`, `sweep_ops`, the royalty's ratchet half) arrives this way and carries its
+ * nominal amount in the body, so this is exactly what OTHER senders added mid-step.
+ * ponytail: windowed on each snapshot's `at` (taken after its reads) and on the RATCHET's tx
+ * time; a credit landing mid-read, or between the ledger's T += and its pool_inject hop, is
+ * miscounted and reads red. Re-run the step if the detail names one.
+ */
+export async function foreignCredits(c: Contracts, before: Snapshot, after: Snapshot): Promise<bigint> {
+    const lo = Date.parse(before.at) / 1000;
+    const hi = Date.parse(after.at) / 1000;
+    const txs = await retry(() => c.client.getTransactions(c.ratchet.address, { limit: 40 }), 'getTransactions(ratchet)');
+    let sum = 0n;
+    for (const tx of txs) {
+        if (tx.now <= lo || tx.now > hi) continue;
+        const m = tx.inMessage;
+        if (!m || m.info.type !== 'internal') continue;
+        const d = tx.description;
+        if (d.type !== 'generic' || d.aborted || d.computePhase.type !== 'vm' || !d.computePhase.success) continue;
+        const s = m.body.beginParse();
+        if (s.remainingBits < 32 + 64 || s.loadUint(32) !== LEDGER.pool_inject) continue;
+        s.loadUint(64); // query_id
+        sum += s.loadCoins(); // amount — shared/schemas/ledger.tlb `pool_inject`
+    }
+    return sum;
 }
 
 /** `p_f = T / S`, as a float, for printing only — never for an assert. */

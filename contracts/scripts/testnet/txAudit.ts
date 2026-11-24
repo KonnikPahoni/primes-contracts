@@ -55,6 +55,7 @@ import { Address, Cell, Transaction, fromNano } from '@ton/core';
 import { TonClient } from '@ton/ton';
 import { loadEnvFile, envValue } from '../envFile';
 import { makeClient, openDeployWallet, retry } from './sender';
+import { dedustNativeVault, operatorAddr } from './chain';
 import { readCast } from './cast';
 import * as OPCODES from '../../../shared/opcodes';
 
@@ -97,9 +98,7 @@ const CORE: { env: string; label: string; ours: boolean }[] = [
     // everything else it does, so only the messages THIS set sent it are ours to
     // judge. It carried 496 transactions and 158 unrelated failures on the first
     // sweep, which is exactly the noise the filter exists for.
-    { env: 'PRIMES_OPERATOR_ADDR', label: 'operator payout', ours: false },
     { env: 'PRIMES_DEDUST_POOL_ADDR', label: 'dedust pool', ours: false },
-    { env: 'PRIMES_DEDUST_VAULT_ADDR', label: 'dedust native vault', ours: false },
     { env: 'PRIMES_DEDUST_JETTON_VAULT_ADDR', label: 'dedust jetton vault', ours: false },
 ];
 
@@ -298,7 +297,7 @@ function fanOf(tx: Transaction): string {
 /**
  * A shared contract's transaction list is EVERYBODY's. DeDust's testnet vaults
  * carry hundreds of strangers' swaps, and the fee-destination wallet in
- * `PRIMES_OPERATOR_ADDR` is whatever wallet the operator happens to use. Judging
+ * The operator (`operator_addr`) is whatever wallet the operator happens to use. Judging
  * those wholesale produces a report that is mostly other people's failures — 158
  * of them on the first run of this script, none of them ours. So an account
  * marked NOT OURS is filtered to the messages our own accounts sent it.
@@ -428,6 +427,10 @@ async function main() {
         if (a) accounts.push({ label: c.label, address: a, ours: c.ours });
         else console.log(`(skipping ${c.label}: ${c.env} not in /.env)`);
     }
+    // Per-network constants, from shared/networks/testnet.yaml rather than /.env. Both NOT OURS
+    // (see CORE's notes): the operator is a wallet, the vault is DeDust's.
+    accounts.push({ label: 'operator payout', address: operatorAddr(), ours: false });
+    accounts.push({ label: 'dedust native vault', address: dedustNativeVault(), ours: false });
 
     const funder = await openDeployWallet(client);
     accounts.push({ label: 'K (deploy wallet)', address: funder.wallet.address, ours: true });

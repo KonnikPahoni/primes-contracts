@@ -133,9 +133,18 @@ class StakingParams:
     #: (D-146), never out of `pending` -- a fee out of `pending` would drop `T`
     #: and break the ratchet theorem (D-151 point 2).
     deposit_fee_ton: float = 0.113
-    #: `WITHDRAWAL_FEE = ONE_TON / 2` (pool.func:80) plus the TEP-74 burn leg's
-    #: gas. Same gas-buffer treatment as the deposit fee.
-    exit_fee_ton: float = 0.8
+    #: What one exit actually COSTS its caller, not what it attaches (1.96).
+    #: `TSTON_EXIT_GAS` 0.8 is a gas reserve too: measured on mainnet
+    #: (2026-11-23) a Tonstakers burn carrying 1.05 gets 1.047 back inside the
+    #: `withdrawal` payout, and the ratchet now refunds that change plus every
+    #: later leg's never-sent gas to the caller. Caller's net in
+    #: RatchetStaking.spec.ts: 0.0118 on leg 1 (mainnet-consistent), 0.2122 on
+    #: leg 2 (MOCK-measured: the refused leg's 0.1 notification pays the
+    #: ratchet's compute, and leg 2's wallet-hop change stays in the buffer).
+    #: Weighted by `leg1_fill_prob` 0.9, plus the real pool's ~0.003 the mock
+    #: does not keep: 0.9*0.015 + 0.1*0.215 = 0.035. It was 0.8. Sizes nothing
+    #: while the base run makes no exits.
+    exit_fee_ton: float = 0.035
     #: OWNER's value, 2026-09-20 (D-151 point 5). Not a sim output.
     exit_slippage_bps: float = 50.0
     leg1_fill_prob: float = 0.9

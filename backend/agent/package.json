@@ -1,6 +1,6 @@
 {
   "name": "@ton-primes/agent",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "description": "TypeScript SDK for TON PRIMES: every action a program-player can take, each gated by a live get-method read, with the key signing locally and never leaving the process.",
   "license": "MIT",

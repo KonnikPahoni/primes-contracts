@@ -21,60 +21,55 @@
 // upward, refused at zero, absent by default.
 import { toNano } from '@ton/core';
 import { resolveSeedTon, requireMainnetDivisors } from '../scripts/deployGenesis';
+import { configNetworkFor, parseNetworkConfig, type Network } from '../../shared/networkConfig';
 import params from '../../shared/params.json';
 
-/** Just enough of NetworkProvider for the resolver; `write` collects the banner. */
-function fakeProvider(network: string) {
+/** A minimal network file; `overrides` is the body of a `test_overrides` block. */
+function cfgWith(network: Network, overrides?: string) {
+    const text = [
+        `network: ${network}`,
+        'presentation:',
+        '  collection_metadata_uri: https://primes.live/collection.json',
+        '  nft_content_prefix: https://primes.live/nft/',
+        '  jetton_metadata_uri: https://primes.live/jetton.json',
+        ...(overrides === undefined ? [] : ['test_overrides:', `  ${overrides}`]),
+    ].join('\n');
+    return parseNetworkConfig(text, network);
+}
+
+/** Collects the banner `resolveSeedTon` writes. */
+function sink() {
     const lines: string[] = [];
-    return {
-        provider: {
-            network: () => network as ReturnType<import('@ton/blueprint').NetworkProvider['network']>,
-            ui: () => ({ write: (m: string) => void lines.push(m) }),
-        } as Parameters<typeof resolveSeedTon>[0],
-        lines,
-    };
+    return { ui: { write: (m: string) => void lines.push(m) }, lines };
 }
 
 const SPEC_SEED = toNano(String(params.genesis.genesis_seed_ton));
 
 describe('nominal seed override', () => {
-    const saved = process.env.PRIMES_TESTNET_SEED_TON;
-    afterEach(() => {
-        if (saved === undefined) delete process.env.PRIMES_TESTNET_SEED_TON;
-        else process.env.PRIMES_TESTNET_SEED_TON = saved;
-    });
-
     it('returns the CONCEPT §6 seed when the override is absent', () => {
-        delete process.env.PRIMES_TESTNET_SEED_TON;
-        for (const network of ['mainnet', 'testnet']) {
-            const { provider, lines } = fakeProvider(network);
-            expect(resolveSeedTon(provider)).toBe(SPEC_SEED);
+        for (const network of ['mainnet', 'testnet'] as const) {
+            const { ui, lines } = sink();
+            expect(resolveSeedTon(cfgWith(network), ui)).toBe(SPEC_SEED);
             // No banner: an un-overridden run must not be noisy, or the loud
             // case stops reading as loud.
             expect(lines).toHaveLength(0);
         }
     });
 
-    it('refuses to override on mainnet', () => {
-        process.env.PRIMES_TESTNET_SEED_TON = '10';
-        const { provider } = fakeProvider('mainnet');
-        expect(() => resolveSeedTon(provider)).toThrow(/only be overridden/i);
+    it('cannot be written into mainnet.yaml at all', () => {
+        expect(() => cfgWith('mainnet', 'seed_ton: 10')).toThrow(/test_overrides is testnet-only/);
     });
 
-    it('refuses to override on any non-testnet network, not just mainnet', () => {
+    it('treats every non-testnet network as mainnet, not just mainnet', () => {
         // `custom` can point at a mainnet endpoint, so allow-listing testnet is
         // the only safe direction; a deny-list of mainnet would let it through.
-        process.env.PRIMES_TESTNET_SEED_TON = '10';
-        for (const network of ['custom', 'tetra']) {
-            const { provider } = fakeProvider(network);
-            expect(() => resolveSeedTon(provider)).toThrow(new RegExp(network));
-        }
+        for (const network of ['custom', 'tetra', 'mainnet']) expect(configNetworkFor(network)).toBe('mainnet');
+        expect(configNetworkFor('testnet')).toBe('testnet');
     });
 
     it('accepts a smaller seed on testnet and shouts about it', () => {
-        process.env.PRIMES_TESTNET_SEED_TON = '10';
-        const { provider, lines } = fakeProvider('testnet');
-        expect(resolveSeedTon(provider)).toBe(toNano('10'));
+        const { ui, lines } = sink();
+        expect(resolveSeedTon(cfgWith('testnet', 'seed_ton: 10'), ui)).toBe(toNano('10'));
 
         const banner = lines.join('\n');
         expect(banner).toMatch(/NOT a v5 genesis/i);
@@ -89,16 +84,13 @@ describe('nominal seed override', () => {
     it('refuses a seed larger than the specified one', () => {
         // The override is an affordability escape hatch downward. Upward it
         // would just be an unreviewed change to §6 economics.
-        process.env.PRIMES_TESTNET_SEED_TON = String(params.genesis.genesis_seed_ton + 1);
-        const { provider } = fakeProvider('testnet');
-        expect(() => resolveSeedTon(provider)).toThrow(/exceeds the specified seed/i);
+        const cfg = cfgWith('testnet', `seed_ton: ${params.genesis.genesis_seed_ton + 1}`);
+        expect(() => resolveSeedTon(cfg, sink().ui)).toThrow(/exceeds the specified seed/i);
     });
 
     it('refuses a zero or negative seed', () => {
         for (const bad of ['0', '-5']) {
-            process.env.PRIMES_TESTNET_SEED_TON = bad;
-            const { provider } = fakeProvider('testnet');
-            expect(() => resolveSeedTon(provider)).toThrow(/must be positive/i);
+            expect(() => cfgWith('testnet', `seed_ton: ${bad}`)).toThrow(/must be a positive number/i);
         }
     });
 
@@ -108,24 +100,21 @@ describe('nominal seed override', () => {
         // the GRAM that actually moves at genesis is the donation either way. If some
         // future edit routed the donation through `resolveSeedTon`, a testnet
         // rehearsal would donate the override and mainnet the real figure.
-        process.env.PRIMES_TESTNET_SEED_TON = '10';
-        const { provider } = fakeProvider('testnet');
-        expect(resolveSeedTon(provider)).toBe(toNano('10'));
+        const cfg = cfgWith('testnet', 'seed_ton: 10');
+        expect(resolveSeedTon(cfg, sink().ui)).toBe(toNano('10'));
         // Unmoved by the override. D-204 took the donation to 200 GRAM, which is the
         // nominal seed's figure again (D-154 had it at 132.50, D-100 point 2 at
         // 4.20) — the same number in two fields, and still two fields: the override
         // moves one and not the other.
         expect(params.genesis.genesis_donation_ton).toBe(200);
-        expect(resolveSeedTon(provider)).not.toBe(toNano(String(params.genesis.genesis_donation_ton)));
+        expect(resolveSeedTon(cfg, sink().ui)).not.toBe(toNano(String(params.genesis.genesis_donation_ton)));
     });
 
     it('reports the opening floor as materially worse, not proportionally so', () => {
-        // The point the banner exists to make. S0 = seed·L/2 + V (D-166) with V fixed at
-        // 40 000 PRIMES, so a 20x smaller seed is NOT a 20x smaller floor —
-        // it is ~4x. An operator who assumes linearity misreads the deployment.
-        process.env.PRIMES_TESTNET_SEED_TON = '10';
-        const { provider, lines } = fakeProvider('testnet');
-        resolveSeedTon(provider);
+        // The point the banner exists to make. S0 = seed·L/2 + V (D-166) with V fixed,
+        // so a 20x smaller seed is NOT a 20x smaller floor.
+        const { ui, lines } = sink();
+        resolveSeedTon(cfgWith('testnet', 'seed_ton: 10'), ui);
 
         const floors = lines.join('\n').match(/1 GRAM = ([\d.]+) PRIMES/g);
         expect(floors).toHaveLength(2); // this run, then spec

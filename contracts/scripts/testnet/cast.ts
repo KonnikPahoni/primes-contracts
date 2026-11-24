@@ -12,7 +12,7 @@
  * mnemonics cost one line and remove the question entirely.
  *
  *   npx tsx contracts/scripts/testnet/cast.ts new     # generate (refuses to overwrite)
- *   npx tsx contracts/scripts/testnet/cast.ts fund    # top every wallet up to its float
+ *   npx tsx contracts/scripts/testnet/cast.ts fund [handle…]   # top every (or only the named) wallet up to its float
  *   npx tsx contracts/scripts/testnet/cast.ts list    # addresses + balances
  *   npx tsx contracts/scripts/testnet/cast.ts sweep   # return everything to the funder
  *   npx tsx contracts/scripts/testnet/cast.ts owner   # the OWNER's own wallet, handle `P`
@@ -346,7 +346,7 @@ async function cmdList() {
  */
 const FUNDER_RESERVE = toNano('35');
 
-async function cmdFund() {
+async function cmdFund(only: string[] = []) {
     const client = makeClient();
     const cast = load();
     const funder = await openDeployWallet(client);
@@ -357,7 +357,8 @@ async function cmdFund() {
             `${fromNano(FUNDER_RESERVE)} GRAM it keeps to mint with`
     );
     const ownerRow = readOwnerEntry();
-    for (const w of ownerRow ? [...cast.wallets, ownerRow] : cast.wallets) {
+    // `fund F L` tops up only those handles: the full float list spends the budget in roster order.
+    for (const w of (ownerRow ? [...cast.wallets, ownerRow] : cast.wallets).filter((x) => !only.length || only.includes(x.name))) {
         const addr = Address.parse(w.address);
         const have = await retry(() => client.getBalance(addr), 'balance:' + w.name);
         const want = toNano(ROLES.find((r) => r.name === w.name)?.ton ?? w.float);   // `P` falls through to its own stored float
@@ -412,7 +413,7 @@ async function cmdSweep() {
 async function main() {
     const cmd = process.argv[2] ?? 'list';
     if (cmd === 'new') return cmdNew();
-    if (cmd === 'fund') return cmdFund();
+    if (cmd === 'fund') return cmdFund(process.argv.slice(3));
     if (cmd === 'list') return cmdList();
     if (cmd === 'sweep') return cmdSweep();   // deliberately NOT `P`: it is the owner's, not the wave's
     if (cmd === 'owner') return cmdOwner();

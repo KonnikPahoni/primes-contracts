@@ -14,7 +14,7 @@ import { Address, beginCell, toNano } from '@ton/core';
 import { PrimesCollection } from '../../wrappers/PrimesCollection';
 import { COLLECTION } from '../../../shared/opcodes';
 import { retry } from './sender';
-import { addr, contracts, walletFor, type Contracts } from './chain';
+import { addr, contracts, operatorAddr, walletFor, type Contracts } from './chain';
 import * as A from './assert';
 import { fromAsserts, record } from './journal';
 
@@ -33,7 +33,7 @@ async function cmdRoyalty(c: Contracts) {
         );
         const dest = r.destination;
         const pct = (Number(r.numerator) / Number(r.denominator)) * 100;
-        const expected = col.splits ? a : addr('PRIMES_OPERATOR_ADDR');
+        const expected = col.splits ? a : operatorAddr();
         console.log(
             `${col.name.padEnd(15)} ${r.numerator}/${r.denominator} (${pct.toFixed(2)}%) → ` +
                 dest.toString({ testOnly: true }) +

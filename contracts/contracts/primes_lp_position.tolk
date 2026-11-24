@@ -229,6 +229,9 @@ struct (0x96000010) LpCredit {
 struct (0x96000012) ConfirmWithdraw {
     queryId: uint64
     positionId: uint32
+    // The treasury's, for its bounce arm (GAUNTLET B43); this side keys the
+    // forever credit off its own `inFlight == 2` and never reads it.
+    sunk: coins
 }
 
 struct (0x96000013) RestorePosition {
@@ -351,6 +354,10 @@ fun liveVoteWeight(storage: Storage, positionId: uint32): int {
     val look = storage.positions.get(positionId);
     if (!look.isFound) { return 0; }
     val pos = look.loadValue();
+    // IN FLIGHT VOTES NOTHING (GAUNTLET B43): the treasury took this row's
+    // weight out of `eligibleWeight` when the move landed there, and a row
+    // whose confirm was refused stays in flight for ever with its LP gone.
+    if (pos.inFlight != 0) { return 0; }
     if (blockchain.now() >= maturesAt(pos, storage.clockDiv())) { return 0; }
     return pos.amount * voteMultiplier(pos.tier);
 }

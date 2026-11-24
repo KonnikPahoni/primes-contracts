@@ -28,6 +28,8 @@ import {
   buildOpenHeadLotMessage,
   buildCloseLotMessage,
   buildFlushMessage,
+  buildHarvestMessage,
+  buildSweepOpsMessage,
   buildClaimTributeMessage,
   buildTopUpMessage,
   buildAnnotateMessage,
@@ -429,6 +431,65 @@ export class PrimesAgent {
 
     const { body, value } = buildFlushMessage({ amountNanoton });
     return (await this.wallet()).send(chain.addresses.ratchet, body, value);
+  }
+
+  /**
+   * `harvest()` on the ratchet (§4.3.2, D-151) — permissionless and CALLER-PAID (D-146):
+   * `buildHarvestMessage`'s 0.16 GRAM plus the fee margin, change back as `excesses`. It
+   * sends the staked reserve's accrued tsTON to the governed treasury and moves no term of
+   * `T`. The contract's three refusals are read first, because a refused harvest still
+   * spends the caller's gas: an open exit (230), the interval since `lastHarvestTime` (228),
+   * and accrued yield under the dust floor (229), computed exactly as `handleHarvest` does —
+   * `tstonHeld − stakedCost · lastRateDen / lastRateNum`, floored.
+   */
+  async harvest() {
+    this.assertSignable();
+    const chain = await this.chain();
+    await this.harvestable();
+    const { body, value } = buildHarvestMessage();
+    return (await this.wallet()).send(chain.addresses.ratchet, body, value);
+  }
+
+  /**
+   * The nano-tsTON a `harvest()` sent now would move, or a thrown `Error` naming the refusal
+   * (230, 228 or 229) the contract would make. `harvest()` and the MCP quote both read this,
+   * so the quote and the send cannot disagree.
+   */
+  async harvestable(): Promise<bigint> {
+    const [s, g] = await Promise.all([this.read.staking(), this.read.harvestGates()]);
+    if (g.exitLeg !== 0) throw new Error(`an exit is open (leg ${g.exitLeg}); harvest() would throw 230`);
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const wait = s.lastHarvestTime + BigInt(g.harvestIntervalSec) - now;
+    if (s.lastHarvestTime > 0n && wait > 0n) {
+      throw new Error(`harvest() is inside its interval for another ${wait}s; it would throw 228`);
+    }
+    const costInTston = s.lastRateNum === 0n ? s.tstonHeldNano : (s.stakedCostNanoton * s.lastRateDen) / s.lastRateNum;
+    const accrued = s.tstonHeldNano - costInTston;
+    if (accrued < g.harvestDustTston) {
+      throw new Error(`accrued yield ${accrued} nano-tsTON is under the ${g.harvestDustTston} dust floor; harvest() would throw 229`);
+    }
+    return accrued;
+  }
+
+  /**
+   * `sweep_ops` on the ledger (D-117) — permissionless: pays the gas & ops line's unspent
+   * balance above `OPS_RESERVE` to the ratchet pool, raising `T`, emission-free. The 0.03 GRAM
+   * it attaches stays on the ledger and is swept next time. With nothing sweepable the call
+   * is a no-op that still costs its gas, so it is refused here first.
+   */
+  async sweepOps() {
+    this.assertSignable();
+    const chain = await this.chain();
+    await this.sweepable();
+    const { body, value } = buildSweepOpsMessage();
+    return (await this.wallet()).send(chain.addresses.ledger, body, value);
+  }
+
+  /** The nanoton a `sweepOps()` sent now would pay the pool, or a thrown `Error` when it would be a no-op. */
+  async sweepable(): Promise<bigint> {
+    const { sweepableNanoton } = await this.read.opsSweep();
+    if (sweepableNanoton === 0n) throw new Error("nothing is sweepable above OPS_RESERVE; sweep_ops would be a no-op");
+    return sweepableNanoton;
   }
 
   /**

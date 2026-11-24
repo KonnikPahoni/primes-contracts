@@ -82,10 +82,10 @@ mint#b0000002
 ;;            INVITE_SEND_FEE per transfer for the fee, and what that overstates is
 ;;            swept to the ratchet pool by sweep_ops
 ;;   bounce = false, so an undeployed Telegram wallet still receives it
-;;   body   = text_comment$00000000 "<words> primes.live/?ref=<n>_tg"
+;;   body   = text_comment$00000000 "<words>"
 ;;            where <words> is the operator-set `Config.inviteText` (D-211, see
-;;            set_invite_terms below) and <n> is the decimal of the number being
-;;            minted. The link is the ledger's own. Nothing in it is minter-written.
+;;            set_invite_terms below), and nothing else: no link (D-215 point 4).
+;;            Nothing in it is minter-written.
 ;;
 ;; A SLOT WITH NO ADDRESS IS NOT AN ERROR. The list may be shorter than
 ;; `invite_count` and may have holes; every slot in `1..invite_count` that has no

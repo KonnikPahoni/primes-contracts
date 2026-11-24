@@ -12,7 +12,7 @@
  * mint's worth of PRIMES crushes the price well below the floor.
  *
  *   npx tsx contracts/scripts/testnet/pool.ts report
- *   npx tsx contracts/scripts/testnet/pool.ts sell <handle|K> <PRIMES>   # price DOWN
+ *   npx tsx contracts/scripts/testnet/pool.ts sell <handle|K> <PRIMES|under-floor>   # price DOWN
  *   npx tsx contracts/scripts/testnet/pool.ts buy  <handle|K> <GRAM>      # price UP
  *
  * `report` is the one to read before and after everything: it prints the pool's
@@ -31,7 +31,8 @@ import { TonClient } from '@ton/ton';
 import { PrimesLedger } from '../../wrappers/PrimesLedger';
 import { PrimesRatchet } from '../../wrappers/PrimesRatchet';
 import params from '../../../shared/params.json';
-import { DEDUST_NATIVE_VAULT_TESTNET, jettonAsset, jettonTransferBody } from '../dedust';
+import { jettonAsset, jettonTransferBody } from '../dedust';
+import { dedustNativeVault } from './chain';
 import { loadEnvFile, envValue } from '../envFile';
 import { makeClient, openDeployWallet, openWallet, retry, Wallet } from './sender';
 import { readCast } from './cast';
@@ -229,12 +230,32 @@ async function primesWalletOf(client: TonClient, owner: Address): Promise<Addres
 }
 
 /** PRIMES -> GRAM. Pushes the price DOWN, which is what makes a flush fillable. */
+/** Where `sell <h> under-floor` lands the spot, as a multiple of `p_f`: under it, so a flush FILLS. */
+const UNDER_FLOOR = 0.9;
+
 async function sell(client: TonClient, handle: string, primesAmount: string) {
     const pool = Address.parse(env('PRIMES_DEDUST_POOL_ADDR'));
     const jettonVault = Address.parse(env('PRIMES_DEDUST_JETTON_VAULT_ADDR'));
     const w = await walletFor(client, handle);
     const myJetton = await primesWalletOf(client, w.wallet.address);
-    const amount = toNano(primesAmount); // PRIMES has 9 decimals, same as GRAM
+    // `under-floor`: size the sale off the pool's own reserves, so the lever lands the spot at
+    // UNDER_FLOOR × p_f however much phases 1–5 grew the pool (a fixed 240000 left the 20261124
+    // pool at 1.054× the floor). Constant product, fees ignored (they only push the price lower):
+    // spot' = ton·primes / (primes + Δ)² = target  ⇒  Δ = √(ton·primes / target) − primes.
+    let amount: bigint;
+    if (primesAmount === 'under-floor') {
+        const f = await poolFloor(client);
+        const target = (UNDER_FLOOR * Number(f.T)) / Number(f.S); // GRAM per PRIMES, both 9-decimal
+        const delta = Math.sqrt((Number(f.ton) * Number(f.primes)) / target) - Number(f.primes);
+        if (delta <= 0) {
+            console.log(`spot ${(Number(f.ton) / Number(f.primes) / (Number(f.T) / Number(f.S))).toFixed(4)}× p_f is already under ${UNDER_FLOOR}× — nothing to sell. Nothing sent.`);
+            return;
+        }
+        amount = BigInt(Math.ceil(delta));
+        primesAmount = fromNano(amount);
+    } else {
+        amount = toNano(primesAmount); // PRIMES has 9 decimals, same as GRAM
+    }
 
     const balance = await retry(
         () => client.runMethod(myJetton, 'get_wallet_data', []).then((r) => r.stack.readBigNumber()),
@@ -296,9 +317,7 @@ async function sell(client: TonClient, handle: string, primesAmount: string) {
 /** GRAM -> PRIMES. Pushes the price UP, which is what makes a flush refuse. */
 async function buy(client: TonClient, handle: string, tonAmount: string) {
     const pool = Address.parse(env('PRIMES_DEDUST_POOL_ADDR'));
-    const nativeVault = Address.parse(
-        envValue(loadEnvFile(), 'PRIMES_DEDUST_VAULT_ADDR') ?? DEDUST_NATIVE_VAULT_TESTNET.toString()
-    );
+    const nativeVault = dedustNativeVault();
     const w = await walletFor(client, handle);
     const amount = toNano(tonAmount);
 
@@ -341,7 +360,7 @@ async function main() {
     const [cmd, a, b] = process.argv.slice(2);
     if (!cmd || cmd === 'report') return report(client);
     if (cmd === 'sell') {
-        if (!a || !b) throw new Error('usage: pool.ts sell <handle|K> <PRIMES>');
+        if (!a || !b) throw new Error('usage: pool.ts sell <handle|K> <PRIMES|under-floor>');
         await sell(client, a, b);
         return report(client);
     }

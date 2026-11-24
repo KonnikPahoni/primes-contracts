@@ -19,7 +19,9 @@
 ;;   4. burn#595f07bc again, destination = this contract's OWN tsTON wallet,
 ;;      carrying §4.3.2's withdrawal payload — the redeemed GRAM returns here and
 ;;      can return nowhere else, because the pool pays the burner;
-;;   5. nothing else.
+;;   5. excesses#d53276db to a caller of its own permissionless legs: the change
+;;      on its own attached value, never `pending` (D-146);
+;;   6. nothing else.
 ;; No withdraw, no sweep, no owner field, and no message any sender can send
 ;; that moves GRAM to an address of the sender's choosing. `flush` is
 ;; permissionless precisely because it cannot be aimed, and the three staking
@@ -64,7 +66,7 @@ transfer_notification#7362d09c
 burn#595f07bc
     query_id:uint64
     amount:Coins
-    response_destination:MsgAddress   ;; the ratchet itself: excesses feed its gas buffer
+    response_destination:MsgAddress   ;; proceeds burn: the last flush caller (its change); else the ratchet
     custom_payload:(Maybe ^Cell)      ;; none$0 on THIS leg; §4.3.2's tsTON burn fills it
   = InternalMsgBody;
 ;; One constructor, two destinations. Aimed at the PRIMES wallet it is §4.3's
@@ -539,8 +541,11 @@ distributed_asset#db3b8abd
 excesses#d53276db
     query_id:uint64
   = InternalMsgBody;
-;; Accepted and ignored, from EITHER wallet, the way a bare top-up is. It is
-;; named here because this contract writes its own address into
+;; From the PRIMES wallet, forwarded on its own value (mode 64, never the
+;; balance) to the last flush caller: on a fill it is DeDust's unspent swap gas,
+;; which that caller paid (D-146, 2026-11-23). From the tsTON wallet it is the
+;; stake's refund. Anything else is accepted and ignored, the way a bare top-up
+;; is. It is named here because this contract writes its own address into
 ;; `response_destination` on both burn legs and must therefore have an arm for
 ;; the reply — the catch-all `else => assert (in.body.isEmpty()) throw 101` would
 ;; otherwise abort it and paint the trace red while the money looks right

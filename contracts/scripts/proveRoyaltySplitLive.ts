@@ -38,14 +38,15 @@
  *   npx tsx contracts/scripts/proveRoyaltySplitLive.ts
  *   PRIMES_ROYALTY_TON=2 npx tsx contracts/scripts/proveRoyaltySplitLive.ts
  *
- * Env: `PRIMES_COLLECTION_ADDRESS`, `PRIMES_LEDGER_ADDRESS`, `PRIMES_OPERATOR_ADDR`,
+ * Env: `PRIMES_COLLECTION_ADDRESS`, `PRIMES_LEDGER_ADDRESS` (the operator is testnet.yaml's),
  * `KEEPER_WALLET_MNEMONIC`; the sender defaults to the deploy subwallet.
  */
 import { Address, SendMode, TonClient, WalletContractV4, beginCell, internal, toNano } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
 import { PrimesCollection } from '../wrappers/PrimesCollection';
 import { PrimesLedger } from '../wrappers/PrimesLedger';
-import { deploySubwalletId, hydrateProcessEnv, envValue, loadEnvFile } from './envFile';
+import { deploySubwalletId, hydrateProcessEnv, envValue, loadEnvFile, readNetworkConfig } from './envFile';
+import { requireValue } from '../../shared/networkConfig';
 
 // `tsx` loads no `.env` (W10 — fourteen sibling scripts fell through to month-dead
 // address defaults before this call existed).
@@ -102,7 +103,8 @@ async function main() {
 
     const collectionAddr = Address.parse(req('PRIMES_COLLECTION_ADDRESS'));
     const ledgerAddr = Address.parse(req('PRIMES_LEDGER_ADDRESS'));
-    const operatorAddr = Address.parse(req('PRIMES_OPERATOR_ADDR'));
+    const cfg = readNetworkConfig('testnet');
+    const operatorAddr = Address.parse(requireValue(cfg, 'operator_addr', cfg.operatorAddr));
     const collection = client.open(PrimesCollection.createFromAddress(collectionAddr));
     const ledger = client.open(PrimesLedger.createFromAddress(ledgerAddr));
 

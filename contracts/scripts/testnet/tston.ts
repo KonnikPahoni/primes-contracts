@@ -40,7 +40,7 @@
  * permissionless route in is `donate_floor#b000000c`, and §8 guarantees that
  * GRAM never comes back.
  *
- * `DECISIONS.md` **D-153** made the minimum deploy-time: `PRIMES_STAKE_MIN_TON=3`
+ * `DECISIONS.md` **D-153** made the minimum deploy-time: `test_overrides.stake_min_ton: 3`
  * puts it at 2.976 GRAM and `stake` becomes legal at ~3.72 GRAM of `pending`,
  * which a run reaches in phase 1. **This file reads `getStakeMin()` and never a
  * constant**, so it is correct against a set deployed either way.
@@ -65,12 +65,29 @@ import { MockTonstakersPool } from '../../wrappers/MockTonstakersPool';
 import { STAKE_VALUE, UNSTAKE_VALUE, HARVEST_VALUE } from '../../wrappers/PrimesRatchet';
 import { RATCHET } from '../../../shared/opcodes';
 import { retry } from './sender';
-import { addr, contracts, snapshot, walletFor, type Contracts, type Snapshot } from './chain';
+import { addr, contracts, foreignCredits, snapshot, walletFor, type Contracts, type Snapshot } from './chain';
 import * as A from './assert';
 import { fromAsserts, record } from './journal';
 
 /** Long enough for a three-hop staking round trip (us → pool → wallet → us). */
 const SETTLE_MS = 40_000;
+/** The ratchet's `EXIT_LEG_BILL` (primes_ratchet.tolk): leg 3 parked on its payout bill. */
+const EXIT_LEG_BILL = 3;
+
+/**
+ * SETTLE_MS, then — when the step HAS a terminal state — poll that state (one cheap read)
+ * for up to 3 more minutes. The fixed wait alone read the 20261124 `yield` 2 s before its
+ * tsTON landed at the ratchet (08:06:02) and journalled a red step for a credit that arrived.
+ * Poll the TERMINAL predicate, never "something moved": an exit passes through states
+ * (`exiting` rises, then falls) and a first-change poll would snapshot mid-trace.
+ */
+async function settle(done?: () => Promise<boolean>) {
+    await new Promise((r) => setTimeout(r, SETTLE_MS));
+    for (let i = 0; done && i < 18; i++) {
+        if (await done().catch(() => false)) return;
+        await new Promise((r) => setTimeout(r, 10_000));
+    }
+}
 const GAS = toNano('0.1');
 
 /** `primes_ratchet.tolk`'s reserve fraction, restated ONLY to compute what a
@@ -327,26 +344,27 @@ async function cmdStake(c: Contracts, handle: string) {
         throw new Error(
             `stake would refuse 226: pending ${ton(before.pending)} − reserve ${ton(target)} = ` +
                 `${ton(expected)} GRAM, and this deploy's minimum is ${ton(stakeMin)} (D-153). Raise ` +
-                `pending with PRIMES_DONATE_TON=<n> npx tsx contracts/scripts/donateFloor.ts — see ` +
+                `pending with npx tsx contracts/scripts/donateFloor.ts --ton <n> — see ` +
                 `TESTNET_MASTER_PLAN.md §4c for what that costs and why the divisor exists.`
         );
     }
     console.log(`${handle} staking ${ton(expected)} GRAM (pending ${ton(before.pending)} − reserve ${ton(target)})`);
     await c.ratchet.sendStake(w.sender, { value: STAKE_VALUE }); // D-146: caller pays the pool's fees
-    await new Promise((r) => setTimeout(r, SETTLE_MS));
+    await settle(async () => (await c.ratchet.getStaking()).stakedCost > k0.stakedCost);
     const after = await snapshot(c);
     const k1 = requireStaking(after);
+    const foreign = await foreignCredits(c, before, after); // other senders' pool_inject, mid-step
 
     const results: A.AssertResult[] = [
         {
-            ok: k1.stakedCost - k0.stakedCost === expected && before.pending - after.pending === expected,
+            ok: k1.stakedCost - k0.stakedCost === expected && before.pending + foreign - after.pending === expected,
             name: 'STAKE_SIZED_BY_THE_CONTRACT',
             getMethod: 'ratchet.getPending, getStaking().stakedCost',
             before: `pending ${ton(before.pending)} staked ${ton(k0.stakedCost)}`,
             after: `pending ${ton(after.pending)} staked ${ton(k1.stakedCost)}`,
             detail: `the caller named no amount; the contract moved exactly pending − reserveTarget`,
         },
-        A.stakeNeutral(before, after),
+        A.stakeNeutral(before, after, foreign),
         A.tIdentity(after),
         {
             ok: k1.tstonHeld > k0.tstonHeld,
@@ -411,9 +429,10 @@ async function cmdYield(c: Contracts, amount: string, handle: string) {
         .endCell();
     console.log(`${handle} donating ${amount} tsTON to the reserve through ${venue.tonstakersPool.toString({ testOnly: true })}`);
     await w.sender.send({ to: venue.tonstakersPool, value: toNano('0.2'), bounce: true, body });
-    await new Promise((r) => setTimeout(r, SETTLE_MS));
+    await settle(async () => (await c.ratchet.getStaking()).tstonHeld - k0.tstonHeld >= toNano(amount));
     const after = await snapshot(c);
     const k1 = requireStaking(after);
+    const foreign = await foreignCredits(c, before, after); // other senders' pool_inject, mid-step
 
     const results: A.AssertResult[] = [
         {
@@ -434,7 +453,7 @@ async function cmdYield(c: Contracts, amount: string, handle: string) {
                 'the conservative direction, and the one §4.3.2 requires: unrealized yield never ' +
                 'enters T, so it can never inflate p_f — "realize, never mark"',
         },
-        A.stakeNeutral(before, after),
+        A.stakeNeutral(before, after, foreign),
         A.tIdentity(after),
     ];
     A.print(results);
@@ -473,9 +492,10 @@ async function cmdHarvest(c: Contracts, handle: string) {
         );
     }
     await c.ratchet.sendHarvest(w.sender, { value: HARVEST_VALUE }); // D-146: caller pays
-    await new Promise((r) => setTimeout(r, SETTLE_MS));
+    await settle(async () => (await c.ratchet.getStaking()).tstonHeld < k0.tstonHeld);
     const after = await snapshot(c);
     const k1 = requireStaking(after);
+    const foreign = await foreignCredits(c, before, after); // other senders' pool_inject, mid-step
     const bal1 = await retry(() => treasury.getTreasuryBalances(), 'getTreasuryBalances');
 
     const moved = k0.tstonHeld - k1.tstonHeld;
@@ -502,8 +522,8 @@ async function cmdHarvest(c: Contracts, handle: string) {
                 k1.stakedCost === k0.stakedCost &&
                 k1.exiting === k0.exiting &&
                 k1.realizedLoss === k0.realizedLoss &&
-                after.pending === before.pending &&
-                after.T === before.T,
+                after.pending - before.pending === foreign &&
+                after.T - before.T === foreign,
             name: 'HARVEST_TOUCHES_NO_TERM_OF_T',
             getMethod: 'ledger.getFloorNum, ratchet.getPending, getStaking().{stakedCost,exiting,realizedLoss}',
             before: `T ${before.T}`,
@@ -642,12 +662,16 @@ async function cmdExit(c: Contracts, leg: string, handle: string) {
 
     console.log(`${handle} unstaking ~${ton(tranche)} GRAM via ${leg}`);
     await c.ratchet.sendUnstake(w.sender, { value: UNSTAKE_VALUE }); // D-146: prepays legs 1-3
-    await new Promise((r) => setTimeout(r, SETTLE_MS));
+    const parked = leg === 'leg3' || leg === 'loss';
+    await settle(async () => {
+        const e = await c.ratchet.getExitLeg();
+        return parked ? e.leg === EXIT_LEG_BILL : e.leg === 0 && (await c.ratchet.getPending()) > before.pending;
+    });
 
     const after = await snapshot(c);
     const k1 = requireStaking(after);
+    const foreign = await foreignCredits(c, before, after); // other senders' pool_inject, mid-step
     const exit = await retry(() => c.ratchet.getExitLeg(), 'getExitLeg');
-    const parked = leg === 'leg3' || leg === 'loss';
 
     const results: A.AssertResult[] = [
         {
@@ -661,7 +685,7 @@ async function cmdExit(c: Contracts, leg: string, handle: string) {
                 : 'the GRAM came home inside the same round trip and `exiting` is back to zero',
         },
         {
-            ok: parked ? after.pending === before.pending : after.pending > before.pending,
+            ok: parked ? after.pending - before.pending === foreign : after.pending - foreign > before.pending,
             name: 'PENDING_REFILLED',
             getMethod: 'ratchet.getPending',
             before: ton(before.pending),
@@ -678,7 +702,7 @@ async function cmdExit(c: Contracts, leg: string, handle: string) {
             after: ton(k1.stakedCost),
             detail: 'sized at COST BASIS, not at the learned rate — the one ratio the contract knows without trusting a number',
         },
-        A.stakeNeutral(before, after),
+        A.stakeNeutral(before, after, foreign),
         A.tIdentity(after),
         A.solvency(after),
     ];
@@ -700,12 +724,18 @@ async function cmdRecover(c: Contracts, handle: string) {
     const now = Math.floor(Date.now() / 1000);
     if (exit.leg === 0) throw new Error('no exit open — recover_exit would refuse 232. Nothing sent.');
     const due = exit.exitStartedAt + exit.recoverAfter + 30; // margin for this laptop's clock skew
-    if (now < due) throw new Error(`exit (leg ${exit.leg}) is recoverable in ${due - now}s — refuses 232 until then. Nothing sent.`);
+    // A window up to 30 min (this set's D-139-divided 72 h reads 1542 s) is waited out here, so
+    // `run.ts` can sequence loss → settle → recover; a longer one refuses rather than park a process.
+    if (now < due && due - now > 1800) throw new Error(`exit (leg ${exit.leg}) is recoverable in ${due - now}s — refuses 232 until then. Nothing sent.`);
+    if (now < due) {
+        console.log(`waiting ${due - now}s for the exit's recovery window`);
+        await new Promise((r) => setTimeout(r, (due - now) * 1000));
+    }
     const w = await walletFor(c.client, handle);
     const before = await snapshot(c);
     const k0 = requireStaking(before);
     await c.ratchet.sendRecoverExit(w.sender, { value: GAS });
-    await new Promise((r) => setTimeout(r, SETTLE_MS));
+    await settle(async () => (await c.ratchet.getExitLeg()).leg === 0);
     const after = await snapshot(c);
     const k1 = requireStaking(after);
     const exit1 = await retry(() => c.ratchet.getExitLeg(), 'getExitLeg(after)');
@@ -745,31 +775,44 @@ async function cmdSettle(c: Contracts, handle: string) {
     }
 
     await pool.sendSettleBill(w.sender, { value: GAS });
-    await new Promise((r) => setTimeout(r, SETTLE_MS));
+    await settle(async () => (await c.ratchet.getStaking()).exiting < k0.exiting);
     const after = await snapshot(c);
     const k1 = requireStaking(after);
+    const foreign = await foreignCredits(c, before, after); // other senders' pool_inject, mid-step
     const exit = await retry(() => c.ratchet.getExitLeg(), 'getExitLeg');
 
-    const credited = after.pending - before.pending;
+    const credited = after.pending - before.pending - foreign;
     const loss = k1.realizedLoss - k0.realizedLoss;
     const results: A.AssertResult[] = [
+        // D-197: a bill paying UNDER cost credits what it paid and leaves the exit OPEN on the
+        // bill (`creditExitArrival`, partial) until `recover_exit` writes the residual off as
+        // `realizedLoss`. So an underpaid settle is green with the machine still on leg 3.
+        exit.leg === 0
+            ? {
+                  ok: k1.exiting === 0n,
+                  name: 'BILL_SETTLED',
+                  getMethod: 'ratchet.getExitLeg, getStaking().exiting',
+                  before: `exiting ${ton(k0.exiting)}`,
+                  after: `leg ${exit.leg} exiting ${ton(k1.exiting)}`,
+                  detail: 'the machine is idle again and `unstake` is callable',
+              }
+            : {
+                  ok: exit.leg === EXIT_LEG_BILL && credited > 0n && k1.exiting > 0n && loss === 0n,
+                  name: 'BILL_UNDERPAID_EXIT_STAYS_OPEN',
+                  getMethod: 'ratchet.getExitLeg, getStaking().{exiting,realizedLoss}',
+                  before: `exiting ${ton(k0.exiting)}`,
+                  after: `leg ${exit.leg} exiting ${ton(k1.exiting)} (residual) credited ${ton(credited)}`,
+                  detail: 'D-197: the bill paid under cost; the residual stays exiting until `tston.ts recover` writes it off as realizedLoss',
+              },
         {
-            ok: exit.leg === 0 && k1.exiting === 0n,
-            name: 'BILL_SETTLED',
-            getMethod: 'ratchet.getExitLeg, getStaking().exiting',
-            before: `exiting ${ton(k0.exiting)}`,
-            after: `leg ${exit.leg} exiting ${ton(k1.exiting)}`,
-            detail: 'the machine is idle again and `unstake` is callable',
-        },
-        {
-            ok: credited + loss === k0.exiting,
+            ok: credited + loss + k1.exiting === k0.exiting,
             name: 'EXIT_CLOSED_TO_THE_NANOTON',
             getMethod: 'ratchet.getPending, getStaking().realizedLoss',
             before: ton(k0.exiting),
             after: `credited ${ton(credited)} + loss ${ton(loss)}`,
             detail:
-                'every credit is matched by an equal debit of `exiting`; the surplus (returned gas, ' +
-                'and any rate gain above cost) stays in the gas buffer, which is not a term of T',
+                'every credit is matched by an equal debit of `exiting`; the surplus is off T: up to the ' +
+                "answering leg's gas of it is refunded to the unstake caller, and any rate gain above that stays in the gas buffer",
         },
         {
             ok: true,
@@ -809,6 +852,15 @@ async function cmdSettle(c: Contracts, handle: string) {
  * reconcile and the only trace is a red row in an explorer.
  */
 async function cmdForge(c: Contracts, handle: string) {
+    // FORGERY IS ONLY A TEST WHILE THE MACHINE IS IDLE. Against an open exit the forged
+    // payout_distributed_asset is credited against `exitCostBasis` — a donation the contract
+    // documents, but on 20261124 it paid off the loss leg's residual and hid the very
+    // `realizedLoss` the run was there to publish (G98). Read first, send nothing otherwise.
+    const open = await retry(() => c.ratchet.getExitLeg(), 'getExitLeg');
+    if (open.leg !== 0 || open.inFlightExit > 0n) {
+        throw new Error(`an exit is open (leg ${open.leg}, ${ton(open.inFlightExit)} GRAM in flight) — a forged payout ` +
+            'would be credited to it. Close it first (`tston.ts settle` / `tston.ts recover`). Nothing sent.');
+    }
     const w = await walletFor(c.client, handle);
     const ratchet = addr('PRIMES_RATCHET_ADDRESS');
     const before = await snapshot(c);
@@ -835,12 +887,13 @@ async function cmdForge(c: Contracts, handle: string) {
     await new Promise((r) => setTimeout(r, SETTLE_MS));
     const after = await snapshot(c);
     const k1 = requireStaking(after);
+    const foreign = await foreignCredits(c, before, after); // other senders' pool_inject, mid-step
 
     const results: A.AssertResult[] = [
         {
             ok:
-                after.T === before.T &&
-                after.pending === before.pending &&
+                after.T - before.T === foreign &&
+                after.pending - before.pending === foreign &&
                 k1.stakedCost === k0.stakedCost &&
                 k1.exiting === k0.exiting &&
                 k1.realizedLoss === k0.realizedLoss,

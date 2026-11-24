@@ -1,6 +1,6 @@
 // TON PRIMES — §4.1's invite line, pinned to ONE definition (DECISIONS.md D-202, D-215).
 //
-// The ledger writes the invite comment itself (`inviteComment(n)` in
+// The ledger writes the invite comment itself (`inviteComment` in
 // `primes_ledger.tolk`) and `shared/invites.ts` restates it for the app and the
 // keeper (`inviteCommentText`). If the two disagree nothing crashes: the app shows
 // a sentence the chain never sends. This is a static cross-check in the shape of
@@ -39,18 +39,18 @@ describe('TON PRIMES — the invite line has exactly one definition (D-202)', ()
         expect(sharedInvites.inviteTermsValid(sharedInvites.INVITE_GENESIS_COUNT, sharedInvites.INVITE_GENESIS_VALUE_NANOTON)).toBe(true);
     });
 
-    it('the comment text is the words, then the Tolk literals around n, byte for byte (D-211)', () => {
-        const body = src.match(/fun\s+inviteComment\(n:\s*int,\s*words:\s*cell\):\s*cell\s*\{([\s\S]*?)\n\}/);
+    it('the comment text is the words alone, byte for byte: op 0, the words, no link (D-211, D-215)', () => {
+        const body = src.match(/fun\s+inviteComment\(words:\s*cell\):\s*cell\s*\{([\s\S]*?)\n\}/);
         expect(body).not.toBeNull();
-        const literals = [...body![1].matchAll(/"([^"]*)"\.literalSlice\(\)/g)].map((m) => m[1]);
-        expect(literals).toEqual([sharedInvites.INVITE_COMMENT_PREFIX, sharedInvites.INVITE_COMMENT_SUFFIX]);
+        // No literal text of the ledger's own: nothing is appended to the operator's words.
+        expect([...body![1].matchAll(/"([^"]*)"\.literalSlice\(\)/g)]).toEqual([]);
         // op 0 first: a plain text comment.
         expect(/\.storeUint\(0,\s*32\)/.test(body![1])).toBe(true);
-        expect(sharedInvites.inviteCommentText(1234n, 'Hi.')).toBe('Hi. primes.live/?ref=1234_tg');
+        expect(sharedInvites.inviteCommentText('Hi.')).toBe('Hi.');
         const cap = src.match(/^const\s+INVITE_TEXT_MAX_BYTES\s*=\s*(\d+)\s*;/m);
         expect(Number(cap![1])).toBe(sharedInvites.INVITE_TEXT_MAX_BYTES);
-        // The cap leaves room for 16 digits of n in one 1023-bit cell.
-        expect(32 + 8 * (sharedInvites.INVITE_TEXT_MAX_BYTES + sharedInvites.INVITE_COMMENT_PREFIX.length + 16 + sharedInvites.INVITE_COMMENT_SUFFIX.length)).toBeLessThanOrEqual(1023);
+        // op + the capped words fit one 1023-bit cell.
+        expect(32 + 8 * sharedInvites.INVITE_TEXT_MAX_BYTES).toBeLessThanOrEqual(1023);
         expect(Buffer.byteLength(sharedInvites.INVITE_TEXT_GENESIS)).toBeLessThanOrEqual(sharedInvites.INVITE_TEXT_MAX_BYTES);
     });
 

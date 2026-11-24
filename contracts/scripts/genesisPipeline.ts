@@ -395,7 +395,7 @@ export type GenesisParams = {
      * It lands in ADDRESS-DETERMINING init data on all three contracts and no
      * message can change it, so — like `distributionRateBpsPerDay` above — the call
      * site that chose it is visible in the diff. Deploy scripts read it from
-     * `PRIMES_AUCTION_SECONDS` (default 604800 = divisor 1).
+     * `testnet.yaml` `test_overrides.auction_seconds` (absent = 604800 = divisor 1).
      */
     clockDivisor?: number;
     /**
@@ -405,8 +405,8 @@ export type GenesisParams = {
      * illegal until `pending` exceeds 62.5 GRAM — reachable on mainnet in the
      * ordinary course of the game and reachable on testnet only by burning
      * ~600 unrecoverable GRAM into `donate_floor`. 1 is mainnet and the
-     * identity; deploy scripts read it from `PRIMES_STAKE_MIN_TON` (default
-     * 500 = divisor 1) and `getStakeMin()` publishes the divided figure.
+     * identity; deploy scripts read it from `testnet.yaml` `test_overrides.stake_min_ton` (absent = params
+     * 50 GRAM = divisor 1) and `getStakeMin()` publishes the divided figure.
      */
     stakeDivisor?: number;
     /**

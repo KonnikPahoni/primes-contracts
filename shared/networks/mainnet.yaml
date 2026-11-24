@@ -1,0 +1,42 @@
+# TON PRIMES — mainnet deploy facts. Read by every deploy script run against mainnet
+# (blueprint --mainnet, or any network that is not testnet), through shared/networkConfig.ts.
+#
+# Only NON-SECRET values fixed per network live here. Secrets stay in /.env. Per-genesis
+# values (deploy subwallet id, proposer, DeDust pool and jetton vault) stay in /.env too:
+# they change with every run and each has its own preflight assert.
+#
+# There is deliberately no test_overrides block: mainnet's rename fee (200), donation (200),
+# seed, auction clock (7 days) and stake minimum (50) are shared/params.json's, and the
+# loader refuses the block in this file. A null below is a value genesis still needs —
+# deployGenesis refuses to run until it is filled in.
+
+network: mainnet
+
+# Forfeit remainder (42%) and TEP-66 royalty destination. Permanent deploy data, no setter.
+# Owner-signed in DECISIONS.md (D-209 amendment, 2026-11-21).
+operator_addr: UQA6VjkuaK3eQJMvgA7BSnYXywuwGfpP1W5_N6iJdNzOYU_c
+
+# DeDust's native GRAM vault on mainnet (same hash as testnet, different checksum).
+dedust_native_vault: EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_
+
+# D-212 first-naming fee in GRAM: 50 EUR at the GRAM/EUR rate ON GENESIS DAY, rounded to
+# 0.1 GRAM (launch gate M5). Deploy data with no setter. Set it on the day, commit, deploy.
+name_fee_ton: null
+
+presentation:
+  collection_metadata_uri: https://primes.live/collection.json
+  # Trailing slash is load-bearing: the collection appends `<n>.json` with no separator.
+  nft_content_prefix: https://primes.live/nft/
+  jetton_metadata_uri: https://primes.live/jetton.json
+
+# CONCEPT.md §4.3.2 / D-151 — the staked reserve's venue. Tonstakers and DeDust addresses
+# from the 2026-11-21 mainnet survey: OWNER CONFIRMS each one before genesis.
+staking_venue:
+  tonstakers_pool: EQCkWxfyhAkim3g2DjKQQg8T5P4g-Q1-K_jErGcDJZ4i-vqR
+  dedust_tston_vault: EQCXLa2eZNFnvlGx-cpCywps7AcUoowkqCqDS9aNErm_Y3di
+  dedust_tston_pool: EQDsPeOuu66e7tWagXO6Tn8VFZMEV0ClQb7zOB6SEW_VKN3k
+  # The ratchet's and the treasury's own tsTON wallets: ask the tsTON minter
+  # (EQC98_qAmNEptUtPc7W6xdHh_ZHrBUFpw5Ft_IzNU20QAJav) get_wallet_address once the genesis
+  # addresses are final (dryRunGenesisAddresses.ts prints them).
+  ratchet_tston_wallet: null
+  treasury_tston_wallet: null

@@ -7,7 +7,9 @@
  *   npx tsx contracts/scripts/testnet/stake.ts expire   <handle> <positionId>
  *   npx tsx contracts/scripts/testnet/stake.ts withdraw <handle> <positionId>
  *   npx tsx contracts/scripts/testnet/stake.ts relock   <handle> <positionId> <tier 0..3>
- *   npx tsx contracts/scripts/testnet/stake.ts distribute
+ *   npx tsx contracts/scripts/testnet/stake.ts distribute [handle] [--wait]
+ *     (--wait: within 10 min of due, sleep to the due second + 5 s and send; if the
+ *      keeper's lane landed first, assert ITS distribute instead of racing it)
  *
  * A stake is a TEP-74 transfer to the stake master carrying `STKL` + tier; claim,
  * relock, withdraw and expire go to the owner's child; `distribute()` goes to the treasury.
@@ -279,30 +281,48 @@ async function relock(client: TonClient, handle: string, idArg: string, tierArg:
     A.requireAll(results);
 }
 
-async function distribute(client: TonClient) {
+/** `--wait` sleeps at most this long for the due second; a longer wait belongs in the caller's shell, not in a parked tsx. */
+const DISTRIBUTE_WAIT_CAP_S = 600;
+/** Seconds past the due second before sending: block `now` lags the wall clock, and a send AT the due second can earn its own 1200. */
+const DISTRIBUTE_SEND_LAG_S = 5;
+
+async function distribute(client: TonClient, handle?: string, wait = false) {
     const treasury = treasuryOf(client);
     const d = await retry(() => treasury.getDistribution(), 'getDistribution');
+    const due = d.lastDistributeTime + d.interval;
     const now = Math.floor(Date.now() / 1000);
-    if (now - d.lastDistributeTime < d.interval) {
+    if (now < due && !(wait && due - now <= DISTRIBUTE_WAIT_CAP_S)) {
         return refuse('distribute', 'DISTRIBUTE_REFUSED_EARLY', 'treasury.getDistribution()',
-            `next due at ${d.lastDistributeTime + d.interval} (1200)`);
+            `next due at ${due} (1200)${wait ? `; --wait only covers the last ${DISTRIBUTE_WAIT_CAP_S}s` : ''}`);
     }
     if (d.nextBudgetEstimate < 1n) {
         return refuse('distribute', 'DISTRIBUTE_REFUSED_DUST', 'treasury.getDistribution().nextBudgetEstimate', 'empty treasury (1201)');
     }
-    const w = await openDeployWallet(client);
+    // `distribute()` is permissionless: any handle may send it (the owner's `P` walkthrough does).
+    const w = handle ? await walletFor(client, handle) : await openDeployWallet(client);
     const before = await retry(() => stakeOf(client).getStakeTotals(), 'getStakeTotals');
-    await treasury.sendDistribute(w.sender);
+    const sendAt = due + DISTRIBUTE_SEND_LAG_S;
+    if (Math.floor(Date.now() / 1000) < sendAt) {
+        console.log(`waiting ${sendAt - Math.floor(Date.now() / 1000)}s for the due second (${due}) + ${DISTRIBUTE_SEND_LAG_S}s`);
+        while (Math.floor(Date.now() / 1000) < sendAt) await new Promise((x) => setTimeout(x, 1000));
+    }
+    // RE-READ IMMEDIATELY BEFORE THE SEND. The keeper's distribute lane calls the same
+    // permissionless op each cycle; if it landed first, this send would be a red 1200.
+    // Its distribute is the same formula, so it is asserted instead of raced.
+    const d2 = await retry(() => treasury.getDistribution(), 'getDistribution(pre-send)');
+    const sender = d2.lastDistributeTime !== d.lastDistributeTime ? 'another caller (the keeper)' : handle ?? 'K';
+    if (d2.lastDistributeTime === d.lastDistributeTime) await treasury.sendDistribute(w.sender);
+    else console.log(`distribute already landed at ${d2.lastDistributeTime} from ${sender}; asserting that one, nothing sent`);
     const landed = await waitFor(async () => (await stakeOf(client).getStakeTotals()).budgetEvents > before.budgetEvents);
     const after = await retry(() => stakeOf(client).getStakeTotals(), 'getStakeTotals');
     const results: A.AssertResult[] = [
         {
-            ok: landed && after.budgetsIn - before.budgetsIn === d.nextBudgetEstimate,
+            ok: landed && after.budgetEvents === before.budgetEvents + 1 && after.budgetsIn - before.budgetsIn === d.nextBudgetEstimate,
             name: 'DISTRIBUTE_FORMULA',
             getMethod: 'treasury.getDistribution().nextBudgetEstimate vs stake.getStakeTotals().budgetsIn',
             before: before.budgetsIn.toString(),
             after: after.budgetsIn.toString(),
-            detail: 'TR-2: the budget the master received is exactly the formula the treasury published',
+            detail: `TR-2: the budget the master received is exactly the formula the treasury published (sent by ${sender})`,
         },
         ...(await invariants(client)),
     ];
@@ -313,7 +333,7 @@ async function distribute(client: TonClient) {
 async function main() {
     const client = makeClient();
     const [cmd, handle, a, b] = process.argv.slice(2);
-    if (cmd === 'distribute') return distribute(client);
+    if (cmd === 'distribute') return distribute(client, handle === '--wait' ? undefined : handle, process.argv.includes('--wait'));
     if (!cmd || !handle) throw new Error('usage: stake.ts <status|stake|claim|relock|expire|withdraw|distribute> <handle> …');
     if (cmd === 'status') return status(client, handle);
     if (cmd === 'stake') {

@@ -72,7 +72,7 @@ export type RatchetConfig = {
     /**
      * D-139 — THE TEST CLOCK. Divides `FLUSH_COOLDOWN` (86400). 1 is mainnet and
      * the identity; 168 makes the cooldown ~8.5 minutes. Deploy-time only.
-     * Genesis reads it from `PRIMES_AUCTION_SECONDS`, the same divisor the
+     * Genesis reads it from `testnet.yaml`'s `test_overrides.auction_seconds`, the same divisor the
      * market gets, so every clock in a set moves together.
      */
     clockDivisor?: number;
@@ -84,9 +84,9 @@ export type RatchetConfig = {
      * Its reason for existing is arithmetic: the liquid reserve is 20% of the
      * obligation, so `stake` is illegal until `pending` exceeds 62.5 GRAM, and on
      * testnet the only permissionless route into `pending` is a `donate_floor`
-     * that §8 makes irreversible. Genesis reads it from `PRIMES_STAKE_MIN_TON`
+     * that §8 makes irreversible. Genesis reads it from `testnet.yaml`'s `test_overrides.stake_min_ton`
      * — the MINIMUM an operator wants, not the divisor — exactly as the clock is
-     * read from `PRIMES_AUCTION_SECONDS`.
+     * read from `test_overrides.auction_seconds`.
      */
     stakeDivisor?: number;
 };
@@ -173,7 +173,7 @@ function stakingCell(c: RatchetConfig): Cell {
         .storeCoins(0) // recoveredExit — audit H2 nit 3: a recovered exit's tranche, whose late reply is not new tsTON
         .storeAddress(c.genesisScriptAddr) // tstonWalletAddr placeholder
         .storeUint(0, 8) // tstonWalletSet
-        .storeRef(beginCell().storeUint(0, 2).storeUint(0, 64).endCell()) // stakeRefund — addr_none, no open stake
+        .storeRef(beginCell().storeUint(0, 2).storeUint(0, 64).storeCoins(0).storeBit(false).storeBit(false).endCell()) // stakeRefund — addr_none, no open stake or exit, nothing held
         .endCell();
     return beginCell()
         .storeCoins(0) // stakedCost
@@ -199,6 +199,8 @@ function burnCell(c: RatchetConfig): Cell {
         .storeUint(0, 32) // burnEvents
         .storeAddress(c.genesisScriptAddr) // jettonWalletAddr placeholder
         .storeUint(0, 8) // walletSet
+        .storeUint(0, 2) // flushCaller — addr_none until the first flush
+        .storeUint(0, 2) // changeTo — addr_none; set by a fill, cleared by its excess (B40)
         .endCell();
 }
 

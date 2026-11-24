@@ -3,7 +3,7 @@
  *
  * DECISIONS.md D-202, D-215: mint the head with `inviteCount = <number of addresses>` (1..the
  * live count) and confirm each named address receives one transfer of the live value, whole, from the LEDGER carrying
- * the comment (`shared/invites.ts` `inviteCommentText(n, words)`, words read off the ledger — D-211). There is no signed list any
+ * the comment (`shared/invites.ts` `inviteCommentText(words)`, words read off the ledger — D-211). There is no signed list any
  * more: the minter names the recipients.
  *
  *   npx tsx scripts/proveInviteMintLive.ts <addr1> [addr2 ...]
@@ -150,7 +150,7 @@ async function main() {
     addresses.forEach((a, slot) => console.log(`  slot ${slot}: ${a.toString()}`));
     // D-211: the words are on chain, so the expected comment is read, not assumed.
     const words = await retry(() => ledger.getInviteText(), 'getInviteText');
-    console.log(`comment: "${inviteCommentText(n, words)}"`);
+    console.log(`comment: "${inviteCommentText(words)}"`);
 
     console.log('before:', await retry(() => ledger.getInviteSpend(), 'getInviteSpend'));
 

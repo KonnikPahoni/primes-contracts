@@ -66,6 +66,7 @@ import { makeClient, openDeployWallet, openWallet, retry, Wallet } from './sende
 import { readCast } from './cast';
 import * as A from './assert';
 import { fromAsserts, record } from './journal';
+import { dedustNativeVault } from './chain';
 
 /**
  * A guard that answered from a GET-METHOD and did not send (§2.5 rule 1). It is
@@ -306,7 +307,7 @@ async function deposit(client: TonClient, handle: string, tonSide: string, tier:
     const pool = Address.parse(env('PRIMES_DEDUST_POOL_ADDR'));
     const master = Address.parse(env('PRIMES_JETTON_MASTER_ADDRESS'));
     const jettonVault = Address.parse(env('PRIMES_DEDUST_JETTON_VAULT_ADDR'));
-    const nativeVault = Address.parse(env('PRIMES_DEDUST_VAULT_ADDR'));
+    const nativeVault = dedustNativeVault();
     const treasuryAddr = Address.parse(env('PRIMES_TREASURY_ADDRESS'));
 
     const w = await walletFor(client, handle);

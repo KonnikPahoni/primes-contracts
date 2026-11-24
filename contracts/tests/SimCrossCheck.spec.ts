@@ -733,7 +733,11 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
         expect(params.naming.name_fee_ton).toBeUndefined();
         const deploySrc = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'deployGenesis.ts'), 'utf-8');
         expect(deploySrc).toMatch(/params\.naming\.rename_fee_ton/);
-        expect(deploySrc).toMatch(/PRIMES_NAME_FEE_TON is not set/);
+        expect(deploySrc).toMatch(/name_fee_ton is not set/);
+        // The first-naming GRAM figure is a genesis-day input in the mainnet network file,
+        // left null until that day (launch gate M5), never a default.
+        const mainnetYaml = fs.readFileSync(path.join(__dirname, '..', '..', 'shared', 'networks', 'mainnet.yaml'), 'utf-8');
+        expect(mainnetYaml).toMatch(/^name_fee_ton: /m);
         // The test-harness default the wrappers carry is the owner's rename fee too.
         expect(DEFAULT_RENAME_FEE).toBe(toNano(String(params.naming.rename_fee_ton)));
     });

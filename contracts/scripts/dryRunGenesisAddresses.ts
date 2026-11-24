@@ -24,8 +24,9 @@
  *   4. Only then run genesis for real (`deployGenesis.ts`, blueprint or `--skew-safe`),
  *      pointing `PRIMES_DEDUST_POOL_ADDR` at the pool just created.
  *
- * Reads the SAME env contract as `deployGenesis.ts --skew-safe` (`/.env`'s
- * `KEEPER_WALLET_MNEMONIC`, `PRIMES_DEPLOY_SUBWALLET_ID`, `PRIMES_JETTON_METADATA_URI`) so
+ * Reads the SAME inputs as `deployGenesis.ts --skew-safe` (`/.env`'s
+ * `KEEPER_WALLET_MNEMONIC` and `PRIMES_DEPLOY_SUBWALLET_ID`, and the jetton metadata URI
+ * from `shared/networks/<PRIMES_NETWORK, default testnet>.yaml`) so
  * the address it prints is the one the real run will actually produce, not a
  * hand-recomputed guess that can drift from it.
  */
@@ -34,7 +35,7 @@ import path from 'path';
 import { Cell, WalletContractV4 } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
 import { dryRunGenesisMasterAddress } from './genesisPipeline';
-import { hydrateProcessEnv, deploySubwalletId, loadEnvFile } from './envFile';
+import { hydrateProcessEnv, deploySubwalletId, envValue, loadEnvFile, readNetworkConfig } from './envFile';
 import { resolvePresentation } from './deployGenesis';
 
 // `tsx` loads no `.env`; every `process.env.PRIMES_*` read below depends on this.
@@ -72,7 +73,11 @@ async function main() {
     const wallet = WalletContractV4.create({ workchain: 0, publicKey: keyPair.publicKey, walletId });
     const genesisAddress = wallet.address;
 
-    const presentation = resolvePresentation();
+    // The metadata URI is in the master's init data, so it moves the address: read it from
+    // the file of the network the pool will be created on, exactly as genesis will.
+    const network = envValue(loadEnvFile(), 'PRIMES_NETWORK') === 'mainnet' ? 'mainnet' : 'testnet';
+    const presentation = resolvePresentation(readNetworkConfig(network));
+    console.log(`network config: shared/networks/${network}.yaml`);
     const jettonMasterCode = loadCode('PrimesJettonMaster');
     const jettonWalletCode = loadCode('PrimesJettonWallet');
 

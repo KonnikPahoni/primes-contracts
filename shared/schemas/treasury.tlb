@@ -404,9 +404,14 @@ lp_credit#96000010
 // RETIRED, not recycled.
 
 // The reply half of `withdraw_lp`: the LP has been sent, delete the position.
+// BOUNCEABLE (GAUNTLET B43): `sunk` is the LP a sink-forward moves into the
+// child's forever total (0 for a withdrawal). The child keys its credit off its
+// own `in_flight = 2` and ignores the field; the treasury's bounce arm reads it
+// to take `sunk × 100` back out of `eligible_weight` when the child refused.
 confirm_withdraw#96000012
     query_id:uint64
     position_id:uint32
+    sunk:Coins
   = InternalMsgBody;
 
 // BOUNCE RECOVERY ONLY. The LP transfer bounced, so the position

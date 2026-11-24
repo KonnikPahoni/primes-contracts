@@ -22,6 +22,7 @@ import { PrimesRegistrar } from '../wrappers/PrimesRegistrar';
 import { PrimesCollection } from '../wrappers/PrimesCollection';
 import { PrimesJettonMaster } from '../wrappers/PrimesJettonMaster';
 import { MockDedustVault } from '../wrappers/MockDedustVault';
+import { buildFlushMessage } from '../../shared/messages';
 
 const MINT_PRICE = toNano('1');
 const OPENING_HEAD = 4n;
@@ -187,6 +188,57 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
 
         expect(await ratchet.getInFlightFlush()).toBe(0n);
         expect((await ratchet.getFlushStatus()).outcome).toBe(FlushOutcome.Filled);
+    });
+
+    it("2026-11-23: a fill's DeDust change goes back to the flush caller — both excesses, never the pool", async () => {
+        const T = await ledger.getFloorNum();
+        const S = await ledger.getFloorDen();
+        await mockVault.sendSetPrice(deployer.getSender(), { priceNum: S, priceDen: T, value: toNano('0.05') });
+        const r = await ratchet.sendFlush(minter.getSender(), { value: FLUSH_VALUE });
+        // (The mock is not a jetton wallet and refuses the burn itself; the burn's BODY is the point.
+        // Every RATCHET transaction is still clean — GAUNTLET B40; the full clean trace on the
+        // real wallet path is the B40 describe at the end of this file.)
+        expect(r.transactions).not.toHaveTransaction({ to: ratchet.address, aborted: true });
+        // The proceeds burn names the caller as its response destination, so the jetton
+        // master's excess after the burn goes straight to them.
+        const burn = r.transactions.find(
+            (t) =>
+                t.inMessage?.info.src?.toString() === ratchet.address.toString() &&
+                t.inMessage.body.beginParse().preloadUint(32) === 0x595f07bc
+        );
+        expect(burn).toBeDefined();
+        const bs = burn!.inMessage!.body.beginParse();
+        bs.skip(32 + 64);
+        bs.loadCoins();
+        expect(bs.loadAddress().equals(minter.address)).toBe(true);
+
+        // Our PRIMES wallet's own excess (here the mock is the wallet) is forwarded on
+        // its own value; the ratchet's balance, which is `pending`, pays nothing.
+        const before = (await blockchain.getContract(ratchet.address)).balance;
+        const ex = await blockchain.sendMessage(
+            internal({
+                from: mockVault.address,
+                to: ratchet.address,
+                value: toNano('0.06'),
+                body: beginCell().storeUint(0xd53276db, 32).storeUint(7, 64).endCell(),
+            })
+        );
+        expect(ex.transactions).not.toHaveTransaction({ aborted: true });
+        expect(ex.transactions).toHaveTransaction({
+            from: ratchet.address,
+            to: minter.address,
+            value: (v?: bigint) => (v ?? 0n) > toNano('0.05'),
+        });
+        expect((await blockchain.getContract(ratchet.address)).balance).toBeGreaterThanOrEqual(before);
+
+        // From anyone else it is accepted and kept, exactly as before.
+        const stranger = await blockchain.treasury('stranger');
+        const other = await stranger.send({
+            to: ratchet.address,
+            value: toNano('0.06'),
+            body: beginCell().storeUint(0xd53276db, 32).storeUint(7, 64).endCell(),
+        });
+        expect(other.transactions).not.toHaveTransaction({ from: ratchet.address, to: minter.address });
     });
 
     it('REJECT: below the floor guard, the mock pays out and the refund restores pending/swapped', async () => {
@@ -961,5 +1013,120 @@ describe('GAUNTLET.md V2.1 — flush() round-trips against a schema-faithful DeD
 
         expect((await ratchet.getFlushStatus()).outcome).toBe(FlushOutcome.Bounced);
         expect(await buffer()).toBeGreaterThanOrEqual(before);
+    });
+});
+
+// GAUNTLET B40: the fill's change on the REAL wallet path. The suite above lets the mock
+// stand in for both the vault and our PRIMES wallet, so the wallet -> ratchet -> caller and
+// wallet -> master -> caller legs never ran. Here the ratchet's PRIMES wallet is the real
+// one, a treasury plays DeDust's PRIMES vault with real PRIMES, and a second flush lands
+// in the one-transaction gap between the fill's notification (which lifts the lock) and
+// our wallet's excess (which carries the first caller's change).
+describe('GAUNTLET B40 — a fill pays its change to its own caller on the real wallet path', () => {
+    it("a flush between the fill's notification and its excess cannot take the first caller's change", async () => {
+        const blockchain = await Blockchain.create();
+        blockchain.now = 1_770_000_000;
+        const deployer = await blockchain.treasury('deployer');
+        const genesisScript = await blockchain.treasury('genesisScript');
+        const fakeLedger = await blockchain.treasury('fakeLedger');
+        const nativeVault = await blockchain.treasury('nativeVault'); // swallows the swap
+        const primesVault = await blockchain.treasury('primesVault'); // pays the proceeds
+        const callerA = await blockchain.treasury('callerA');
+        const callerB = await blockchain.treasury('callerB');
+
+        const master = blockchain.openContract(
+            PrimesJettonMaster.createFromConfig(
+                {
+                    ledgerAddr: fakeLedger.address,
+                    genesisScriptAddr: genesisScript.address,
+                    walletCode: await compile('PrimesJettonWallet'),
+                },
+                await compile('PrimesJettonMaster')
+            )
+        );
+        await master.sendDeploy(deployer.getSender(), toNano('1'));
+        const ratchet = blockchain.openContract(
+            PrimesRatchet.createFromConfig(
+                {
+                    ledgerAddr: fakeLedger.address,
+                    venueTimelockAddr: deployer.address,
+                    genesisScriptAddr: genesisScript.address,
+                    dedustNativeVault: nativeVault.address,
+                    dedustPool: deployer.address,
+                    primesJettonVault: primesVault.address,
+                },
+                await compile('PrimesRatchet')
+            )
+        );
+        await ratchet.sendDeploy(deployer.getSender(), toNano('10'));
+        const ratchetWallet = await master.getWalletAddress(ratchet.address);
+        await ratchet.sendSetJettonWallet(genesisScript.getSender(), { jettonWalletAddr: ratchetWallet, value: toNano('0.05') });
+        await ratchet.sendPoolInject(fakeLedger.getSender(), {
+            amount: toNano('1000'),
+            tSnapshot: toNano('1000'),
+            sSnapshot: toNano('1000000'),
+            value: toNano('1000.01'),
+        });
+        await master.sendMintGenesis(genesisScript.getSender(), { to: primesVault.address, amount: toNano('1000000'), value: toNano('0.2') });
+
+        // A's tranche is tiny, so its pro-rata cooldown is zero and B may flush at once.
+        const a = await ratchet.sendFlush(callerA.getSender(), { value: FLUSH_VALUE, amount: 1000n });
+        expect(a.transactions).not.toHaveTransaction({ aborted: true });
+        const minOut = await ratchet.getLastMinOut();
+
+        // The fill: a real jetton transfer from the "vault" to the ratchet, naming the
+        // ratchet as response destination the way a swap's payout does.
+        const vaultWallet = await master.getWalletAddress(primesVault.address);
+        const fill = await blockchain.sendMessageIter(
+            internal({
+                from: primesVault.address,
+                to: vaultWallet,
+                value: toNano('0.5'),
+                body: beginCell()
+                    .storeUint(0x0f8a7ea5, 32)
+                    .storeUint(0, 64)
+                    .storeCoins(minOut)
+                    .storeAddress(ratchet.address)
+                    .storeAddress(ratchet.address)
+                    .storeBit(false)
+                    .storeCoins(toNano('0.1'))
+                    .storeBit(false)
+                    .endCell(),
+            }),
+            { allowParallel: true }
+        );
+        const fillTxs: any[] = [];
+        for (;;) {
+            const step = await fill.next();
+            expect(step.done).toBe(false);
+            fillTxs.push(step.value);
+            const op = (step.value as any).inMessage?.body?.beginParse().preloadUint(32);
+            if ((step.value as any).inMessage?.info?.dest?.equals(ratchet.address) && op === 0x7362d09c) break;
+        }
+        expect(await ratchet.getInFlightFlush()).toBe(0n); // the lock is off, the excess not yet home
+
+        // B flushes inside the gap.
+        const b = await blockchain.sendMessage(
+            internal({
+                from: callerB.address,
+                to: ratchet.address,
+                value: FLUSH_VALUE,
+                body: buildFlushMessage({ queryId: 0n, amountNanoton: 1000n }).body,
+            })
+        );
+        expect(b.transactions).not.toHaveTransaction({ aborted: true });
+        expect(await ratchet.getInFlightFlush()).toBe(1000n);
+
+        for await (const tx of fill) fillTxs.push(tx);
+        // The whole real path is clean: notification, burn, master, both excesses.
+        expect(fillTxs.filter((t) => t.description?.aborted === true)).toEqual([]);
+        const paid = (to: Address, from: Address) =>
+            fillTxs.filter((t) => t.inMessage?.info?.src?.equals(from) && t.inMessage?.info?.dest?.equals(to));
+        // Our wallet's excess goes to A, and so does the master's after the burn.
+        expect(paid(callerA.address, ratchet.address)).toHaveLength(1);
+        expect(paid(callerA.address, master.address)).toHaveLength(1);
+        expect(paid(callerB.address, ratchet.address)).toHaveLength(0);
+        expect(paid(callerB.address, master.address)).toHaveLength(0);
+        expect((await ratchet.getBurnStats()).burnedPrimes).toBe(minOut);
     });
 });

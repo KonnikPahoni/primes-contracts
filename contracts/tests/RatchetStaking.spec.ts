@@ -1041,6 +1041,54 @@ describe('TON PRIMES — §4.3.2 the staked reserve (D-151)', () => {
         expect(await gasBuffer()).toBeGreaterThanOrEqual(b0);
     });
 
+    it('B38: a genuine wallet excess below STAKE_REFUND_MIN cannot consume the open stake refund', async () => {
+        // A stranger's 1-nano tsTON transfer naming the ratchet as response_destination,
+        // with the stake's public query id, makes OUR wallet send a real `excesses`. Here
+        // that excess is the dust leg; the pool's real reserve excess must still find its row.
+        const excessBody = (q: number) => beginCell().storeUint(TEP74.excesses, 32).storeUint(q, 64).endCell();
+        const toKeeper = (r: any) =>
+            r.transactions.filter((t: any) => t.inMessage?.info?.src?.equals?.(ratchet.address) && t.inMessage.info.dest.equals(keeper.address));
+        await nonOptimistic(false); // the bill path: the stake opens with no excess, its row standing
+        clean(await ratchet.sendStake(keeper.getSender(), { value: STAKE_VALUE, queryID: 0 }), 'bill stake, id 0');
+
+        const dust = await blockchain.sendMessage(
+            internal({ from: pool.address, to: ratchet.address, value: toNano('0.02'), body: excessBody(0) })
+        );
+        clean(dust, 'dust excess from the genuine wallet');
+        expect(toKeeper(dust)).toHaveLength(0);
+
+        const real = await blockchain.sendMessage(
+            internal({ from: pool.address, to: ratchet.address, value: toNano('0.89'), body: excessBody(0) })
+        );
+        clean(real, 'the stake excess');
+        expect(toKeeper(real)).toHaveLength(1);
+    });
+
+    it('B39: a harvest while a stake is open leaves that stake its refund', async () => {
+        const excessBody = (q: number) => beginCell().storeUint(TEP74.excesses, 32).storeUint(q, 64).endCell();
+        const toStranger = (r: any) =>
+            r.transactions.filter((t: any) => t.inMessage?.info?.src?.equals?.(ratchet.address) && t.inMessage.info.dest.equals(stranger.address));
+        // Real accrual first, large against the next stake: stake 1 at 1:1, stake 2 teaches 3:1.
+        await stakeOnce('stake 1');
+        await poolRate({ rateNum: toNano('3'), rateDen: toNano('1') });
+        await injectMore();
+        await stakeOnce('stake 2');
+        // Stake 3 opens on the bill path: in flight, no excess yet, its row {stranger, 9} standing.
+        await nonOptimistic(false);
+        await injectMore();
+        clean(await ratchet.sendStake(stranger.getSender(), { value: STAKE_VALUE, queryID: 9 }), 'bill stake, id 9');
+        expect((await ratchet.getStakingGates()).inFlightStake).toBeGreaterThan(0n);
+
+        blockchain.now = blockchain.now! + HARVEST_INTERVAL;
+        clean(await ratchet.sendHarvest(keeper.getSender(), { value: HARVEST_VALUE }), 'harvest mid-stake');
+
+        const late = await blockchain.sendMessage(
+            internal({ from: pool.address, to: ratchet.address, value: toNano('0.89'), body: excessBody(9) })
+        );
+        clean(late, "the open stake's excess after the harvest");
+        expect(toStranger(late)).toHaveLength(1);
+    });
+
     it('D-146: harvest is caller-paid — under-funded refuses 225, funded leaves the buffer whole', async () => {
         await stakeTwiceAcrossARateRise();
         const b0 = await gasBuffer();
@@ -1068,6 +1116,213 @@ describe('TON PRIMES — §4.3.2 the staked reserve (D-151)', () => {
         clean(await pool.sendSettleBill(keeper.getSender(), { value: toNano('0.05') }), 'settle bill');
         expect((await ratchet.getExitLeg()).leg).toBe(0);
         expect(await gasBuffer()).toBeGreaterThanOrEqual(b0);
+    });
+
+    // -----------------------------------------------------------------------
+    // 2026-11-23 — THE EXIT'S PREPAY IS A RESERVE, NOT A FEE. Measured on mainnet:
+    // a Tonstakers burn carrying 1.05 GRAM gets 1.047 back inside the
+    // `withdrawal` payout. The mock pays the same way (CARRY_ALL_BALANCE on top of
+    // the GRAM), so these measure what the caller really loses, per exit path.
+    // -----------------------------------------------------------------------
+
+    const EXIT_ID = 31;
+    /** The ratchet's refund(s) to the unstake caller in one trace. */
+    const exitRefunds = (r: any) =>
+        r.transactions.filter(
+            (t: any) =>
+                t.inMessage?.info?.src?.equals?.(ratchet.address) &&
+                t.inMessage.info.dest.equals(keeper.address) &&
+                t.inMessage.body.beginParse().loadUint(32) === TEP74.excesses &&
+                t.inMessage.body.beginParse().skip(32).loadUintBig(64) === BigInt(EXIT_ID) &&
+                (t.inMessage.info.value.coins as bigint) > toNano('0.1'), // not the unstake's own 0.019 change
+        );
+
+    it('TSTON_EXIT_GAS: a leg-1 fill hands the caller back its unspent prepay and the pool change — it pays compute, not 1.95', async () => {
+        await stakeThenBreachTheReserve();
+        await pool.sendSetBuffer(keeper.getSender(), { freeTon: toNano('1000'), value: toNano('0.05') });
+        const b0 = await gasBuffer();
+        const obligationBefore = await obligation();
+        const k0 = await keeper.getBalance();
+
+        const u = await ratchet.sendUnstake(keeper.getSender(), { value: UNSTAKE_VALUE, queryID: EXIT_ID });
+        clean(u, 'unstake leg 1');
+        const refunds = exitRefunds(u);
+        expect(refunds).toHaveLength(1);
+        // EXIT_LATER_LEGS_GAS 1.15, never sent, plus the burn's ~0.8 of change.
+        expect(refunds[0].inMessage.info.value.coins).toBeGreaterThan(toNano('1.9'));
+
+        const net = k0 - (await keeper.getBalance());
+        console.log(`unstake caller net cost, leg 1: ${net} nanoGRAM`);
+        expect(net).toBeGreaterThan(0n);
+        expect(net).toBeLessThan(toNano('0.03'));
+        // The buffer neither paid the refund nor kept it, and T did not move.
+        const b1 = await gasBuffer();
+        expect(b1).toBeGreaterThanOrEqual(b0);
+        expect(b1 - b0).toBeLessThan(toNano('0.02'));
+        expect(await obligation()).toBe(obligationBefore);
+        expect((await ratchet.getExitLeg()).leg).toBe(0);
+    });
+
+    it('TSTON_EXIT_GAS: yield in the payout is NOT refunded — the caller never gets back more than it attached', async () => {
+        // The tranche is sized at cost and redeems at the pool's rate: at 3:1 the
+        // payout is mostly yield above cost, and a refund that took "everything
+        // above the credit" would pay it to this wallet.
+        await stakeOnce('stake');
+        await poolRate({ rateNum: toNano('3'), rateDen: toNano('1') });
+        await flushAway((await ratchet.getStaking()).reserveTarget / 2n);
+        await pool.sendSetBuffer(keeper.getSender(), { freeTon: toNano('5000'), value: toNano('0.05') });
+        const b0 = await gasBuffer();
+        const k0 = await keeper.getBalance();
+
+        const u = await ratchet.sendUnstake(keeper.getSender(), { value: UNSTAKE_VALUE, queryID: EXIT_ID });
+        clean(u, 'unstake leg 1 at 3:1');
+        expect(exitRefunds(u)).toHaveLength(1);
+        expect(exitRefunds(u)[0].inMessage.info.value.coins).toBeLessThanOrEqual(UNSTAKE_VALUE);
+        expect(await keeper.getBalance()).toBeLessThan(k0); // never a profit
+        // The yield stayed where unattributable GRAM stays: the buffer, off T.
+        expect((await gasBuffer()) - b0).toBeGreaterThan(toNano('1'));
+    });
+
+    it('TSTON_EXIT_GAS: leg 1 refused -> leg 2 fills — the refused burn change and the never-sent leg-3 gas come back', async () => {
+        await stakeThenBreachTheReserve();
+        await pool.sendSetBuffer(keeper.getSender(), { freeTon: 0n, value: toNano('0.05') });
+        await pool.sendSetDedustTon(keeper.getSender(), { dedustTon: toNano('1000'), value: toNano('0.05') });
+        const b0 = await gasBuffer();
+        const k0 = await keeper.getBalance();
+
+        const u = await ratchet.sendUnstake(keeper.getSender(), { value: UNSTAKE_VALUE, queryID: EXIT_ID });
+        clean(u, 'unstake leg 2');
+        expect(u.transactions).toHaveTransaction({ from: pool.address, to: ratchet.address, op: 0x474f86cf, success: true });
+        expect(exitRefunds(u)).toHaveLength(1);
+
+        const net = k0 - (await keeper.getBalance());
+        console.log(`unstake caller net cost, leg 2: ${net} nanoGRAM`);
+        // The refusal's 0.1 notification pays the ratchet's compute and stays. Of leg 2's
+        // 0.35 only the vault's 0.25 forward counts as payout change (the wallet hop's
+        // change is an `excesses` upstream); the mock, being wallet and vault at once,
+        // puts all of it on the payout, so 0.1 of real change stays in the buffer here.
+        expect(net).toBeLessThan(toNano('0.25'));
+        expect(await gasBuffer()).toBeGreaterThanOrEqual(b0);
+    });
+
+    it('TSTON_EXIT_GAS: an exit that ends on leg 3 refunds the refused leg-1 change once the bill pays', async () => {
+        await stakeThenBreachTheReserve();
+        await pool.sendSetBuffer(keeper.getSender(), { freeTon: 0n, value: toNano('0.05') });
+        await pool.sendSetDedustTon(keeper.getSender(), { dedustTon: 0n, value: toNano('0.05') });
+        const b0 = await gasBuffer();
+
+        const u = await ratchet.sendUnstake(keeper.getSender(), { value: UNSTAKE_VALUE, queryID: EXIT_ID });
+        clean(u, 'unstake leg 3');
+        expect((await ratchet.getExitLeg()).leg).toBe(3);
+        expect(exitRefunds(u)).toHaveLength(0); // nothing is paid while the exit is open
+
+        const settle = await pool.sendSettleBill(keeper.getSender(), { value: toNano('0.05') });
+        clean(settle, 'settle bill');
+        const refunds = exitRefunds(settle);
+        expect(refunds).toHaveLength(1);
+        // Both later legs were sent, so `held` is the refused burn's change plus the leg-3
+        // burn's change, which came home on the bill's `ownership_assigned` (mainnet:
+        // 0.955 of 1.05). Not the bill payout itself: that is the tranche.
+        expect(refunds[0].inMessage.info.value.coins).toBeGreaterThan(toNano('1.3'));
+        expect(refunds[0].inMessage.info.value.coins).toBeLessThan(toNano('1.6'));
+        expect(await gasBuffer()).toBeGreaterThanOrEqual(b0);
+    });
+
+    it('TSTON_EXIT_GAS: a leg-3 bill that pays yield refunds none of it — the bill carries no change', async () => {
+        await stakeOnce('stake');
+        await poolRate({ rateNum: toNano('3'), rateDen: toNano('1') });
+        await flushAway((await ratchet.getStaking()).reserveTarget / 2n);
+        await pool.sendSetBuffer(keeper.getSender(), { freeTon: 0n, value: toNano('0.05') });
+        await pool.sendSetDedustTon(keeper.getSender(), { dedustTon: 0n, value: toNano('0.05') });
+        clean(await ratchet.sendUnstake(keeper.getSender(), { value: UNSTAKE_VALUE, queryID: EXIT_ID }), 'unstake to leg 3 at 3:1');
+        expect((await ratchet.getExitLeg()).leg).toBe(3);
+        const b0 = await gasBuffer();
+
+        const settle = await pool.sendSettleBill(keeper.getSender(), { value: toNano('0.05') });
+        clean(settle, 'settle a bill worth 3x its cost');
+        const refunds = exitRefunds(settle);
+        expect(refunds).toHaveLength(1);
+        // The two legs' change only — the same as at 1:1. The 2x yield stayed.
+        expect(refunds[0].inMessage.info.value.coins).toBeLessThan(toNano('1.6'));
+        expect((await gasBuffer()) - b0).toBeGreaterThan(toNano('1'));
+    });
+
+    it('TSTON_EXIT_GAS: a bounced leg-1 burn refunds the prepay and the bounced gas', async () => {
+        await stakeThenBreachTheReserve();
+        await pool.sendSetBuffer(keeper.getSender(), { freeTon: toNano('1000'), value: toNano('0.05') });
+        const poolAcct = await blockchain.getContract(pool.address);
+        poolAcct.balance = toNano('1'); // the pool's GRAM cannot pay the fill (1305)
+        const b0 = await gasBuffer();
+        const k0 = await keeper.getBalance();
+
+        const u = await ratchet.sendUnstake(keeper.getSender(), { value: UNSTAKE_VALUE, queryID: EXIT_ID });
+        abortedOnlyAtPool(u);
+        expect(exitRefunds(u)).toHaveLength(1);
+        expect(k0 - (await keeper.getBalance())).toBeLessThan(toNano('0.05'));
+        expect(await gasBuffer()).toBeGreaterThanOrEqual(b0);
+        expect((await ratchet.getExitLeg()).leg).toBe(0);
+    });
+
+    it('TSTON_EXIT_GAS: recover_exit pays the UNSTAKE caller, not whoever recovers', async () => {
+        // Seed rate: a refused leg 1 skips leg 2, so leg 2's 0.35 is never sent and
+        // is still held when the bill is stranded and written off.
+        // The H2 B1(b) setup: a non-optimistic stake never teaches a rate, and with
+        // optimistic mode still off the pool refuses leg 1.
+        await nonOptimistic();
+        await stakeOnce('non-optimistic stake');
+        await settleDepositBill('bill pays');
+        await recoverAfterWindow('recover the stake');
+        expect((await ratchet.getStaking()).lastRateNum).toBe(1n); // never learned
+        await flushAway((await ratchet.getStaking()).reserveTarget / 2n);
+        const b0 = await gasBuffer();
+
+        const u = await ratchet.sendUnstake(keeper.getSender(), { value: UNSTAKE_VALUE, queryID: EXIT_ID });
+        clean(u, 'unstake to the bill at the seed rate');
+        expect((await ratchet.getExitLeg()).leg).toBe(3);
+
+        blockchain.now = blockchain.now! + EXIT_RECOVERY;
+        const r = await ratchet.sendRecoverExit(stranger.getSender(), { value: toNano('0.05') });
+        clean(r, 'recover_exit');
+        const refunds = exitRefunds(r);
+        expect(refunds).toHaveLength(1);
+        // leg 2's never-sent 0.35, the refused burn's change and the bill's, less compute.
+        expect(refunds[0].inMessage.info.value.coins).toBeGreaterThan(toNano('1.6'));
+        expect(r.transactions).not.toHaveTransaction({ from: ratchet.address, to: stranger.address, value: (v?: bigint) => v! > toNano('0.1') });
+        expect(await gasBuffer()).toBeGreaterThanOrEqual(b0);
+    });
+
+    it('TSTON_EXIT_GAS: a wallet excess during an open exit pays nothing out, and adds at most once', async () => {
+        await stakeThenBreachTheReserve();
+        await pool.sendSetBuffer(keeper.getSender(), { freeTon: 0n, value: toNano('0.05') });
+        await pool.sendSetDedustTon(keeper.getSender(), { dedustTon: 0n, value: toNano('0.05') });
+        clean(await ratchet.sendUnstake(keeper.getSender(), { value: UNSTAKE_VALUE, queryID: EXIT_ID }), 'unstake leg 3');
+        // The refused leg 1's change is already counted; a second excess from the
+        // genuine wallet with the exit's id (a stranger can provoke one, B38) is not.
+        const extra = await blockchain.sendMessage(
+            internal({
+                from: pool.address,
+                to: ratchet.address,
+                value: toNano('0.9'),
+                body: beginCell().storeUint(TEP74.excesses, 32).storeUint(EXIT_ID, 64).endCell(),
+            })
+        );
+        clean(extra, 'a second exit-id excess');
+        expect(extra.transactions).not.toHaveTransaction({ from: ratchet.address, to: keeper.address });
+        // Nor does a second `ownership_assigned`, from anyone: leg 3's change is already in.
+        const forgedBill = await blockchain.sendMessage(
+            internal({
+                from: stranger.address,
+                to: ratchet.address,
+                value: toNano('0.9'),
+                body: beginCell().storeUint(RATCHET.payout_ownership_assigned, 32).storeUint(0, 64).storeUint(0, 2).endCell(),
+            })
+        );
+        clean(forgedBill, 'a second ownership_assigned');
+        expect(forgedBill.transactions).not.toHaveTransaction({ from: ratchet.address, to: keeper.address });
+
+        const settle = await pool.sendSettleBill(keeper.getSender(), { value: toNano('0.05') });
+        // ≈ 0.69 + 0.79, not + another 0.8 from either message above.
+        expect(exitRefunds(settle)[0].inMessage.info.value.coins).toBeLessThan(toNano('1.6'));
     });
 
     it('D-146: flush is caller-paid here too — the buffer is whole after a flush', async () => {
@@ -2195,7 +2450,7 @@ describe('TON PRIMES — §4.3.2 the staked reserve (D-151)', () => {
     });
 
     it('a divided deploy publishes the divided minimum AND enforces it', async () => {
-        // 168 is the testnet figure — the same divisor `PRIMES_AUCTION_SECONDS
+        // 168 is the testnet figure — the same divisor `test_overrides.auction_seconds
         // = 3600` produces for the clocks, so a wave can set both from one
         // decision. 50/168 = 0.298 GRAM, and the reserve takes 20%, so a stake
         // becomes legal at ~0.37 GRAM of `pending` instead of 62.5.

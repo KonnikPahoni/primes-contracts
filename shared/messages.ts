@@ -140,8 +140,8 @@ function storeBeneficiary(b: Builder, beneficiary: Address | null): Builder {
 /**
  * §4.1's INVITE LINE (D-202, D-215): up to the ledger's live count of recipients THE MINTER
  * names. Each funded slot gets one plain NoBounce transfer of the live value from the ledger carrying a text
- * comment (`shared/invites.ts` `inviteCommentText`; operator-set words, ledger-written link,
- * D-211). There is no signature: D-202
+ * comment (`shared/invites.ts` `inviteCommentText`; operator-set words, no link,
+ * D-211, D-215). There is no signature: D-202
  * deleted it with the generators, because nothing in the transfer is minter-written but
  * the destination.
  */
@@ -519,8 +519,10 @@ export function buildTopUpMessage(opts?: { multiples?: number; queryId?: bigint 
  *   unstake = TSTON_EXIT_GAS 0.8 + EXIT_LATER_LEGS_GAS 1.15         + 0.01 = 1.96
  *   harvest = HARVEST_GAS 0.15 (0.05 forward to the treasury, M1)   + 0.01 = 0.16
  *
- * `unstake` prepays legs 2 and 3 of the exit because a REPLY sends them, not a caller;
- * what the chain does not spend stays in the ratchet's gas buffer. Literals rather than
+ * `unstake` prepays legs 2 and 3 of the exit because a REPLY sends them, not a caller.
+ * None of the 1.96 is a fee: when the exit ends, the ratchet refunds every leg's gas no
+ * reply sent plus the answering leg's change (`refundExitPrepay`). Net to the caller
+ * ≈ 0.012 GRAM on a leg-1 fill. Literals rather than
  * sums of the constants below: this block is evaluated before them.
  */
 export const RATCHET_CALLER_COMPUTE_NANOTON = 10000000n; // 0.01 GRAM
@@ -558,6 +560,31 @@ export function buildFlushMessage(opts?: { queryId?: bigint; amountNanoton?: big
     .storeCoins(amount)
     .endCell();
   return { body, value: FLUSH_GAS_NANOTON };
+}
+
+/**
+ * `harvest#b0000055 { queryId }` on the RATCHET (§4.3.2, D-151) — permissionless,
+ * caller-paid (D-146). Sends the accrued tsTON yield to the treasury; the change comes back.
+ * Refused while an exit is open (230), before the interval (228) and under dust (229):
+ * read `getStaking` / `getStakingGates` / `getExitLeg` first.
+ */
+export function buildHarvestMessage(queryId?: bigint): { body: Cell; value: bigint } {
+  const body = beginCell().storeUint(RATCHET.harvest, 32).storeUint(queryId ?? 0n, 64).endCell();
+  return { body, value: HARVEST_CALLER_GAS_NANOTON + FEE_MARGIN_NANOTON };
+}
+
+/** What a `sweep_ops` attaches. The handler asserts no value and returns no change: the
+ *  attachment stays on the ledger and is itself swept next time. */
+export const SWEEP_OPS_VALUE_NANOTON = 30000000n; // 0.03 GRAM
+
+/**
+ * `sweep_ops#b0000007 { queryId }` on the LEDGER (D-117) — permissionless. Pays
+ * `getOpsSweep().sweepable` to the ratchet pool (`T += sweepable`). A sweep with nothing
+ * sweepable is a no-op, not a throw, so read `getOpsSweep` first.
+ */
+export function buildSweepOpsMessage(queryId?: bigint): { body: Cell; value: bigint } {
+  const body = beginCell().storeUint(LEDGER.sweep_ops, 32).storeUint(queryId ?? 0n, 64).endCell();
+  return { body, value: SWEEP_OPS_VALUE_NANOTON };
 }
 
 // The built number line's builders (`open_build`, `prove_input`, `close_build`,

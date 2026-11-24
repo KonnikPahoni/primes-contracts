@@ -149,6 +149,8 @@ tests use, so a mint cannot carry a proof the ledger will reject.
 | `annotate({ n, text })` | registrar | gas for the first engraving, the registrar's `getTrophyRenameFee()` after — **era trophies only** |
 | `transferTrophy({ primorial, newHolder })` | registrar | gas — **holder only** (D-14) |
 | `flush()` | ratchet | gas |
+| `harvest()` | ratchet | 0.17 GRAM, change back — refused first on an open exit, the 30-day interval or dust yield |
+| `sweepOps()` | ledger | 0.03 GRAM, swept itself next time — refused first when nothing is sweepable |
 | `swap({ side, amount, slippageBps? })` | DeDust's **native vault** (buy) or this wallet's **own PRIMES jetton wallet** (sell) | the amount + the venue's gas |
 
 ### Reads
@@ -157,7 +159,7 @@ tests use, so a mint cannot carry a proof the ledger will reject.
 `agent.chain()` is a [`PrimesChain`](./src/chain.ts) of live `runMethod` calls. Grouped:
 
 - **the ratchet and the ledger** — `head`, `floor`, `counters`, `pending`, `swapped`,
-  `flushStatus`, `floorCache`, `staking`, `ratchetIdentity`, `k`, `kMax`, `lastMintTime`, `seedT`,
+  `flushStatus`, `floorCache`, `staking`, `harvestGates`, `opsSweep`, `ratchetIdentity`, `k`, `kMax`, `lastMintTime`, `seedT`, `inviteTerms`,
   `eraLeader`, `bootstrap`
 - **one wallet** — `balance`, `seqno`, `primesBalance`, `ranks`, `earn`, `numbersOf`,
   `claimsOf`, `historyOf`, `contestOf`, `portfolioOf`

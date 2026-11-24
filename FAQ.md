@@ -241,8 +241,8 @@ There is no privileged caller and no schedule that depends on the operator being
 
 **Whoever calls it pays for it** (`DECISIONS.md` D-146). A flush attaches DeDust's 0.25 GRAM
 of swap gas plus a little compute — 0.26 GRAM, and the contract refuses anything less — and the
-change comes back. The same holds for the three staking arms (stake 1.02 — about 0.89 of it refunded — unstake 1.96, harvest
-0.16 GRAM). No call can spend the ratchet's own balance above `pending`, so nobody can drain it
+change comes back. The same holds for the three staking arms (stake 1.02 — about 0.89 of it refunded — unstake 1.96, almost all of it refunded when the exit ends, harvest
+0.16 GRAM). No call can spend the ratchet's own balance above `pending` beyond what its own caller put there (an exit's refund returns only the `unstake` caller's prepay), so nobody can drain it
 by calling in a loop; the keeper pays its own calls like anyone else.
 
 ### Can the team withdraw the GRAM?

@@ -961,7 +961,7 @@ the residual**, not an independently chosen constant. This is what makes the reb
 | Referral | **10%** if a valid key is set, else → pool | Current owner of NFT #key (§3.1) | Distribution incentive; makes every NFT a yield asset; documented self-referral discount |
 | Treasury | **5%** | The **governed treasury contract** (`ConfigA.feeDests.treasuryAddr`, §5.5) | Protocol revenue, spendable only by a passed proposal or, for its PRIMES, by `distribute()` to §5.3's stakers (D-168). This row has been named twice: D-100 point 6 renamed it ~~"Treasury 5% · Owner"~~ → "Operator 5%" on the reading that the line was the team's fee, and **D-152 reverses that reading and the destination with it** — the recurring per-mint fee is protocol revenue, so it lands where nobody can spend it unilaterally. The operator's only remaining claim on a mint is §6 point 2's forfeit remainder (42% since D-166); the gas & ops surplus is swept to the ratchet pool since D-117 |
 | Gas & ops | **20%** (derived, `DECISIONS.md` D-117; 10% until then) | Deploys, forward fees, primality gas subsidy, `owed` storage rent (flush gas left this line with D-146 — the caller pays it, §4.3); **the surplus over a standing reserve is swept back to the ratchet pool**, emission-free (it swept to the operator until D-117). Reservation settlement is **not** on this line — it is funded by `RES_GAS` (§4.4) | Keeps the all-in 1 GRAM solvent; what it does not spend raises the floor |
-| Invite transfers | **`count` × (value + 0.001 GRAM fee)**, `count` set by the minter up to the operator's live count (genesis 3 × 0.1 GRAM), never more than **0.31 GRAM** a mint; unspent slots → pool | One plain, non-bounceable GRAM transfer per address the minter names, sent inside the mint transaction with its fee paid on top so the value arrives whole, each carrying the text comment `<words> primes.live/?ref=<n>_tg` — operator-set words, ledger-written link (`DECISIONS.md` D-202, D-211, D-215) | Reaches somebody not yet in the game as a line of text in their own wallet, carrying the minter's number as its referral key |
+| Invite transfers | **`count` × (value + 0.001 GRAM fee)**, `count` set by the minter up to the operator's live count (genesis 3 × 0.1 GRAM), never more than **0.31 GRAM** a mint; unspent slots → pool | One plain, non-bounceable GRAM transfer per address the minter names, sent inside the mint transaction with its fee paid on top so the value arrives whole, each carrying the text comment `<words>` — operator-set words and nothing else, no link (`DECISIONS.md` D-202, D-211, D-215) | Reaches somebody not yet in the game as a line of text, and a push, in their own wallet |
 | **Pool injection (β)** | **residual** | Credited to the ratchet; converted to PRIMES on DeDust and burned by the public flush schedule (§4.3) | The price-floor ratchet |
 
 **The mint keeps at most `MINT_PRICE + MINT_MARGIN` (1.5 GRAM); anything sent above that
@@ -1023,13 +1023,15 @@ and again at every invite mint, so **no terms can take β below 0.24**. `INVITE_
 0.001 GRAM is the line paying its own fee — an upper bound on the measured 0.0003–0.0004 GRAM
 per transfer — so the gas & ops line carries none of it, and what it overstates stays on the
 ledger, where `sweep_ops` returns it to the ratchet pool. `getInviteTerms()` publishes the
-live `(count, value)` beside the three bounds. **The comment is `<words> primes.live/?ref=<n>_tg`**:
-the link and the minter's own `n` as a referral key are written by the ledger's code; the
-words before them (at most 86 bytes) are set by the operator's wallet with `set_invite_terms`
+live `(count, value)` beside the three bounds. **The comment is `<words>` and nothing else**:
+the words (at most 86 bytes) are set by the operator's wallet with `set_invite_terms`
 (`DECISIONS.md` D-211, D-215), so a launch or a celebration can change what invitees read without a
-redeploy. `getInviteText()` returns the live words and `getInviteComment(n)` the exact bytes.
+redeploy. There is no link: a mainnet probe of the genesis words with ` primes.live/?ref=<n>_tg`
+after them got no Telegram Wallet push where the words alone did (D-215 point 4, closed by the
+owner 2026-11-23), so the comment does not depend on `n` and an invite carries no referral key.
+`getInviteText()` returns the live words and `getInviteComment()` the exact bytes.
 A minter-written comment would let anyone send scam text from the game's address, so the
-minter writes none; the operator's key can change the words but never the link. The `n` is
+minter writes none. The `n` is
 what makes inviting pay the inviter, through the 10% referral line above, when an invitee mints. The line buys **transfers, not a budget**: it has no residual
 of its own, and nothing accumulates anywhere.
 
@@ -1529,7 +1531,12 @@ So the injection is **credited at mint, executed on flush**:
    and whoever calls it attaches the venue's gas: **`DEDUST_SWAP_GAS` (0.25 GRAM) plus
    0.01 GRAM of the ratchet's own compute, 0.26 GRAM in all**. Below that the call refuses by
    name (`ratchet_flush_gas`, 225) before anything moves; above it the change comes straight
-   back to the caller as a TEP-74 `excesses`. **The swap message must carry the venue's own
+   back to the caller as a TEP-74 `excesses`, and so does the venue's unspent gas when a swap
+   fills: the ratchet records the last flush caller and names it as the proceeds burn's
+   response destination, and forwards its own PRIMES wallet's `excesses` there on that
+   message's value alone (2026-11-23). The fill pins that caller for its own wallet excess,
+   which lands one transaction after the fill lifts the flush lock, so a flush in that gap
+   cannot take the first caller's change (`GAUNTLET.md` B40). **The swap message must carry the venue's own
    gas on top of the GRAM being swapped**, or the vault rejects it for declaring more input
    than it was sent — that gas now rides out of the caller's value, never out of `pending`.
    The owner's rule is the specification: *calling flush from any wallet should not affect
@@ -2023,19 +2030,33 @@ operator address, and `getHarvestDest()` publishes the one address it can pay.
 **The counterparty's fees are what shape the parameters, and the CALLER pays them**
 (`DECISIONS.md` D-146). Tonstakers credits a deposit **less a flat 1 GRAM** and charges
 **~0.5 GRAM per withdrawal** — read from the upstream source on 2026-09-20 and recorded with
-file and line in the contract. The 1 GRAM is a **gas reserve, not a fee**: the pool mints with
+file and line in the contract. The withdrawal's 0.5 is a gate, not a charge: measured on mainnet
+2026-11-23, a burn carrying 1.05 GRAM gets 1.047 back inside the `withdrawal` payout. The 1 GRAM is a **gas reserve, not a fee**: the pool mints with
 everything above its reserve and the unspent ~0.89 GRAM comes back as `excesses` (measured on
 mainnet 2026-11-23). `stake()` therefore attaches `amount + 1 + 0.01` (the 0.01 only outbids
 the deposit's forward fee, so the pool credits at least `amount`), credits
 `stakedCost += amount`, and **asserts the caller attached the reserve and the margin** (1.02 GRAM)
 before anything moves, refusing by name (225) if not and returning the change if over; when the
 pool's `excesses` for that stake arrives (authenticated on the tsTON wallet and the stake's query
-id) the ratchet forwards it, inbound value only, to the caller. A stake costs its caller ≈ 0.13
+id, and carrying at least 0.5 GRAM — half the reserve — so a dust excess a stranger provokes
+from the same wallet cannot consume it, `GAUNTLET.md` B38) the ratchet forwards it, inbound value
+only, to the caller. Only a stake's own end or an `unstake` clears that refund; a `harvest()`
+returns its wallet change to its own caller and leaves an open stake's refund standing (B39). A stake costs its caller ≈ 0.13
 GRAM net, almost all of it the 0.1 GRAM notification that pays the ratchet's fill.
 `harvest()` is the same at 0.16 GRAM (its 0.15 GRAM wallet hop includes the 0.05 forward). `unstake()` asks 1.96 GRAM, because it **prepays the
 whole exit**: legs 2 and 3 are sent by the replies that refuse the leg before them, when no
-caller is present, so their gas is taken up front and held; what the chain does not spend
-stays in the ratchet's gas buffer — the only direction the rule allows. The reason for all of
+caller is present, so their gas is taken up front and held. **None of it is a fee**: when the exit
+ends — on whichever leg, a bounce or `recover_exit` — the ratchet sends the `unstake` caller every
+later leg's gas no reply sent, plus the answering leg's change (the part of its payout or bounce
+above what was credited to `pending`, capped at that leg's own attached gas, so the yield a
+cost-sized tranche redeems with is never paid to a wallet; the bill's payout counts for none),
+plus two arrivals that carry a leg's change, each counted once under the same 0.5 GRAM floor as
+the stake's: a refused leg 1's `excesses` from our tsTON wallet for the exit's query id, and leg
+3's bill `ownership_assigned` (mainnet: 0.955 of a 1.05 burn). It keeps 0.01 GRAM to pay that
+transaction's compute and never pays from `pending`. An exit that fills on leg 1 costs its
+caller ≈ 0.012 GRAM net; one that falls to leg 2 ≈ 0.21 in the sandbox (the refusal's 0.1 GRAM
+notification pays the ratchet's compute). Change no rule can attribute (leg 2's own wallet
+hop, a second excess) stays in the gas buffer — the only direction the rule allows. The reason for all of
 it is the theorem: **a fee taken out of the staked amount would drop `T` by 1 GRAM on every
 stake, and `p_f = T/S` with it.** An accounting choice is not allowed to break §5, so the
 fee comes from the caller or the stake does not happen.
@@ -2512,7 +2533,9 @@ rank, sink or discount can reach it.
 
    ```
    open_head_lot(n)  permissionless and UNPRICED. Opens the descending clock on a
-                     verified prime that is next among not-yet-built numbers.
+                     verified prime that is next among not-yet-built numbers. The caller
+                     attaches the 1M-gas worst case; the market keeps OPEN_RESERVE_GAS for
+                     the ledger's check and returns the rest (2026-11-23).
    D(t) = max( P0(n) · (1 − t / PRIME_DUTCH_SECONDS) , restingPrice(n) )  standing price
    buy(n)            pay D(t) + RES_GAS. A "bid" on this lane IS the purchase and it
                      SETTLES IN THE SAME TRANSACTION. No clock is opened, ever.
@@ -3044,10 +3067,11 @@ line of text to an address that has never played — so each objection is checke
   for nothing — no claim, no off-site signature, nothing a drainer needs — and a plain
   transfer's comment shows as text in Telegram's wallet, where an unknown NFT collection is
   hidden. The owner accepted the rest (D-202), and §12 names it.
-- **The aim objection is answered by the referral key.** The comment carries the minter's
-  own `n` as `?ref=<n>_tg`, so §4.1's 10% referral line pays the minter when an invitee
-  mints, and aiming at a real person is the minter's own interest. A minter who aims at
-  their own wallets instead gets 0.30 GRAM back and no invitee (§4.1, §12).
+- **The aim objection is not answered by a referral key any more.** Until D-215 point 4 the
+  comment carried the minter's own `n` as `?ref=<n>_tg`; the link cost the push, so the owner
+  dropped it (2026-11-23) and an invitee arrives with no key. What aiming at a real person
+  still buys the minter is that person in the game; a minter who aims at their own wallets
+  instead gets 0.30 GRAM back and no invitee (§4.1, §12).
 
 #### 4.6.2 (deleted)
 
@@ -4450,8 +4474,10 @@ rules make it safe:
   top-up delays the total's next vote; it never adds one.
 - **Only the position round trip credits it.** `confirm_withdraw` credits the total only for a
   move that left as a sink-forward, and a bounced sink-forward takes the credit back on both
-  sides (`restore_position.from_sink`). LP sent to the sink any other way — the genesis seed
-  included — carries no vote.
+  sides (`restore_position.from_sink`). A `confirm_withdraw` the child refuses bounces, and
+  the treasury takes the forever weight it added back out (`confirm_withdraw.sunk`); the
+  child's row stays in flight, and an in-flight row votes nothing. LP sent to the sink any
+  other way — the genesis seed included — carries no vote.
 - **It counts in `eligibleWeight`, and so in the 1% propose bar** (owner-accepted). Forever
   weight whose holder stops voting stays in that denominator for good, which raises the bar
   for everyone else; the trade is accepted in writing in D-214.
@@ -6099,7 +6125,7 @@ share link needs somewhere to be posted and something to open into.
 
   | Contract | Get-methods |
   |---|---|
-  | `primes_ledger.tolk` | `getInviteTerms()` (the live operator-set count and value, then `INVITE_SEND_FEE`, `INVITE_LINE_CAP`, `INVITE_COUNT_CEILING` — the three fixed bounds, D-215), `getInviteComment(n)` (the exact comment an invite from `n` carries), `getInviteText()` (the operator-set words alone, D-211), `getInviteSpend()` (slots funded, transfers sent, slots returned to β, GRAM delivered, GRAM the line cost — so the invite line closes against `count` in public and §4.1's "unspent → β" rule is checked rather than asserted) |
+  | `primes_ledger.tolk` | `getInviteTerms()` (the live operator-set count and value, then `INVITE_SEND_FEE`, `INVITE_LINE_CAP`, `INVITE_COUNT_CEILING` — the three fixed bounds, D-215), `getInviteComment()` (the exact comment every invite carries — the words alone, D-215), `getInviteText()` (the operator-set words alone, D-211), `getInviteSpend()` (slots funded, transfers sent, slots returned to β, GRAM delivered, GRAM the line cost — so the invite line closes against `count` in public and §4.1's "unspent → β" rule is checked rather than asserted) |
   | `primes_bounty_vault.tolk` | `getVaultFunded()` (the genesis funding an era bounty or rebate must fit under, `funded − paid`; V26.7), `getDeferredPayouts()` (bounties owed but not delivered — the count and the journal-key bound a retrier walks; D-129), `getRetryEntry(key)` (one journal row and whether a retry of it would pay, so a retrier reads before it sends; GAUNTLET.md G59) |
 
   **AMENDED 2026-08-19 (`DECISIONS.md` D-24): the rule gains a second clause, because the
@@ -6161,6 +6187,18 @@ share link needs somewhere to be posted and something to open into.
   informative, and the UI must show *why* — "last flush bounced: market above floor" — or
   the same silence reads as abandonment.
 
+  **The public calls are pressable, not only readable** (2026-11-23). Four permissionless,
+  caller-paid calls keep the books moving, and the keeper sends each as soon as it is due;
+  the app offers every one of them to any player, each behind a popup: `flush()` and
+  `sweep_ops` (§4.3.1, D-117) on the ratchet card on `/`, `harvest()` (§4.3.2) and
+  `distribute()` (§5.5.3) on `/governance`. The last three read the handler's own gates
+  before they offer the send (`getOpsSweep`; `getStaking` + `getStakingGates` +
+  `getExitLeg`; `getDistribution`), so a press the contract would refuse or ignore is never
+  offered; flush's brief previews the guard and leaves the cooldown to the contract. Each
+  popup settles on the field the contract stamps when the call lands (`lastAttemptTime`,
+  `opsSweptTotal`, `lastHarvestTime`, `lastDistributeTime`) — never on the wallet's
+  acceptance alone.
+
   **AMENDED 2026-09-09 (`DECISIONS.md` D-112): the rule gains its FIRST and only exception,
   and it is an exception about a number no contract can ever produce.**
 
@@ -6205,9 +6243,10 @@ share link needs somewhere to be posted and something to open into.
   generalise. Nowhere else may a surface show a number the chain did not return.
 
   **The collection has a name, and the name is a §9.1 surface obligation too.** The game
-  issues one TEP-62 collection, §3.1's numbers, and its TEP-64 document names it **PRIMES:
-  Certificates** (every item is a certificate — a submitted factorization for a composite,
-  an on-chain Miller–Rabin certificate for a prime), published under the GetGems short link
+  issues one TEP-62 collection, §3.1's numbers, and its TEP-64 document names it **PRIMES
+  and composites** (every integer is one or the other; each item carries its certificate — a
+  submitted factorization for a composite, an on-chain Miller–Rabin certificate for a prime;
+  it was *PRIMES: Certificates* until the owner renamed it 2026-11-24), published under the GetGems short link
   `certificates`. (It issued three until `DECISIONS.md` D-202 deleted *PRIMES: Generators*
   and *PRIMES: Constellations*; `validatePresentation` checks the collection and the jetton.)
 
@@ -9265,9 +9304,9 @@ away; `DECISIONS.md` D-106 deleted both.)*
   a contract-sent comment shows as text in Telegram Wallet, but a **push notification**
   arrives only when the amount received is **at least 0.1 GRAM** and the comment passes
   Telegram's spam filter — the launch dedication was silent at 0.1, 0.15 and 0.2, with or
-  without the link, and `Hi from @primes_live_bot` alone pushed from a contract. Whether those
-  words still push with the ledger's ` primes.live/?ref=<n>_tg` after them is unmeasured
-  (`DECISIONS.md` D-215 point 4). Neither rule is published by Telegram,
+  without the link, and `Hi from @primes_live_bot` alone pushed from a contract. The same
+  words with ` primes.live/?ref=<n>_tg` after them did NOT push (2026-11-23), so the ledger
+  sends the words alone (`DECISIONS.md` D-215 point 4). Neither rule is published by Telegram,
   both may change without notice, and repeat sends to one wallet were not reliable. What the
   design does about it: the ledger pays each transfer's fee on top so the full value lands,
   and the operator can change the words, the count and the value on chain (`set_invite_terms`)
@@ -9275,13 +9314,13 @@ away; `DECISIONS.md` D-106 deleted both.)*
   shape without a redeploy. **If invites stop reaching anyone, the fix is the count** —
   `count = 0` costs nothing structural, because every unspent slot is β.
 - **Invites are unsolicited, and some recipients will call them spam — accepted, not
-  solved** (`DECISIONS.md` D-202, §4.6.1). What bounds it: the comment is fixed in the
-  ledger's code apart from the minter's `n`, names `primes.live` and asks for nothing, so the
+  solved** (`DECISIONS.md` D-202, §4.6.1). What bounds it: the comment is the operator's
+  words alone, names the game's bot and asks for nothing, so the
   game's address can never carry scam text a minter wrote; the default list names an address
   at most once; and the transfer is real GRAM, not an item to hide. What is not bounded: a
   wallet vendor or a public label set may class the ledger's address as a spammer, which
   would hide the comments, and nothing in this repo can prevent that. `getInviteSpend()`
-  publishes the spend, and `?ref=<n>_tg` attribution counts the invitees who arrive.
+  publishes the spend; with no link (D-215 point 4) nothing attributes an invitee who arrives.
 - **A minter who names their own wallets gets 0.30 GRAM back.** The owner accepts it
   (D-202): the mint costs them 0.70 GRAM net, the 0.30 comes out of β, and the floor books it
   exactly as an honest invited mint — the sim's three-year run sends all three slots on every

@@ -18,7 +18,7 @@
  *     from the treasury to the OPERATOR, and D-152 moved it back to the
  *     GOVERNED TREASURY CONTRACT — so the address it watches is
  *     `PRIMES_TREASURY_ADDRESS`, the contract the genesis pipeline deploys, and
- *     `PRIMES_OPERATOR_ADDR` is now only the forfeit remainder's destination.
+ *     the operator (`operator_addr`) is now only the forfeit remainder's destination.
  *   - gas & ops (10%): not independently observable as a balance line (funds
  *     deploys/forward fees/primality gas/`owed` rent) — noted, not measured.
  *   - pool injection (residual, beta): the ratchet's `pending` should rise by

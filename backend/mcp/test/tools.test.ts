@@ -29,6 +29,10 @@ const chain = {
 };
 
 const flush = vi.fn(async () => ({ seqno: 9 }));
+const harvest = vi.fn(async () => ({ seqno: 10 }));
+const sweepOps = vi.fn(async () => ({ seqno: 11 }));
+const harvestable = vi.fn(async () => 1_000_000_000n);
+const sweepable = vi.fn(async () => 0n as bigint);
 
 const reads = {
   head: async () => 12n,
@@ -68,6 +72,10 @@ vi.mock("@ton-primes/agent", () => ({
     annotate = vi.fn();
     name = vi.fn();
     flush = flush;
+    harvest = harvest;
+    sweepOps = sweepOps;
+    harvestable = harvestable;
+    sweepable = sweepable;
   },
 }));
 
@@ -111,7 +119,7 @@ describe("the registry's shape", () => {
     const writes = names().filter(takesConfirm);
     const readers = names().filter((n) => !takesConfirm(n));
     // If either number moves, the README's table and the package description are stale.
-    expect(writes).toHaveLength(9);
+    expect(writes).toHaveLength(11);
     expect(readers).toHaveLength(14);
   });
 });
@@ -147,6 +155,8 @@ const KNOWN_WRITES = [
   "primes_annotate",
   "primes_name_number",
   "primes_flush",
+  "primes_harvest",
+  "primes_sweep_ops",
 ];
 
 describe("every SDK action is reachable from the model", () => {
@@ -158,12 +168,14 @@ describe("every SDK action is reachable from the model", () => {
     openHeadLot: "primes_open_head_lot",
     closeLot: "primes_close_lot",
     flush: "primes_flush",
+    harvest: "primes_harvest",
+    sweepOps: "primes_sweep_ops",
     claimTribute: "primes_claim_tribute",
     annotate: "primes_annotate",
     name: "primes_name_number",
   };
 
-  it("has a registered write tool for each of the SDK's nine actions", () => {
+  it("has a registered write tool for each of the SDK's eleven actions", () => {
     const missing = Object.entries(ACTIONS).filter(([, tool]) => !(tool in tools));
     expect(missing).toEqual([]);
     expect(Object.keys(ACTIONS)).toHaveLength(KNOWN_WRITES.length);
@@ -248,6 +260,34 @@ describe("the composite reads answer in one call what an agent would otherwise c
     expect(text).not.toMatch(/"sink"/); // D-212 deleted the naming sink
   });
 
+});
+
+describe("harvest and sweep_ops quote what they would move, and refuse what the contract would", () => {
+  it("harvest quotes the accrued yield and does not send without confirm", async () => {
+    const { text } = await call("primes_harvest");
+    expect(text).toMatch(/1000000000 nano-tsTON/);
+    expect(harvest).not.toHaveBeenCalled();
+    await call("primes_harvest", { confirm: true });
+    expect(harvest).toHaveBeenCalledTimes(1);
+  });
+
+  it("a refusal the SDK names is the tool's answer, and nothing is sent", async () => {
+    harvestable.mockRejectedValueOnce(new Error("an exit is open (leg 3); harvest() would throw 230"));
+    const { text, isError } = await call("primes_harvest", { confirm: true });
+    expect(isError).toBe(true);
+    expect(text).toMatch(/230/);
+    expect(harvest).toHaveBeenCalledTimes(1); // still only the confirmed call above
+  });
+
+  it("sweep_ops refuses a no-op sweep and sends a real one", async () => {
+    sweepable.mockRejectedValueOnce(new Error("nothing is sweepable above OPS_RESERVE; sweep_ops would be a no-op"));
+    expect((await call("primes_sweep_ops", { confirm: true })).isError).toBe(true);
+    expect(sweepOps).not.toHaveBeenCalled();
+    sweepable.mockResolvedValueOnce(42n);
+    const { text } = await call("primes_sweep_ops", { confirm: true });
+    expect(text).toMatch(/paying 42 nanoton/);
+    expect(sweepOps).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("flush quotes the amount it would move, and refuses what the contract would", () => {

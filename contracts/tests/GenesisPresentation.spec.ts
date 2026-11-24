@@ -25,6 +25,7 @@ import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { beginCell } from '@ton/core';
 import { resolvePresentation } from '../scripts/deployGenesis';
+import { parseNetworkConfig, type Network } from '../../shared/networkConfig';
 import {
     GenesisPresentation,
     MAX_URI_BYTES,
@@ -123,34 +124,18 @@ describe('validatePresentation', () => {
 });
 
 describe('the presentation deployGenesis.ts actually ships', () => {
-    const ENV_KEYS = [
-        'PRIMES_COLLECTION_METADATA_URI',
-        'PRIMES_NFT_CONTENT_PREFIX',
-        'PRIMES_JETTON_METADATA_URI',
-    ] as const;
-    const saved: Record<string, string | undefined> = {};
+    // Read from the two real network files, exactly as a genesis run does.
+    const fileCfg = (network: Network) =>
+        parseNetworkConfig(readFileSync(resolve(__dirname, `../../shared/networks/${network}.yaml`), 'utf8'), network);
 
-    beforeEach(() => {
-        for (const k of ENV_KEYS) {
-            saved[k] = process.env[k];
-            delete process.env[k];
-        }
-    });
-    afterEach(() => {
-        for (const k of ENV_KEYS) {
-            if (saved[k] === undefined) delete process.env[k];
-            else process.env[k] = saved[k];
-        }
-    });
-
-    it('passes its own validator with no env set', () => {
-        // The defaults are what a real genesis uses; if they could not pass validation the
+    it.each(['mainnet', 'testnet'] as const)('%s.yaml passes the validator', (network) => {
+        // These are what a real genesis uses; if they could not pass validation the
         // guard would only ever fire on the deploy nobody runs.
-        expect(() => validatePresentation(resolvePresentation())).not.toThrow();
+        expect(() => validatePresentation(resolvePresentation(fileCfg(network)))).not.toThrow();
     });
 
     it('points at documents this repo actually serves', () => {
-        const p = resolvePresentation();
+        const p = resolvePresentation(fileCfg('mainnet'));
         // webapp/public/*.json are published to the site root, and nginx routes /nft/ to
         // the read-proxy (ops/deploy/primes.live.conf). A URI that validates but 404s is
         // still a nameless collection — just for a different reason, and just as permanent.
@@ -189,14 +174,12 @@ describe('the presentation deployGenesis.ts actually ships', () => {
         ]);
     });
 
-    it('honours an env override, for a deploy on another host', () => {
-        process.env.PRIMES_NFT_CONTENT_PREFIX = 'https://testnet.primes.live/nft/';
-        expect(resolvePresentation().nftContentPrefix).toBe('https://testnet.primes.live/nft/');
-    });
-
-    it('validates the override too, rather than trusting the operator', () => {
-        process.env.PRIMES_NFT_CONTENT_PREFIX = 'https://testnet.primes.live/nft';
-        expect(() => validatePresentation(resolvePresentation())).toThrow(/must end in "\/"/i);
+    it('refuses a network file whose nft prefix has no trailing slash', () => {
+        const text = readFileSync(resolve(__dirname, '../../shared/networks/testnet.yaml'), 'utf8').replace(
+            'nft_content_prefix: https://primes.live/nft/',
+            'nft_content_prefix: https://primes.live/nft'
+        );
+        expect(() => parseNetworkConfig(text, 'testnet')).toThrow(/must end with "\/"/);
     });
 });
 

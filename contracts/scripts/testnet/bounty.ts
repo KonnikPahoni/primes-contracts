@@ -23,7 +23,7 @@
  */
 import { Address, toNano } from '@ton/core';
 import { retry } from './sender';
-import { addr, contracts, walletFor, type Contracts } from './chain';
+import { addr, contracts, operatorAddr, walletFor, type Contracts } from './chain';
 import * as A from './assert';
 import { fromAsserts, record } from './journal';
 
@@ -59,15 +59,15 @@ async function cmdStatus(c: Contracts) {
     // vouchers may spend this vault (D-202 took the registrar off with the discovery
     // bounty); an allow-listed address is an address that can move PRIMES out of it.
     const results: A.AssertResult[] = [];
-    const strangers: [string, string][] = [
-        ['registrar', 'PRIMES_REGISTRAR_ADDRESS'],
-        ['ledger', 'PRIMES_LEDGER_ADDRESS'],
-        ['market', 'PRIMES_MARKET_ADDRESS'],
-        ['operator', 'PRIMES_OPERATOR_ADDR'],
+    const strangers: [string, Address][] = [
+        ['registrar', addr('PRIMES_REGISTRAR_ADDRESS')],
+        ['ledger', addr('PRIMES_LEDGER_ADDRESS')],
+        ['market', addr('PRIMES_MARKET_ADDRESS')],
+        ['operator', operatorAddr()],
     ];
-    for (const [name, envVar] of strangers) {
+    for (const [name, who] of strangers) {
         const v = await retry(
-            () => c.vault.isAllowlisted(addrHashOf(addr(envVar))),
+            () => c.vault.isAllowlisted(addrHashOf(who)),
             `isAllowlisted(${name})`
         );
         console.log(`              ${name.padEnd(9)} ${v} (must be 0)`);

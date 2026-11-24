@@ -11,9 +11,9 @@ which private key can do what.**
 ## 1. What is live right now
 
 Network: GRAM **testnet only** (`CLAUDE.md` "Project status: pre-launch" — no mainnet
-deployment exists). **Current genesis: 2026-11-21**, deployed by
-`contracts/scripts/deployGenesis.ts --skew-safe` at commit `58fc759e` from subwallet
-`20261123` of the keeper mnemonic, floor-donated (D-92/D-93, mandatory before ignition —
+deployment exists). **Current genesis: 2026-11-24**, deployed by
+`contracts/scripts/deployGenesis.ts --skew-safe` at commit `26cf5fd5b` from subwallet
+`20261124` of the keeper mnemonic, floor-donated (D-92/D-93, mandatory before ignition —
 see §2; 50 GRAM on this set, a testnet-only shortfall against D-204's 200 recorded under the LIVE table), then **ignited the same
 day** (`scripts/ignite.ts --skew-safe` minted Unity and opened every player-facing path).
 **Fifteen contracts** in the address table (D-212 deleted the burn sink; D-166 deleted the operator's vesting lock; D-168's
@@ -26,7 +26,7 @@ moves). See the bullet list under the LIVE table for what it stands in for and
 why a rate reading from it is a knob rather than a market.
 
 The full address table is `docs/testnet-deployment.md`'s
-**"LIVE — genesis 2026-11-21 (deploy subwallet `20261123`)"** section; it is not
+**"LIVE — genesis 2026-11-24 (deploy subwallet `20261124`)"** section; it is not
 duplicated here because a second copy is a second place to go stale.
 
 > **This date and that section name are CHECKED, not typed** (`GAUNTLET.md` **I11**).

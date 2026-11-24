@@ -69,14 +69,13 @@ import { mnemonicToPrivateKey } from '@ton/crypto';
 import { toncenterRpcEndpoint } from '../../shared/contracts';
 import { dryRunGenesisMasterAddress, genesisPairingPrimes } from './genesisPipeline';
 import { resolvePresentation } from './deployGenesis';
-import { hydrateProcessEnv, deploySubwalletId, envValue, loadEnvFile } from './envFile';
+import { hydrateProcessEnv, deploySubwalletId, envValue, loadEnvFile, readNetworkConfig } from './envFile';
+import { requireValue } from '../../shared/networkConfig';
 import { PrimesLpSink } from '../wrappers/PrimesLpSink';
 import { minReservesForTranche } from '../../shared/dedustQuote';
 import {
     CREATE_VAULT_VALUE,
     DEDUST_FACTORY,
-    DEDUST_NATIVE_VAULT_MAINNET,
-    DEDUST_NATIVE_VAULT_TESTNET,
     DEPOSIT_JETTON_FORWARD,
     DEPOSIT_JETTON_VALUE,
     DEPOSIT_NATIVE_GAS,
@@ -234,6 +233,7 @@ function reportFlushDepth(lpTon: bigint, lpPrimes: bigint, nanotonPerPrimes: big
 async function main() {
     const env = loadEnvFile();
     const testOnly = (envValue(env, 'PRIMES_NETWORK') ?? 'testnet') !== 'mainnet';
+    const netCfg = readNetworkConfig(testOnly ? 'testnet' : 'mainnet');
     const client = new TonClient({
         // GAUNTLET X4: the shared helper, so `TON_RPC_ENDPOINT` moves this with everything else.
         endpoint: toncenterRpcEndpoint(testOnly ? 'testnet' : 'mainnet'),
@@ -301,7 +301,7 @@ async function main() {
         me,
         loadCode('PrimesJettonMaster'),
         loadCode('PrimesJettonWallet'),
-        resolvePresentation().jettonMetadataUri
+        resolvePresentation(netCfg).jettonMetadataUri
     );
     if (!(await retry429('isContractDeployed', () => client.isContractDeployed(master)))) {
         throw new Error(
@@ -317,7 +317,7 @@ async function main() {
     // jetton$0001, and both halves of the deposit must agree byte-for-byte.
     const targetBalances: [bigint, bigint] = [lpTon, lpPrimes];
 
-    const nativeVault = testOnly ? DEDUST_NATIVE_VAULT_TESTNET : DEDUST_NATIVE_VAULT_MAINNET;
+    const nativeVault = Address.parse(requireValue(netCfg, 'dedust_native_vault', netCfg.dedustNativeVault));
     const pool = await retry429('getPoolAddress', () => getPoolAddress(client, native, primes));
     const jettonVault = await retry429('getVaultAddress', () => getVaultAddress(client, primes));
     const myPrimesWallet = await retry429('walletOf', () => walletOf(client, master, me));

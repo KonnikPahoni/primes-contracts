@@ -72,7 +72,7 @@ const RESPONSE_NAME = /^(response|respond)/i;
 
 /**
  * Every place `src` writes its OWN address where a standard reply will be sent:
- *   - a field named `response*`/`respond*` set to `contract.getAddress()`;
+ *   - a field or variable named `response*`/`respond*` set to `contract.getAddress()`;
  *   - `.storeAddress(contract.getAddress())` with `response_destination` in its comment;
  *   - `contract.getAddress()` passed as an argument whose parameter, in this file's own
  *     `fun` declaration, is named `response*`/`respond*` (the vault's `payOut`, the
@@ -93,7 +93,7 @@ function selfResponseSites(src, file) {
         const line = src.slice(lineStart, lineEnd < 0 ? undefined : lineEnd);
         const before = code.slice(lineStart, i);
         let via = null;
-        const field = before.match(/([A-Za-z_][A-Za-z0-9_]*)\s*:\s*$/)?.[1];
+        const field = before.match(/([A-Za-z_][A-Za-z0-9_]*)\s*[:=]\s*$/)?.[1];
         if (field && RESPONSE_NAME.test(field)) via = `${field}:`;
         else if (/storeAddress\(\s*$/.test(before) && /response_destination/.test(line)) {
             via = '.storeAddress (response_destination)';

@@ -27,6 +27,8 @@ import {
   buildNameNumberMessage,
   buildClaimTributeMessage,
   buildFlushMessage,
+  buildHarvestMessage,
+  buildSweepOpsMessage,
   buildOpenLotMessage,
   buildTransferTrophyMessage,
 } from "@ton-primes/shared/messages";
@@ -558,6 +560,70 @@ describe("flush — permissionless, but the ratchet has two asserts worth readin
     expect(sent[0].bodyHash).toBe(
       buildFlushMessage({ amountNanoton: 3_000_000_000n }).body.hash().toString("hex"),
     );
+  });
+});
+
+describe("harvest and sweepOps — permissionless pokes, refused off chain where the contract would refuse", () => {
+  const withRead = <T>(agent: T, read: Record<string, unknown>): T => {
+    (agent as unknown as { read: unknown }).read = read;
+    return agent;
+  };
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  // 1:1 rate, 100 GRAM at cost, 101 tsTON held: 1 tsTON of accrued yield.
+  const staking = (over: Record<string, bigint> = {}) => async () => ({
+    stakedCostNanoton: 100_000_000_000n,
+    tstonHeldNano: 101_000_000_000n,
+    lastRateNum: 1n,
+    lastRateDen: 1n,
+    lastHarvestTime: now - 40n * 86400n,
+    ...over,
+  });
+  const gates = (over: Record<string, unknown> = {}) => async () => ({
+    harvestIntervalSec: 30 * 86400,
+    harvestDustTston: 15_950_681n,
+    exitLeg: 0,
+    ...over,
+  });
+
+  it("sends the shared harvest bytes to the RATCHET when every gate is open", async () => {
+    const { agent, sent } = fakeAgent({});
+    withRead(agent, { staking: staking(), harvestGates: gates() });
+    await agent.harvest();
+    expect(sent).toHaveLength(1);
+    expect(sent[0].bodyHash).toBe(buildHarvestMessage().body.hash().toString("hex"));
+    expect(sent[0].value).toBe(buildHarvestMessage().value);
+  });
+
+  it("refuses an open exit (230), the interval (228) and dust (229) before paying for them", async () => {
+    for (const [read, msg] of [
+      [{ staking: staking(), harvestGates: gates({ exitLeg: 3 }) }, /would throw 230/],
+      [{ staking: staking({ lastHarvestTime: now - 86400n }), harvestGates: gates() }, /would throw 228/],
+      [{ staking: staking({ tstonHeldNano: 100_000_000_001n }), harvestGates: gates() }, /would throw 229/],
+    ] as const) {
+      const { agent, sent } = fakeAgent({});
+      withRead(agent, read);
+      await expect(agent.harvest()).rejects.toThrow(msg);
+      expect(sent).toHaveLength(0);
+    }
+  });
+
+  it("a never-harvested reserve is not inside an interval", async () => {
+    const { agent, sent } = fakeAgent({});
+    withRead(agent, { staking: staking({ lastHarvestTime: 0n }), harvestGates: gates() });
+    await agent.harvest();
+    expect(sent).toHaveLength(1);
+  });
+
+  it("sweepOps sends to the LEDGER, and refuses a sweep with nothing sweepable", async () => {
+    const live = fakeAgent({});
+    withRead(live.agent, { opsSweep: async () => ({ sweepableNanoton: 5n, opsReserveNanoton: 1n }) });
+    await live.agent.sweepOps();
+    expect(live.sent[0].bodyHash).toBe(buildSweepOpsMessage().body.hash().toString("hex"));
+
+    const empty = fakeAgent({});
+    withRead(empty.agent, { opsSweep: async () => ({ sweepableNanoton: 0n, opsReserveNanoton: 1n }) });
+    await expect(empty.agent.sweepOps()).rejects.toThrow(/no-op/);
+    expect(empty.sent).toHaveLength(0);
   });
 });
 

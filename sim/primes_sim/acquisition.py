@@ -515,7 +515,7 @@ def open_lot_volume(*, mints_per_day: float, mean_open_days: float,
 # step (T rises, S does not), so the sim carries them with their source and
 # derives nothing. The first-naming fee has NO GRAM figure here on purpose: a
 # contract cannot read EUR, so the GRAM amount is chosen from the genesis-day
-# GRAM/EUR rate and passed to genesis as `PRIMES_NAME_FEE_TON`
+# GRAM/EUR rate and written into shared/networks/mainnet.yaml as `name_fee_ton`
 # (contracts/scripts/deployGenesis.ts `resolveNamingFees`), which refuses to run
 # without it.
 RENAME_FEE_TON: float = 200.0
@@ -541,14 +541,16 @@ def naming_block() -> dict:
         "name_fee_eur": NAME_FEE_EUR,
         "_name_fee_rule": (
             "the first naming of a number. GRAM figure = name_fee_eur at the "
-            "GRAM/EUR rate on genesis day, passed as PRIMES_NAME_FEE_TON; no "
-            "default exists, and a genesis without it fails"
+            "GRAM/EUR rate on genesis day, written into shared/networks/"
+            "mainnet.yaml as name_fee_ton; no default exists, and a genesis "
+            "without it fails"
         ),
         "rename_fee_ton": RENAME_FEE_TON,
         "_rename_fee_rule": (
             "every later naming of the same number, by whoever owns it then, "
             "and every era-trophy engraving after its free first one. "
-            "PRIMES_RENAME_FEE_TON may lower it on testnet only"
+            "testnet.yaml's test_overrides.rename_fee_ton may lower it on "
+            "testnet only"
         ),
         "_invariant": (
             "a naming fee raises T by exactly the fee and leaves S untouched "

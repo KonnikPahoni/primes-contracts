@@ -13,7 +13,8 @@
 //   5. THE OPERATOR'S LP VOTES LIKE ANYONE'S (D-100 point 9).
 //   6. TR-5 holds: `lpHeld` equals the sum of the positions.
 //   7. NOTHING MINTS (TR-4) — there is no opcode for it.
-//   8. The LP-move bounce arms restore the position, matured and expired.
+//   8. The LP-move bounce arms restore the position, matured and expired, and a
+//      confirm the child refused leaves no forever weight nobody can vote (B43).
 //
 // The ladders are `shared/params.json` `treasury.{vote_multipliers,
 // tier_term_seconds}`; this file asserts the contract equals the wrapper's mirror.
@@ -31,8 +32,8 @@ import {
 import { PrimesLpPosition } from '../wrappers/PrimesLpPosition';
 import { FOREVER_POSITION_ID, FOREVER_VOTE_MULTIPLIER } from '../../shared/opcodes';
 import params from '../../shared/params.json';
-import { internal as sandboxInternal } from '@ton/sandbox';
-import { buildPositionWithdrawMessage } from '../../shared/messages';
+import { internal as sandboxInternal, createShardAccount } from '@ton/sandbox';
+import { buildPositionWithdrawMessage, buildPositionToSinkMessage } from '../../shared/messages';
 import { firstHop } from './helpers/inFlight';
 
 /** Comfortable margin over the published minimums — CLAUDE.md: never the exact figure. */
@@ -755,6 +756,85 @@ describe('LP custody (§5.5.3, D-100 points 4/9, D-147, D-168)', () => {
             expect(rl.transactions).not.toHaveTransaction({ aborted: true });
             expect((await dead.getGov()).eligibleWeight).toEqual(amount * mult(1));
             expect(await child.getVoteWeight()).toEqual(amount * mult(1));
+        });
+
+        it('B43: a confirm the child refused takes its forever weight back out, and the stuck row votes nothing', async () => {
+            const amount = toNano('100');
+            await deposit(bob, amount, 3);
+            const child = childOf(bob.address);
+            expect((await treasury.getGov()).eligibleWeight).toEqual(amount * mult(3));
+
+            // Run the sink-forward until the treasury has sent the LP and the
+            // confirm, then break the child so the confirm throws on arrival.
+            const run = await blockchain.sendMessageIter(
+                sandboxInternal({
+                    from: bob.address,
+                    to: child.address,
+                    value: FORWARD,
+                    body: buildPositionToSinkMessage(0).body,
+                }),
+                { allowParallel: true }
+            );
+            const txs: any[] = [];
+            for (;;) {
+                const step = await run.next();
+                expect(step.done).toBe(false);
+                txs.push(step.value);
+                const op = (step.value as any).inMessage?.body?.beginParse().preloadUint(32);
+                if ((step.value as any).inMessage?.info?.dest?.equals(treasury.address) && op === TreasuryOpcodes.WithdrawLp) break;
+            }
+            const sc = await blockchain.getContract(child.address);
+            const st = sc.accountState;
+            if (st?.type !== 'active') throw new Error('child not active');
+            const data = st.state.data!;
+            const THROWS = beginCell().storeUint(0xf232, 16).endCell(); // TVM `THROW 50`
+            await blockchain.setShardAccount(
+                child.address,
+                createShardAccount({ address: child.address, code: THROWS, data, balance: sc.balance })
+            );
+            for await (const tx of run) txs.push(tx);
+
+            const confirm = txs.filter((t) =>
+                t.inMessage?.info?.dest?.equals(child.address)
+                && t.inMessage.body.beginParse().preloadUint(32) === TreasuryOpcodes.ConfirmWithdraw);
+            expect(confirm).toHaveLength(1);
+            expect(confirm[0].description.aborted).toBe(true);
+            const home = txs.filter((t) => t.inMessage?.info?.dest?.equals(treasury.address));
+            expect(home.some((t) => t.inMessage.info.bounced === true)).toBe(true);
+            expect(home.filter((t) => t.description.aborted === true)).toEqual([]);
+
+            // The LP is in the sink and nobody holds its forever vote: neither does
+            // the electorate. The term weight left on the way out, as on any move.
+            expect(jettonSentTo({ transactions: txs }, lpWallet.address)[0].destination.toString())
+                .toEqual(sink.address.toString());
+            expect((await treasury.getGov()).eligibleWeight).toEqual(0n);
+
+            // The child's state rolled back: the row is still in flight, and votes nothing.
+            await blockchain.setShardAccount(
+                child.address,
+                createShardAccount({ address: child.address, code: positionCode, data, balance: sc.balance })
+            );
+            expect((await child.getPosition(0)).inFlight).toEqual(2);
+            expect((await child.getForever()).amount).toEqual(0n);
+            const p = await child.sendPropose(bob.getSender(), {
+                asset: TreasuryAsset.GRAM,
+                amount: 1n,
+                dest: bob.address,
+                positionId: 0,
+                value: FORWARD,
+            });
+            expect(p.transactions).toHaveTransaction({ to: child.address, aborted: true, exitCode: 1169 });
+        });
+
+        it('B43: the confirm costs a small fraction of CHILD_GAS on a child with many rows — out of gas would send no bounce', async () => {
+            for (let i = 0; i < 30; i++) await deposit(alice, 1n, 0);
+            const r = await childOf(alice.address).sendToSink(alice.getSender(), { positionId: 29, value: FORWARD });
+            const confirm = r.transactions.find((t: any) =>
+                t.inMessage?.info?.dest?.equals(childOf(alice.address).address)
+                && t.inMessage.body.beginParse().preloadUint(32) === TreasuryOpcodes.ConfirmWithdraw) as any;
+            expect(confirm).toBeDefined();
+            const CHILD_GAS = toNano('0.05');
+            expect(confirm.description.computePhase.gasFees * 10n).toBeLessThan(CHILD_GAS);
         });
     });
 });

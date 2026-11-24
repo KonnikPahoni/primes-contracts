@@ -279,7 +279,7 @@ async function main() {
     const keeperKeyPair = await mnemonicToPrivateKey(keeperMnemonic);
     // THE FUNDER IS THE DEPLOY SUBWALLET, NOT THE DEFAULT ONE. This line read
     // `create({ workchain: 0, publicKey })` with no `walletId`, which is the v4
-    // DEFAULT subwallet — the same address as `PRIMES_OPERATOR_ADDR`. That wallet
+    // DEFAULT subwallet — the same address as `testnet.yaml`'s `operator_addr`. That wallet
     // is not the harness's funder and nothing funds it: its only income is §4.1's
     // operator line, which `DECISIONS.md` D-152 shrank to the (now 42%, D-166) remainder of an
     // unsold-prime tribute forfeit, so on a young set it holds pennies. Wave 5 hit
@@ -341,6 +341,25 @@ async function main() {
         console.log(`cooldown ${beforeStatus.cooldownRemaining}s remaining — waiting it out before sending`);
         await new Promise((r) => setTimeout(r, (beforeStatus.cooldownRemaining + 20) * 1000));
         beforeStatus = await retry(() => ratchet.getFlushStatus(), 'getFlushStatus-before');
+    }
+    // ANOTHER CALLER FLUSHED SINCE THE SIZING. The keeper flushes whenever a fill is quotable, so
+    // a sell under the floor is often answered by ITS flush first (20261124: 6 s after the lever,
+    // at the same a_max). This tranche was priced against the pool before that fill and would now
+    // be refused by DeDust's limit. The step's job — spend `pending` at the floor — is done; send nothing.
+    if (beforeStatus.lastAttemptTime !== status.lastAttemptTime) {
+        const taken: A.AssertResult[] = [
+            {
+                ok: true,
+                name: 'FLUSH_TAKEN_BY_ANOTHER_CALLER',
+                getMethod: 'ratchet.getFlushStatus().lastAttemptTime',
+                before: String(status.lastAttemptTime),
+                after: `${beforeStatus.lastAttemptTime} (outcome ${OUTCOME_NAMES[beforeStatus.outcome]}, ${fromNano(beforeStatus.amount)} GRAM)`,
+                detail: 'a flush landed after this tranche was sized, so its quote is stale; nothing sent, the fresh wallet keeps its 0.35 GRAM',
+            },
+        ];
+        A.print(taken);
+        record({ phase: '5', op: 'flush-taken', ok: true, asserts: fromAsserts(taken) });
+        return;
     }
     const beforeSwapped = await retry(() => ratchet.getSwapped(), 'getSwapped-before');
     const beforeT = await retry(() => ledger.getFloorNum(), 'getFloorNum-before');

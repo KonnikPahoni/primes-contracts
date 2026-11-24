@@ -35,7 +35,7 @@ import { Address, Cell, SendMode, TonClient, WalletContractV4, beginCell, intern
 import { mnemonicToPrivateKey } from '@ton/crypto';
 import { dryRunGenesisMasterAddress } from './genesisPipeline';
 import { resolvePresentation } from './deployGenesis';
-import { assertBuildFresh, hydrateProcessEnv, deploySubwalletId, envValue, loadEnvFile } from './envFile';
+import { assertBuildFresh, hydrateProcessEnv, deploySubwalletId, envValue, loadEnvFile, readNetworkConfig } from './envFile';
 import { toncenterRpcEndpoint } from '../../shared/contracts';
 import {
     CREATE_POOL_VALUE,
@@ -89,7 +89,7 @@ async function main() {
     // The SAME derivation genesis itself will use — same subwallet, same jetton
     // codes, same presentation URI — so the pool cannot end up keyed on a master
     // no run will deploy. That failure is unrecoverable (see envFile.ts).
-    const presentation = resolvePresentation();
+    const presentation = resolvePresentation(readNetworkConfig(testOnly ? 'testnet' : 'mainnet'));
     const master = dryRunGenesisMasterAddress(
         wallet.address,
         loadCode('PrimesJettonMaster'),
@@ -154,14 +154,9 @@ async function main() {
     console.log(`\nok  pool answers get_wallet_address -> ${fmt(probe.stack.readAddress())}`);
 
     console.log('\n--- paste into /.env, then run genesisPrep.ts ---');
+    // DeDust's native vault is a per-network constant (shared/networks/<network>.yaml), so
+    // only this run's pool and jetton vault are printed.
     console.log('PRIMES_DEDUST_LP_STANDIN=0');
-    console.log(
-        `PRIMES_DEDUST_VAULT_ADDR=${fmt(
-            testOnly
-                ? Address.parse('kQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNIJE1')
-                : Address.parse('EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_')
-        )}`
-    );
     console.log(`PRIMES_DEDUST_POOL_ADDR=${fmt(pool)}`);
     console.log(`PRIMES_DEDUST_JETTON_VAULT_ADDR=${fmt(jettonVault)}`);
     console.log(

@@ -547,6 +547,47 @@ export class PrimesRead {
   }
 
   /**
+   * `getOpsSweep` on the ledger (D-117): what a permissionless `sweep_ops` would pay the
+   * ratchet pool right now (`T` rises by exactly that), and the `OPS_RESERVE` it leaves
+   * behind. At `sweepableNanoton = 0` the sweep is a no-op, so `sweepOps()` refuses first.
+   */
+  async opsSweep(): Promise<{ sweepableNanoton: bigint; opsReserveNanoton: bigint }> {
+    const { data } = await this.proxy<{ sweepableNanoton: string; opsReserveNanoton: string }>("/ledger/ops-sweep");
+    return { sweepableNanoton: BigInt(data.sweepableNanoton), opsReserveNanoton: BigInt(data.opsReserveNanoton) };
+  }
+
+  /**
+   * `getStakingGates` + `getExitLeg` on the ratchet: the three gates `harvest()` asserts that
+   * `staking()` does not carry — the interval THIS deploy enforces (clock-divided), the dust
+   * floor in nano-tsTON, and the open exit leg (0 = none).
+   */
+  async harvestGates(): Promise<{ harvestIntervalSec: number; harvestDustTston: bigint; exitLeg: number }> {
+    const { data } = await this.proxy<{ harvestIntervalSec: number; harvestDustTston: string; exitLeg: number }>(
+      "/ratchet/harvest-gates",
+    );
+    return { harvestIntervalSec: data.harvestIntervalSec, harvestDustTston: BigInt(data.harvestDustTston), exitLeg: data.exitLeg };
+  }
+
+  /**
+   * `getInviteTerms` — §4.1's LIVE invite terms (D-215): how many invites one mint may declare
+   * (a mint naming more is refused 221; 0 = the line is off) and what each delivers, then the
+   * three bounds the ledger fixes. The operator can change `count` and `value` at any time,
+   * so read this before building an invited mint rather than assuming the genesis 3 × 0.1.
+   */
+  async inviteTerms(): Promise<{ count: number; valueNanoton: bigint; sendFeeNanoton: bigint; lineCapNanoton: bigint; countCeiling: number }> {
+    const { data } = await this.proxy<{ count: number; valueNanoton: string; sendFeeNanoton: string; lineCapNanoton: string; countCeiling: number }>(
+      "/ledger/invite-terms",
+    );
+    return {
+      count: data.count,
+      valueNanoton: BigInt(data.valueNanoton),
+      sendFeeNanoton: BigInt(data.sendFeeNanoton),
+      lineCapNanoton: BigInt(data.lineCapNanoton),
+      countCeiling: data.countCeiling,
+    };
+  }
+
+  /**
    * The head, the rebate clock and the floor in ONE round trip.
    *
    * `k` is `getK(n, t)`, so a client that asks for it separately pays two sequential trips

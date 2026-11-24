@@ -370,21 +370,34 @@ export const PHASES: Phase[] = [
             // more slowly than `pending` does.
             // The spend must FILL, and by phase 10 arbitrage/keeper flushes have often taken the
             // pool back over p_f (1.54x on 20261121), so pull phase 5's lever again first.
+            // EVERY EXIT REFILLS `pending` TO THE RESERVE, so each leg needs its own lever + flush
+            // (G98: the 20261124 run ran them back to back and leg 3 refused 227). The flush script
+            // waits out the 514 s cooldown itself, and `sell under-floor` sizes the sale off the
+            // pool's reserves (a fixed 240000 left the grown pool at 1.054x the floor).
             S('fund the lever again: K -> L', 'testnet/primes.ts', ['ensure', 'K', 'L', '300000']),
-            S('sell PRIMES in: price under p_f so the spend FILLS', 'testnet/pool.ts', ['sell', 'L', '240000']),
+            S('sell PRIMES in: price under p_f so the spend FILLS', 'testnet/pool.ts', ['sell', 'L', 'under-floor']),
             S('spend `pending` so the reserve runs short', 'proveFlushPermissionlessLive.ts'),
             S('LEG 1 — the pool fills out of its own buffer', 'testnet/tston.ts', ['exit', 'leg1', 'F']),
             // OPTIONAL: on a real-DeDust set leg 2's FILL is unreachable by construction and
             // `tston.ts exit leg2` refuses before sending (TESTNET_MASTER_PLAN.md §3 phase 10 step 7);
             // leg 3 drives the same EXIT_LEG_DEDUST -> EXIT_LEG_BILL transition.
             S('LEG 2 — fill_or_kill re-mints, the guarded swap fills', 'testnet/tston.ts', ['exit', 'leg2', 'F'], true),
+            S('fund the lever for leg 3', 'testnet/primes.ts', ['ensure', 'K', 'L', '300000']),
+            S('sell under the floor again', 'testnet/pool.ts', ['sell', 'L', 'under-floor']),
+            S('spend `pending` again — leg 1 refilled it', 'proveFlushPermissionlessLive.ts'),
             S('LEG 3 — no quote clears cost, so a bill is minted', 'testnet/tston.ts', ['exit', 'leg3', 'F']),
             S('the bill settles at round end and `pending` comes home', 'testnet/tston.ts', ['settle', 'F']),
             // §5's ONE external risk, and the only place a live run sees it: the
             // counterparty pays under cost and the shortfall is PUBLISHED rather
             // than absorbed. No path the contract chooses can produce it.
+            S('fund the lever for the loss leg', 'testnet/primes.ts', ['ensure', 'K', 'L', '300000'], true),
+            S('sell under the floor again', 'testnet/pool.ts', ['sell', 'L', 'under-floor'], true),
+            S('spend `pending` again — the bill refilled it', 'proveFlushPermissionlessLive.ts', [], true),
             S('a slashed rate — realizedLoss published, not hidden', 'testnet/tston.ts', ['exit', 'loss', 'F'], true),
-            S('settle the slashed bill', 'testnet/tston.ts', ['settle', 'F'], true),
+            // D-197: an underpaid bill credits what it paid and leaves the exit OPEN; the residual
+            // is published only when `recover_exit` writes it off, after the recovery window.
+            S('settle the slashed bill — the exit stays open on the residual', 'testnet/tston.ts', ['settle', 'F'], true),
+            S('recover_exit — the residual is written off as realizedLoss', 'testnet/tston.ts', ['recover', 'F'], true),
             // Both payout arms accept an UNAUTHENTICATED sender, because the bill
             // collection's address is salted with random() and cannot be
             // whitelisted. The defence is arithmetic; this is what proves it live,

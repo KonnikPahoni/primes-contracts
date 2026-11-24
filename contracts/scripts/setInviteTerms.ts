@@ -2,8 +2,8 @@
  * TON PRIMES — rewrite §4.1's invite terms on the ledger (DECISIONS.md D-211, D-215).
  *
  * The ledger sends up to `count` invites per mint, each delivering `value` whole (it pays
- * the forward fee on top), carrying `<words>` followed by its own referral link for `n`
- * (`shared/invites.ts` `inviteCommentText`). All three are `Config`, settable by
+ * the forward fee on top), carrying `<words>` as the whole comment, no link (D-215;
+ * `shared/invites.ts` `inviteCommentText`). All three are `Config`, settable by
  * `set_invite_terms` from `FeeDests.operatorAddr` (the owner's wallet) and nobody else,
  * inside bounds the ledger fixes: count <= 100 and count x (value + 0.001) <= 0.31 GRAM.
  *
@@ -49,7 +49,7 @@ async function main() {
     const value = valueArg !== undefined ? BigInt(Math.round(Number(valueArg) * 1e9)) : live.value;
 
     const fmt = (c: number, v: bigint, w: string) =>
-        `${c} x ${Number(v) / 1e9} GRAM, line ${(Number(BigInt(c) * (v + INVITE_SEND_FEE_NANOTON)) / 1e9).toFixed(4)}/${Number(INVITE_LINE_CAP_NANOTON) / 1e9} GRAM, "${inviteCommentText(1234n, w)}"`;
+        `${c} x ${Number(v) / 1e9} GRAM, line ${(Number(BigInt(c) * (v + INVITE_SEND_FEE_NANOTON)) / 1e9).toFixed(4)}/${Number(INVITE_LINE_CAP_NANOTON) / 1e9} GRAM, "${inviteCommentText(w)}"`;
     console.log(`network:  ${mainnet ? 'MAINNET' : 'testnet'}`);
     console.log(`ledger:   ${ledgerAddr}`);
     console.log(`now:      ${fmt(live.count, live.value, liveWords)}`);
@@ -65,9 +65,12 @@ async function main() {
 
     const bin = setInviteTermsBody(count, value, words).toBoc().toString('base64url');
     const to = Address.parse(ledgerAddr).toString({ bounceable: true, testOnly: !mainnet });
-    console.log('\nOpen this in the OPERATOR wallet (PRIMES_OPERATOR_ADDR); any other sender is refused (100):');
+    console.log('\nOpen this in the OPERATOR wallet (operator_addr in shared/networks/<network>.yaml); any other sender is refused (100):');
     console.log(`ton://transfer/${to}?amount=${VALUE}&bin=${bin}`);
     console.log(`\nThen re-run this script with no flags: "now" should show the new terms.`);
+    // GAUNTLET.md E31: the app and keeper read `getInviteTerms` live, behind caches.
+    console.log('The app follows within ~90s (read-proxy 30s tier + webapp 60s poll), the keeper within 30s.');
+    console.log('LOWERING the count: a checkout opened before that still declares the old count and is refused 221 until it refreshes.');
 }
 
 main().catch((e) => {

@@ -43,7 +43,8 @@ import { toNano } from '@ton/core';
 import { PrimesVenueTimelock } from '../../wrappers/PrimesVenueTimelock';
 import { PrimesRatchet } from '../../wrappers/PrimesRatchet';
 import { retry } from './sender';
-import { addr, contracts, walletFor, type Contracts } from './chain';
+import { addr, contracts, testnetConfig, walletFor, type Contracts } from './chain';
+import { clockDivisorOf } from '../envFile';
 import * as A from './assert';
 import { fromAsserts, record } from './journal';
 
@@ -58,10 +59,9 @@ function ratchetOf(c: Contracts) {
     return c.client.open(PrimesRatchet.createFromAddress(addr('PRIMES_RATCHET_ADDRESS')));
 }
 
-/** The divisor this set was deployed with, from `.env` — the same source genesis read. */
+/** The divisor this set was deployed with, from `testnet.yaml` — the same source genesis read. */
 function clockDivisor(): number {
-    const secs = Number(process.env.PRIMES_AUCTION_SECONDS ?? '604800');
-    return Math.max(1, Math.floor(604_800 / (Number.isFinite(secs) && secs > 0 ? secs : 604_800)));
+    return clockDivisorOf(testnetConfig());
 }
 
 async function cmdStatus(c: Contracts) {
@@ -74,10 +74,10 @@ async function cmdStatus(c: Contracts) {
     );
     console.log(`queued  pool ${q.dedustPool.toString({ testOnly: true })}`);
     console.log(`ratchet pool ${v.dedustPool.toString({ testOnly: true })}`);
-    // WHAT THIS SET ENFORCES IS NOT WHAT `.env` SAYS, unless the set was deployed
+    // WHAT THIS SET ENFORCES IS NOT WHAT `testnet.yaml` SAYS, unless the set was deployed
     // from bytecode carrying D-139's fifth consumer. The divisor is address- and
     // deploy-determining, so on an older set the delay is still the full 30 days
-    // however `PRIMES_AUCTION_SECONDS` reads here. `q.eta` is the authority: a
+    // however `test_overrides.auction_seconds` reads here. `q.eta` is the authority: a
     // record queued ~30 days out is a pre-divisor timelock.
     const delay = Math.floor(TIMELOCK_DELAY / clockDivisor());
     console.log(

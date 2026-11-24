@@ -4,6 +4,34 @@ All notable changes to `@ton-primes/agent`. This project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html); the game is pre-launch and
 testnet-only, so the major version stays at 0 while contract wire formats can still change.
 
+## 0.6.0
+
+**Breaking: the mint wire format changed** (`DECISIONS.md` D-215). `Mint`'s invite count is
+now `uint7` (it was 3 bits), so 0.5.0 cannot mint against a ledger deployed from the D-215
+code (testnet genesis `20261124` onward), and 0.6.0 cannot mint against an older one.
+
+### Changed
+
+- **§4.1's invite line is operator-set** (D-215): `MintInvites.count` runs 0..the ledger's
+  live count (genesis 3, never above the fixed ceiling 100); a count over it is refused 221.
+  Each slot delivers the live value whole, with the 0.001 GRAM send fee paid on top. The
+  invite comment carries the operator's words alone, with no link.
+- **The coin is GRAM, the network is TON** in every doc comment, tool description and error.
+  No identifier changed: the `*Nanoton` field names stay.
+
+### Added
+
+- **`read.inviteTerms()`**: `/ledger/invite-terms`, `getInviteTerms` verbatim (count, value,
+  send fee, line cap, count ceiling). Read it before building an invited mint rather than
+  assuming the genesis 3 × 0.1.
+
+- **`harvest()` and `sweepOps()`**: §4.3.2's permissionless `harvest()` on the ratchet and
+  D-117's `sweep_ops` on the ledger, both caller-paid. `harvestable()` and `sweepable()` make
+  the contract's refusals first (an open exit 230, the interval 228, dust yield 229; a no-op
+  sweep) and return what the call would move; the send and the MCP quote both use them.
+- **`read.harvestGates()` and `read.opsSweep()`**: `/ratchet/harvest-gates` and
+  `/ledger/ops-sweep`.
+
 ## 0.5.0
 
 ### Added

@@ -918,6 +918,31 @@ paths:
   # /ratchet/*
   # ---------------------------------------------------------------------------
 
+  /ledger/ops-sweep:
+    get:
+      tags: [ledger]
+      summary: What a permissionless `sweep_ops` would pay the ratchet pool right now (D-117).
+      description: >
+        Backed by `getOpsSweep` on the ledger: `sweepable` is the ledger's balance above every
+        liability it holds plus `OPS_RESERVE`, net of the sweep's own gas. `sweep_ops` moves
+        exactly that into the pool and raises `T` by it; at `0` the call is a no-op.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      sweepableNanoton: { type: string }
+                      opsReserveNanoton: { type: string }
+                  provenance: { $ref: "#/components/schemas/Provenance" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/NotConfigured" }
+
   /ledger/seed-t:
     get:
       tags: [ledger]
@@ -953,6 +978,38 @@ paths:
                     type: object
                     properties:
                       seedTNanoton: { type: string }
+                  provenance: { $ref: "#/components/schemas/Provenance" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/NotConfigured" }
+
+  /ledger/invite-terms:
+    get:
+      tags: [ledger]
+      summary: §4.1's live invite terms — count and value, then the three fixed bounds (D-215). 30s tier.
+      description: >
+        Backed by `getInviteTerms` on the ledger, verbatim. `count` and `valueNanoton` are what
+        the operator's `set_invite_terms` last wrote (genesis 3 × 0.1 GRAM); `sendFeeNanoton`,
+        `lineCapNanoton` and `countCeiling` are `INVITE_SEND_FEE`, `INVITE_LINE_CAP` and
+        `INVITE_COUNT_CEILING`, fixed in the contract. A mint declaring more than `count`
+        invites is refused 221, so the checkout sizes its editor off this read, never off
+        params.json (GAUNTLET.md E31). Slow tier: a changed count reaches clients within
+        this TTL plus their own stale time.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count: { type: integer }
+                      valueNanoton: { type: string }
+                      sendFeeNanoton: { type: string }
+                      lineCapNanoton: { type: string }
+                      countCeiling: { type: integer }
                   provenance: { $ref: "#/components/schemas/Provenance" }
         "429": { $ref: "#/components/responses/RateLimited" }
         "503": { $ref: "#/components/responses/NotConfigured" }
@@ -1154,6 +1211,35 @@ paths:
                       reserveTargetNanoton: { type: string, description: Derived on chain from `pending + stakedCost + exiting`, never stored. }
                       lastHarvestTime: { type: string, description: Unix seconds; `0` before the first harvest. }
                       realizedLossNanoton: { type: string, description: Cumulative GRAM that left `T` and did not come back. }
+                  provenance: { $ref: "#/components/schemas/Provenance" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { $ref: "#/components/responses/NotConfigured" }
+
+  /ratchet/harvest-gates:
+    get:
+      tags: [ratchet]
+      summary: The gates `harvest()` asserts that `/ratchet/staking` does not carry — interval, dust, exit leg.
+      description: >
+        Backed by `getStakingGates` and `getExitLeg` on the ratchet. `harvest()` refuses
+        while an exit is open (230), before `harvestIntervalSec` has passed since
+        `lastHarvestTime` (228), and when the accrued tsTON is under `harvestDustTston`
+        (229). The interval is the one THIS deploy enforces, clock divisor included. The
+        accrued yield itself is `tstonHeld − stakedCost · lastRateDen / lastRateNum`, from
+        `/ratchet/staking`.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      harvestIntervalSec: { type: integer }
+                      harvestDustTston: { type: string, description: nano-tsTON. }
+                      exitLeg: { type: integer, description: "`0` = no exit open." }
                   provenance: { $ref: "#/components/schemas/Provenance" }
         "429": { $ref: "#/components/responses/RateLimited" }
         "503": { $ref: "#/components/responses/NotConfigured" }

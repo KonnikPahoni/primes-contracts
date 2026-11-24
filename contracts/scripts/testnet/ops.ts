@@ -30,6 +30,7 @@
  *   npx tsx contracts/scripts/testnet/ops.ts retry-mint <addr> [handle]
  *   npx tsx contracts/scripts/testnet/ops.ts retry-premium <n> [handle]
  *   npx tsx contracts/scripts/testnet/ops.ts sweep-ops [handle]
+ *   npx tsx contracts/scripts/testnet/ops.ts flush [handle]          # §4.3.1, venue sizes it
  *   npx tsx contracts/scripts/testnet/ops.ts park-lots [from] [handle]   # D-200
  *   npx tsx contracts/scripts/testnet/ops.ts vest [handle]
  *
@@ -46,6 +47,7 @@
 import { Address, toNano } from '@ton/core';
 import { PrimesVesting } from '../../wrappers/PrimesVesting';
 import { retry, type Wallet } from './sender';
+import { FLUSH_GAS_NANOTON } from '../../../shared/messages';
 import { addr, contracts, envOpt, snapshot, walletFor, type Contracts, type Snapshot } from './chain';
 import * as A from './assert';
 import { fromAsserts, record } from './journal';
@@ -223,6 +225,45 @@ async function cmdSweepOps(c: Contracts, handle: string) {
 
 
 /**
+ * `flush()` from any handle (§4.3.1) — the owner's `P` walkthrough sends it the way the
+ * webapp's Flush button does: amount 0, so the ratchet sizes the tranche itself. Decided on
+ * the read: nothing pending, a cooldown still running or a round trip in flight is a refusal
+ * the contract would make, so nothing is sent. Settles on `lastAttemptTime` moving.
+ */
+async function cmdFlush(c: Contracts, handle: string) {
+    const w = await walletFor(c.client, handle);
+    const before = await snapshot(c);
+    const st = await retry(() => c.ratchet.getFlushStatus(), 'getFlushStatus');
+    if (before.pending === 0n || st.cooldownRemaining > 0) {
+        console.log(`not sent: pending ${ton(before.pending)}, cooldown ${st.cooldownRemaining}s`);
+        record({ phase: 'P', op: 'flush', ok: true, asserts: [], note: 'skipped: nothing pending or cooldown' });
+        return;
+    }
+    await c.ratchet.sendFlush(w.sender, { value: FLUSH_GAS_NANOTON, amount: 0n });
+    let st2 = st;
+    for (let i = 0; i < 12 && st2.lastAttemptTime === st.lastAttemptTime; i++) {
+        await new Promise((r) => setTimeout(r, 10_000));
+        st2 = await retry(() => c.ratchet.getFlushStatus(), 'getFlushStatus(after)');
+    }
+    const after = await snapshot(c);
+    console.log(`outcome ${st2.outcome === 1 ? 'FILLED' : st2.outcome === 2 ? 'BOUNCED' : st2.outcome} amount ${ton(st2.amount)}`);
+    const results: A.AssertResult[] = [
+        {
+            ok: st2.lastAttemptTime !== st.lastAttemptTime,
+            name: 'FLUSH_LANDED',
+            getMethod: 'ratchet.getFlushStatus().lastAttemptTime',
+            before: String(st.lastAttemptTime),
+            after: String(st2.lastAttemptTime),
+            detail: 'the attempt was stamped — filled or refused by the floor guard, both are the contract working',
+        },
+        A.tIdentity(after),
+        A.sMonotone(before, after),
+    ];
+    record({ phase: 'P', op: 'flush', ok: results.every((r) => r.ok), asserts: fromAsserts(results) });
+    A.requireAll(results);
+}
+
+/**
  * `VESTING.release` on the treasury's genesis lock, from a wallet with no standing.
  * Reads `getVestingSchedule().releasableNow` first: with nothing due the
  * contract throws 1141 rather than cheap-failing, and a red transaction proving
@@ -323,6 +364,8 @@ async function main() {
         }
         case 'sweep-ops':
             return cmdSweepOps(c, handleAt(0));
+        case 'flush':
+            return cmdFlush(c, handleAt(0));
         case 'vest':
             await cmdVest(c, handleAt(0));
             return;

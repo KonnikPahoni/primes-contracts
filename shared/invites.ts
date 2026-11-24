@@ -5,15 +5,15 @@
  * plain NoBounce transfer of the live invite value, fees paid on top, carrying a text
  * comment. There is no operator signature (D-202 deleted it with the generators): the
  * minter picks the addresses, the operator's wallet sets count, value and words (D-211,
- * D-215, `set_invite_terms`), the ledger adds the link. Clients read the live terms off
+ * D-215, `set_invite_terms`); the comment is the words alone, no link (D-215 point 4). Clients read the live terms off
  * `getInviteTerms`; the `INVITE_GENESIS_*` numbers below are only what genesis deploys.
  *
  * Two layouts live here so the contract tests, the keeper and the webapp share them:
  *
  *  - `inviteListCell` — the mint body's `InviteList` ref: `addresses:(HashmapE 7 MsgAddress)`,
  *    keyed BY SLOT 1..count, holes allowed.
- *  - `inviteCommentText` — the exact text `primes_ledger.tolk`'s `inviteComment(n)` sends
- *    under given words (D-211: the words are operator-set on chain, the link is fixed).
+ *  - `inviteCommentText` — the exact text `primes_ledger.tolk`'s `inviteComment` sends
+ *    under given words (D-211: the words are operator-set on chain; D-215: nothing else).
  *    `InviteCrossCheck.spec.ts` pins it to the Tolk literals and `InviteTransfers.spec.ts`
  *    to the bytes a real mint emits.
  *
@@ -66,19 +66,15 @@ export function isInvitable(a: Address): boolean {
 
 /**
  * D-211: the invite WORDS are operator-set on the ledger (`set_invite_terms`, read back with
- * `getInviteText`); the link after them is the ledger's own. This is the text genesis deploys
- * with. D-215 (2026-11-22): mainnet probes found Telegram Wallet pushes a notification for
- * these words sent alone (no link) and drops the push for the longer launch dedication, so
- * the dedication is retired. Whether they still push WITH the ledger's link after them is
- * unmeasured — D-215 point 4. Change it on chain, not here, once deployed.
+ * `getInviteText`), and they are the whole comment. This is the text genesis deploys with.
+ * D-215 (2026-11-22/23): mainnet probes found Telegram Wallet pushes a notification for these
+ * words sent alone, and drops it for the longer launch dedication and for these words with
+ * ` primes.live/?ref=<n>_tg` after them — so the ledger sends no link (D-215 point 4, closed
+ * by the owner 2026-11-23). Change the words on chain, not here, once deployed.
  */
 export const INVITE_TEXT_GENESIS = 'Hi from @primes_live_bot';
 /** `primes_ledger.tolk` `INVITE_TEXT_MAX_BYTES`: UTF-8 bytes, so a non-ASCII character costs 2+. */
 export const INVITE_TEXT_MAX_BYTES = 86;
-
-/** The fixed text the ledger writes around `n`, after the operator's words. */
-export const INVITE_COMMENT_PREFIX = ' primes.live/?ref=';
-export const INVITE_COMMENT_SUFFIX = '_tg';
 
 /** The words as `set_invite_terms` carries them (bytes only). Throws past the ledger's cap. */
 export function inviteTextCell(words: string): Cell {
@@ -87,14 +83,14 @@ export function inviteTextCell(words: string): Cell {
     return beginCell().storeBuffer(Buffer.from(words, 'utf-8')).endCell();
 }
 
-/** The comment an invite for the mint of `n` carries, as text, under the words `words`. */
-export function inviteCommentText(n: bigint, words: string = INVITE_TEXT_GENESIS): string {
-    return `${words}${INVITE_COMMENT_PREFIX}${n.toString(10)}${INVITE_COMMENT_SUFFIX}`;
+/** The comment every invite carries, as text, under the words `words`: the words alone (D-215). */
+export function inviteCommentText(words: string = INVITE_TEXT_GENESIS): string {
+    return words;
 }
 
 /** The same comment as the message body: op 0 (32 zero bits) then the bytes, one cell. */
-export function inviteCommentCell(n: bigint, words: string = INVITE_TEXT_GENESIS): Cell {
-    return beginCell().storeUint(0, 32).storeStringTail(inviteCommentText(n, words)).endCell();
+export function inviteCommentCell(words: string = INVITE_TEXT_GENESIS): Cell {
+    return beginCell().storeUint(0, 32).storeStringTail(inviteCommentText(words)).endCell();
 }
 
 /** `InviteList.addresses`, keyed BY SLOT (1..count, uint7). Empty map → no dict. */

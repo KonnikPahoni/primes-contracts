@@ -26,12 +26,8 @@ import type { TonClient } from '@ton/ton';
 /** Same on mainnet and testnet — see the header. */
 export const DEDUST_FACTORY = Address.parse('EQBfBWT7X2BHg9tXAxzhz2aKiNTU1tpt5NsiK0uSDW_YAJ67');
 
-/**
- * The native GRAM vault. Unlike the factory this is a per-network deployment
- * with its own address, and the testnet one is live with real traffic.
- */
-export const DEDUST_NATIVE_VAULT_TESTNET = Address.parse('kQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNIJE1');
-export const DEDUST_NATIVE_VAULT_MAINNET = Address.parse('EQDa4VOnTYlLvDJ0gZjNYm5PXfSmmtL6Vs6A_CZEtXCNICq_');
+// The native GRAM vault is a per-network deployment with its own address:
+// `dedust_native_vault` in shared/networks/{testnet,mainnet}.yaml.
 
 export const DedustOps = {
     createVault: 0x21cfe02b,

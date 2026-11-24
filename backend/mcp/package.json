@@ -1,9 +1,9 @@
 {
   "name": "@ton-primes/mcp",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "mcpName": "io.github.KonnikPahoni/ton-primes",
   "type": "module",
-  "description": "Model Context Protocol server for TON PRIMES: 23 tools over the game's published get-method projections, every write quoting before it spends.",
+  "description": "Model Context Protocol server for TON PRIMES: 25 tools over the game's published get-method projections, every write quoting before it spends.",
   "license": "MIT",
   "main": "src/index.ts",
   "bin": {

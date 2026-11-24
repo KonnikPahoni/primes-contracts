@@ -8,7 +8,7 @@
  * 0.1 GRAM, NoBounce, mode REGULAR | PAY_FEES_SEPARATELY, carrying the comment it was
  * deployed with — the same shape `primes_ledger.tolk`'s invite line sends since D-215;
  * PROBE_EXACT=0 takes the fee out of the value, as it did before) and has it send that transfer, ONCE, to
- * the address you name. The comment is built by `shared/invites.ts` `inviteCommentCell(n)`,
+ * the address you name. The comment is built by `shared/invites.ts` `inviteCommentCell()` (the genesis words alone, D-215),
  * the builder `InviteTransfers.spec.ts` pins to the ledger's own bytes.
  *
  * Cost: the transfer (0.1 GRAM, or PROBE_TRANSFER_TON) + 0.005 attached, plus ~0.002 wallet fees; the rest is fees and the
@@ -19,10 +19,10 @@
  *   PROBE_WALLET_MNEMONIC="word1 ... word24" \
  *   [PROBE_WALLET_VERSION=v5r1|v4r2]   # default v5r1 (Tonkeeper / Telegram Wallet W5)
  *   [TONCENTER_API_KEY=...]            # optional, mainnet toncenter key
- *     npx tsx scripts/mainnet/inviteProbe.ts <your Telegram wallet address> [n] [--send]
+ *     npx tsx scripts/mainnet/inviteProbe.ts <your Telegram wallet address> [--send]
  *
  *   Without `--send` it prints the sender wallet, the probe address and the exact comment,
- *   and sends nothing. `n` is the number the comment names (default 4).
+ *   and sends nothing.
  *
  * WHAT TO RECORD (append to DECISIONS.md D-202 status note; the owner ran it 2026-11-07, text shown):
  *   1. Does the comment show as TEXT in the Telegram wallet, from the probe's address?
@@ -61,9 +61,8 @@ async function main() {
     const args = process.argv.slice(2);
     const send = args.includes('--send');
     const positional = args.filter((a) => !a.startsWith('--'));
-    if (positional.length < 1) throw new Error('usage: inviteProbe.ts <target address> [n] [--send]');
+    if (positional.length < 1) throw new Error('usage: inviteProbe.ts <target address> [--send]');
     const target = Address.parse(positional[0]);
-    const n = BigInt(positional[1] ?? '4');
 
     const mnemonic = process.env.PROBE_WALLET_MNEMONIC?.trim();
     if (!mnemonic) throw new Error('PROBE_WALLET_MNEMONIC is not set (the mainnet wallet that pays for the probe).');
@@ -77,8 +76,8 @@ async function main() {
     const code = await compileProbe();
     // PROBE_COMMENT overrides the ledger's comment: any text, or '' for no comment at all.
     const custom = process.env.PROBE_COMMENT;
-    const comment = custom === undefined ? inviteCommentCell(n) : custom ? beginCell().storeUint(0, 32).storeStringTail(custom).endCell() : beginCell().endCell();
-    const commentText = custom === undefined ? inviteCommentText(n) : custom;
+    const comment = custom === undefined ? inviteCommentCell() : custom ? beginCell().storeUint(0, 32).storeStringTail(custom).endCell() : beginCell().endCell();
+    const commentText = custom === undefined ? inviteCommentText() : custom;
     const data = beginCell().storeAddress(target).storeRef(comment).storeCoins(TRANSFER_VALUE).storeUint((process.env.PROBE_EXACT ?? '1') === '1' ? 1 : 0, 1).storeUint(0, 1).endCell();
     const init: StateInit = { code, data };
     const probe = contractAddress(0, init);
@@ -100,7 +99,7 @@ async function main() {
         throw new Error(`the sender wallet holds ${Number(balance) / 1e9} GRAM; it needs at least ${Number(DEPLOY_VALUE + 10_000_000n) / 1e9}. Nothing sent.`);
     }
     if ((await client.getContractState(probe)).state === 'active') {
-        throw new Error('the probe for this (target, n) is already deployed and has already sent. Nothing sent.');
+        throw new Error('the probe for this (target, comment, value) is already deployed and has already sent. Nothing sent.');
     }
     const seqno = await opened.getSeqno();
     await opened.sendTransfer({

@@ -4,6 +4,27 @@ All notable changes to `@ton-primes/mcp`. This project follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html); the game is pre-launch and
 testnet-only, so the major version stays at 0 while contract wire formats can still change.
 
+## 0.6.0
+
+**Breaking: built on `@ton-primes/agent` 0.6.0**, whose mint writes D-215's `uint7` invite
+count. Against a ledger from before D-215 (testnet genesis `20261124` is the first after it)
+mints fail; use 0.5.0 there.
+
+### Fixed
+
+- The server announced itself as version `0.4.0` over MCP; it now reports its package version.
+
+### Changed
+
+- Tool descriptions say GRAM for the coin and TON for the network.
+
+### Added
+
+- **`primes_harvest` and `primes_sweep_ops`**: the two permissionless pokes the webapp's
+  public-call dialogs send (§4.3.2's `harvest()`, D-117's `sweep_ops`), through the SDK's new
+  `harvest()` / `sweepOps()`. Each quotes what it would move and refuses first where the
+  contract would. The server now registers 25 tools: 14 reads and 11 writes.
+
 ## 0.5.0
 
 ### Added

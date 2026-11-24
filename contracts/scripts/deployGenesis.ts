@@ -16,22 +16,20 @@
  * (contracts/tests/GenesisRehearsal.spec.ts), so what Phase 5 runs on testnet
  * is the same code path Phase 3 rehearsed.
  *
- * Before running for real, three things must be supplied via env vars, because
- * they are deployment facts, not protocol constants:
+ * THE NETWORK'S DEPLOY FACTS come from `shared/networks/<network>.yaml`, chosen by the
+ * network this run targets (`readNetworkConfig`): the operator wallet, DeDust's native
+ * vault, the D-212 first-naming fee, the TEP-64 metadata URIs, and on mainnet the five
+ * §4.3.2 / D-151 staked-reserve addresses. `mainnet.yaml` cannot carry a test knob;
+ * `testnet.yaml`'s `test_overrides` may lower the rename fee, seed, auction clock and stake
+ * minimum for a rehearsal. A run refuses while any env var those files replaced is set.
  *
- *   PRIMES_OPERATOR_ADDR      — the operator's own wallet. It takes the 20%
- *                               remainder of every unsold-prime forfeit and is
- *                               the §3.1 TEP-66 royalty destination. D-152 took
- *                               §4.1's 5% line OFF it — that pays the governed
- *                               treasury contract below. RENAMED
- *                               from PRIMES_TREASURY_ADDR, which now reads as
- *                               the wrong thing: the treasury is a CONTRACT this
- *                               script deploys and nobody supplies its address.
+ * Per-genesis values stay env vars, because they change with every run:
+ *
  *   PRIMES_PROPOSER_ADDR      — the venue-timelock proposer key (the one
- *                               standing credential in the system)
- *   PRIMES_DEDUST_VAULT_ADDR  — DeDust native (GRAM) vault
- *   PRIMES_DEDUST_POOL_ADDR   — DeDust PRIMES/GRAM pool
- *   PRIMES_DEDUST_JETTON_VAULT_ADDR — DeDust PRIMES jetton vault
+ *                               standing credential in the system); must be this
+ *                               run's deploy wallet (`assertProposerMatchesSender`)
+ *   PRIMES_DEDUST_POOL_ADDR   — DeDust PRIMES/GRAM pool (createDedustPool.ts)
+ *   PRIMES_DEDUST_JETTON_VAULT_ADDR — DeDust PRIMES jetton vault (createDedustPool.ts)
  *   PRIMES_DEDUST_LP_STANDIN  — optional, "1", TESTNET ONLY (GAUNTLET.md R17):
  *                               when the pool above is a stand-in wallet with
  *                               no `get_wallet_address`, derive the LP sink's
@@ -39,19 +37,9 @@
  *                               `standInLpWalletFor` instead of aborting at
  *                               step 25b. Refused off testnet.
  *
- * §4.3.2 / D-151 adds five MAINNET-ONLY vars — on testnet they are not read at
- * all, because the run deploys the mock pool instead (`resolveStakingVenue`):
- *
- *   PRIMES_TONSTAKERS_POOL_ADDR        — Tonstakers' liquid-staking pool
- *   PRIMES_DEDUST_TSTON_VAULT_ADDR     — DeDust's tsTON JETTON vault (leg 2's
- *                                        transfer destination)
- *   PRIMES_DEDUST_TSTON_POOL_ADDR      — DeDust's tsTON/GRAM pool
- *   PRIMES_RATCHET_TSTON_WALLET_ADDR   — the ratchet's own tsTON wallet
- *   PRIMES_TREASURY_TSTON_WALLET_ADDR  — the treasury's own tsTON wallet
- *
- * The last two are inputs and not derivations because the tsTON master is
- * TONSTAKERS', not ours — `getWalletAddress` on anything this repo deploys
- * cannot answer for them.
+ * The staked-reserve wallets are inputs and not derivations because the tsTON master is
+ * TONSTAKERS', not ours — `getWalletAddress` on anything this repo deploys cannot answer
+ * for them.
  *
  * D-46 (supersedes D-19 and CONCEPT §6 point 3's old founder-seed reading):
  * there is no LP leg in this pipeline any more. The three DeDust addresses
@@ -63,22 +51,13 @@
  * pool directly (DeDust's own permissionless deposit flow — anyone can add
  * liquidity). D-166: the operator has no genesis PRIMES allocation at all.
  *
- * One further env var exists for testnet rehearsal only:
- *
- *   PRIMES_TESTNET_SEED_TON   — override the nominal supply-sizing input
- *                               (`params.genesis.genesis_seed_ton` = 200,
- *                               used only to size the treasury's vested
- *                               allocation and the bounty vault — never
- *                               deposited) with a
- *                               smaller figure, so a full genesis can be
- *                               exercised end to end without requiring a real
- *                               200 GRAM balance on the genesis wallet.
- *
- * It is refused on any network but `testnet`, and it is NOT a free knob: see
- * `resolveSeedTon` below for exactly which economic figures it distorts and
- * which it leaves intact. Nothing measured from an overridden deploy is
- * evidence about v5's genesis economics; it is evidence about the wire
- * formats, the message flow, and the deploy pipeline.
+ * `testnet.yaml`'s `test_overrides.seed_ton` overrides the nominal supply-sizing input
+ * (`params.genesis.genesis_seed_ton` = 200, used only to size the treasury's vested
+ * allocation and the bounty vault — never deposited) with a smaller figure. It is NOT a
+ * free knob: see `resolveSeedTon` below for exactly which economic figures it distorts and
+ * which it leaves intact. Nothing measured from an overridden deploy is evidence about
+ * v5's genesis economics; it is evidence about the wire formats, the message flow, and the
+ * deploy pipeline.
  */
 import { execFileSync } from 'child_process';
 import path from 'path';
@@ -101,7 +80,8 @@ import { MockTonstakersPool } from '../wrappers/MockTonstakersPool';
 import params from '../../shared/params.json';
 import { REBATE_KIND } from '../../shared/opcodes';
 
-import { hydrateProcessEnv, clockDivisorFromEnv, resolveStakeMin, loadEnvFile } from './envFile';
+import { hydrateProcessEnv, clockDivisorOf, resolveStakeMin, readNetworkConfig, type NetworkConfig } from './envFile';
+import { requireGenesisReady, requireValue } from '../../shared/networkConfig';
 import { ScriptHost, hostFromProvider, runSkewSafe } from './scriptHost';
 
 // W10: `tsx` loads no `.env`, and every `process.env.PRIMES_*_ADDRESS` read below
@@ -198,7 +178,7 @@ export type StakingVenueAddresses = Pick<
  * §4.3.2 / D-151 — THE STAKED RESERVE'S FIVE ADDRESSES, and the one place the
  * network decides where they come from.
  *
- * MAINNET: all five are env inputs. The tsTON master is Tonstakers' and the
+ * MAINNET: all five come from `mainnet.yaml`'s `staking_venue`. The tsTON master is Tonstakers' and the
  * tsTON/GRAM pool is DeDust's, so nothing this repo deploys can derive any of
  * them, and `validateStakingVenue` (genesisPipeline.ts) refuses the placeholders
  * an omission would otherwise leave behind.
@@ -223,14 +203,16 @@ export type StakingVenueAddresses = Pick<
  * stricter than `PRIMES_DEDUST_LP_STANDIN`, which is an opt-in flag guarded by a
  * network check — here there is nothing to opt into.
  */
-export async function resolveStakingVenue(host: ScriptHost): Promise<StakingVenueAddresses> {
+export async function resolveStakingVenue(host: ScriptHost, cfg: NetworkConfig): Promise<StakingVenueAddresses> {
     if (host.network !== 'testnet') {
+        const v = requireValue(cfg, 'staking_venue', cfg.stakingVenue);
+        const a = (k: keyof typeof v) => Address.parse(requireValue(cfg, `staking_venue.${k}`, v[k]));
         return {
-            tonstakersPool: requireAddr('PRIMES_TONSTAKERS_POOL_ADDR'),
-            dedustTstonVault: requireAddr('PRIMES_DEDUST_TSTON_VAULT_ADDR'),
-            dedustTstonPool: requireAddr('PRIMES_DEDUST_TSTON_POOL_ADDR'),
-            ratchetTstonWallet: requireAddr('PRIMES_RATCHET_TSTON_WALLET_ADDR'),
-            treasuryTstonWallet: requireAddr('PRIMES_TREASURY_TSTON_WALLET_ADDR'),
+            tonstakersPool: a('tonstakersPool'),
+            dedustTstonVault: a('dedustTstonVault'),
+            dedustTstonPool: a('dedustTstonPool'),
+            ratchetTstonWallet: a('ratchetTstonWallet'),
+            treasuryTstonWallet: a('treasuryTstonWallet'),
         };
     }
     // Rate 1:1 in INIT DATA rather than via `SetRate`, so no second message is
@@ -306,55 +288,44 @@ export async function resolveStakingVenue(host: ScriptHost): Promise<StakingVenu
 /**
  * D-212 (§4.7.1) — the two naming fees, in nanoGRAM.
  *
- * `PRIMES_NAME_FEE_TON` is REQUIRED and has no default: the owner set the first naming at
- * about 50 EUR, and a contract cannot read EUR, so the GRAM figure is chosen from the GRAM/EUR
- * rate on the genesis day and typed in then. A genesis that forgot it must fail here, not
- * ship a guessed price into deploy data nobody can change.
+ * `name_fee_ton` is REQUIRED and has no default: the owner set the first naming at about
+ * 50 EUR, and a contract cannot read EUR, so the GRAM figure is chosen from the GRAM/EUR rate
+ * on the genesis day and written into `mainnet.yaml` then (launch gate M5). A genesis that
+ * forgot it must fail here, not ship a guessed price into deploy data nobody can change.
  *
  * The rename fee is the owner's 200 GRAM (`shared/params.json` `naming.rename_fee_ton`).
- * `PRIMES_RENAME_FEE_TON` may lower it on TESTNET only, so a rehearsal can afford a rename.
+ * `testnet.yaml`'s `test_overrides.rename_fee_ton` may lower it, so a rehearsal can afford a
+ * rename; the loader refuses `test_overrides` in `mainnet.yaml`.
  */
-export function resolveNamingFees(network: string): { nameFee: bigint; renameFee: bigint } {
-    const rawName = process.env.PRIMES_NAME_FEE_TON;
-    if (!rawName) {
+export function resolveNamingFees(cfg: NetworkConfig): { nameFee: bigint; renameFee: bigint } {
+    if (cfg.nameFeeTon === null) {
         throw new Error(
-            'PRIMES_NAME_FEE_TON is not set. D-212: the first naming costs ~50 EUR in GRAM at the ' +
-                "genesis-day rate — set it to that day's figure (testnet: any small value, e.g. 0.5)."
+            `shared/networks/${cfg.network}.yaml: name_fee_ton is not set. D-212: the first naming costs ` +
+                "~50 EUR in GRAM at the genesis-day rate — set it to that day's figure (launch gate M5)."
         );
     }
-    const nameFee = toNano(rawName);
-    const spec = toNano(String(params.naming.rename_fee_ton));
-    const rawRename = process.env.PRIMES_RENAME_FEE_TON;
-    if (rawRename && network !== 'testnet') {
-        throw new Error(
-            `PRIMES_RENAME_FEE_TON is set but the target network is "${network}". The rename fee is ` +
-                `the owner's ${params.naming.rename_fee_ton} GRAM (D-212); it may only be lowered for a testnet rehearsal.`
-        );
-    }
-    const renameFee = rawRename ? toNano(rawRename) : spec;
+    const nameFee = toNano(String(cfg.nameFeeTon));
+    const renameTon = cfg.testOverrides.renameFeeTon ?? params.naming.rename_fee_ton;
+    const renameFee = toNano(String(renameTon));
     if (nameFee <= 0n || renameFee <= 0n) throw new Error('D-212: both naming fees must be positive');
     return { nameFee, renameFee };
 }
 
-export function resolveSeedTon(provider: Pick<NetworkProvider, 'network' | 'ui'>): bigint {
+export function resolveSeedTon(cfg: NetworkConfig, ui: { write: (m: string) => void }): bigint {
     const spec = toNano(String(params.genesis.genesis_seed_ton));
-    const raw = process.env.PRIMES_TESTNET_SEED_TON;
-    if (!raw) return spec;
-
-    const network = provider.network();
-    if (network !== 'testnet') {
-        throw new Error(
-            `PRIMES_TESTNET_SEED_TON is set but the target network is "${network}". ` +
-                'The founder seed is a CONCEPT §6 protocol figure; it may only be overridden ' +
-                'for a testnet rehearsal. Unset it, or point this run at --testnet.'
-        );
+    const override = cfg.testOverrides.seedTon;
+    if (override === undefined) return spec;
+    // Unreachable through `parseNetworkConfig` (it refuses `test_overrides` in mainnet.yaml);
+    // kept because the founder seed is a CONCEPT §6 protocol figure and this is where it lands.
+    if (cfg.network !== 'testnet') {
+        throw new Error('test_overrides.seed_ton may only be set for a testnet rehearsal');
     }
+    const raw = String(override);
 
     const seed = toNano(raw);
-    if (seed <= 0n) throw new Error(`PRIMES_TESTNET_SEED_TON must be positive, got "${raw}"`);
     if (seed > spec) {
         throw new Error(
-            `PRIMES_TESTNET_SEED_TON (${raw} GRAM) exceeds the specified seed ` +
+            `test_overrides.seed_ton (${raw} GRAM) exceeds the specified seed ` +
                 `(${params.genesis.genesis_seed_ton} GRAM). The override exists to make genesis ` +
                 'affordable on testnet, not to change the economics upward.'
         );
@@ -367,8 +338,6 @@ export function resolveSeedTon(provider: Pick<NetworkProvider, 'network' | 'ui'>
     // D-166: the vested allocation is the treasury's half of `seed·L`, so S0 = seed·L/2 + V.
     const s0At = (t: bigint) => (t * BigInt(Math.round(L * 1000))) / 1000n / 2n + V;
     const primesPerTonAt = (t: bigint) => Number(s0At(t)) / Number(t);
-    const ui = provider.ui();
-
     ui.write('');
     ui.write('!!! ==================================================================');
     ui.write('!!!  NOMINAL SEED OVERRIDDEN — THIS IS NOT A v5 GENESIS SIZING');
@@ -400,26 +369,20 @@ export function resolveSeedTon(provider: Pick<NetworkProvider, 'network' | 'ui'>
  * CONCEPT §3.1's TEP-64/TEP-66 presentation: what the collection, its items and the PRIMES
  * jetton are CALLED, and where the 5% secondary royalty is declared to go.
  *
- * Defaulted rather than `requireAddr`-style mandatory, unlike every address above, and the
- * distinction is deliberate. A wrong address sends real value somewhere unrecoverable, so
- * there must be no default to get wrong. A URI has exactly one right answer for any deploy
- * fronted by primes.live — the documents are served from webapp/public (collection.json,
- * jetton.json, jetton-logo.png) and by the read-proxy at `/nft/<n>.json`, all published by
- * deploy.ps1 — so requiring the operator to retype them at genesis adds a way to fail
- * without adding a decision.
+ * The documents are served from webapp/public (collection.json, jetton.json,
+ * jetton-logo.png) and by the read-proxy at `/nft/<n>.json`, all published by deploy.ps1.
  *
  * What is NOT optional is that they be passed at all: see `GenesisParams.presentation`.
  * These land in init data, no message can change them, and a genesis that omits them ships
  * a permanently nameless collection and jetton.
  */
-export function resolvePresentation(): GenesisPresentation {
+export function resolvePresentation(cfg: NetworkConfig): GenesisPresentation {
     return {
-        collectionMetadataUri:
-            process.env.PRIMES_COLLECTION_METADATA_URI ?? 'https://primes.live/collection.json',
-        // Trailing slash is load-bearing: the collection concatenates `<n>.json` onto this
-        // with no separator (primes_collection.tolk's `get_nft_content`).
-        nftContentPrefix: process.env.PRIMES_NFT_CONTENT_PREFIX ?? 'https://primes.live/nft/',
-        jettonMetadataUri: process.env.PRIMES_JETTON_METADATA_URI ?? 'https://primes.live/jetton.json',
+        // From `shared/networks/<network>.yaml`. The nft prefix's trailing slash is
+        // load-bearing (the collection appends `<n>.json`); the loader refuses one without it.
+        collectionMetadataUri: cfg.presentation.collectionMetadataUri,
+        nftContentPrefix: cfg.presentation.nftContentPrefix,
+        jettonMetadataUri: cfg.presentation.jettonMetadataUri,
         // CONCEPT §3.1's 5%, read from params.json rather than written as a literal
         // (CLAUDE.md rule 3: no economic parameter that isn't traceable to the sim or spec).
         royaltyNum: params.fees.royalty_numerator,
@@ -431,16 +394,17 @@ export function resolvePresentation(): GenesisPresentation {
 /**
  * D-139 / D-153 — the two test divisors are TESTNET-ONLY, refused anywhere else.
  * Owner, D-153: "later increase back for production". This is that: a mainnet
- * genesis cannot inherit a testnet `.env`'s `PRIMES_AUCTION_SECONDS` or
- * `PRIMES_STAKE_MIN_TON`, both of which land in address-determining init data
- * no message can change afterwards (`docs/mainnet-launch-gates.md` M2).
+ * genesis cannot inherit testnet's `auction_seconds` / `stake_min_ton`, both of which land
+ * in address-determining init data no message can change afterwards
+ * (`docs/mainnet-launch-gates.md` M2). `mainnet.yaml` has nowhere to put either; this is
+ * the second lock, on the divisors themselves.
  */
 export function requireMainnetDivisors(network: string, clockDivisor: number, stakeDivisor: number): void {
     if (network === 'testnet' || (clockDivisor === 1 && stakeDivisor === 1)) return;
     throw new Error(
         `Target network is "${network}" but clockDivisor=${clockDivisor}, stakeDivisor=${stakeDivisor}. ` +
-            'Both must be 1 off testnet (D-139, D-153): unset PRIMES_AUCTION_SECONDS and ' +
-            'PRIMES_STAKE_MIN_TON, or point this run at --testnet.'
+            'Both must be 1 off testnet (D-139, D-153): only testnet.yaml may set ' +
+            'test_overrides.auction_seconds / stake_min_ton.'
     );
 }
 
@@ -451,11 +415,15 @@ export async function run(provider: NetworkProvider) {
 export async function deployGenesis(host: ScriptHost) {
     // Resolved before the compile step so a rejected override fails in a second
     // rather than after twelve contracts have been built.
-    const seedTon = resolveSeedTon({ network: () => host.network as any, ui: () => ({ write: host.write }) as any });
-    const clockDivisor = clockDivisorFromEnv(loadEnvFile());
-    const stakeDivisor = resolveStakeMin(loadEnvFile()).divisor;
+    // The network THIS RUN targets picks the file — never TON_NETWORK (see readNetworkConfig).
+    const cfg = readNetworkConfig(host.network);
+    requireGenesisReady(cfg);
+    host.write(`network config: shared/networks/${cfg.network}.yaml`);
+    const seedTon = resolveSeedTon(cfg, { write: host.write });
+    const clockDivisor = clockDivisorOf(cfg);
+    const stakeDivisor = resolveStakeMin(cfg).divisor;
     requireMainnetDivisors(host.network, clockDivisor, stakeDivisor);
-    const presentation = resolvePresentation();
+    const presentation = resolvePresentation(cfg);
     validatePresentation(presentation);
 
     const code: GenesisCode = {
@@ -536,7 +504,7 @@ export async function deployGenesis(host: ScriptHost) {
         log: (m) => host.write(m),
     };
 
-    // §4.3.2 / D-151. On MAINNET this only reads env vars. On TESTNET it is the
+    // §4.3.2 / D-151. On MAINNET this only reads mainnet.yaml. On TESTNET it is the
     // first thing in the run that sends a message (the mock pool's deploy), and
     // it has to be, because its address is a `GenesisParams` field and the params
     // object is built below. It therefore runs BEFORE the gas-floor preflight, so
@@ -557,7 +525,7 @@ export async function deployGenesis(host: ScriptHost) {
         );
         host.write('preflight ok: DeDust pool and jetton vault are keyed on this run\'s jetton master');
     }
-    const stakingVenue = await resolveStakingVenue(host);
+    const stakingVenue = await resolveStakingVenue(host, cfg);
 
     const genesisParams: GenesisParams = {
         // D-20 DELETES `lots`. There is no fixed genesis set: every prime, from
@@ -624,16 +592,16 @@ export async function deployGenesis(host: ScriptHost) {
         primeQuestsPrimes: BigInt(
             Math.round(params.genesis.era_bounty_schedule.remaining_vault_split.tracks.prime_quests.primes * 1e9)
         ),
-        operatorAddr: requireAddr('PRIMES_OPERATOR_ADDR'),
+        operatorAddr: Address.parse(requireValue(cfg, 'operator_addr', cfg.operatorAddr)),
         proposerAddr: requireAddr('PRIMES_PROPOSER_ADDR'),
         // D-168's sim-selected `distribute()` rate. Deploy data on the treasury
         // with no setter, so it is read from the file at exactly one call site
         // rather than defaulted anywhere (CLAUDE.md rule 3).
         distributionRateBpsPerDay: params.staking.distribution_rate_bps_per_day,
         // D-212 (§4.7.1): the naming fees, deploy data with no setter.
-        ...resolveNamingFees(host.network),
-        // D-139 — THE TEST CLOCK. `PRIMES_AUCTION_SECONDS` (default 604800 =
-        // mainnet = divisor 1) sets the auction window, and the same divisor
+        ...resolveNamingFees(cfg),
+        // D-139 — THE TEST CLOCK. `testnet.yaml`'s `test_overrides.auction_seconds`
+        // (absent = 604800 = mainnet = divisor 1) sets the auction window, and the same divisor
         // scales the ratchet's flush cooldown and the treasury's vote window so
         // every clock in a set moves together. Address-determining on three
         // contracts, so it is chosen here, in the diff, like every other figure
@@ -645,11 +613,11 @@ export async function deployGenesis(host: ScriptHost) {
         // sends it, after this run and before ignite (D-93). It is here so the
         // pairing runbook printed at the end quotes the real figure.
         donationTon: genesisDonationTon(params.genesis),
-        dedustNativeVault: requireAddr('PRIMES_DEDUST_VAULT_ADDR'),
+        dedustNativeVault: Address.parse(requireValue(cfg, 'dedust_native_vault', cfg.dedustNativeVault)),
         dedustPool,
         primesJettonVault: requireAddr('PRIMES_DEDUST_JETTON_VAULT_ADDR'),
         // §4.3.2 / D-151 — the staked reserve's venue and the two tsTON wallets.
-        // The network picks the source, not a config value; see
+        // The network picks the source; see
         // `resolveStakingVenue`.
         ...stakingVenue,
         presentation,

@@ -74,7 +74,8 @@ tolk 1.4
 // withdraw and the sink-forward, so the sink-forward's owner survives a bounce
 // that names the sink as `destination`) and the position id and tier from the
 // packed `queryId`. The position comes back MATURED and EXPIRED, and the owner
-// retries.
+// retries. The confirm bounces too (GAUNTLET B43): a child that refused it never
+// credited a sink-forward's forever total, so that weight leaves `eligibleWeight`.
 //
 // ---------------------------------------------------------------------------
 // GOVERNANCE (D-100 points 8, 9, 10)
@@ -539,6 +540,11 @@ struct (0x96000010) LpCredit {
 struct (0x96000012) ConfirmWithdraw {
     queryId: uint64
     positionId: uint32
+    // The LP this move puts into the child's forever total: the amount for a
+    // sink-forward, 0 for a withdrawal. The child does not read it; the BOUNCE
+    // does — a confirm the child refused never credited the total, so the
+    // forever weight `WithdrawLp` added has to come back out (GAUNTLET B43).
+    sunk: coins
 }
 
 // Outbound, BOUNCE RECOVERY ONLY. See the header's LP-move paragraph.
@@ -859,10 +865,19 @@ fun onInternalMessage(in: InMessage) {
                        msg.amount, dest,
                        // The OWNER, always — see `sendJetton`.
                        msg.owner, fwd, TRANSFER_GAS);
-            sendToChild(cfg, msg.owner, (ConfirmWithdraw {
-                queryId: msg.queryId,
-                positionId: msg.positionId,
-            }).toCell(), CHILD_GAS);
+            createMessage({
+                // RichBounce, unlike `sendToChild`: this confirm is the one
+                // child hop whose failure leaves this contract's books wrong
+                // (GAUNTLET B43) — see the `0x96000012` bounce arm.
+                bounce: BounceMode.RichBounce,
+                value: CHILD_GAS,
+                dest: positionAddress(cfg, msg.owner),
+                body: (ConfirmWithdraw {
+                    queryId: msg.queryId,
+                    positionId: msg.positionId,
+                    sunk: (msg.toSink == 1 ? msg.amount : 0) as coins,
+                }).toCell(),
+            }).send(SEND_MODE_REGULAR);
         }
 
         ExpireVote => {
@@ -1202,6 +1217,28 @@ fun onBouncedMessage(in: InMessageBounced) {
             var prop = look.loadValue().load();
             prop.executed = 0;
             gov.proposals.set(seq as uint32, prop.toCell());
+            storage.gov = gov.toCell();
+            storage.save();
+        }
+        return;
+    }
+
+    if (opcode == 0x96000012) {
+        // A CONFIRM THE CHILD REFUSED (GAUNTLET B43): a dead or frozen child, or
+        // a throw. Its state rolled back, so a sink-forward's LP is in the sink
+        // but no `foreverAmount` holds it — the forever weight `WithdrawLp` put
+        // into `eligibleWeight` has nobody who can vote it, and would raise the
+        // 1% opening bar for ever. Take it back out. A withdrawal moved no
+        // forever weight (`sunk = 0`), and its term weight already left. The
+        // child's row stays in flight, which votes nothing (`liveVoteWeight`).
+        // Out of gas sends no bounce at all — `CHILD_GAS` is sized far above
+        // the confirm's compute (LpCustody.spec.ts asserts the margin).
+        val c = lazy ConfirmWithdraw.fromCell(rich.originalBody);
+        if (c.sunk > 0) {
+            var storage = lazy Storage.load();
+            var gov = storage.gov.load();
+            val v = c.sunk * VOTE_MULT_FOREVER;
+            gov.eligibleWeight = (gov.eligibleWeight > v ? gov.eligibleWeight - v : 0) as uint128;
             storage.gov = gov.toCell();
             storage.save();
         }

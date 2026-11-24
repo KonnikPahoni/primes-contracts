@@ -146,9 +146,9 @@ const MIN_CHANGE: coins = 10000000;            // 0.01 GRAM — below this a ref
 // GRAM never left it — see `MarkRejected`'s handler.
 const OPEN_RESERVE_GAS: coins = 20000000;      // 0.02 GRAM
 // What `open_head_lot` must carry. That lane holds no bid and may never close,
-// so no RES_GAS ever repays it: its `mark_off_head` hop carries the caller's
-// whole remaining value (`SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE`) and this
-// contract's float pays nothing. The floor covers the open's own compute and
+// so no RES_GAS ever repays it: its `mark_off_head` hop carries OPEN_RESERVE_GAS
+// out of the caller's value, the rest goes back to the caller (2026-11-23), and
+// this contract's float pays nothing. The floor covers the open's own compute and
 // still leaves the ledger OPEN_RESERVE_GAS. It is sized from the protocol
 // ceiling, not a sample: config 21 caps a transaction at 1,000,000 gas (~0.0667
 // GRAM), so no open that succeeds can cost more; plus the 0.02 hop, rounded up.
@@ -1759,6 +1759,11 @@ struct (0xf2000013) ParkLots {
 
 // ---- inbound, from the ledger ----
 
+// TEP-74's change message: `open_head_lot` hands the caller back the unspent part of its floor.
+struct (0xd53276db) Excesses {
+    queryId: uint64
+}
+
 struct (0xe0000031) HeadUpdate {
     queryId: uint64
     head: uint256        // the ledger's head is NOT capped; this contract saturates it
@@ -2458,12 +2463,23 @@ fun onInternalMessage(in: InMessage) {
             // whatever this open's compute left of `in.valueCoins`, so the
             // float pays nothing (a fixed OPEN_RESERVE_GAS here cost it
             // ~0.012 GRAM per minimum-value open).
+            // The ledger's check costs what `open_lot`'s does (OPEN_RESERVE_GAS); the rest
+            // of the caller's floor — sized for the 1M-gas worst case, ~0.007 GRAM used by a
+            // small prime on testnet — goes back to the caller (2026-11-23). Reserving the
+            // pre-message balance first means neither send is ever paid from this float.
+            createMessage({
+                bounce: BounceMode.NoBounce,
+                value: OPEN_RESERVE_GAS,
+                dest: cfg.ledgerAddr,
+                body: (MarkOffHead { queryId: msg.queryId, n: msg.n as uint256 }).toCell(),
+            }).send(SEND_MODE_PAY_FEES_SEPARATELY);
+            reserveToncoinsOnBalance(contract.getOriginalBalance() - in.valueCoins, RESERVE_MODE_AT_MOST);
             createMessage({
                 bounce: BounceMode.NoBounce,
                 value: 0,
-                dest: cfg.ledgerAddr,
-                body: (MarkOffHead { queryId: msg.queryId, n: msg.n as uint256 }).toCell(),
-            }).send(SEND_MODE_CARRY_ALL_REMAINING_MESSAGE_VALUE);
+                dest: in.senderAddress,
+                body: (Excesses { queryId: msg.queryId }).toCell(),
+            }).send(SEND_MODE_CARRY_ALL_BALANCE | SEND_MODE_IGNORE_ERRORS);
         }
 
         BidLot => {

@@ -151,6 +151,10 @@ open_head_lot#f2000002
     query_id:uint64
     n:uint64
   = InternalMsgBody;
+;; Caller-funded at OPEN_HEAD_VALUE (the 1M-gas worst case). The market sends
+;; mark_off_head with OPEN_RESERVE_GAS and returns the rest to the caller as
+;; excesses#d53276db query_id:uint64 (2026-11-23), reserving its pre-message balance
+;; first so neither send is paid from its float.
 
 ;; D-88 point 2 DELETES `open_head_lot_composite#f2000006` and
 ;; `buy_special_composite#f2000007` — SS3's 1-day descending lane for a curated

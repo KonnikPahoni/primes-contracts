@@ -101,10 +101,17 @@ export function tIdentity(s: Snapshot): AssertResult {
  * quantity, which is what the contract's `reserveTargetOf` measures the reserve
  * against.
  */
-export function stakeNeutral(before: Snapshot, after: Snapshot): AssertResult {
+export function stakeNeutral(before: Snapshot, after: Snapshot, foreign = 0n): AssertResult {
     const obl = (s: Snapshot) =>
         s.pending + (s.staking ? s.staking.stakedCost + s.staking.exiting + s.staking.realizedLoss : 0n);
-    const ok = after.T === before.T && obl(after) === obl(before);
+    // `foreign` is what OTHER senders credited inside the window (`foreignCredits`, chain.ts):
+    // on a live set a royalty or a mint can land mid-step and raise T and `pending` together
+    // (20261124 step 108: a 0.0649 GRAM royalty 18 s before leg 1's unstake). Both deltas must
+    // equal it EXACTLY, so a tranche moved into `swapped` (T flat, obligation down) and exit
+    // proceeds entering T (both up by an amount no `pool_inject` carried) still go red.
+    const dT = after.T - before.T;
+    const dObl = obl(after) - obl(before);
+    const ok = dT === foreign && dObl === foreign;
     return {
         ok,
         name: 'STAKE_NEUTRAL',
@@ -112,8 +119,8 @@ export function stakeNeutral(before: Snapshot, after: Snapshot): AssertResult {
         before: `T ${before.T} obligation ${obl(before)}`,
         after: `T ${after.T} obligation ${obl(after)}`,
         detail: ok
-            ? `T and the obligation both unmoved — the tranche only changed which term holds it`
-            : `ΔT ${after.T - before.T}, Δobligation ${obl(after) - obl(before)} — a staking step ` +
+            ? `T and the obligation moved by exactly the ${foreign} other senders' pool_inject credited — the tranche only changed which term holds it`
+            : `ΔT ${dT}, Δobligation ${dObl}, foreign pool_inject ${foreign} — a staking step ` +
               `moved value into or out of the ratchet, which no arm of §4.3.2 may do`,
     };
 }

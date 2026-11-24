@@ -100,6 +100,8 @@ const CLASSES = {
         // from `owner + treasury address` — the same shape as `itemAddress(...)`
         // above and classified the same way.
         'positionAddress(cfg, owner)',
+        // The same child, addressed inline by `WithdrawLp`'s bounceable confirm (B43).
+        'positionAddress(cfg, msg.owner)',
         // A helper parameter, like `walletAddr` and `ratchetAddr` above and
         // unlike the generic `dest` below: the name says which peer it is, and
         // `primes_lp_position.tolk` has exactly one expression that fills it
@@ -155,6 +157,10 @@ const CLASSES = {
         // running (`in.senderAddress`, passed as a helper parameter), paid only the
         // value above the reserved pre-message balance, i.e. its own change.
         'caller',
+        // 2026-11-23: the ratchet's `refundExitPrepay` — the `unstake` caller written
+        // into the exit's refund row, paid only that exit's unspent prepay and the
+        // answering leg's change, and never above the balance over `pending`.
+        'row.to!',
         // D-191 point 2: a claim receipt refunds a replay's (or a refused claim's)
         // leftover to the claimant written into its own init data — the wallet that
         // attached that value.

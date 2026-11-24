@@ -1107,9 +1107,9 @@ export class PrimesLedger implements Contract {
         };
     }
 
-    /** D-202: the exact body an invite transfer for the mint of `n` carries. */
-    async getInviteComment(provider: ContractProvider, n: bigint) {
-        return (await provider.get('getInviteComment', [{ type: 'int', value: n }])).stack.readCell();
+    /** D-202: the exact body every invite transfer carries (D-215: the words alone). */
+    async getInviteComment(provider: ContractProvider) {
+        return (await provider.get('getInviteComment', [])).stack.readCell();
     }
 
     /** D-211: the live invite words, as UTF-8 text. */
