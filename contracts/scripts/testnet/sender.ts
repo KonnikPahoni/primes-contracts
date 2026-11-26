@@ -62,11 +62,11 @@ export async function retry<T>(fn: () => Promise<T>, label: string, attempts = 8
     return fn();
 }
 
-/** The keeper mnemonic out of `/.env` — the deploy key, NOT `seed.txt` (gotcha 1). */
+/** The deployer mnemonic out of `/.env` — the deploy key, NOT `seed.txt` (gotcha 1). */
 export function keeperMnemonic(): string[] {
     const envFile = fs.readFileSync(path.join(REPO, '.env'), 'utf8');
-    const m = envFile.match(/^KEEPER_WALLET_MNEMONIC=(.*)$/m);
-    if (!m) throw new Error('KEEPER_WALLET_MNEMONIC missing from /.env');
+    const m = envFile.match(/^DEPLOYER_MNEMONIC=(.*)$/m);
+    if (!m) throw new Error('DEPLOYER_MNEMONIC missing from /.env');
     return m[1].trim().replace(/^"|"$/g, '').split(/\s+/);
 }
 

@@ -25,10 +25,11 @@ describe('X6 — what breaks when a key is lost is written down', () => {
             // The two standing credentials `privileged-credentials.md` enumerates.
             'proposerAddr',
             'signerPubkey',
-            // ...and the fourth thing the item named, which is NOT in that inventory because
-            // it is not a protocol credential at all — it is the wallet the keeper and every
-            // deploy script run from.
+            // ...and the two wallets the item named, which are NOT in that inventory because
+            // they are not protocol credentials: the keeper's own gas wallet (on the host) and
+            // the deploy key every script runs from (laptop only, split 2026-11-24).
             'KEEPER_WALLET_MNEMONIC',
+            'DEPLOYER_MNEMONIC',
         ]) {
             expect(d).toContain(credential);
         }
@@ -57,7 +58,7 @@ describe('X6 — what breaks when a key is lost is written down', () => {
 
     it('records the coupling between the gas wallet and the venue proposer', () => {
         // The finding this page exists to surface rather than repeat: `PRIMES_PROPOSER_ADDR`
-        // must be a subwallet of `KEEPER_WALLET_MNEMONIC` (`genesisPrep.ts` checks it, and
+        // must be a subwallet of `DEPLOYER_MNEMONIC` (`genesisPrep.ts` checks it, and
         // two genesis runs died at the last step when it was not) — so losing the "low
         // stakes" gas wallet also loses the one credential that cannot be replaced.
         const d = doc();

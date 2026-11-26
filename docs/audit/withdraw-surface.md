@@ -94,15 +94,15 @@ reach — not `T`, `S`, `pending`, `owed`, `k`, `K_CEIL` or the split.
 | `primes_lot_block.tolk` | 193 | LotBlockImport → onInternalMessage | `storage.ledgerAddr` | peer | `0` |
 | `primes_lot_block.tolk` | 239 | LotBlockRelease → onInternalMessage | `storage.ledgerAddr` | peer | `0` |
 | `primes_lp_position.tolk` | 396 | forwardToTreasury | `treasuryAddr` | peer | `0` |
-| `primes_market.tolk` | 2094 | sendRefund | `dest` | via-helper | `amount` |
-| `primes_market.tolk` | 2170 | closeLot | `cfg.ledgerAddr` | peer | `MINT_PRICE + SETTLE_GAS` |
-| `primes_market.tolk` | 2188 | closeLot | `cfg.ledgerAddr` | peer | `MINT_PRICE + SETTLE_GAS` |
-| `primes_market.tolk` | 2363 | OpenLot → onInternalMessage | `cfg.ledgerAddr` | peer | `OPEN_RESERVE_GAS` |
-| `primes_market.tolk` | 2470 | OpenHeadLot → onInternalMessage | `cfg.ledgerAddr` | peer | `OPEN_RESERVE_GAS` |
-| `primes_market.tolk` | 2477 | OpenHeadLot → onInternalMessage | `in.senderAddress` | player | `0` |
-| `primes_market.tolk` | 2678 | ParkLots → onInternalMessage | `in.senderAddress` | player | `0` |
-| `primes_market.tolk` | 2706 | RetryPremiumForward → onInternalMessage | `cfg.ledgerAddr` | peer | `returned` |
-| `primes_market.tolk` | 2772 | SettleConfirmed → onInternalMessage | `cfg.ledgerAddr` | peer | `premium + PREMIUM_HOP_GAS` |
+| `primes_market.tolk` | 2100 | sendRefund | `dest` | via-helper | `amount` |
+| `primes_market.tolk` | 2176 | closeLot | `cfg.ledgerAddr` | peer | `MINT_PRICE + SETTLE_GAS` |
+| `primes_market.tolk` | 2194 | closeLot | `cfg.ledgerAddr` | peer | `MINT_PRICE + SETTLE_GAS` |
+| `primes_market.tolk` | 2369 | OpenLot → onInternalMessage | `cfg.ledgerAddr` | peer | `OPEN_RESERVE_GAS` |
+| `primes_market.tolk` | 2474 | OpenHeadLot → onInternalMessage | `cfg.ledgerAddr` | peer | `OPEN_RESERVE_GAS` |
+| `primes_market.tolk` | 2481 | OpenHeadLot → onInternalMessage | `in.senderAddress` | player | `0` |
+| `primes_market.tolk` | 2682 | ParkLots → onInternalMessage | `in.senderAddress` | player | `0` |
+| `primes_market.tolk` | 2710 | RetryPremiumForward → onInternalMessage | `cfg.ledgerAddr` | peer | `returned` |
+| `primes_market.tolk` | 2776 | SettleConfirmed → onInternalMessage | `cfg.ledgerAddr` | peer | `premium + PREMIUM_HOP_GAS` |
 | `primes_minter_card.tolk` | 236 | Mint → onInternalMessage | `storage.ledgerAddr` | peer | `0` |
 | `primes_minter_card.tolk` | 255 | CardMintRefunded → onInternalMessage | `msg.payer` | player | `0` |
 | `primes_minter_card.tolk` | 273 | CardAddRecruit → onInternalMessage | `storage.ledgerAddr` | peer | `0` |

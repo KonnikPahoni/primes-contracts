@@ -306,9 +306,21 @@ paths:
         `chain.highBidNanoton` and `history.purseNanoton` are all **live-only**: a bidder
         signs against `getLot(n)`, never against this list. Note also that a prime lot opened
         before its turn has a FLAT standing price (`decayStart == 0`) and must not be drawn
-        as decaying.
+        as decaying. `lane=dutch` keeps only the prime Dutch lane (a prime whose turn has
+        passed) and orders it newest number first — the landing hero's prime offer.
       parameters:
         - $ref: "#/components/parameters/Limit"
+        - name: lane
+          in: query
+          required: false
+          schema: { type: string, enum: [all, dutch], default: all }
+        - name: opened_before
+          in: query
+          required: false
+          description: >
+            `lane=dutch` only — unix seconds; keeps lots opened at or before it. The hero passes
+            now minus `getPrimeDutchTerms().decaySeconds`, so only lots already at their rest.
+          schema: { type: string, pattern: "^[0-9]{1,12}$" }
       responses:
         "200": { $ref: "#/components/responses/LotList" }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -833,10 +845,10 @@ components:
               allOf: [{ $ref: "#/components/schemas/Reading" }]
               description: >-
                 `getLotFloor(n)` — where THIS lot comes to rest. Since `DECISIONS.md` D-88
-                point 1 a prime's descending lane terminates at `max(NPV(n)/2, P0(n)/3, MINT_PRICE)`
-                (D-99 §1.2), so the global
+                point 1 a prime's descending lane terminates at `min(P0(n), max(MINT_PRICE, restTable[n]))`
+                (D-218), so the global
                 `getPrimeDutchTerms().floorNanoton` is only the LOWER BOUND on this and is
-                the answer only for a prime the finite NPV table misses. `value` is `null`
+                the answer only for a prime the D-218 rest table misses. `value` is `null`
                 when the sweeper's stored reading predates this field.
         history:
           type: object

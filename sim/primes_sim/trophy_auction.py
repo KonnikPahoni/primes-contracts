@@ -103,6 +103,13 @@ class TrophyConstants:
     #: price at 1.5x the contest/reference fair value.
     PRIME_P0_MULTIPLE: float = 1.5
 
+    #: DECISIONS.md D-218, owner-declared. A prime's descending lot comes to rest
+    #: at the tribute it collects from this many composite mints after its own
+    #: turn, floored at MINT_PRICE and capped at its own P0. 5,000 puts prime 3
+    #: at ~29 GRAM, the owner's stated target, and the rest reaches the 1 GRAM
+    #: floor from p = 521. It replaces D-88/D-99's `max(NPV/2, P0/3, 1)`.
+    PRIME_REST_WINDOW_MINTS: int = 5000
+
     #: D4. 7 days. The mint happens at head arrival regardless, so the window
     #: costs nothing; shorter weakens discovery, longer holds bid capital for no
     #: gain.
@@ -516,6 +523,57 @@ def npv_ladder(*, horizon: int, mints_per_year: float, exponent: float = 0.5,
     }
 
 
+# --------------------------------------------------------------------------- #
+# D-218 -- where a prime's descending lot comes to rest
+# --------------------------------------------------------------------------- #
+
+#: How far the resting-tribute sweep runs. Past ~521 every prime's window
+#: tribute is under MINT_PRICE; the bound is headroom, and `resting_ladder`
+#: asserts the table ends well inside it.
+REST_SWEEP_PRIME_BOUND = 5_000
+
+
+def resting_ladder(*, npv: dict, c: TrophyConstants = C,
+                   prime_bound: int = REST_SWEEP_PRIME_BOUND) -> dict:
+    """D-218: `rest(p) = min(P0(p), max(MINT_PRICE, W(p)))`, where `W(p)` is
+    `tribute.prime_resting_tribute` over `PRIME_REST_WINDOW_MINTS`.
+
+    Returns the dictionary the market ships (`MarketConfig.restTable`): integer
+    nanoton, ONLY the primes whose rest is above MINT_PRICE. A miss rests at
+    MINT_PRICE, which is exactly what the entry would have said.
+    """
+    from . import tribute as tr
+    from . import desirability as ds
+
+    w = tr.prime_resting_tribute(c.PRIME_REST_WINDOW_MINTS, prime_bound)
+    table: dict[int, int] = {}
+    capped: list[int] = []
+    for p in sorted(w):
+        if is_primorial(p):
+            continue  # 2 mints at the head (SS7) and never opens a lot
+        rest = round(w[p] * NANO)
+        if rest <= MINT_PRICE_NANOTON:
+            continue
+        p0 = p0_nanoton(ds.score(p), prime=True, npv_ton=npv.get(p), c=c)
+        if rest > p0:
+            rest = p0
+            capped.append(p)
+        table[p] = rest
+    last = max(table) if table else None
+    assert last is None or last < prime_bound // 4, "rest table reaches its sweep bound"
+    return {
+        "table": table,
+        "capped_at_p0": capped,
+        "window_tribute_ton": w,
+        "last_prime_above_floor": last,
+    }
+
+
+def resting_nanoton(p: int, rest_table: dict[int, int]) -> int:
+    """What `restingPriceOf(p)` returns: the table entry, or MINT_PRICE on a miss."""
+    return max(MINT_PRICE_NANOTON, rest_table.get(p, 0))
+
+
 def npv_calibration_check(engine_npv: dict, analytic_npv: dict) -> dict:
     """Plan SS9: the extension must reproduce the six known genesis NPVs.
 
@@ -593,6 +651,7 @@ def trophy_auction_block(*, mint_price_ton: float, res_gas_ton: float,
     )
     npv = ladder["table"]
     binding = ladder["binding"]
+    rest = resting_ladder(npv=npv, c=c)
 
     # Plan SS3.1's two tables, with three transcription errors in the plan
     # corrected rather than reproduced. They are recorded in `_plan_errata`
@@ -646,6 +705,12 @@ def trophy_auction_block(*, mint_price_ton: float, res_gas_ton: float,
                 "ladder tops out at 2^(87/10) = 415.9 GRAM."
             ),
             "PRIME_P0_MULTIPLE": "1.5, inherited verbatim from CONCEPT.md SS6.",
+            "PRIME_REST_WINDOW_MINTS": (
+                "5,000 (D-218, owner-declared): a prime rests at the tribute it "
+                "collects over this many composite mints after its turn. Chosen "
+                "so prime 3 rests near 30 GRAM; counted in mints, not days, so it "
+                "holds at any mint rate."
+            ),
             "AUCTION_WINDOW_SECONDS": (
                 "7 days (D4). The mint happens at head arrival regardless, so "
                 "the window costs nothing; shorter weakens discovery, longer "
@@ -692,9 +757,9 @@ def trophy_auction_block(*, mint_price_ton: float, res_gas_ton: float,
         "lane_entry": {
             "_rule": {
                 "prime": (
-                    "descending Dutch lane, openable BEFORE its turn at a flat "
-                    "P0(p); the decay clock starts at its turn and terminates at "
-                    "exactly MINT_PRICE (D-31)"
+                    "ascending lot BEFORE its turn at P0(p) (D-88); at its turn a "
+                    "descending lot from P0(p) that comes to rest at "
+                    "resting_ladder's rest(p) and parks there until bought (D-218)"
                 ),
                 "composite": (
                     "ascending auction lane, at any D(n) -- opening the lot IS a "
@@ -758,6 +823,34 @@ def trophy_auction_block(*, mint_price_ton: float, res_gas_ton: float,
                 "flat 10/3 GRAM threshold, is deleted."
             ),
             "npv_ton_by_prime": {str(p): npv[p] for p in sorted(npv)},
+        },
+        "resting_ladder": {
+            "_rule": (
+                "DECISIONS.md D-218. rest(p) = min(P0(p), max(MINT_PRICE, W(p))), "
+                "W(p) = the tribute p collects from the PRIME_REST_WINDOW_MINTS "
+                "composite mints after its own turn (head = p), undiscounted: "
+                "the divisor line split e*sqrt(q) over n's factors plus the flat "
+                "dividend 0.02/pi(n) on composite mints, as primes_ledger.tolk "
+                "accrues them. Replaces D-88/D-99's max(NPV/2, P0/3, MINT_PRICE)."
+            ),
+            "_definition_not_promise": (
+                "W(p) is a definition, not a payback guarantee: a buyer who takes "
+                "the lot at rest arrives after part of the window has passed, and "
+                "the tribute of those mints forfeited while the prime was unsold."
+            ),
+            "source": "sim/primes_sim/tribute.py prime_resting_tribute",
+            "window_mints": c.PRIME_REST_WINDOW_MINTS,
+            "sweep_prime_bound": REST_SWEEP_PRIME_BOUND,
+            "prime_count_above_floor": len(rest["table"]),
+            "last_prime_above_floor": rest["last_prime_above_floor"],
+            "capped_at_p0": rest["capped_at_p0"],
+            "_table_note": (
+                "Only primes resting above MINT_PRICE are listed; this is exactly "
+                "MarketConfig.restTable, and a miss rests at MINT_PRICE. 2 is a "
+                "primorial and never opens a lot."
+            ),
+            "resting_nanoton_by_prime": {
+                str(p): v for p, v in sorted(rest["table"].items())},
         },
         "npv_calibration": npv_calibration_check(
             engine_npv, {p: npv[p] for p in engine_npv if p in npv}

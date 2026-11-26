@@ -89,13 +89,13 @@ async function retry<T>(fn: () => Promise<T>, label: string, attempts = 8): Prom
 async function main() {
     const envFile = fs.readFileSync(path.join(REPO, '.env'), 'utf8');
     const mnemonic = envFile
-        .match(/^KEEPER_WALLET_MNEMONIC=(.*)$/m)![1]
+        .match(/^DEPLOYER_MNEMONIC=(.*)$/m)![1]
         .trim()
         .replace(/^"|"$/g, '')
         .split(/\s+/);
     const keyPair = await mnemonicToPrivateKey(mnemonic);
     // The queue must be sent by the timelock's PROPOSER (PRIMES_PROPOSER_ADDR at
-    // genesis — the main keeper wallet in the 2026-08-17 deployment, NOT the deploy
+    // genesis — the deployer mnemonic's default wallet in the 2026-08-17 deployment, NOT the deploy
     // subwallet). Default walletId = the main wallet; set PRIMES_DEPLOY_SUBWALLET_ID
     // only if the proposer was the subwallet.
     const walletId = process.env.PRIMES_DEPLOY_SUBWALLET_ID
@@ -195,9 +195,14 @@ async function main() {
     const pending = await retry(() => ratchet.getPending(), 'getPending(identity)');
     const swapped = await retry(() => ratchet.getSwapped(), 'getSwapped(identity)');
     const T = await retry(() => ledger.getFloorNum(), 'getFloorNum(identity)');
+    // D-151: the keeper stakes `pending` above the stake minimum within minutes of ignite, so the
+    // staked reserve's three terms are part of the identity (assert.ts `tIdentity`). Without them the
+    // 20261126 read-back printed a false MISMATCH: pending 10 + staked 40 = T 50.
+    const st = await retry(() => ratchet.getStaking(), 'getStaking(identity)');
+    const sum = seedT + swapped + pending + st.stakedCost + st.exiting + st.realizedLoss;
     console.log(
-        `D-26 identity: seedT ${seedT} + swapped ${swapped} + pending ${pending} = ` +
-            `${seedT + swapped + pending} vs T ${T} -> ${seedT + swapped + pending === T ? 'OK' : 'MISMATCH'}`
+        `D-26 identity: seedT ${seedT} + swapped ${swapped} + pending ${pending} + staked ${st.stakedCost} + ` +
+            `exiting ${st.exiting} + realizedLoss ${st.realizedLoss} = ${sum} vs T ${T} -> ${sum === T ? 'OK' : 'MISMATCH'}`
     );
 
     // `minAuctionDistance` is DELETED (D-45) — there is no liveness gate left

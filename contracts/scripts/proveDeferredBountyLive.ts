@@ -30,7 +30,7 @@
  *
  *   npx tsx contracts/scripts/proveDeferredBountyLive.ts
  *
- * Env: `PRIMES_JETTON_MASTER_ADDRESS`, `KEEPER_WALLET_MNEMONIC`; the sender defaults to the
+ * Env: `PRIMES_JETTON_MASTER_ADDRESS`, `DEPLOYER_MNEMONIC`; the sender defaults to the
  * deploy subwallet, which is what `donateFloor.ts` leaves holding PRIMES.
  * `PRIMES_H17_PRIMES` (default 100) is how many PRIMES the bounty moves — the era entry
  * prices at `bounty_ton * S / T` capped by `max_primes`, and this script solves for the `t`
@@ -124,7 +124,7 @@ async function main() {
     const fmt = (a: Address) => a.toString({ testOnly: true });
 
     const masterAddr = Address.parse(req('PRIMES_JETTON_MASTER_ADDRESS'));
-    const keyPair = await mnemonicToPrivateKey(req('KEEPER_WALLET_MNEMONIC').split(/\s+/));
+    const keyPair = await mnemonicToPrivateKey(req('DEPLOYER_MNEMONIC').split(/\s+/));
     const wallet = client.open(
         WalletContractV4.create({
             workchain: 0,

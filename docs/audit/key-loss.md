@@ -20,20 +20,28 @@ is inferred from the item that asked for it.
 
 | credential | if lost | degrades or halts | replaceable without a redeploy? |
 |---|---|---|---|
-| `KEEPER_WALLET_MNEMONIC` (operator gas wallet) | nobody is *running* the permissionless calls | **degrades** | **yes** — move GRAM to a new wallet |
+| `DEPLOYER_MNEMONIC` (deploy key, laptop only) | no new genesis can be run from it; the venue proposer in §2 is its subwallet | **degrades** | **yes** for deploying; **no** for the proposer it carries |
+| `KEEPER_WALLET_MNEMONIC` (keeper gas wallet, on the host) | nobody is *running* the permissionless calls | **degrades** | **yes** — move GRAM to a new wallet |
 | `primes_venue_timelock.tolk`'s `proposerAddr` | the DeDust venue addresses can never be repointed | degrades, then halts `flush()` **only if** a venue dies | **no** |
 | `primes_voucher.tolk`'s `signerPubkey` | no quest voucher can be signed | degrades | **not applicable in v1** — see below |
 | `primes_ledger.tolk`'s `operatorAddr` on `set_invite_terms` (D-211, D-215) | the invite words, count and value are frozen at their last value | **degrades** (invites still send, link intact) | **no** — the address is ledger deploy data |
 
 ---
 
-## 1. `KEEPER_WALLET_MNEMONIC` — the operator's gas wallet
+## 1. `DEPLOYER_MNEMONIC` and `KEEPER_WALLET_MNEMONIC` — two wallets, split on purpose
 
-**What it signs.** The keeper's three lanes, and every deploy/genesis script. The keeper's own
-header calls the process *"permissionless by design — a convenience runner, not infrastructure
-anyone has to trust"*, and that is the load-bearing fact here: all three of its lanes —
-`flush()` (§4.3.1), `sync_head`, and opening descending prime lots — are **permissionless and
-caller-funded**. Anyone may call them from any funded wallet.
+Until 2026-11-24 these were ONE mnemonic, and the public host held it. They are now two, and
+`deploy.ps1` refuses to ship when they are equal; it ships only the variables
+`docker-compose.yml` names, so `DEPLOYER_MNEMONIC` cannot reach the host at all.
+
+### 1a. `KEEPER_WALLET_MNEMONIC` — the keeper's own gas wallet (on the host)
+
+**What it signs.** The keeper's lanes and nothing else. The keeper's own header calls the
+process *"permissionless by design — a convenience runner, not infrastructure anyone has to
+trust"*, and that is the load-bearing fact here: its lanes — `flush()` (§4.3.1), `sync_head`,
+opening descending prime lots, and the expiry/distribute sweeps — are **permissionless and
+caller-funded**. Anyone may call them from any funded wallet. It holds no protocol role and no
+contract stores its address.
 
 **What stops working.** Nothing, structurally. What stops is somebody *doing* it on a timer.
 
@@ -43,13 +51,22 @@ somebody calls `sync_head`. Both are recoverable at any later moment by any call
 keeper already alerts when flush sits eligible-but-uncalled past cooldown times two.
 
 **Replaceable: yes.** This key pays gas and can be replaced by moving GRAM to a new wallet.
-Point a new mnemonic at the same `.env` and the lanes resume.
+Point a new mnemonic at the same `.env` and the lanes resume. **A leak** costs its gas balance
+and nothing else, which is why it is the one wallet key allowed on the host.
+
+### 1b. `DEPLOYER_MNEMONIC` — the deploy key (laptop only)
+
+**What it signs.** Every deploy/genesis script in `contracts/scripts/`. It is never on the
+host.
+
+**Degrades, does not halt.** Losing it stops nobody playing; it stops the operator deploying
+from it.
 
 **But there is a coupling, and it is the thing to know.** `PRIMES_PROPOSER_ADDR` **must be a
 subwallet of this same mnemonic** — `genesisPrep.ts` checks it explicitly, and two genesis runs
 (2026-08-17, 2026-08-29) died at the last step when it was not. So **losing this mnemonic also
-loses the venue-proposer credential in section 2**, which is *not* replaceable. That is
-worth knowing before assuming "gas wallet" means "low stakes".
+loses the venue-proposer credential in section 2**, which is *not* replaceable — and leaking it
+leaks the proposer. That is why it stays off the public host.
 
 ---
 

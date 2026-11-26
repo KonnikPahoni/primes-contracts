@@ -642,6 +642,7 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
                     headHint: OPENING_HEAD,
                     ledgerAddr: deployer.address,
                     ratchetAddr: deployer.address,
+                    shippedRest: true, // D-218, checked below
                 }),
                 marketCode
             )
@@ -674,6 +675,26 @@ describeFn('TON PRIMES — sim/chain cross-check (docs/phase3-report.md §7 item
         expect(p.scoreHalving).toBe(params.trophy_auction.constants.SCORE_HALVING);
         expect(p.auctionWindow).toBe(params.trophy_auction.constants.AUCTION_WINDOW_SECONDS);
         expect(p.bidExtension).toBe(params.trophy_auction.constants.BID_EXTENSION_SECONDS);
+
+        // ---- D-218: where each prime lot comes to rest ----
+        // The published window is the sim's declared constant, and every prime's
+        // floor is the sim's table entry to the nanoton — a hit at or below its
+        // own P0, a miss (and every prime past the table) at exactly MINT_PRICE.
+        const rl = params.trophy_auction.resting_ladder;
+        expect((await mkt.getPrimeDutchTerms()).restWindowMints).toBe(
+            params.trophy_auction.constants.PRIME_REST_WINDOW_MINTS
+        );
+        expect(rl.window_mints).toBe(params.trophy_auction.constants.PRIME_REST_WINDOW_MINTS);
+        for (const [prime, nano] of Object.entries(rl.resting_nanoton_by_prime as Record<string, number>)) {
+            expect({ p: prime, floor: await mkt.getPrimeFloor(BigInt(prime)) }).toEqual({
+                p: prime,
+                floor: BigInt(nano),
+            });
+        }
+        expect(rl.last_prime_above_floor).toBeLessThan(521);
+        for (const prime of [521n, 541n, 7919n]) {
+            expect(await mkt.getPrimeFloor(prime)).toBe(toNano('1'));
+        }
 
         // ---- D-33's ladder ----
         const ladder = params.acquisition.bid_increment_ladder;

@@ -3376,8 +3376,7 @@ paths:
                         description: >
                           `getPrimeFloor(n)` — D-88 point 1: where this prime's descending
                           lot comes to REST and stays until somebody buys it,
-                          max(NPV(n)/2, P0(n)/3, MINT_PRICE). D-99 deletes the tier lift that used to
-                          raise it. null for a composite, which has no descending lane —
+                          min(P0(n), max(MINT_PRICE, restTable[n])) (D-218). null for a composite, which has no descending lane —
                           so this doubles as the primality bit the lane no longer carries.
                           Draw the descent down to THIS, not to
                           `/trophy/params`'s `primeDutch.floorNanoton`, which is the global

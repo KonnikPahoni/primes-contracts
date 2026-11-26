@@ -127,6 +127,35 @@ async function mockOf(c: Contracts) {
     };
 }
 
+/**
+ * Puts the shared mock back to a pool that PAYS: this set's learned rate, a buffer covering any
+ * exit (leg 1 answers at once, as Tonstakers' does), DeDust off. Every `exit` stage ends here.
+ * 20261124: `exit loss` left the mock at half rate with no buffer and no DeDust; two hours later
+ * the keeper's routine reserve refill burned into a leg-3 bill nothing on testnet pays, and its
+ * own `recover_exit` wrote the whole 0.102 GRAM tranche off as `realizedLoss`. That was the second
+ * time (`MISTAKES.md` 2026-11-24): staging a counterparty is only safe if the step un-stages it.
+ */
+async function healMock(c: Contracts, sender: Parameters<MockTonstakersPool['sendSetRate']>[1]) {
+    const { pool } = await mockOf(c);
+    const raw = await retry(() => c.ratchet.getStaking(), 'getStaking');
+    const m = await retry(() => pool.getMockPoolConfig(), 'getMockPoolConfig');
+    const bal = await retry(() => c.client.getBalance(pool.address), 'getBalance(mock)');
+    // Within what the mock holds, less any outstanding bill: a leg-1 payout past its balance throws 1305.
+    const free = bal - m.pendingBill - toNano('1');
+    await pool.sendSetRate(sender, { rateNum: raw.lastRateNum, rateDen: raw.lastRateDen, value: GAS });
+    await pool.sendSetBuffer(sender, { freeTon: free > 0n ? free : 0n, value: GAS });
+    await pool.sendSetDedustTon(sender, { dedustTon: 0n, value: GAS });
+}
+
+async function cmdHeal(c: Contracts, handle: string) {
+    const w = await walletFor(c.client, handle);
+    await healMock(c, w.sender);
+    await new Promise((r) => setTimeout(r, SETTLE_MS));
+    const { pool } = await mockOf(c);
+    const m = await retry(() => pool.getMockPoolConfig(), 'getMockPoolConfig');
+    console.log(`mock rate ${m.rateNum}/${m.rateDen}, buffer ${ton(m.freeTon)} GRAM, dedust ${ton(m.dedustTon)} GRAM`);
+}
+
 function treasuryOf(c: Contracts) {
     return c.client.open(PrimesTreasury.createFromAddress(addr('PRIMES_TREASURY_ADDRESS')));
 }
@@ -628,7 +657,7 @@ async function cmdExit(c: Contracts, leg: string, handle: string) {
     // staging sends used to go out and only the unstake hit `sender.ts`'s guard — on 20260929
     // `exit loss` left the shared mock slashed with no exit behind it, and the next leg 3
     // redeemed at the slashed rate (a 0.875 GRAM realizedLoss nobody meant to stage).
-    const need = UNSTAKE_VALUE + 4n * GAS + toNano('0.1');
+    const need = UNSTAKE_VALUE + 7n * GAS + toNano('0.1'); // + 3 for healMock
     const have = await retry(() => c.client.getBalance(w.wallet.address), 'getBalance');
     if (have < need) throw new Error(`${handle} holds ${ton(have)} GRAM, short of the ${ton(need)} this exit spends — nothing sent`);
     // THE RATE IS PINNED TO THIS SET'S OWN STAKE, never to the knob's current value: the mock
@@ -636,79 +665,85 @@ async function cmdExit(c: Contracts, leg: string, handle: string) {
     // the learned (cost) rate and so realize nothing; `loss` redeems at half of it.
     const raw = await retry(() => c.ratchet.getStaking(), 'getStaking');
     const learnedNum = leg === 'loss' ? raw.lastRateNum / 2n : raw.lastRateNum;
-    await pool.sendSetRate(w.sender, { rateNum: learnedNum, rateDen: raw.lastRateDen, value: GAS });
+    // A leg-3 bill is fixed at the burn (`pendingBill`), so un-staging after the step is safe —
+    // and it runs even when an assert below throws.
+    try {
+        await pool.sendSetRate(w.sender, { rateNum: learnedNum, rateDen: raw.lastRateDen, value: GAS });
 
-    // Stage the counterparty. `freeTon` must stay within what the mock actually
-    // holds — it asserts `keep >= 0` (1305, mock_under_funded) rather than
-    // pretending to pay what it does not have.
-    if (leg === 'leg1') {
-        await pool.sendSetBuffer(w.sender, { freeTon: tranche + toNano('1'), value: GAS });
-        await pool.sendSetDedustTon(w.sender, { dedustTon: 0n, value: GAS });
-    } else if (leg === 'leg2') {
-        await pool.sendSetBuffer(w.sender, { freeTon: 0n, value: GAS });
-        await pool.sendSetDedustTon(w.sender, { dedustTon: tranche + toNano('1'), value: GAS });
-    } else if (leg === 'leg3') {
-        await pool.sendSetBuffer(w.sender, { freeTon: 0n, value: GAS });
-        await pool.sendSetDedustTon(w.sender, { dedustTon: 0n, value: GAS });
-    } else if (leg === 'loss') {
-        await pool.sendSetBuffer(w.sender, { freeTon: 0n, value: GAS });
-        await pool.sendSetDedustTon(w.sender, { dedustTon: 0n, value: GAS });
-        // Half the cost basis (set above). Leg 2 refuses it (its floor is cost), leg 3
-        // takes it, and the shortfall lands in `realizedLoss`.
-    } else {
-        throw new Error(`unknown leg "${leg}" — one of: leg1, leg2, leg3, loss`);
+        // Stage the counterparty. `freeTon` must stay within what the mock actually
+        // holds — it asserts `keep >= 0` (1305, mock_under_funded) rather than
+        // pretending to pay what it does not have.
+        if (leg === 'leg1') {
+            await pool.sendSetBuffer(w.sender, { freeTon: tranche + toNano('1'), value: GAS });
+            await pool.sendSetDedustTon(w.sender, { dedustTon: 0n, value: GAS });
+        } else if (leg === 'leg2') {
+            await pool.sendSetBuffer(w.sender, { freeTon: 0n, value: GAS });
+            await pool.sendSetDedustTon(w.sender, { dedustTon: tranche + toNano('1'), value: GAS });
+        } else if (leg === 'leg3') {
+            await pool.sendSetBuffer(w.sender, { freeTon: 0n, value: GAS });
+            await pool.sendSetDedustTon(w.sender, { dedustTon: 0n, value: GAS });
+        } else if (leg === 'loss') {
+            await pool.sendSetBuffer(w.sender, { freeTon: 0n, value: GAS });
+            await pool.sendSetDedustTon(w.sender, { dedustTon: 0n, value: GAS });
+            // Half the cost basis (set above). Leg 2 refuses it (its floor is cost), leg 3
+            // takes it, and the shortfall lands in `realizedLoss`.
+        } else {
+            throw new Error(`unknown leg "${leg}" — one of: leg1, leg2, leg3, loss`);
+        }
+        await new Promise((r) => setTimeout(r, SETTLE_MS));
+
+        console.log(`${handle} unstaking ~${ton(tranche)} GRAM via ${leg}`);
+        await c.ratchet.sendUnstake(w.sender, { value: UNSTAKE_VALUE }); // D-146: prepays legs 1-3
+        const parked = leg === 'leg3' || leg === 'loss';
+        await settle(async () => {
+            const e = await c.ratchet.getExitLeg();
+            return parked ? e.leg === EXIT_LEG_BILL : e.leg === 0 && (await c.ratchet.getPending()) > before.pending;
+        });
+
+        const after = await snapshot(c);
+        const k1 = requireStaking(after);
+        const foreign = await foreignCredits(c, before, after); // other senders' pool_inject, mid-step
+        const exit = await retry(() => c.ratchet.getExitLeg(), 'getExitLeg');
+
+        const results: A.AssertResult[] = [
+            {
+                ok: parked ? exit.leg !== 0 && k1.exiting > 0n : exit.leg === 0 && k1.exiting === 0n,
+                name: parked ? 'EXIT_PARKED_ON_THE_BILL' : 'EXIT_COMPLETED',
+                getMethod: 'ratchet.getExitLeg, getStaking().exiting',
+                before: `exiting ${ton(k0.exiting)}`,
+                after: `leg ${exit.leg} exiting ${ton(k1.exiting)}`,
+                detail: parked
+                    ? 'the tranche is a payout bill until the round closes — run `tston.ts settle` to close it'
+                    : 'the GRAM came home inside the same round trip and `exiting` is back to zero',
+            },
+            {
+                ok: parked ? after.pending - before.pending === foreign : after.pending - foreign > before.pending,
+                name: 'PENDING_REFILLED',
+                getMethod: 'ratchet.getPending',
+                before: ton(before.pending),
+                after: ton(after.pending),
+                detail: parked
+                    ? 'nothing has arrived yet, which is correct: leg 3 pays at round end and not before'
+                    : 'the reserve is refilled, which is the only purpose the exit exists for',
+            },
+            {
+                ok: k1.stakedCost < k0.stakedCost,
+                name: 'TRANCHE_LEFT_THE_POSITION',
+                getMethod: 'getStaking().stakedCost',
+                before: ton(k0.stakedCost),
+                after: ton(k1.stakedCost),
+                detail: 'sized at COST BASIS, not at the learned rate — the one ratio the contract knows without trusting a number',
+            },
+            A.stakeNeutral(before, after, foreign),
+            A.tIdentity(after),
+            A.solvency(after),
+        ];
+        A.print(results);
+        record({ phase: '10', op: `exit-${leg}`, ok: results.every((r) => r.ok), asserts: fromAsserts(results) });
+        A.requireAll(results);
+    } finally {
+        await healMock(c, w.sender);
     }
-    await new Promise((r) => setTimeout(r, SETTLE_MS));
-
-    console.log(`${handle} unstaking ~${ton(tranche)} GRAM via ${leg}`);
-    await c.ratchet.sendUnstake(w.sender, { value: UNSTAKE_VALUE }); // D-146: prepays legs 1-3
-    const parked = leg === 'leg3' || leg === 'loss';
-    await settle(async () => {
-        const e = await c.ratchet.getExitLeg();
-        return parked ? e.leg === EXIT_LEG_BILL : e.leg === 0 && (await c.ratchet.getPending()) > before.pending;
-    });
-
-    const after = await snapshot(c);
-    const k1 = requireStaking(after);
-    const foreign = await foreignCredits(c, before, after); // other senders' pool_inject, mid-step
-    const exit = await retry(() => c.ratchet.getExitLeg(), 'getExitLeg');
-
-    const results: A.AssertResult[] = [
-        {
-            ok: parked ? exit.leg !== 0 && k1.exiting > 0n : exit.leg === 0 && k1.exiting === 0n,
-            name: parked ? 'EXIT_PARKED_ON_THE_BILL' : 'EXIT_COMPLETED',
-            getMethod: 'ratchet.getExitLeg, getStaking().exiting',
-            before: `exiting ${ton(k0.exiting)}`,
-            after: `leg ${exit.leg} exiting ${ton(k1.exiting)}`,
-            detail: parked
-                ? 'the tranche is a payout bill until the round closes — run `tston.ts settle` to close it'
-                : 'the GRAM came home inside the same round trip and `exiting` is back to zero',
-        },
-        {
-            ok: parked ? after.pending - before.pending === foreign : after.pending - foreign > before.pending,
-            name: 'PENDING_REFILLED',
-            getMethod: 'ratchet.getPending',
-            before: ton(before.pending),
-            after: ton(after.pending),
-            detail: parked
-                ? 'nothing has arrived yet, which is correct: leg 3 pays at round end and not before'
-                : 'the reserve is refilled, which is the only purpose the exit exists for',
-        },
-        {
-            ok: k1.stakedCost < k0.stakedCost,
-            name: 'TRANCHE_LEFT_THE_POSITION',
-            getMethod: 'getStaking().stakedCost',
-            before: ton(k0.stakedCost),
-            after: ton(k1.stakedCost),
-            detail: 'sized at COST BASIS, not at the learned rate — the one ratio the contract knows without trusting a number',
-        },
-        A.stakeNeutral(before, after, foreign),
-        A.tIdentity(after),
-        A.solvency(after),
-    ];
-    A.print(results);
-    record({ phase: '10', op: `exit-${leg}`, ok: results.every((r) => r.ok), asserts: fromAsserts(results) });
-    A.requireAll(results);
 }
 
 /** Leg 3's round end, without waiting ~36 hours for it. The bill pays its GRAM
@@ -951,10 +986,12 @@ async function main() {
             return cmdForge(c, rest[0] ?? 'F');
         case 'recover':
             return cmdRecover(c, rest[0] ?? 'F');
+        case 'heal':
+            return cmdHeal(c, rest[0] ?? 'F');
         default:
             throw new Error(
                 `unknown command "${cmd}" — one of: status, refusals, buffer, rate, stake, yield, ` +
-                    `harvest, exit, settle, forge, recover`
+                    `harvest, exit, settle, forge, recover, heal`
             );
     }
 }

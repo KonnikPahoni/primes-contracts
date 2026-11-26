@@ -94,8 +94,8 @@ async function main() {
     let fail = false;
     const refuse = (msg: string) => { console.log(`  !! ${msg}`); fail = true; };
 
-    const mnemonic = env.get('KEEPER_WALLET_MNEMONIC');
-    if (!mnemonic) throw new Error('KEEPER_WALLET_MNEMONIC not found in /.env');
+    const mnemonic = env.get('DEPLOYER_MNEMONIC');
+    if (!mnemonic) throw new Error('DEPLOYER_MNEMONIC not found in /.env');
     const keyPair = await mnemonicToPrivateKey(mnemonic.split(/\s+/));
     // Resolved through the SHARED accessor so this preflight cannot check a
     // different wallet than deployGenesis.ts --skew-safe deploys from (envFile.ts).

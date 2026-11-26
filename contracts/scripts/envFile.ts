@@ -7,7 +7,7 @@
  *   - `genesisPrep.ts` parsed the `.env` FILE for everything, including
  *     `PRIMES_DEPLOY_SUBWALLET_ID`.
  *   - `deployGenesis.ts --skew-safe` and `dryRunGenesisAddresses.ts` parsed the
- *     file for `KEEPER_WALLET_MNEMONIC` but read `PRIMES_DEPLOY_SUBWALLET_ID`
+ *     file for `DEPLOYER_MNEMONIC` but read `PRIMES_DEPLOY_SUBWALLET_ID`
  *     from `process.env`.
  *
  * `.env` is where that variable is documented to live and `tsx` does not load

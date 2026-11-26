@@ -57,7 +57,7 @@ const settle = (step: string) => {
 async function main() {
     const envFile = fs.readFileSync(path.join(REPO, '.env'), 'utf8');
     const mnemonic = envFile
-        .match(/^KEEPER_WALLET_MNEMONIC=(.*)$/m)![1]
+        .match(/^DEPLOYER_MNEMONIC=(.*)$/m)![1]
         .trim()
         .replace(/^"|"$/g, '')
         .split(/\s+/);

@@ -276,6 +276,7 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
             // declared ladder fallback). There is no per-lot start price to
             // supply any more, so this is the only price input genesis carries.
             trophyNpv: sharedParams.trophy_auction.npv_ladder.npv_ton_by_prime as Record<string, number>,
+            trophyRest: sharedParams.trophy_auction.resting_ladder.resting_nanoton_by_prime as Record<string, number>,
             // The real URIs deployGenesis.ts ships, not placeholders: the rehearsal's job
             // is to run the same code path a live genesis runs, and presentation is now
             // part of it (init data, unchangeable after deploy).
@@ -904,10 +905,10 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
         // ahead-of-head prime on the ASCENDING lane, so `open_head_lot` refuses
         // it — 3 is the one already-past-turn prime this cold-start genesis has
         // to work with besides 2. D-88 point 1 makes the resting price
-        // `getPrimeFloor(3)`, which for 3 is well above both MINT_PRICE and its
-        // own Mersenne tier `price_min`: the NPV term dominates, since 3 earns
-        // tribute on every multiple of 3 for the life of the game.
+        // `getPrimeFloor(3)`, which D-218 sets to the tribute 3 earns over the
+        // 5,000 composite mints after its turn — the genesis rest table's entry.
         const priceMin = await d.market.getPrimeFloor(3n);
+        expect(priceMin).toBe(BigInt(sharedParams.trophy_auction.resting_ladder.resting_nanoton_by_prime['3']));
         const { decaySeconds: specialDecaySeconds } = await d.market.getPrimeDutchTerms();
         await d.market.sendOpenHeadLot(bidders[0].getSender(), { n: 3n, value: toNano('0.2') });
         blockchain.now = (blockchain.now as number) + specialDecaySeconds * 10;
@@ -968,8 +969,8 @@ describe('TON PRIMES — genesis pipeline rehearsal (sandbox)', () => {
             expect(mp.lotFloor).toBe(toNano('1') + resGas);
             expect(mp.lotFloor).toBe(BigInt(sharedParams.off_head.lane_floor_nanoton));
             // D-88 point 1 DELETED §12's "no lane may terminate above 1 GRAM"
-            // and MKT-1 with it: a prime's lane rests at max(NPV(p)/2,
-            // P0(p)/3, MINT_PRICE) (D-99 §1.2).
+            // and MKT-1 with it: a prime's lane rests at min(P0(p),
+            // max(MINT_PRICE, restTable[p])) (D-218).
             // `floorMin` below is therefore the LOWER BOUND the contract
             // publishes, not any lot's terminus — which is why the field is
             // named `floorMin`. GAUNTLET C6.1: this used to add "and it is

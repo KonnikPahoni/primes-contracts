@@ -556,22 +556,17 @@ So a prime is sold by **descending (Dutch) buy-now**: it opens high according to
 and falls over one week to that prime's **resting price**, then sits there forever if nobody
 buys. You can buy at the standing price at any point on the slope.
 
-**What the resting price is, since D-88 point 1 and D-99:**
-`max(NPV(p) / 2, P0(p) / 3, 1 GRAM)` — half of what the deploy-time table says the prime is
-expected to earn in tribute over the life of the game, or a third of what it opened at, or
-1 GRAM, whichever is largest (`restingPriceOf` in `primes_market.tolk`). Either way the whole
-descent is **at most a 3× fall**:
-where the finite `NPV` table has an entry the lot opens at `1.5 × NPV(p)` off that same
-table, and where it misses, the `P0(p) / 3` term keeps the same 3×. *(There used to be a
-third case — a "special" prime rested at its rarity tier's `price_min`. D-99 deleted the
-tiers; a memorable prime now opens higher because its score is higher, and its resting
-price follows automatically.)*
+**What the resting price is, since D-218:** the tribute that prime collects from the
+**5,000 composite mints after its own turn**, never below 1 GRAM and never above what it
+opened at (`restingPriceOf` in `primes_market.tolk`, from a table the sim generates). Prime 3
+rests at about 29 GRAM, 97 at about 3.5, and every prime past 509 at exactly 1 GRAM, whatever
+its score. *(Until D-218 it was `max(NPV(p) / 2, P0(p) / 3, 1 GRAM)`, which rested 3 near
+294 GRAM and a top-scoring prime near 139 — high enough that the lots nobody wanted sat.)*
 
-So the honest version of the old promise: **a small prime does not fall to 1 GRAM.** It earns
-tribute on every one of its multiples, forever, and its floor says so. Only a prime past the
-end of the finite `NPV` table *and* opening at 3 GRAM or less rests at exactly the 1 GRAM a
-composite costs. What patience buys you on a prime is up to a 3× discount off the opening
-price, not a 1 GRAM number.
+So: **a small prime still does not fall to 1 GRAM** — its floor is what its multiples pay it
+over the next 5,000 mints. A large prime does, because at 1 GRAM it already pays itself back
+by the time the head reaches about 12p. The week-long descent from the opening price is where
+the real price is found; the resting price is only where a lot nobody wanted waits.
 
 ### Doesn't that stall the line? Primes are common.
 

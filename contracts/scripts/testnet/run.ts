@@ -79,6 +79,9 @@ export const PHASES: Phase[] = [
             // been read at a live node and 27 of those are rendered by the app
             // (§9.1). It sends nothing, so it is free to run before the money.
             S('the whole get-method surface answers', 'testnet/surface.ts'),
+            // D-218: the deploy-fixed rest table on chain is params.json's, prime by prime
+            // through the 509 cutoff and past it to MINT_PRICE. Read-only.
+            S('every prime rests at its D-218 table price', 'testnet/lot.ts', ['rest-check', '600']),
             S('smoke mint n=4 (D-95)', 'smokeMintLive.ts', [], true),
             S('composite split, five ways', 'proveCompositeSplitLive.ts'),
             S('referral: every exclusion the chain offers', 'testnet/money.ts', ['referral', 'K']),

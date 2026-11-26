@@ -138,12 +138,22 @@ export async function ignite(host: ScriptHost) {
     // to read instead of three.
     const market = host.open(PrimesMarket.createFromAddress(peers.marketAddr));
 
-    let open = { market: await host.retry(() => market.getLaunched(), 'market.getLaunched') };
+    // The fan-out is an internal hop after the ledger's; on a slow chain it lands after `settle`
+    // (2026-11-25: ~2 min). Poll before calling it incomplete, so a slow hop is not reported as a
+    // failed launch and does not draw a needless second `sync_launch`.
+    const marketOpen = async () => {
+        for (let i = 0; i < 12; i++) {
+            if (await host.retry(() => market.getLaunched(), 'market.getLaunched')) return true;
+            await new Promise((r) => setTimeout(r, 15_000));
+        }
+        return host.retry(() => market.getLaunched(), 'market.getLaunched');
+    };
+    let open = { market: await marketOpen() };
     if (!open.market) {
         host.write(`peer fan-out incomplete (${JSON.stringify(open)}) — re-sending sync_launch`);
         await ledger.sendSyncLaunch(host.sender, { value: toNano('0.15') });
         await settle(host, 'ledger:sync-launch');
-        open = { market: await host.retry(() => market.getLaunched(), 'market.getLaunched') };
+        open = { market: await marketOpen() };
     }
 
     const stillClosed = Object.entries(open)

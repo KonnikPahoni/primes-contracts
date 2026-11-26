@@ -25,7 +25,7 @@
  *
  *   npx tsx contracts/scripts/createDedustPool.ts
  *
- * Reads `/.env` for KEEPER_WALLET_MNEMONIC, PRIMES_DEPLOY_SUBWALLET_ID (through
+ * Reads `/.env` for DEPLOYER_MNEMONIC, PRIMES_DEPLOY_SUBWALLET_ID (through
  * the SHARED accessor in envFile.ts, so it cannot disagree with what
  * deployGenesis.ts --skew-safe will actually deploy from) and the toncenter key.
  */
@@ -76,8 +76,8 @@ async function main() {
     const { testOnly, endpoint, apiKey } = scriptNetwork(env);
     const client = new TonClient({ endpoint, apiKey });
 
-    const mnemonic = envValue(env, 'KEEPER_WALLET_MNEMONIC');
-    if (!mnemonic) throw new Error('KEEPER_WALLET_MNEMONIC not found in /.env');
+    const mnemonic = envValue(env, 'DEPLOYER_MNEMONIC');
+    if (!mnemonic) throw new Error('DEPLOYER_MNEMONIC not found in /.env');
     const keyPair = await mnemonicToPrivateKey(mnemonic.split(/\s+/));
     const walletId = deploySubwalletId(env);
     const wallet = WalletContractV4.create({ workchain: 0, publicKey: keyPair.publicKey, walletId });

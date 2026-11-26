@@ -11,9 +11,9 @@ which private key can do what.**
 ## 1. What is live right now
 
 Network: GRAM **testnet only** (`CLAUDE.md` "Project status: pre-launch" — no mainnet
-deployment exists). **Current genesis: 2026-11-24**, deployed by
-`contracts/scripts/deployGenesis.ts --skew-safe` at commit `26cf5fd5b` from subwallet
-`20261124` of the keeper mnemonic, floor-donated (D-92/D-93, mandatory before ignition —
+deployment exists). **Current genesis: 2026-11-25**, deployed by
+`contracts/scripts/deployGenesis.ts --skew-safe` at commit `daa61c6ce` (bytecode built at `c4f418035`) from subwallet
+`20261126` of `DEPLOYER_MNEMONIC`, floor-donated (D-92/D-93, mandatory before ignition —
 see §2; 50 GRAM on this set, a testnet-only shortfall against D-204's 200 recorded under the LIVE table), then **ignited the same
 day** (`scripts/ignite.ts --skew-safe` minted Unity and opened every player-facing path).
 **Fifteen contracts** in the address table (D-212 deleted the burn sink; D-166 deleted the operator's vesting lock; D-168's
@@ -26,7 +26,7 @@ moves). See the bullet list under the LIVE table for what it stands in for and
 why a rate reading from it is a knob rather than a market.
 
 The full address table is `docs/testnet-deployment.md`'s
-**"LIVE — genesis 2026-11-24 (deploy subwallet `20261124`)"** section; it is not
+**"LIVE — genesis 2026-11-25 (deploy subwallet `20261126`)"** section; it is not
 duplicated here because a second copy is a second place to go stale.
 
 > **This date and that section name are CHECKED, not typed** (`GAUNTLET.md` **I11**).
@@ -195,8 +195,8 @@ change protocol state.
 
 | Key | Held by | Custodies / authorises | Compromise blast radius |
 |---|---|---|---|
-| **`KEEPER_WALLET_MNEMONIC`** (24-word, `/.env`) | The operator/team, off-chain | The keeper's **own gas wallet** — pays trigger-message gas for `flush()`/`settle()` calls. Also the wallet genesis was deployed from (via a fresh, disposable subwallet per cycle — never the main wallet itself, see §4). **Custodies no protocol funds** (`backend/keeper/src/wallet.ts`'s own header comment, confirmed by reading the file). | An attacker can spend the keeper's own gas balance and impersonate its permissionless calls — but every function it calls is reachable by anyone with the same message (`docs/audit/threat-model.md` actor "the keeper automation"), so this is a convenience loss, not an authority loss. |
-| **The deploy subwallet** (derived from the same mnemonic, a fresh subwallet id per genesis cycle) | Same operator | The **genesis script address** baked into every contract's init data, and the **proposer** address the venue timelock's `queue`/`execute` checks against. It was also the operator vesting lock's fixed beneficiary (D-77/D-91) until **D-166 deleted that lock**; the one left, the treasury's, pays the governed treasury. | Whoever holds this can queue/execute venue changes through the timelock once matured (CONCEPT.md's own timelock design — a 30-day delay is the mitigation, not secrecy). Vesting releases are permissionless, so the key adds nothing there. No direct fund custody either way. |
+| **`KEEPER_WALLET_MNEMONIC`** (24-word, `/.env`, the only wallet key on the host) | The operator/team, off-chain | The keeper's **own gas wallet** — pays trigger-message gas for `flush()`/`settle()` calls. Since 2026-11-24 it is NOT the deploy key: genesis deploys from `DEPLOYER_MNEMONIC`, which stays on the laptop (`deploy.ps1` ships only compose-named variables and refuses when the two are equal). **Custodies no protocol funds** (`backend/keeper/src/wallet.ts`'s own header comment, confirmed by reading the file). | An attacker can spend the keeper's own gas balance and impersonate its permissionless calls — but every function it calls is reachable by anyone with the same message (`docs/audit/threat-model.md` actor "the keeper automation"), so this is a convenience loss, not an authority loss. |
+| **The deploy subwallet** (derived from `DEPLOYER_MNEMONIC`, a fresh subwallet id per genesis cycle) | Same operator | The **genesis script address** baked into every contract's init data, and the **proposer** address the venue timelock's `queue`/`execute` checks against. It was also the operator vesting lock's fixed beneficiary (D-77/D-91) until **D-166 deleted that lock**; the one left, the treasury's, pays the governed treasury. | Whoever holds this can queue/execute venue changes through the timelock once matured (CONCEPT.md's own timelock design — a 30-day delay is the mitigation, not secrecy). Vesting releases are permissionless, so the key adds nothing there. No direct fund custody either way. |
 | **The voucher-signing keys** (Ed25519, `@ton/crypto`, `backend/attribution/src/voucher-signer.ts`) — two since audit R2-M2: `QUESTS_VOUCHER_SIGNER_SECRET_KEY` (QSTS) and `PRIME_QUESTS_VOUCHER_SIGNER_SECRET_KEY` (PQST) | The attribution service, off-chain (both in one `.env` on one host) | The **only signature-based authorisation** in the whole system (`docs/audit/sender-gates.md`'s single `signature` row) — `primes_voucher.tolk`'s `BurnSigner`/`ClaimVoucher` arms trust this signature completely, not a sender comparison. | One key reaches its own track only, and each wallet at most that instance's write-once `maxPerWallet` (QSTS 2,450 / PQST 6,350 PRIMES; 716 above it), so a thief needs ~1,000 fresh wallets per track; a host compromise takes both keys. Otherwise an attacker can mint valid-looking vouchers, redeemable up to the vault's allow-list `remaining`, until the key is rotated (a redeploy, per `CLAUDE.md`'s pre-launch freedom — no rotation-without-redeploy path exists) — see `docs/audit/threat-model.md` §"attacker gets" for the full writeup. |
 | **The security-prize key** (Ed25519, D-170) | The owner, offline — never a service | The security voucher's `ClaimVoucher`/`BurnSigner` arms; the deploy reads only its public half (`SECURITY_BOUNTY_SIGNER_PUBKEY`). | Bounded by the vault's `SECU` allow-list entry: at most the one 1,000,000-PRIMES prize, to any address, once. The genesis refuses a key equal to either service key (R2-M2). |
 | **The Hetzner SSH key / `deploy.ps1` credentials** | The deploy host operator | What JS bundle `primes.live` serves, and whether the backend containers are up. **Not** a fund-custody key — `CONCEPT.md` §8's "no admin withdraw path" means no amount of host access moves a single nanoton directly. | Can serve a bundle that builds a different mint message than the ring on screen implies (`GAUNTLET.md` **I4.1**/**D-76**, open, pending — no subresource-integrity control exists yet to catch this). Cannot touch the contracts' funds directly. |
@@ -218,7 +218,7 @@ GOTCHAS" section derived the hard way across five genesis attempts (2026-08-16,
 set — restated here as the auditor-facing summary, not a replacement for that section's
 full detail:
 
-1. Deploy key is `KEEPER_WALLET_MNEMONIC`, never `/seed.txt` (a different, unfunded
+1. Deploy key is `DEPLOYER_MNEMONIC` (laptop only; `KEEPER_WALLET_MNEMONIC` is the keeper's separate gas wallet), never `/seed.txt` (a different, unfunded
    wallet).
 2. Run scripts with `tsx`, never `ts-node` (`ts-node` fails on `shared/opcodes.ts`'s ESM
    import).

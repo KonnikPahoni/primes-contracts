@@ -81,7 +81,7 @@ async function main() {
     const ledger = client.open(PrimesLedger.createFromAddress(Address.parse(need('PRIMES_LEDGER_ADDRESS'))));
     const collection = client.open(PrimesCollection.createFromAddress(Address.parse(need('PRIMES_COLLECTION_ADDRESS'))));
 
-    const keyPair = await mnemonicToPrivateKey(need('KEEPER_WALLET_MNEMONIC').split(/\s+/));
+    const keyPair = await mnemonicToPrivateKey(need('DEPLOYER_MNEMONIC').split(/\s+/));
     const wallet = WalletContractV4.create({
         workchain: 0,
         publicKey: keyPair.publicKey,

@@ -50,7 +50,9 @@ describe('G96 · scriptNetwork', () => {
 
 describe('G96 · genesisPrep funding floor covers the donation and the pool', () => {
     // Imported lazily: genesisPrep hydrates process.env from /.env at load.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { seedingTon } = require('../scripts/genesisPrep') as typeof import('../scripts/genesisPrep');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const params = require('../../shared/params.json');
     const g = params.genesis;
 

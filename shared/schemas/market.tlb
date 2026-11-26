@@ -81,8 +81,8 @@ factor$_ prime_number:uint256 exponent:uint8 s:uint128 = Factor;
 ;;
 ;; `decay_seconds` is DERIVED FROM MODE (7 days, the only window left) and is
 ;; neither on the wire nor in storage. `floor` IS stored, per lot, as
-;; `price_floor` — D-88 point 1 makes it `max(NPV(n)/2, P0(n)/3, MINT_PRICE)` (D-99 §1.2
-;; replaced the tier lift with the P0/3 term), so it varies with `n` and cannot be
+;; `price_floor` — D-88 point 1 makes it per-`n`; D-218 sets it to
+;; `min(P0(n), max(MINT_PRICE, restTable[n]))`, so it varies with `n` and cannot be
 ;; derived from the mode alone. It is write-once from `n` at open: no message
 ;; carries it and no handler updates it, which is the half of the old MKT-1
 ;; that was ever structural. The other half — "floor(MODE_DUTCH_BUYNOW) = 1 GRAM

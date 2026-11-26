@@ -48,7 +48,7 @@ import { Address, toNano } from '@ton/core';
 import { PrimesVesting } from '../../wrappers/PrimesVesting';
 import { retry, type Wallet } from './sender';
 import { FLUSH_GAS_NANOTON } from '../../../shared/messages';
-import { addr, contracts, envOpt, snapshot, walletFor, type Contracts, type Snapshot } from './chain';
+import { addr, contracts, envOpt, foreignCredits, snapshot, walletFor, type Contracts, type Snapshot } from './chain';
 import * as A from './assert';
 import { fromAsserts, record } from './journal';
 
@@ -65,13 +65,16 @@ const ton = (v: bigint) => (Number(v) / 1e9).toFixed(9);
  * `head` is allowed to move only when a concurrent actor mints underneath us,
  * which is reported rather than failed — this harness shares a chain.
  */
-function movedNothing(before: Snapshot, after: Snapshot, op: string): A.AssertResult[] {
+function movedNothing(before: Snapshot, after: Snapshot, op: string, foreign = 0n): A.AssertResult[] {
+    // `foreign`: emission-free credits another actor landed inside the window (the keeper's
+    // sweep_ops on 20261126 raised T and pending by 0.27 GRAM mid-measurement). They move T and
+    // pending TOGETHER by the same amount, so they are subtracted, never excused wholesale.
     return [
         {
             ok:
-                before.T === after.T &&
+                after.T - before.T === foreign &&
                 before.S === after.S &&
-                before.pending === after.pending &&
+                after.pending - before.pending === foreign &&
                 before.liability.tributeOwed === after.liability.tributeOwed &&
                 before.liability.unroutedHeld === after.liability.unroutedHeld &&
                 before.liability.divOutstanding === after.liability.divOutstanding &&
@@ -83,7 +86,7 @@ function movedNothing(before: Snapshot, after: Snapshot, op: string): A.AssertRe
             after: `T ${after.T} pending ${after.pending} tribute ${after.liability.tributeOwed}`,
             detail:
                 before.head === after.head
-                    ? 'a repair op on a healthy set moves no figure'
+                    ? `a repair op on a healthy set moves no figure${foreign ? ` (less ${ton(foreign)} GRAM of foreign pool_inject)` : ''}`
                     : `head moved ${before.head} → ${after.head} (a concurrent actor minted; T/S deltas above are theirs)`,
         },
         A.tIdentity(after),
@@ -104,7 +107,7 @@ async function step(
     await send(w);
     await new Promise((r) => setTimeout(r, SETTLE_MS));
     const after = await snapshot(c);
-    const results = movedNothing(before, after, op);
+    const results = movedNothing(before, after, op, await foreignCredits(c, before, after));
     record({ phase, op, ok: results.every((r) => r.ok), asserts: fromAsserts(results) });
     A.requireAll(results);
 }
@@ -159,7 +162,7 @@ async function cmdSyncHead(c: Contracts, handle: string) {
     const stats = await retry(() => c.market.getMarketStats(), 'getMarketStats');
     const marketHead = Number(stats.headHint);
     const results = [
-        ...movedNothing(before, after, 'sync_head'),
+        ...movedNothing(before, after, 'sync_head', await foreignCredits(c, before, after)),
         {
             ok: marketHead === after.head,
             name: 'HEAD_AGREES',

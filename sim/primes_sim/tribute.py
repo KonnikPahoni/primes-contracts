@@ -235,6 +235,57 @@ def prime_tribute_npv(
     return {"npv": npv, "undiscounted": undisc_at_mint}
 
 
+def prime_resting_tribute(
+    window_mints: int,
+    prime_bound: int,
+    spf: np.ndarray | None = None,
+    exponent: float = 0.5,
+    f: float = 0.20,
+    tribute_pct: float = 0.10,
+) -> dict[int, float]:
+    """DECISIONS.md D-218: for every prime p <= `prime_bound`, the tribute p
+    collects from the `window_mints` composite mints that follow its own turn
+    (head = p), undiscounted, in GRAM. This IS the resting price of p's
+    descending lot, floored at MINT_PRICE by the caller.
+
+    Mirrors the ledger, not `prime_tribute_npv`: the flat dividend
+    (`f * tribute_pct`, `TRIBUTE_FLAT_AMOUNT` 0.02 GRAM) accrues on COMPOSITE
+    mints only and is divided by pi(n) = the primes BELOW n (primes_ledger.tolk,
+    the `hasTributeRecipients` arm, G79's ordering). The divisor line
+    (`(1 - f) * tribute_pct`) is split over n's factors by `e * p**exponent`.
+    The window counts composites because the head is defined over composites
+    (D-20): a prime is never a head mint.
+    """
+    # The last window ends about `window_mints` composites past `prime_bound`;
+    # composites are > 3/4 of the line there, so 2x is ample and asserted.
+    horizon = prime_bound + 2 * window_mints + 1000
+    if spf is None or len(spf) <= horizon:
+        spf = spf_sieve(horizon)
+    is_prime = np.zeros(horizon + 1, dtype=bool)
+    idx = np.arange(horizon + 1)
+    is_prime[2:] = spf[2:horizon + 1] == idx[2:]
+    pi_below = np.concatenate(([0], np.cumsum(is_prime)[:-1]))  # primes < n
+    comp = np.zeros(horizon + 1, dtype=bool)
+    comp[4:] = ~is_prime[4:]
+    comp_count = np.cumsum(comp)
+    flat_cum = np.cumsum(np.where(comp, tribute_pct * f / np.maximum(pi_below, 1), 0.0))
+    div_line = tribute_pct * (1.0 - f)
+
+    out: dict[int, float] = {}
+    for p in range(2, prime_bound + 1):
+        if not is_prime[p]:
+            continue
+        end = int(np.searchsorted(comp_count, comp_count[p] + window_mints))
+        assert end <= horizon, "rest window ran past the sieve"
+        cash = float(flat_cum[end] - flat_cum[p])
+        for m in range(2 * p, end + 1, p):
+            fac = factorize(spf, m)
+            w = {q: e * (q ** exponent) for q, e in fac.items()}
+            cash += div_line * w[p] / sum(w.values())
+        out[p] = cash
+    return out
+
+
 def repayment_head_multiples(
     horizon: int,
     spf: np.ndarray | None = None,

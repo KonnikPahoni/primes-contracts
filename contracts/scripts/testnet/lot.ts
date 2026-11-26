@@ -13,6 +13,8 @@
  *   npx tsx contracts/scripts/testnet/lot.ts open <n> [handle]        # ascending: the open IS the first bid, at p0
  *   npx tsx contracts/scripts/testnet/lot.ts open-dutch <n> [handle]  # descending: gas only, places no bid
  *   npx tsx contracts/scripts/testnet/lot.ts buy <n> [handle]         # a Dutch lot's purchase at the standing price
+ *   npx tsx contracts/scripts/testnet/lot.ts snipe <n> [handle] [lead]   # X1/D-8: raise inside the extension window
+ *   npx tsx contracts/scripts/testnet/lot.ts rest-check <upTo>         # D-218: on-chain rest == params table, read-only
  *
  * The three writes (G54) each decide on the read BEFORE they send: the lot's state,
  * the quoted price, the sender's balance. Every value is the quote plus MARGIN.
@@ -21,7 +23,7 @@
  * has done nothing else, so the permissionlessness is what is being shown and
  * not merely assumed.
  */
-import { Address, fromNano, toNano } from '@ton/core';
+import { Address, beginCell, fromNano, toNano } from '@ton/core';
 import { TonClient } from '@ton/ton';
 import { PrimesMarket } from '../../wrappers/PrimesMarket';
 import { PrimesLedger } from '../../wrappers/PrimesLedger';
@@ -32,6 +34,9 @@ import { makeClient, retry } from './sender';
 // v4-only copy would have driven the same seed's v4 account instead (G54).
 import { walletFor } from './chain';
 import { factorize, isPrime as isPrimeN } from './money';
+import { record } from './journal';
+import { contracts, snapshot } from './chain';
+import { PrimesItem } from '../../wrappers/PrimesItem';
 
 function env(name: string): string {
     const v = envValue(loadEnvFile(), name);
@@ -153,6 +158,26 @@ async function openDutch(client: TonClient, n: bigint, handle: string) {
     console.log(`landed: mode ${after.mode} p0 ${fromNano(after.p0)} standing ${fromNano(after.standingPrice)} minPayment ${fromNano(after.minPayment)}`);
 }
 
+async function primesHeld(client: TonClient, owner: Address): Promise<bigint> {
+    const master = Address.parse(env('PRIMES_JETTON_MASTER_ADDRESS'));
+    const r = await retry(
+        () => client.runMethod(master, 'get_wallet_address', [{ type: 'slice', cell: beginCell().storeAddress(owner).endCell() }]),
+        'get_wallet_address'
+    );
+    const wallet = r.stack.readAddress();
+    try {
+        return (await client.runMethod(wallet, 'get_wallet_data', [])).stack.readBigNumber();
+    } catch {
+        return 0n;
+    }
+}
+
+/**
+ * A Dutch lot's purchase at the standing price — and, since X4, the asserts that make it
+ * evidence: the lot closes in the buy's own transaction, the buyer owns `n`, a prime mint
+ * emits nothing (§5.1, k = 0: the buyer's PRIMES do not move), `T` rises, `S` does not, and
+ * the head does not move (an auction mints off-head).
+ */
 async function buy(client: TonClient, n: bigint, handle: string) {
     const m = market(client);
     const lot = await retry(() => m.getLot(n), 'getLot');
@@ -160,17 +185,152 @@ async function buy(client: TonClient, n: bigint, handle: string) {
     const value = lot.minPayment + MARGIN;
     const w = await walletFor(client, handle);
     await guardBalance(client, handle, w.wallet.address, value);
-    console.log(`${handle} buys lot ${n} at minPayment ${fromNano(lot.minPayment)} GRAM, value ${fromNano(value)}`);
+    const c = contracts(client);
+    const before = await snapshot(c);
+    const primesBefore = await primesHeld(client, w.wallet.address);
+    const rest = await retry(() => m.getPrimeFloor(n), 'getPrimeFloor');
+    console.log(`${handle} buys lot ${n} at minPayment ${fromNano(lot.minPayment)} GRAM (rest ${fromNano(rest)}), value ${fromNano(value)}`);
     await m.sendBid(w.sender, { n, beneficiary: null, referralKey: 0, value });
-    await new Promise((r) => setTimeout(r, 25_000));
-    const after = await retry(() => m.getLot(n), 'getLot(after)');
-    console.log(`after: closed=${after.closed} highBidder ${after.highBidder}`);
+    let after = lot;
+    for (let i = 0; i < 12 && !after.closed; i++) {
+        await new Promise((r) => setTimeout(r, 10_000));
+        after = await retry(() => m.getLot(n), 'getLot(after)');
+    }
+    const snapAfter = await snapshot(c);
+    const primesAfter = await primesHeld(client, w.wallet.address);
+    const ledger = client.open(PrimesLedger.createFromAddress(Address.parse(env('PRIMES_LEDGER_ADDRESS'))));
+    const itemAddr = await retry(() => ledger.getItemAddress(n), 'getItemAddress');
+    let owner: Address | null = null;
+    for (let i = 0; i < 6 && !owner; i++) {
+        try {
+            owner = (await client.open(PrimesItem.createFromAddress(itemAddr)).getNumberData()).owner;
+        } catch {
+            await new Promise((r) => setTimeout(r, 10_000));
+        }
+    }
+    const asserts = [
+        { name: 'LOT_CLOSED_BY_BUY', ok: after.closed, getMethod: 'market.getLot(n).closed', detail: `closed=${after.closed}` },
+        { name: 'BUYER_OWNS_N', ok: !!owner?.equals(w.wallet.address), getMethod: 'item(n).getNumberData().owner', detail: `owner ${owner}` },
+        {
+            name: 'PRIME_EMITS_NOTHING',
+            ok: primesAfter === primesBefore,
+            getMethod: 'buyer jetton wallet get_wallet_data',
+            detail: `buyer PRIMES ${primesBefore} -> ${primesAfter} (§5.1: k = 0 on a prime)`,
+        },
+        { name: 'T_UP', ok: snapAfter.T > before.T, getMethod: 'ledger.getFloorNum', detail: `T +${fromNano(snapAfter.T - before.T)} GRAM` },
+        { name: 'S_UNMOVED_BY_BUY', ok: snapAfter.S === before.S, getMethod: 'ledger.getFloorDen', detail: `S ${before.S} -> ${snapAfter.S}` },
+        { name: 'HEAD_UNMOVED', ok: snapAfter.head === before.head, getMethod: 'ledger.getHead', detail: `head ${before.head} -> ${snapAfter.head}` },
+        {
+            name: 'PAID_AT_REST',
+            // `minPayment` = standing + the lane's fixed gas component (0.07), so the PRICE is `standingPrice`.
+            ok: lot.standingPrice === rest,
+            getMethod: 'market.getLot(n).standingPrice vs getPrimeFloor(n)',
+            detail: `standing ${fromNano(lot.standingPrice)} (paid ${fromNano(lot.minPayment)} incl. gas) vs D-218 rest ${fromNano(rest)}`,
+        },
+    ];
+    const ok = asserts.every((a) => a.ok);
+    record({ phase: '3', op: `dutch-buy-${n}`, ok, asserts });
+    for (const a of asserts) console.log(`  ${a.ok ? 'OK  ' : 'FAIL'} ${a.name}  ${a.detail}`);
+    if (!ok) process.exit(1);
+}
+
+/**
+ * X1, D-8 anti-snipe on chain: a raise that LANDS inside the final `bidExtension` seconds moves
+ * `closesAt` to `now + bidExtension` (the max() form), and the displaced bid is refunded in the
+ * same trace. Decides on the read: refuses when `handle` already holds the high bid, when the
+ * lot is closed, or when the window has already passed. Sends `lead` seconds before close
+ * (default 15 — the external plus one hop must land inside the 23 s window on a D-139 set).
+ */
+async function snipe(client: TonClient, n: bigint, handle: string, lead: number) {
+    const m = market(client);
+    const params = await retry(() => m.getMarketParams(), 'getMarketParams');
+    const lot = await retry(() => m.getLot(n), 'getLot');
+    const w = await walletFor(client, handle);
+    if (!lot.found || lot.closed || lot.closesAt === 0) throw new Error(`lot ${n} is not a running ascending lot — nothing sent`);
+    if (lot.highBidder?.equals(w.wallet.address)) throw new Error(`${handle} already holds the high bid on ${n} — nothing sent`);
+    if (lead >= params.bidExtension) throw new Error(`lead ${lead}s is outside the ${params.bidExtension}s extension window`);
+    const sendAt = lot.closesAt - lead;
+    const wait = sendAt - Math.floor(Date.now() / 1000);
+    if (wait < 0) throw new Error(`too late: ${-wait}s past the send point for closesAt ${lot.closesAt} — nothing sent`);
+    const value = lot.minPayment + MARGIN;
+    await guardBalance(client, handle, w.wallet.address, value);
+    const prevBidder = lot.highBidder;
+    const prevBal = prevBidder ? await retry(() => client.getBalance(prevBidder), 'getBalance(prev)') : 0n;
+    console.log(`waiting ${wait}s, then ${handle} raises ${n} to ${fromNano(lot.minPayment)} with ${lead}s left (window ${params.bidExtension}s)`);
+    await new Promise((r) => setTimeout(r, wait * 1000));
+    await m.sendBid(w.sender, { n, beneficiary: null, referralKey: 0, value });
+    let after = lot;
+    for (let i = 0; i < 12 && !after.highBidder?.equals(w.wallet.address); i++) {
+        await new Promise((r) => setTimeout(r, 10_000));
+        after = await retry(() => m.getLot(n), 'getLot(after)');
+    }
+    const prevAfter = prevBidder ? await retry(() => client.getBalance(prevBidder), 'getBalance(prev after)') : 0n;
+    const won = !!after.highBidder?.equals(w.wallet.address);
+    const extended = after.closesAt > lot.closesAt;
+    const refunded = prevAfter - prevBal >= lot.highBid - toNano('0.01');
+    const asserts = [
+        { name: 'SNIPE_BID_LANDED', ok: won, getMethod: 'market.getLot(n).highBidder', detail: `${handle} is high bidder at ${fromNano(after.highBid)}` },
+        {
+            name: 'ANTI_SNIPE_EXTENDS',
+            ok: extended,
+            getMethod: 'market.getLot(n).closesAt + getMarketParams().bidExtension',
+            detail: `closesAt ${lot.closesAt} -> ${after.closesAt} (+${after.closesAt - lot.closesAt}s; D-8 max(closesAt, now + ${params.bidExtension}))`,
+        },
+        {
+            name: 'DISPLACED_BID_REFUNDED',
+            ok: refunded,
+            getMethod: 'balance(previous high bidder)',
+            detail: `${prevBidder} +${fromNano(prevAfter - prevBal)} GRAM for a displaced ${fromNano(lot.highBid)} bid`,
+        },
+    ];
+    const ok = asserts.every((a) => a.ok);
+    record({ phase: '0', op: `anti-snipe-${n}`, ok, asserts });
+    for (const a of asserts) console.log(`  ${a.ok ? 'OK  ' : 'FAIL'} ${a.name}  ${a.detail}`);
+    if (!ok) process.exit(1);
+}
+
+/**
+ * D-218 on chain: every prime in [3, upTo] rests where `shared/params.json`'s
+ * `resting_ladder` says, and a prime missing from the table rests at MINT_PRICE.
+ * Read-only — `getPrimeFloor(p)` answers from `p` alone, before any lot exists.
+ */
+async function restCheck(client: TonClient, upTo: bigint) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const table: Record<string, number> = require('../../../shared/params.json').trophy_auction.resting_ladder.resting_nanoton_by_prime;
+    const m = market(client);
+    const bad: string[] = [];
+    let checked = 0;
+    for (let p = 3n; p <= upTo; p += 2n) {
+        if (!isPrimeN(p)) continue;
+        const want = BigInt(table[String(p)] ?? 1_000_000_000);
+        const got = await retry(() => m.getPrimeFloor(p), `getPrimeFloor(${p})`);
+        checked++;
+        if (got !== want) bad.push(`${p}: chain ${fromNano(got)} != params ${fromNano(want)}`);
+    }
+    const ok = bad.length === 0;
+    record({
+        phase: '1',
+        op: 'd218-rest-table',
+        ok,
+        asserts: [
+            {
+                name: 'REST_TABLE_MATCHES_PARAMS',
+                ok,
+                getMethod: 'market.getPrimeFloor(p) vs params.json resting_ladder',
+                detail: ok ? `${checked} primes in [3, ${upTo}] rest exactly at the D-218 table (1 GRAM off-table)` : bad.join('; '),
+            },
+        ],
+    });
+    console.log(ok ? `OK: ${checked} primes match` : `FAIL:\n${bad.join('\n')}`);
+    if (!ok) process.exit(1);
 }
 
 async function main() {
     const [cmd, nArg, handle] = process.argv.slice(2);
     const client = makeClient();
-    if (!cmd || !nArg) throw new Error('usage: lot.ts <show|close> <n> [handle]');
+    if (!cmd || !nArg) throw new Error('usage: lot.ts <show|close|rest-check> <n> [handle]');
+    if (cmd === 'rest-check') return restCheck(client, BigInt(nArg));
+    if (cmd === 'snipe') return snipe(client, BigInt(nArg), handle ?? 'C', Number(process.argv[5] ?? 15));
     const n = BigInt(nArg);
     if (cmd === 'show') return show(client, n);
     if (cmd === 'close') return close(client, n, handle ?? 'F');

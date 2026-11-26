@@ -588,8 +588,12 @@ def _sig(x: float, digits: int = 2) -> float:
     return round(x * m) / m
 
 
-def prime_lot_groups(prime_npv: dict) -> dict:
-    """Group in-range primes by `(score, NPV to 2 significant figures)`.
+def prime_lot_groups(prime_npv: dict, rest_ton: dict | None = None) -> dict:
+    """Group in-range primes by `(score, NPV to 2 significant figures, rest)`.
+
+    D-218: the resting price is the third key, exact, because it is a per-prime
+    table entry for the ~100 primes below 521 and MINT_PRICE for every other
+    prime, so it splits only the groups it must.
 
     Tens of thousands of primes cannot each get their own Monte-Carlo run inside
     a coordinate ascent, and they do not need one: `P0(p)` depends on the prime
@@ -598,9 +602,10 @@ def prime_lot_groups(prime_npv: dict) -> dict:
     two significant figures, which moves `P0` by at most 0.5% on the NPV branch
     and not at all on the `PRIME_P0_MIN` or ladder branches.
     """
-    groups: dict[tuple[Cell, float], int] = {}
+    groups: dict[tuple[Cell, float, float], int] = {}
     for p, npv in prime_npv.items():
-        key = (cell_of(p), _sig(npv))
+        rest = (rest_ton or {}).get(p, ta.MINT_PRICE_TON)
+        key = (cell_of(p), _sig(npv), rest)
         groups[key] = groups.get(key, 0) + 1
     return groups
 
@@ -608,8 +613,13 @@ def prime_lot_groups(prime_npv: dict) -> dict:
 def evaluate_lane(census: dict, prime_npv: dict,
                   prem: ObjectivePremises, *,
                   res_gas_ton: float, increment_ladder: dict,
+                  rest_ton: dict | None = None,
                   c: ta.TrophyConstants = ta.C) -> dict:
     """The lane's expected premium and its constraint margins.
+
+    `rest_ton` maps a prime to where its descending lot comes to rest, in GRAM
+    (D-218, `trophy_auction.resting_ladder`); a prime missing from it rests at
+    MINT_PRICE, as on chain. `None` rests every prime at MINT_PRICE.
 
     **RENAMED from `evaluate_weights` by D-99.** There is no weight vector left
     to evaluate: the 33 category weights are owner-declared and `D(n)` rides on
@@ -709,7 +719,7 @@ def evaluate_lane(census: dict, prime_npv: dict,
         b["sold_days"] += count * sale_p * (days_to_sale or 0.0)
 
     # ---- descending prime lane (D-20) ---------------------------------- #
-    for (cell, npv), count in prime_lot_groups(prime_npv).items():
+    for (cell, npv, rest), count in prime_lot_groups(prime_npv, rest_ton).items():
         d = cell.score
         p0 = ta.p0_nanoton(d, prime=True, npv_ton=npv if npv > 0 else None,
                            c=c) / ta.NANO
@@ -721,7 +731,7 @@ def evaluate_lane(census: dict, prime_npv: dict,
                             lam_per_day=prem.lam_dutch_per_day, sigma=prem.sigma,
                             rng=rng, draws=prem.draws,
                             decay_seconds=c.AUCTION_WINDOW_SECONDS,
-                            floor_ton=ta.MINT_PRICE_TON,
+                            floor_ton=rest,
                             observation_days=prem.observation_days)
         ppl = max(out["mean_clearing_unconditional_ton"]
                   - (ta.MINT_PRICE_TON + res_gas_ton) * out["sale_probability"], 0.0)
@@ -960,11 +970,14 @@ def unsold_prime_forfeit(*, npv_by_prime: dict, census: dict,
                          head_range: tuple[int, int], mints_per_day: float,
                          res_gas_ton: float, c: ta.TrophyConstants = ta.C,
                          draws: int | None = None,
+                         rest_ton: dict | None = None,
                          seed: int = 20260817) -> dict:
     """What §12's revenue risk is now accepted against.
 
+    `rest_ton` as in `evaluate_lane` (D-218): where each lot comes to rest.
+
     Two quantities, and they are different: the share of prime lots still
-    resting on their 1 GRAM floor at the end of the observation window, and the
+    resting on their floor at the end of the observation window, and the
     **tribute those lots forfeit to the treasury while they sit** (D-20 point 4).
 
     Tribute accrual while unsold is priced off the prime's own `NPV(p)` — the
@@ -1003,7 +1016,7 @@ def unsold_prime_forfeit(*, npv_by_prime: dict, census: dict,
         out = dutch_outcome(p0, v, lam_per_day=prem.lam_dutch_per_day,
                             sigma=prem.sigma, rng=rng, draws=draws,
                             decay_seconds=c.AUCTION_WINDOW_SECONDS,
-                            floor_ton=ta.MINT_PRICE_TON,
+                            floor_ton=(rest_ton or {}).get(p, ta.MINT_PRICE_TON),
                             observation_days=prem.observation_days)
         p_unsold = 1.0 - out["sale_probability"]
         days_unowned = (out["mean_days_to_sale"] or prem.observation_days) \

@@ -161,7 +161,7 @@ async function main() {
     const FUNDER_SUBWALLET = Number(need('PRIMES_DEPLOY_SUBWALLET_ID'));
 
     const keeperMnemonic = envFile
-        .match(/^KEEPER_WALLET_MNEMONIC=(.*)$/m)![1]
+        .match(/^DEPLOYER_MNEMONIC=(.*)$/m)![1]
         .trim()
         .replace(/^"|"$/g, '')
         .split(/\s+/);

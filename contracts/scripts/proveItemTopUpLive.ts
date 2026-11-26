@@ -20,7 +20,7 @@
  *   npx tsx contracts/scripts/proveItemTopUpLive.ts            # defaults to n = 4
  *   PRIMES_TOPUP_N=8 npx tsx contracts/scripts/proveItemTopUpLive.ts
  *
- * Env: `PRIMES_COLLECTION_ADDRESS`, `KEEPER_WALLET_MNEMONIC`; the funder defaults to the
+ * Env: `PRIMES_COLLECTION_ADDRESS`, `DEPLOYER_MNEMONIC`; the funder defaults to the
  * deploy subwallet, which is what the D-95 smoke mint leaves holding number 4.
  */
 import { Address, SendMode, TonClient, WalletContractV4, internal, toNano } from '@ton/ton';
@@ -111,7 +111,7 @@ async function main() {
     console.log('\nstranger (fresh mnemonic, holds no role in this deployment):', fmt(stranger.address));
     if (stranger.address.equals(data.owner)) throw new Error('impossible collision with the owner');
 
-    const funderKeys = await mnemonicToPrivateKey(req('KEEPER_WALLET_MNEMONIC').split(/\s+/));
+    const funderKeys = await mnemonicToPrivateKey(req('DEPLOYER_MNEMONIC').split(/\s+/));
     const funder = client.open(
         WalletContractV4.create({
             workchain: 0,

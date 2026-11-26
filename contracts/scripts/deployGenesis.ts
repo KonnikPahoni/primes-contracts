@@ -9,7 +9,7 @@
  * (`--testnet` / `--mainnet`, `--mnemonic` / `--tonconnect` / `--tonhub`), so no
  * key material or endpoint lives in this repo. `--skew-safe` swaps in the
  * hand-rolled +600s sender from `scriptHost.ts` (why: see that file's header) —
- * testnet only, keyed from `/.env`'s KEEPER_WALLET_MNEMONIC and
+ * testnet only, keyed from `/.env`'s DEPLOYER_MNEMONIC and
  * `PRIMES_DEPLOY_SUBWALLET_ID`. It replaces `deployGenesisSkewSafe.ts`, a 610-line
  * fork of this file that G55 deleted after the two had drifted apart. The genesis LOGIC is in genesisPipeline.ts
  * and is shared verbatim with the sandbox rehearsal
@@ -70,6 +70,7 @@ import {
     GenesisPresentation,
     genesisDonationTon,
     requireTrophyNpv,
+    requireTrophyRest,
     runGenesis,
     validatePresentation,
     standInLpWalletFor,
@@ -578,6 +579,7 @@ export async function deployGenesis(host: ScriptHost) {
         // absence is honest: every prime then opens at max(ladder, PRIME_P0_MIN),
         // which is D3's declared ladder fallback, not a silent zero.
         trophyNpv: requireTrophyNpv(params),
+        trophyRest: requireTrophyRest(params), // D-218
         // `minAuctionDistance` is DELETED (D-45) — the ascending lane's
         // liveness gate no longer exists; see `primes_market.tolk`'s D-45 note.
         questsSignerPubkey: requireVoucherSignerPubkey('QUESTS_VOUCHER_SIGNER_SECRET_KEY'),

@@ -240,8 +240,8 @@ def split_mint(
     # but the seventh is a RATE, so the residual is price-independent -- the invite
     # line is an ABSOLUTE 0.1 GRAM per slot, so at a low enough price it eats past
     # the residual and the pool would fund the invitations. Unreachable in the
-    # shipped game (MINT_PRICE is a flat 1 GRAM and a prime's lane rests at
-    # max(NPV(p)/2, P0(p)/3, MINT_PRICE)), which is exactly why it is an assert: this
+    # shipped game (MINT_PRICE is a flat 1 GRAM and a prime's lane never rests
+    # below MINT_PRICE, D-218), which is exactly why it is an assert: this
     # function is the reference phase 2's ledger is written from, and this is the
     # line that fails if a future price change makes it reachable.
     assert pool_injection > 0.0, (

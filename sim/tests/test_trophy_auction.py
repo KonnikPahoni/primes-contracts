@@ -373,6 +373,54 @@ def test_npv_dictionary_bound_covers_every_prime_the_branch_can_bind_on(block):
                     == tr.p0_nanoton(ds.score(p), prime=True, npv_ton=None))
 
 
+def _naive_window_tribute(p: int, window: int) -> float:
+    """D-218's W(p) by the dumbest loop that can compute it: walk n upward from
+    p, count composites, pay p its e*sqrt(p) share of 0.08 and the 0.02 flat
+    dividend split over the primes below n. Shares no code with the generator."""
+    def factor(m):
+        f, q = {}, 2
+        while q * q <= m:
+            while m % q == 0:
+                f[q] = f.get(q, 0) + 1
+                m //= q
+            q += 1
+        if m > 1:
+            f[m] = f.get(m, 0) + 1
+        return f
+    primes_below, cash, seen, n = sum(1 for k in range(2, p + 1) if len(factor(k)) == 1
+                                      and list(factor(k).values()) == [1]), 0.0, 0, p
+    while seen < window:
+        n += 1
+        f = factor(n)
+        if list(f.values()) == [1]:
+            primes_below += 1
+            continue
+        seen += 1
+        if p in f:
+            w = {q: e * math.sqrt(q) for q, e in f.items()}
+            cash += 0.08 * w[p] / sum(w.values())
+        cash += 0.02 / primes_below
+    return cash
+
+
+def test_resting_table_is_the_window_tribute_floored_and_capped(block):
+    """D-218: rest(p) = min(P0(p), max(MINT_PRICE, W(p))), shipped as the
+    entries above MINT_PRICE only."""
+    lad = block["resting_ladder"]
+    assert lad["window_mints"] == tr.C.PRIME_REST_WINDOW_MINTS == 5000
+    rest = {int(p): v for p, v in lad["resting_nanoton_by_prime"].items()}
+    assert 2 not in rest                      # a primorial never opens a lot
+    assert all(v > tr.MINT_PRICE_NANOTON for v in rest.values())
+    # independent recomputation, to the nanoton's rounding
+    for p in (3, 97, 509):
+        assert abs(rest[p] - round(_naive_window_tribute(p, 5000) * tr.NANO)) <= 1, p
+    assert 28 < rest[3] / tr.NANO < 31       # the owner's "around 30" for prime 3
+    assert lad["last_prime_above_floor"] == max(rest) < 1000
+    npv = {int(p): v for p, v in block["npv_ladder"]["npv_ton_by_prime"].items()}
+    for p, v in rest.items():
+        assert v <= tr.p0_nanoton(ds.score(p), prime=True, npv_ton=npv.get(p)), p
+
+
 # --------------------------------------------------------------------------- #
 # SS3.2 -- lot counts, recomputed from published data
 # --------------------------------------------------------------------------- #

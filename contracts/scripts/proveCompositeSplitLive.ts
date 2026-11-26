@@ -3,7 +3,7 @@
  *
  * Verification-only script (no new mechanics, no new get-methods). Reuses
  * `smokeMintLive.ts`'s sender pattern (skew-safe subwallet transfer through
- * the keeper mnemonic in `.env`) and extends it to read every get-method
+ * the deployer mnemonic in `.env`) and extends it to read every get-method
  * CONCEPT.md §4.1's split touches, before and after one real mint, and
  * reconcile the deltas:
  *
@@ -102,7 +102,7 @@ async function retry<T>(fn: () => Promise<T>, label: string, attempts = 8): Prom
 async function main() {
     const envFile = fs.readFileSync(path.join(REPO, '.env'), 'utf8');
     const mnemonic = envFile
-        .match(/^KEEPER_WALLET_MNEMONIC=(.*)$/m)![1]
+        .match(/^DEPLOYER_MNEMONIC=(.*)$/m)![1]
         .trim()
         .replace(/^"|"$/g, '')
         .split(/\s+/);

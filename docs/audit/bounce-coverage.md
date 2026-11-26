@@ -48,10 +48,10 @@ is mechanical and detected here; the second is a judgement call, enumerated in
 | `primes_ledger.tolk` | 5433 | `executeMint` | `MintItem` | `itemValue + heldSplitValue` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
 | `primes_ledger.tolk` | 5454 | `executeMint` | `JettonMint` | `REBATE_MINT_GAS` | dispatches 6 (0xc0000001, 0xb0000030, 0xb0000036, 0xd0000001, 0x9c000004, 0x9c000003) |
 | `primes_lp_position.tolk` | 396 | `forwardToTreasury` | `(unknown)` | `0` | single-message |
-| `primes_market.tolk` | 2170 | `closeLot` | `SettlePrimeClearing` | `MINT_PRICE + SETTLE_GAS` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
-| `primes_market.tolk` | 2188 | `closeLot` | `MintWonLot` | `MINT_PRICE + SETTLE_GAS` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
-| `primes_market.tolk` | 2706 | `onInternalMessage` | `ClearingCleared` | `returned` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
-| `primes_market.tolk` | 2772 | `onInternalMessage` | `ClearingCleared` | `premium + PREMIUM_HOP_GAS` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
+| `primes_market.tolk` | 2176 | `closeLot` | `SettlePrimeClearing` | `MINT_PRICE + SETTLE_GAS` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
+| `primes_market.tolk` | 2194 | `closeLot` | `MintWonLot` | `MINT_PRICE + SETTLE_GAS` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
+| `primes_market.tolk` | 2710 | `onInternalMessage` | `ClearingCleared` | `returned` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
+| `primes_market.tolk` | 2776 | `onInternalMessage` | `ClearingCleared` | `premium + PREMIUM_HOP_GAS` | dispatches 3 (0xb0000020, 0xb0000024, 0xb0000009) |
 | `primes_minter_card.tolk` | 236 | `onInternalMessage` | `CardMint` | `0` | single-message |
 | `primes_ratchet.tolk` | 1072 | `sendTstonWithdraw` | `JettonBurn` | `TSTON_EXIT_GAS` | dispatches 4 (DEDUST_SWAP_OP, TONSTAKERS_DEPOSIT_OP, TSTON_BURN_OP, TEP74_TRANSFER_OP) |
 | `primes_ratchet.tolk` | 1112 | `sendTstonTransfer` | `(unknown)` | `value` | dispatches 4 (DEDUST_SWAP_OP, TONSTAKERS_DEPOSIT_OP, TSTON_BURN_OP, TEP74_TRANSFER_OP) |
@@ -119,11 +119,11 @@ is mechanical and detected here; the second is a judgement call, enumerated in
 | `primes_lot_block.tolk` | 170 | `onInternalMessage` | `LotBlockRefused` | `0` |
 | `primes_lot_block.tolk` | 193 | `onInternalMessage` | `LotBlockWords` | `0` |
 | `primes_lot_block.tolk` | 239 | `onInternalMessage` | `LotBlockBookmark` | `0` |
-| `primes_market.tolk` | 2094 | `sendRefund` | `(inline)` | `amount` |
-| `primes_market.tolk` | 2363 | `onInternalMessage` | `MarkOffHead` | `OPEN_RESERVE_GAS` |
-| `primes_market.tolk` | 2470 | `onInternalMessage` | `MarkOffHead` | `OPEN_RESERVE_GAS` |
-| `primes_market.tolk` | 2477 | `onInternalMessage` | `Excesses` | `0` |
-| `primes_market.tolk` | 2678 | `onInternalMessage` | `(inline)` | `0` |
+| `primes_market.tolk` | 2100 | `sendRefund` | `(inline)` | `amount` |
+| `primes_market.tolk` | 2369 | `onInternalMessage` | `MarkOffHead` | `OPEN_RESERVE_GAS` |
+| `primes_market.tolk` | 2474 | `onInternalMessage` | `MarkOffHead` | `OPEN_RESERVE_GAS` |
+| `primes_market.tolk` | 2481 | `onInternalMessage` | `Excesses` | `0` |
+| `primes_market.tolk` | 2682 | `onInternalMessage` | `(inline)` | `0` |
 | `primes_minter_card.tolk` | 255 | `onInternalMessage` | `(unknown)` | `0` |
 | `primes_minter_card.tolk` | 273 | `onInternalMessage` | `CardRecruitCounted` | `0` |
 | `primes_minter_card.tolk` | 313 | `onBouncedMessage` | `(unknown)` | `0` |

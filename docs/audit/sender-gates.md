@@ -85,10 +85,10 @@ The throw code is not part of the test: `throw 100` is the common case, but
 | `primes_lp_position.tolk` | 573 | `Relock` | compares sender | inline |
 | `primes_lp_sink.tolk` | 176 | `SetWallet` | compares sender | inline |
 | `primes_lp_sink.tolk` | 184 | `TransferNotification` | compares sender | inline |
-| `primes_market.tolk` | 2723 | `HeadUpdate` | compares sender | inline |
-| `primes_market.tolk` | 2739 | `LaunchOpen` | compares sender | inline |
-| `primes_market.tolk` | 2749 | `SettleConfirmed` | compares sender | inline |
-| `primes_market.tolk` | 2786 | `MarkRejected` | compares sender | inline |
+| `primes_market.tolk` | 2727 | `HeadUpdate` | compares sender | inline |
+| `primes_market.tolk` | 2743 | `LaunchOpen` | compares sender | inline |
+| `primes_market.tolk` | 2753 | `SettleConfirmed` | compares sender | inline |
+| `primes_market.tolk` | 2790 | `MarkRejected` | compares sender | inline |
 | `primes_minter_card.tolk` | 251 | `CardMintRefunded` | compares sender | inline |
 | `primes_minter_card.tolk` | 262 | `CardAddRecruit` | compares sender | inline |
 | `primes_minter_card.tolk` | 286 | `CardPrimeMinted` | compares sender | inline |
@@ -158,12 +158,12 @@ No caller authorisation, by design. The spec enumerates this set by name.
 | `primes_ledger.tolk` | 4350 | `FlushUnsold` |
 | `primes_ledger.tolk` | 4354 | `RetryItem` |
 | `primes_lp_position.tolk` | 611 | `Expire` |
-| `primes_market.tolk` | 2219 | `OpenLot` |
-| `primes_market.tolk` | 2371 | `OpenHeadLot` |
-| `primes_market.tolk` | 2485 | `BidLot` |
-| `primes_market.tolk` | 2613 | `CloseLot` |
-| `primes_market.tolk` | 2654 | `ParkLots` |
-| `primes_market.tolk` | 2686 | `RetryPremiumForward` |
+| `primes_market.tolk` | 2225 | `OpenLot` |
+| `primes_market.tolk` | 2377 | `OpenHeadLot` |
+| `primes_market.tolk` | 2489 | `BidLot` |
+| `primes_market.tolk` | 2617 | `CloseLot` |
+| `primes_market.tolk` | 2658 | `ParkLots` |
+| `primes_market.tolk` | 2690 | `RetryPremiumForward` |
 | `primes_minter_card.tolk` | 197 | `Mint` |
 | `primes_ratchet.tolk` | 1627 | `Flush` |
 | `primes_ratchet.tolk` | 1864 | `Stake` |

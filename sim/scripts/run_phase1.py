@@ -3079,7 +3079,9 @@ def build_params_json(e, ref_prices, yields, kills, all_passed, up, sizing,
             # head, which is defined over composites and Unity only) and clears
             # through the SAME uniform MODE_DUTCH_BUYNOW lane D-4 already defined:
             # a per-prime descending price from P0(p) to its resting price
-            # max(MINT_PRICE, P0/3, NPV/2), buy-now only, parked there until bought.
+            # (D-218: the tribute of the 5,000 composite mints after its turn,
+            # floored at MINT_PRICE -- `trophy_auction.resting_ladder`), buy-now
+            # only, parked there until bought.
             # The general derivation, D-20 point 1 / CONCEPT.md SS6: one shared
             # DECAY_SECONDS and one shared 1.5x fair-value multiplier applied to
             # EVERY prime's own simulated NPV -- not a precomputed table for six
@@ -3096,8 +3098,10 @@ def build_params_json(e, ref_prices, yields, kills, all_passed, up, sizing,
                     "P0(p) = max(PRIME_P0_MULTIPLE * NPV(p), LOT_FLOOR, MINT_PRICE * "
                     "2^(D(p)/SCORE_HALVING)) -- D-99 deletes PRIME_P0_MIN and puts "
                     "the ladder branch in its place, decaying LINEARLY from P0(p) to "
-                    "the resting price max(MINT_PRICE, P0(p)/3, NPV(p)/2) over "
-                    "DECAY_SECONDS (D-88 point 1, D-99 SS1.2), then parking there "
+                    "the resting price rest(p) = min(P0(p), max(MINT_PRICE, W(p))) "
+                    "over DECAY_SECONDS (D-88 point 1; D-218 replaces D-99 SS1.2's "
+                    "max(MINT_PRICE, P0/3, NPV/2) -- W(p) and the table are "
+                    "trophy_auction.resting_ladder), then parking there "
                     "until bought. Applies to every prime, starting with 2 -- there "
                     "is no expiry and no genesis-specific slope (D-20 deletes the old"
                     " 90-day ceiling / P0-over-10 opening bid / P0-over-100 reserve "

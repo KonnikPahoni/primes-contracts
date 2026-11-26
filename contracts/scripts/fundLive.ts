@@ -2,7 +2,7 @@
  * Fund wallets from the deploy subwallet, on testnet.
  *
  * The acceptance pass (`docs/audit/testnet-run-2026-09-14.md`) needs a float in a dozen places:
- * the cast wallets `A`/`B`/`C`/`R1..R6`, and the default keeper wallet that the
+ * the cast wallets `A`/`B`/`C`/`R1..R6`, and the default deployer wallet that the
  * older prove* scripts send from. Owner GRAM arrives at ONE address — the deploy
  * subwallet named by `PRIMES_DEPLOY_SUBWALLET_ID` — so everything else is funded
  * from here rather than by asking for another transfer.
@@ -55,7 +55,7 @@ async function main() {
         if (m) env.set(m[1], m[2].trim().replace(/^"|"$/g, ''));
     }
 
-    const keyPair = await mnemonicToPrivateKey(env.get('KEEPER_WALLET_MNEMONIC')!.split(/\s+/));
+    const keyPair = await mnemonicToPrivateKey(env.get('DEPLOYER_MNEMONIC')!.split(/\s+/));
     const client = new TonClient({
         endpoint: TESTNET_ENDPOINT,
         apiKey: env.get('TONCENTER_API_KEY_TESTNET') || undefined,

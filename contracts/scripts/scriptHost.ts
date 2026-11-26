@@ -20,7 +20,7 @@
  * genesis needs on top: the throttled client, the chain clock offset, and code loaded from
  * `contracts/build/` (`npx blueprint build --all` first; the skew-safe path does not compile).
  *
- * Key custody (skew-safe only): KEEPER_WALLET_MNEMONIC from /.env, subwallet
+ * Key custody (skew-safe only): DEPLOYER_MNEMONIC from /.env, subwallet
  * `PRIMES_DEPLOY_SUBWALLET_ID`. Network: `--mainnet` / `--testnet`, else PRIMES_NETWORK, else
  * testnet (`envFile.ts`'s `scriptNetwork`, G96); a testnet run also passes `assertTestnetOnly`.
  *

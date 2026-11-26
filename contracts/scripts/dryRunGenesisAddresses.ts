@@ -25,7 +25,7 @@
  *      pointing `PRIMES_DEDUST_POOL_ADDR` at the pool just created.
  *
  * Reads the SAME inputs as `deployGenesis.ts --skew-safe` (`/.env`'s
- * `KEEPER_WALLET_MNEMONIC` and `PRIMES_DEPLOY_SUBWALLET_ID`, and the jetton metadata URI
+ * `DEPLOYER_MNEMONIC` and `PRIMES_DEPLOY_SUBWALLET_ID`, and the jetton metadata URI
  * from `shared/networks/<PRIMES_NETWORK, default testnet>.yaml`) so
  * the address it prints is the one the real run will actually produce, not a
  * hand-recomputed guess that can drift from it.
@@ -53,8 +53,8 @@ function loadCode(name: string): Cell {
 
 async function main() {
     const envFile = fs.readFileSync(path.join(REPO, '.env'), 'utf8');
-    const mLine = envFile.match(/^KEEPER_WALLET_MNEMONIC=(.*)$/m);
-    if (!mLine) throw new Error('KEEPER_WALLET_MNEMONIC not found in /.env');
+    const mLine = envFile.match(/^DEPLOYER_MNEMONIC=(.*)$/m);
+    if (!mLine) throw new Error('DEPLOYER_MNEMONIC not found in /.env');
     const mnemonic = mLine[1].trim().replace(/^"|"$/g, '').split(/\s+/);
     const keyPair = await mnemonicToPrivateKey(mnemonic);
 

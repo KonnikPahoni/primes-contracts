@@ -289,7 +289,7 @@ export function encodeMintBody(opts: {
 //                          run, and winning MINTS the number (D-90).
 //   MODE_DUTCH_BUYNOW (2)  A PRIME AT OR PAST ITS TURN. Opened by `open_head_lot` only
 //                          once `n < headHint`; the clock starts at open and runs the
-//                          price down to max(MINT_PRICE, P0/3, NPV/2) over
+//                          price down to its D-218 resting price over
 //                          PRIME_DUTCH_SECONDS, parking there until bought. `bid` IS
 //                          the purchase and settles in the SAME transaction.
 //

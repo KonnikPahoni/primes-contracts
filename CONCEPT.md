@@ -19,8 +19,8 @@ lane restated against D-45/D-88/D-90, and §11's status table and entries brough
 ## 1. One-paragraph pitch
 
 TON PRIMES mints the number line. Integers become NFTs: composites are built strictly in
-sequence for a flat 1 GRAM, and primes are sold on a descending price that comes to rest at the prime's own floor,
-`max(NPV(p)/2, P0(p)/3, MINT_PRICE)` — never below that same 1 GRAM. Primes are the aristocracy: they collect tribute from every composite they
+sequence for a flat 1 GRAM, and primes are sold on a descending price that comes to rest at the tribute that prime collects
+over the 5,000 composite mints after its turn — never below that same 1 GRAM (`DECISIONS.md` D-218). Primes are the aristocracy: they collect tribute from every composite they
 divide.
 Every NFT is also a referral key — `r42` pays the current owner of number 42 — so every
 piece of the number line is a cash-flowing identity asset. Every mint commits GRAM to the
@@ -924,7 +924,7 @@ kept so older citations resolve; nothing else lives here.
    routes, and which one applies is decided by the number rather than by the player:
    **the next composite at the head** is minted directly by submitting its factorization,
    or **a prime** is bought off its standing descending lot at whatever the price has
-   decayed to — its resting price `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` at the bottom, never
+   decayed to — its resting price `min(P0(p), max(MINT_PRICE, W(p)))` (D-218) at the bottom, never
    below 1 GRAM, plus `RES_GAS` (§4.4 point 1b, §6 point 1).
 2. The 1 GRAM is split instantly and transparently (§4.1). Whatever survives every other
    line — tribute, referral, treasury, gas — is the pool injection.
@@ -2198,17 +2198,21 @@ trip.
 > |---|---|---|
 > | **composite** | paid ascending auction, 7 days → the winner holds an escrowed claim until the head arrives — **D-90 deletes the claim; it mints at close** | mints sequentially, 1 GRAM — the core loop |
 > | **prime** | paid ascending auction, 7 days → **the winner gets the NFT at close** | descending from `P0(p)` to `restingPrice(p)` over 7 days, then **parks there until bought** |
-> | **special, either class** | ~~the same, at its tier's `price_max`~~ — **D-99 deletes the tiers; the score raises `P0(n)`** | ~~the same, resting at its tier's `price_min`~~ — **D-99: a composite mints at 1 GRAM, a prime rests at `max(MINT_PRICE, P0(p)/3, NPV(p)/2)`** |
+> | **special, either class** | ~~the same, at its tier's `price_max`~~ — **D-99 deletes the tiers; the score raises `P0(n)`** | ~~the same, resting at its tier's `price_min`~~ — **D-99: a composite mints at 1 GRAM; D-218: a prime rests at its window tribute `W(p)`, never below 1 GRAM** |
 >
-> **1. Every prime's descending lane terminates ABOVE 1 GRAM.** The resting price is
-> `max(NPV(p) / 2, P0(p) / 3, MINT_PRICE)`, ~~lifted to the tier's `price_min` for a special prime~~
-> (D-99 §1.2: the `P0(p) / 3` term, which carries the same 3× spread off the score's
-> ladder) —
-> where `NPV(p)` is the deploy-time table of the tribute a prime is expected to earn over
-> the life of the game, the same table `P0(p) = 1.5 · NPV(p)` already comes from. Opening
-> to resting is therefore a **3× spread**. Small primes rest high (they earn tribute on
-> every multiple, forever); large ones miss the finite table and rest at `P0(p) / 3`, or
-> exactly 1 GRAM when they open under 3 GRAM (D-99 §1.2).
+> **1. Every prime's descending lane terminates at its own resting price, never below
+> 1 GRAM.** ~~`max(NPV(p) / 2, P0(p) / 3, MINT_PRICE)`, a 3× open-to-rest spread~~ —
+> **`DECISIONS.md` D-218 replaces it with** `restingPrice(p) = min(P0(p), max(MINT_PRICE, W(p)))`, where `W(p)` is
+> the tribute `p` collects from the `PRIME_REST_WINDOW_MINTS` = 5,000 composite mints after
+> its own turn — its `e·√p` share of the divisor line plus the flat dividend, exactly as the
+> ledger pays them, undiscounted. The sim generates `W(p)` (`trophy_auction.resting_ladder`
+> in `shared/params.json`) and the market ships it as a deploy-fixed table (`restTable`).
+> Prime 3 rests at ≈ 29 GRAM, 97 at ≈ 3.5, and every prime past 509 at exactly 1 GRAM,
+> whatever its score: D-88's 3× spread and D-99 §1.2's `P0(p) / 3` term are deleted, so a
+> score-87 prime that opens at 415.9 GRAM now rests at 1 GRAM, not ≈ 139. The 7-day descent
+> from `P0(p)` is the price discovery; the resting price only catches the lots nobody
+> wanted, so they do not sit idle. `W(p)` is a definition, not a payback promise: a buyer
+> who takes a lot at rest arrives after part of that window has passed.
 > **The lot then stays listed at that price until somebody buys it, with no expiry** —
 > `sweep_expired_head_lot`, which used to delete an unbought lot after two decay windows,
 > is deleted and `DECISIONS.md` D-50 is dissolved with it.
@@ -2546,13 +2550,13 @@ rank, sink or discount can reach it.
                      expires, is never voided, and never re-opens a bid lane.
 
    PRIME_DUTCH_SECONDS = 604800 (7 days)
-   restingPrice(n)     = max( NPV(n) / 2 , P0(n) / 3 , MINT_PRICE )
-                                                           [D-88 point 1, D-99]
+   restingPrice(n)     = min( P0(n) , max( MINT_PRICE , W(n) ) )
+                         W(n) = tribute from the 5,000 composite mints after n's turn
+                                                           [D-88 point 1, D-218]
    ```
 
-   (The `P0(n) / 3` term is D-99's. It replaces "raised to the tier's `price_min` if `n` is
-   special" — there are no tiers, so what lifts a memorable prime's resting price is the
-   same score that lifted its opening price, at the same 3× spread.)
+   (D-218 deletes D-99's `P0(n) / 3` term and D-88's `NPV(n) / 2`: the score lifts a
+   memorable prime's opening price and never its rest.)
 
    This is the whole of §6's genesis mechanism and the whole of the prime mechanism,
    because they are the same mechanism: `DECISIONS.md` D-20 deleted the genesis-specific
@@ -2870,6 +2874,25 @@ before the signature.** The recruit edge needs the beneficiary's minter card to 
 or bought a prime is not. The mint still lands; it just earns the payer nothing on §4.7's
 ladder. The read-proxy publishes the flag as `fresh` on `GET /ranks/:address`, and the
 mint checkout warns when a named beneficiary reads `false`.
+
+**The checkout can pick the beneficiary (owner, 2026-11-25).** The gift is a tick — "Welcome
+a TON user with this number", off by default — and under it a second tick, on by default,
+has the keeper suggest the recipient: `GET /api/invitees?count=0&n=<head>&gift=<i>`, drawn
+from the same daily lake lists as §4.1's invite list but ranked for a gift: only NFT
+collectors and holders of Telegram collectibles, standard wallets ahead of Telegram's built-in
+Wallet (which does not display NFTs), then by recency. It is a default exactly as the invite
+list is — unsigned, shown in full before the signature, replaceable by unticking the picker and
+typing any address. It is bound to the live head the same way (V13): at most five picks per
+head ("pick another" walks them), each claimed for good in the keeper's `invites_issued`, which
+the invite list shares, so one wallet is never both invited and gifted. **A suggested wallet
+gets a number from the head at most once:** a pick is armed only after the ranks read reports
+its minter card `fresh` (a gift sets `seen`, so `fresh` is the chain's own "never sent a
+number"), which also catches a wallet someone gifted by typing it. A pick that is not `fresh`
+is skipped; the last one, or one whose read fails, opens the address field armed with
+nothing. With the box ticked the checkout will not sign until a
+recipient parses, so a ticked gift never goes out as a self-mint. Nothing on chain changes: a
+picked recipient is a beneficiary like any other, and credits the payer a recruit on the same
+`fresh` rule.
 
 ### 4.6 Invites: the gift mint as the growth loop
 
@@ -3710,7 +3733,7 @@ belongs on the same screen as the proof.
 ### 5.1 Primes emit nothing
 
 > **D-88 note (2026-08-31).** What a prime BUYER pays is no longer 1 GRAM at the bottom of
-> the lane — it rests at `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` (§4.4's D-88 box, D-99 §1.2). The split below is
+> the lane — it rests at `restingPrice(p)` (§4.4's D-88 box, D-218). The split below is
 > untouched: it runs on the **nominal** `MINT_PRICE` on every lane, and everything paid
 > above `MINT_PRICE + RES_GAS` is premium, `k = 0` money, split 50/50 between the ratchet
 > and the governed treasury since `DECISIONS.md` D-114 (was injected whole into the ratchet
@@ -3767,8 +3790,8 @@ was the mechanism's kill criterion.
 sequential head is now defined over composites (and Unity) only; a prime is never a
 position on the line and is sold off-head through its own descending lot (§6 point 1,
 §4.4 point 1b lane A). So a prime nobody wants delays nobody: the head walks past it, the
-lot's price falls to its resting price `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` (D-88 point 1,
-D-99 §1.2) and rests there indefinitely, and the number is bought
+lot's price falls to its resting price `restingPrice(p)` (D-88 point 1,
+D-218) and rests there indefinitely, and the number is bought
 whenever somebody finally wants it. **There is no prime-head wait distribution any more,
 because there is no prime head.**
 
@@ -4724,9 +4747,9 @@ Bootstrap sequence, fully scripted on-chain:
    thing the head is waiting on:
 
    ```
-   restingPrice(p) = max( NPV(p) / 2 , P0(p) / 3 , MINT_PRICE )
-                                              [D-88 point 1; the P0/3 term is D-99's,
-                                               replacing the deleted tier `price_min`]
+   restingPrice(p) = min( P0(p) , max( MINT_PRICE , W(p) ) )
+                     W(p) = tribute from the 5,000 composite mints after p's turn
+                                              [D-88 point 1; D-218]
    D(t) = max( P0(p) · (1 − t / DECAY_SECONDS) , restingPrice(p) )   the standing price
    buy(p)      pay D(t) → settles immediately, in the same transaction
    no buy      D(t) rests on restingPrice(p) and stays there —
@@ -5172,7 +5195,7 @@ The prime lane reduces to **two Phase 1 numbers, shared across every prime** —
 `DECAY_SECONDS` and the `1.5×` fair-value multiplier that derives each `P0(p)` — because
 every prime's opening price is that multiplier applied to its own simulated NPV, and every
 prime decays on the same slope toward its own resting price
-`max(NPV(p)/2, P0(p)/3, MINT_PRICE)`
+`min(P0(p), max(MINT_PRICE, W(p)))` (D-218)
 (`sim/scripts/run_phase1.py`, `market.prime_lane`). There is no separate public anchor:
 the sim's per-prime NPV table is published in `shared/params.json`, so anyone can argue
 with a price before its lot opens.
@@ -5215,11 +5238,11 @@ The honest costs of this format, stated here rather than discovered:
   never depended on a DeDust pool existing. There is no "the primes find owners in weeks,
   not indefinitely" clock to state, because there is no clock: the decay approaches the
   floor and then simply holds there, forever, until bought.
-- **The resting price is `max(NPV(p)/2, P0(p)/3, MINT_PRICE)`, not near-zero, and that is
-  the entire liveness guarantee** (D-88 point 1, D-99 §1.2). A prime nobody wants clears,
+- **The resting price is `restingPrice(p) = min(P0(p), max(MINT_PRICE, W(p)))`, not near-zero, and that is
+  the entire liveness guarantee** (D-88 point 1, D-218). A prime nobody wants clears,
   whenever somebody finally wants it, at a price written once from `p` — never below the
-  1 GRAM the game already charges at the head, and for a prime the NPV table covers, half its
-  tribute value or a third of its opening price, whichever is higher. Unlike the old K-lot's
+  1 GRAM the game already charges at the head, and for a prime up to 509, the tribute it
+  collects over the 5,000 composite mints after its turn. Unlike the old K-lot's
   1%-of-`P0` reserve, this floor is never embarrassingly cheap and never a liquidity failure
   to defend: the number is never worth *less* on the auction than it would be as an ordinary
   mint, so there is no scenario where "cheap" is even the right complaint. What is still a
@@ -5737,6 +5760,16 @@ share link needs somewhere to be posted and something to open into.
 
 ### 9.1 Surfaces
 
+- **The channel mint feed** (`DECISIONS.md` D-219). Every number the event-poller indexes
+  for the first time is a post in the community group `@primes_community` — never the
+  `@gram_primes` channel: a short meme-shaped line, the number's
+  factorization or "prime", a special-shape line when `n` is a palindrome, repdigit, power
+  of two or ten, or one of a few named numbers, and the link to `/n/<n>` whose preview card
+  carries the orb. It states only what the mint message itself carries — no price, floor or
+  reward figure — and it pings no one, so it is a public feed, not one of D-169's bells.
+  Mints older than ten minutes when indexed are not posted (a re-index must not replay
+  history), and a burst past twenty queued posts drops the overflow. Off unless
+  `CHANNEL_MINT_FEED` names the chat.
 - **The welcome rite, once per player** (`DECISIONS.md` D-163). A first visitor opens on a
   ten-second takeover that is all arithmetic: an Ulam spiral of the first 24,000 integers
   crossing the real primorial eras, sealing into a cluster of its primes as stars, over the
@@ -5865,6 +5898,20 @@ share link needs somewhere to be posted and something to open into.
   `getPrimeDutchTerms().floorNanoton` as *this* prime's terminus — it is only the lower
   bound on it, and drawing a meter against it is exactly the "geometry that does not track
   chain state" bug — and imply the lot expires. It does not — it rests on its floor forever.
+
+  **On the landing hero, the prime lot takes the head's place** (owner, 2026-11-25). A 1 GRAM
+  head mint is always a composite, so the one prime a mint-price buyer can take is a prime
+  lot that has come to rest at the lane's lower bound — `getLotFloor(n)` equal to
+  `getPrimeDutchTerms().floorNanoton` (under D-218 every prime above 509) and `getLot(n)`'s
+  standing price equal to that floor. A lot still falling is not offered: below 7,297 its
+  `P0` is 1.5·NPV, 45 GRAM at 521, and the hero's promise is a prime for the price of a mint.
+  While the read-index lists a lot opened at least `decaySeconds` ago
+  (`/lots/open?lane=dutch&opened_before=…`, newest number first) and its own read confirms
+  the rest, the hero offers the newest one instead of the head: the rebate gauge's stone turns
+  cyan and burns, drops every rebate reading (a prime emits nothing, §5.1), and its ring is
+  closed — the fall from `P0`, complete. "Take it" opens the lot's buy-now — the same `bid`
+  every other surface sends — and "I want rebate" restores the head on that browser until a
+  newer prime comes up.
 
   The gift flow is the single most important conversion path in the product and should be
   the shortest — and since `DECISIONS.md` D-106 it is shorter than it was, because there
@@ -6269,7 +6316,7 @@ share link needs somewhere to be posted and something to open into.
   **On the descending prime lane three of those four read differently, and one more is
   required.** `getLot(n)` on a `MODE_DUTCH_BUYNOW` lot returns no high bid and no
   bidder — there are none — and a `closesAt` of zero, which the UI must render as *"no
-  close: this price rests at its resting price"* (`max(NPV(p)/2, P0(p)/3, MINT_PRICE)`) rather than as an expired or malformed lot.
+  close: this price rests at its resting price"* (`restingPrice(p)`, D-218) rather than as an expired or malformed lot.
   `getLotPrice(n)` must publish the **standing** price alongside `P0` and the floor, since
   on this lane the number that matters changes every block. And the ledger's
   `getForfeited(p)` / `isPrimeUnsold(p)` are the surface for §4.1's treasury carve-out:
@@ -6863,7 +6910,7 @@ arithmetic off the ten-entry `FRAC` table `getFracTable()` publishes.
 composite:  open = max( LOT_FLOOR , ladder(D) )
             rest = none — the head mints it at 1 GRAM (§4.4)
 prime:      open = max( LOT_FLOOR , ladder(D) , 1.5 · NPV(n) )
-            rest = max( MINT_PRICE , open / 3 , 0.5 · NPV(n) )
+            rest = min( open , max( MINT_PRICE , W(n) ) )      [D-218]
 ```
 
 `LOT_FLOOR = MINT_PRICE + RES_GAS` = 1.07 GRAM is the absolute floor on either lane (`DECISIONS.md` D-113). The
@@ -6872,10 +6919,10 @@ what the prime is modelled to earn in tribute over the life of the game
 (`docs/math-note.md`). It binds only on the 555 primes up to 6,577
 (`shared/params.json` `trophy_auction.npv_ladder.npv_branch_binding_prime_count` /
 `npv_branch_last_binding_prime`), which is the owner's "majority" carve-out and the only
-way past the 420 GRAM ceiling: 2, 3, 5 and 7 open above it (prime 2 at ≈ 1,345 GRAM), and
-only 2 also rests above it (≈ 448 GRAM).
-`open / 3` carries D-88 point 1's 3× open-to-rest spread to every prime the finite table
-misses, so a 300-point prime does not rest at 1 GRAM.
+way past the 420 GRAM ceiling: 2, 3, 5 and 7 open above it (prime 2 at ≈ 1,345 GRAM).
+The rest is not a function of the score at all (`DECISIONS.md` D-218): `W(n)` is the tribute
+`n` collects from the 5,000 composite mints after its turn, so prime 3 rests at ≈ 29 GRAM and
+every prime past 509 at 1 GRAM — a 300-point prime included. The descent is the discovery.
 
 **A composite the head reaches mints at 1 GRAM, whatever it is worth.** The head-advance
 walk's special-composite skip is **deleted** — it was also a live bug, and `MISTAKES.md`
@@ -8534,8 +8581,8 @@ away; `DECISIONS.md` D-106 deleted both.)*
     qualitative rather than another order of magnitude: under the prime Dutch lane
     (§11.27) `desirabilityScore` sets the **opening price of every prime at the head**, on
     a lane that has no reserve and decays to 1 GRAM regardless of what the score said
-    (D-88/D-99 later gave it a reserve: the lot now rests at `max(NPV/2, P0/3, MINT_PRICE)`,
-    so the score lifts the resting price through the `P0/3` term). The
+    (D-88/D-99 later gave it a reserve, `max(NPV/2, P0/3, MINT_PRICE)`; D-218 replaced that
+    with the 5,000-mint window tribute, so the score no longer reaches the resting price). The
     weights therefore now decide whether primes undersell — which is the exact problem the
     Dutch lane was introduced to fix — so they have stopped being taste-with-consequences
     and become the mechanism's calibration. `RUN_W = 30 > PALI_W = 25`, putting 1234 above
@@ -8647,7 +8694,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
     included — can be bought on the ascending lane by opening a lot at `P0(n)`, and D-90
     mints it in the close. So a prime has two routes: **ahead of the head** at `P0(p)` or
     more, or **at its turn** on the descending lot that opens at the same `P0(p)` and
-    decays to `max(NPV(p)/2, P0(p)/3, MINT_PRICE)`. The question is **what fraction of primes take
+    decays to `restingPrice(p)` (D-218). The question is **what fraction of primes take
     the first route, and how far the `P0` level moves that fraction.** It was
     **launch-blocking** until the owner's verdict: it is the number the pre-turn prime lane
     is accepted against, and a hostile reader will ask for it.
@@ -8847,7 +8894,8 @@ away; `DECISIONS.md` D-106 deleted both.)*
       composites and Unity), and the floor is one derived constant rather than a per-prime
       reserve. A prime opens the moment it is next among unbuilt numbers, decays to 1 GRAM,
       and rests there indefinitely. *(D-88 point 1 and D-99 §1.2 later replaced the 1-GRAM
-      rest with `restingPrice(p) = max(NPV(p)/2, P0(p)/3, MINT_PRICE)`, §6 point 1.)*
+      rest with `restingPrice(p)`, §6 point 1 — `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` until
+      D-218 made it the 5,000-mint window tribute.)*
     - **`lookaheadH` (D-4a) is retired, not re-derived.** It existed so the head would not
       stall on a prime it could not skip; primes are not in the head's path at all, so
       there is nothing to look ahead of. The field is deleted from `MarketConfig` and the
@@ -9264,7 +9312,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
   stall-breaker (§5.1), minting is strictly sequential, therefore an unattractive prime
   stops the game outright — fails at its second premise. What used to be a *total stop* is
   now not a stop at all: the head walks past the prime, the prime's lot decays to its
-  resting price `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` and rests there, and the game continues at full speed whether anybody buys it or not.
+  resting price `restingPrice(p)` (D-218) and rests there, and the game continues at full speed whether anybody buys it or not.
 
   Three earlier answers to this entry are withdrawn along with it, and none of them should
   be re-argued: the `k = k_min` fallback (§11.15, closed and still closed — `k = 0` on
@@ -9399,7 +9447,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
   swept (51–96% at shipped `P0`), not measured. The owner accepted it: early sale is the
   intended route, and the descending lot exists so an unwanted prime still clears. It costs
   no liveness — the head never waits on a prime (the entry above) — only the "patience buys
-  a prime at `NPV(p)/2`" path, which most primes will not reach.
+  a prime at its resting price" path, which most primes will not reach.
 
 - **A comp-driven market invites wash trading — disclosed, not detected (filed 2026-08-27,
   §9.7b; disclosure built 2026-08-30, GAUNTLET.md N4).** §8's anti-abuse is built against

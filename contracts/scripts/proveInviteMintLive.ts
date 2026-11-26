@@ -81,7 +81,7 @@ async function main() {
     const addresses = new Map(recipients.map((a, i) => [i + 1, Address.parse(a)]));
 
     const envFile = fs.readFileSync(path.join(REPO, '.env'), 'utf8');
-    const mnemonic = fromEnvFile(envFile, 'KEEPER_WALLET_MNEMONIC')!.replace(/^"|"$/g, '').split(/\s+/);
+    const mnemonic = fromEnvFile(envFile, 'DEPLOYER_MNEMONIC')!.replace(/^"|"$/g, '').split(/\s+/);
     const keyPair = await mnemonicToPrivateKey(mnemonic);
     const subwallet = process.env.PRIMES_DEPLOY_SUBWALLET_ID ?? fromEnvFile(envFile, 'PRIMES_DEPLOY_SUBWALLET_ID');
     const wallet = WalletContractV4.create({

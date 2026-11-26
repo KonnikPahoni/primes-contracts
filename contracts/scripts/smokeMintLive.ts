@@ -117,13 +117,13 @@ async function retry<T>(fn: () => Promise<T>, label: string, attempts = 8): Prom
 async function main() {
     const envFile = fs.readFileSync(path.join(REPO, '.env'), 'utf8');
     const mnemonic = envFile
-        .match(/^KEEPER_WALLET_MNEMONIC=(.*)$/m)![1]
+        .match(/^DEPLOYER_MNEMONIC=(.*)$/m)![1]
         .trim()
         .replace(/^"|"$/g, '')
         .split(/\s+/);
     const keyPair = await mnemonicToPrivateKey(mnemonic);
     // Any funded wallet can mint; PRIMES_DEPLOY_SUBWALLET_ID selects a subwallet
-    // of the keeper mnemonic (see deployGenesis.ts --skew-safe).
+    // of the deployer mnemonic (see deployGenesis.ts --skew-safe).
     const walletId = process.env.PRIMES_DEPLOY_SUBWALLET_ID
         ? Number(process.env.PRIMES_DEPLOY_SUBWALLET_ID)
         : undefined;

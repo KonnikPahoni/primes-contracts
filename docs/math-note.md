@@ -278,6 +278,8 @@ restingPrice(p) = max( NPV_tribute(p) / 2 , MINT_PRICE )    lifted to the tier's
                                                              price_min if p is special
 ```
 
+*(D-218 replaces this resting price with `min(P0(p), max(MINT_PRICE, W(p)))`, `W(p)` the
+tribute of the 5,000 composite mints after `p`'s turn; the 3× spread below is deleted with it.)*
 — a **3× spread** from open to rest whenever the NPV branch binds on both ends
 (`1.5 / 0.5 = 3`), and the lot **never expires**: unlike the old 90-day slope, it parks at
 `restingPrice(p)` and stays listed there until somebody buys it (`sweep_expired_head_lot`
@@ -368,7 +370,8 @@ terminating at exactly 1 GRAM. The winner's claim escrowed the full mint price p
 up front, proof was verified at open time, and anyone could call permissionless `settle(n)`
 once the head arrived. D-88/D-90 above is what deleted the escrow and `settle(n)` outright
 and moved the pre-turn prime case onto the ascending lane; the termination price also moved
-from a flat 1 GRAM to `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` (§6).
+from a flat 1 GRAM to `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` (§6), and D-218 then to
+`min(P0(p), max(MINT_PRICE, W(p)))`, the tribute of the 5,000 composite mints after `p`'s turn.
 
 ---
 

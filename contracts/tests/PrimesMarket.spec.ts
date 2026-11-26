@@ -56,6 +56,7 @@ import {
     winLot,
 } from './helpers/market';
 import { SCORE_BITS, SCORE_TERMS } from '../../shared/opcodes';
+import sharedParams from '../../shared/params.json';
 import { FactorValue } from '../../shared/factors';
 
 const MINT_PRICE = toNano('1');
@@ -877,6 +878,7 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
                         headHint: 600n,
                         ledgerAddr: deployer.address,
                         ratchetAddr: ratchet.address,
+                        shippedRest: true, // D-218: 3 rests at its genesis entry
                     }),
                     marketCode
                 )
@@ -913,27 +915,21 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
         });
 
         it('C6: an ordinary prime lot decays to EXACTLY its resting price, and parks there forever', async () => {
-            // D-99 §1.2 CHANGED THE TERMINUS OF THIS VERY LOT. Under D-88 an
-            // ordinary prime past the finite NPV table rested at exactly
-            // MINT_PRICE, because `restingPriceOf` was `max(NPV/2, MINT_PRICE)`
-            // and the table miss left only the clamp. D-99 adds an `open / 3`
-            // term, so the 3x open-to-rest spread now holds for EVERY prime and
-            // 541 rests at a third of its own opening price instead of at 1 GRAM.
-            // What survives unchanged, and is what this test is really about, is
-            // the SHAPE: a real ramp, landing exactly on the floor, parked there
-            // for ever. So the floor is read off `getPrimeFloor` rather than
-            // written as a constant.
+            // D-218 MOVED THE TERMINUS OF THIS LOT BACK TO MINT_PRICE. D-99
+            // rested 541 at a third of its opening price; D-218 rests every
+            // prime past 509 at MINT_PRICE, and the descent from P0 is where the
+            // price is found. What this test is about survives unchanged: the
+            // SHAPE — a real ramp, landing exactly on the floor, parked there
+            // for ever. The floor is read off `getPrimeFloor`, never written.
             const m = await marketPastOrdinaryPrimes();
             const { decaySeconds } = await m.getPrimeDutchTerms();
             const t0 = blockchain.now!;
             await m.sendOpenHeadLot(buyer.getSender(), { n: ORDINARY_PRIME, value: toNano('0.2') });
             const p0 = (await m.getLot(ORDINARY_PRIME)).p0;
             const floor = await m.getPrimeFloor(ORDINARY_PRIME);
-            // Non-vacuity: the ramp must have somewhere to fall, and the floor
-            // must be the `open / 3` term rather than the MINT_PRICE clamp —
-            // otherwise this would still be the pre-D-99 test in disguise.
-            expect(floor).toBeGreaterThan(MINT_PRICE);
-            expect(floor).toBe(p0 / 3n);
+            // Non-vacuity: the ramp must have somewhere to fall.
+            expect(floor).toBe(MINT_PRICE);
+            expect(p0).toBeGreaterThan(floor);
 
             // Mid-ramp: strictly between, so the decay is a real ramp and not a
             // step function that would make both endpoints vacuous.
@@ -1003,10 +999,9 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             // D-99 SHARPENS THIS TEST rather than weakening it. Pre-D-99 all
             // four of these primes rested at the same MINT_PRICE, so a stored
             // floor that was silently recomputed from a constant would have
-            // passed. Under D-99 §1.2 each rests at a third of its OWN opening
-            // price, and 541/547/557/577 do not all score alike — so "right for
-            // one n and wrong for another" is now a failure this loop can
-            // actually see.
+            // passed. Under D-218 each rests at MINT_PRICE (the rest table ends
+            // at 509) although 541/547/557/577 do not all score alike — so a
+            // floor that leaked the score back in is a failure this loop sees.
             for (const p of ORDINARY_PRIMES) {
                 // The premise, in D-99 terms: each carries the `prime` bit, and
                 // none is a CULTURE number — nothing here is famous outside
@@ -1037,10 +1032,11 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
                     p: p.toString(),
                     floor: await m.getPrimeFloor(p),
                 });
-                // And each is the `open / 3` term, not the MINT_PRICE clamp.
-                expect({ p: p.toString(), above: lot.standingPrice > MINT_PRICE }).toEqual({
+                // D-218: past 509 the rest table misses, so each rests at
+                // MINT_PRICE whatever it scored.
+                expect({ p: p.toString(), floor: lot.standingPrice }).toEqual({
                     p: p.toString(),
-                    above: true,
+                    floor: MINT_PRICE,
                 });
             }
         });
@@ -1064,13 +1060,11 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             const { decaySeconds } = await m.getPrimeDutchTerms();
             const t0 = blockchain.now!;
 
-            // 3 clamps at SCORE_MAX, so its floor is STRICTLY above 1 GRAM and
-            // far above it. That is deliberate: a bug that reset `priceFloor`
-            // to MINT_PRICE — or dropped it to a zero-initialised field and
-            // fell back — is only visible on a lot whose floor differs from the
-            // constant. (Under D-99 §1.2 that is now every prime, since
-            // `open / 3` is above MINT_PRICE for anything scoring past ~11
-            // points; 3 is still chosen because its margin is the widest.)
+            // 3 rests at its D-218 window tribute (~29 GRAM), STRICTLY above
+            // 1 GRAM. That is deliberate: a bug that reset `priceFloor` to
+            // MINT_PRICE — or dropped it to a zero-initialised field and fell
+            // back — is only visible on a lot whose floor differs from the
+            // constant, and 3 has the widest margin of any prime that opens.
             await m.sendOpenHeadLot(buyer.getSender(), { n: 3n, value: toNano('0.2') });
             const priceMin = await m.getPrimeFloor(3n);
             expect(priceMin).toBeGreaterThan(MINT_PRICE);
@@ -1214,40 +1208,23 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
         });
 
         /**
-         * D-89, AS D-99 §1.2 LEAVES IT — the open-to-rest spread is exactly 3x
-         * for EVERY prime, on both sides of the NPV table.
+         * D-218 — a prime rests at `min(P0, max(MINT_PRICE, restTable[p]))`.
          *
-         * D-89 fixed the spread by deleting D-68's crown curve, so that
-         * `p0 = 1.5 x NPV` and `resting = 0.5 x NPV` shared a term and the ratio
-         * came out at 3 termwise. But that argument only ever covered the ~930
-         * primes the finite NPV ladder carries. Everywhere else the opening
-         * price came from a clamp and the resting price collapsed to exactly
-         * 1 GRAM, so a prime quoted at 300 GRAM rested at 1 — which is not a
-         * descent, it is a giveaway.
-         *
-         * PRICING_MODEL_PLAN.md §1.2 closes that: `restingPriceOf` is now
-         * `max(MINT_PRICE, openingPrice / 3, NPV(n) / 2)`. The `open / 3` term
-         * is what makes 3x universal, and it dominates the NPV term by
-         * construction wherever the table binds (if `open = 1.5·NPV` then
-         * `open/3 = NPV/2` exactly), so the two branches agree rather than race.
-         *
-         * BOTH branches are asserted below, because they fail independently:
-         * a regression that dropped `open / 3` would leave branch A (table hit)
-         * green and branch B (table miss) resting at 1 GRAM.
+         * D-88/D-89/D-99 §1.2's `max(MINT_PRICE, P0/3, NPV/2)` and its 3x
+         * open-to-rest spread are DELETED: they rested 3 near 294 GRAM and a
+         * score-87 prime near 139, so the lots nobody wanted sat unsold. The rest
+         * is now the tribute of the 5,000 composite mints after the prime's turn,
+         * a deploy-fixed table, and the 7-day descent from P0 is the price
+         * discovery. Three branches, because they fail independently: a hit, a
+         * hit above P0 (clamped — a descent must never ascend), and a miss.
          */
-        it('D-99 §1.2: the open-to-rest spread is exactly 3x, whether or not NPV binds', async () => {
-            // BRANCH A — the NPV table BINDS. `testMarketConfig` ships no table,
-            // so a market with one has to be deployed here; that is the point of
-            // the fixture rather than an inconvenience, since a market without a
-            // table can only ever exercise branch B and the old version of this
-            // test was silently vacuous for exactly that reason.
-            //
-            // 100 GRAM of NPV on 541 puts `1.5 x NPV = 150 GRAM` well above its
-            // ladder price (score 57, so `1 GRAM · 2^5.7` ≈ 52 GRAM), which is
-            // what makes NPV demonstrably the term that wins the max.
-            const npvTable = Dictionary.empty(Dictionary.Keys.BigUint(64), Dictionary.Values.BigVarUint(4));
-            npvTable.set(ORDINARY_PRIME, toNano('100'));
-            const withNpv = blockchain.openContract(
+        it('D-218: rests at the table entry, clamps it to P0, and rests a miss at MINT_PRICE', async () => {
+            // BRANCH A — a table hit. 3 GRAM on 541, which misses the shipped
+            // table (541 > 509), so the fixture is demonstrably what is read.
+            const restTable = Dictionary.empty(Dictionary.Keys.BigUint(64), Dictionary.Values.BigVarUint(4));
+            restTable.set(ORDINARY_PRIME, toNano('3'));
+            restTable.set(547n, toNano('100000')); // BRANCH A2 — above any P0
+            const withRest = blockchain.openContract(
                 PrimesMarket.createFromConfig(
                     {
                         ...testMarketConfig({
@@ -1255,39 +1232,33 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
                             ledgerAddr: deployer.address,
                             ratchetAddr: ratchet.address,
                         }),
-                        npvTable,
+                        restTable,
                     },
                     marketCode
                 )
             );
-            await withNpv.sendDeploy(deployer.getSender(), toNano('5'));
+            await withRest.sendDeploy(deployer.getSender(), toNano('5'));
+            expect(await withRest.getPrimeFloor(ORDINARY_PRIME)).toBe(toNano('3'));
+            const { p0: p0Of547 } = await withRest.getLotPrice(547n);
+            expect(await withRest.getPrimeFloor(547n)).toBe(p0Of547);
+            expect(await withRest.getPrimeFloor(557n)).toBe(MINT_PRICE); // a miss
 
-            const npv = await withNpv.getNpv(ORDINARY_PRIME);
-            expect(npv).toBe(toNano('100')); // the fixture is doing something
-            const boundP0 = (await withNpv.getLotPrice(ORDINARY_PRIME)).p0;
-            const boundRest = await withNpv.getPrimeFloor(ORDINARY_PRIME);
-            expect(boundP0).toBe((npv * 3n) / 2n); // NPV won the max, not the ladder
-            expect(boundRest).toBe(npv / 2n);
-            expect(boundP0 / boundRest).toBe(3n);
-
-            // BRANCH B — the table MISSES, which is the common case on the deep
-            // number line and was the broken one before D-99. The ladder sets
-            // the opening price and `open / 3` sets the rest, so the spread is
-            // the same 3x and the resting price is nowhere near the 1 GRAM clamp.
+            // BRANCH B — the SHIPPED table: 3 rests at its window tribute, far
+            // below its clamped-score P0, and the primes past 509 rest at
+            // MINT_PRICE whatever their score.
             const m = await marketPastOrdinaryPrimes();
-            for (const p of [3n, ORDINARY_PRIME, 547n, 557n, 577n]) {
-                expect({ p: p.toString(), npv: await m.getNpv(p) }).toEqual({ p: p.toString(), npv: 0n });
-                const { p0 } = await m.getLotPrice(p);
-                const resting = await m.getPrimeFloor(p);
-                expect({ p: p.toString(), resting }).toEqual({ p: p.toString(), resting: p0 / 3n });
-                expect({ p: p.toString(), spread: p0 / resting }).toEqual({ p: p.toString(), spread: 3n });
-                // Non-vacuity: `open / 3` is what is being read, not MINT_PRICE
-                // wearing its costume.
-                expect({ p: p.toString(), clamped: resting === MINT_PRICE }).toEqual({
+            const shipped = (sharedParams as any).trophy_auction.resting_ladder.resting_nanoton_by_prime;
+            expect(await m.getPrimeFloor(3n)).toBe(BigInt(shipped['3']));
+            expect(await m.getPrimeFloor(3n)).toBeLessThan((await m.getLotPrice(3n)).p0);
+            for (const p of [ORDINARY_PRIME, 547n, 557n, 577n]) {
+                expect({ p: p.toString(), rest: await m.getPrimeFloor(p) }).toEqual({
                     p: p.toString(),
-                    clamped: false,
+                    rest: MINT_PRICE,
                 });
             }
+            expect((await m.getPrimeDutchTerms()).restWindowMints).toBe(
+                (sharedParams as any).trophy_auction.constants.PRIME_REST_WINDOW_MINTS
+            );
 
             // AND THE QUOTE IS A READING OF THE MECHANISM, not a rival to it —
             // the half of D-89 that survives D-99 unchanged. `getLotPrice` calls
@@ -1959,7 +1930,10 @@ describe('TON PRIMES — the unified market, invariants MKT-1..MKT-4 (layout §9
             const { p0: quoted } = await market.getLotPrice(EARLY);
             const priceMin = await market.getPrimeFloor(EARLY);
             const { decaySeconds } = await market.getPrimeDutchTerms();
-            expect(priceMin).toBeGreaterThan(MINT_PRICE); // 5's score lifts it (D-99 §1.2)
+            // D-218: the score lifts p0, never the rest; this fixture ships no rest
+            // table, so 5 rests at MINT_PRICE and the descent below still has 2.83+ GRAM to fall.
+            expect(priceMin).toBe(MINT_PRICE);
+            expect(quoted).toBeGreaterThan(priceMin);
             expect(await market.getLotLane(EARLY)).toBe(MODE_ASCENDING);
 
             await ledger.sendMint(deployer.getSender(), {

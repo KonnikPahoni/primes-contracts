@@ -59,7 +59,7 @@
  * PRIMES_LP_PRIMES (default: the ~1,972,333 PRIMES `donate_floor` mints (D-156-tapered), and
  * nothing else since D-166 deleted the operator's vest tranche — see
  * `genesisPairingPrimes`),
- * PRIMES_LP_SINK_ADDRESS, KEEPER_WALLET_MNEMONIC, PRIMES_DEPLOY_SUBWALLET_ID,
+ * PRIMES_LP_SINK_ADDRESS, DEPLOYER_MNEMONIC, PRIMES_DEPLOY_SUBWALLET_ID,
  * the toncenter key.
  */
 import fs from 'fs';
@@ -120,7 +120,9 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function retry429<T>(label: string, fn: () => Promise<T>): Promise<T> {
     const is429 = (e: unknown) => {
         const m = String((e as { message?: string })?.message ?? e);
-        return m.includes('429') || /too many requests/i.test(m);
+        // 2026-11-25: a toncenter 500 killed a run between the deposit and the lock — a 5xx is
+        // as transient as a 429, and dying on it strands the receipt the same way.
+        return m.includes('429') || /too many requests/i.test(m) || /status code 5\d\d/.test(m);
     };
     for (let attempt = 0; ; attempt++) {
         try {
@@ -239,8 +241,8 @@ async function main() {
     const client = new TonClient({ endpoint: net.endpoint, apiKey: net.apiKey });
     const fmt = (a: Address) => a.toString({ testOnly });
 
-    const mnemonic = envValue(env, 'KEEPER_WALLET_MNEMONIC');
-    if (!mnemonic) throw new Error('KEEPER_WALLET_MNEMONIC not found in /.env');
+    const mnemonic = envValue(env, 'DEPLOYER_MNEMONIC');
+    if (!mnemonic) throw new Error('DEPLOYER_MNEMONIC not found in /.env');
     const keyPair = await mnemonicToPrivateKey(mnemonic.split(/\s+/));
     const wallet = WalletContractV4.create({
         workchain: 0,
@@ -333,7 +335,16 @@ async function main() {
         throw new Error(`pool ${fmt(pool)} is not deployed — run createDedustPool.ts first (before genesis).`);
     }
     const primesHeld = await jettonBalance(client, myPrimesWallet);
-    if (primesHeld < lpPrimes) {
+    const myLpWallet = await retry429('walletOf', () => walletOf(client, pool, me));
+    // RESUME: a run that died after both deposit legs left the receipt in this wallet and the
+    // PRIMES spent. Detect that state from the chain and go straight to the lock (step 3).
+    const lpHeldAtStart = await jettonBalance(client, myLpWallet);
+    const resume = primesHeld < lpPrimes && lpHeldAtStart > 0n;
+    if (resume) {
+        console.log(`
+resume: ${lpHeldAtStart} LP units already in ${fmt(myLpWallet)} — deposit landed earlier, skipping to the lock.`);
+    }
+    if (primesHeld < lpPrimes && !resume) {
         throw new Error(
             `wallet holds ${primesHeld / 1000000000n} PRIMES, needs ${lpPrimes / 1000000000n}. ` +
                 'donateFloor.ts mints the default pairing inventory and must have landed first ' +
@@ -343,6 +354,8 @@ async function main() {
         );
     }
 
+    let lpMinted = lpHeldAtStart;
+    if (!resume) {
     // ---- 1. the PRIMES jetton vault -------------------------------------
     if (!(await retry429('isContractDeployed', () => client.isContractDeployed(jettonVault)))) {
         console.log(`\ncreating the PRIMES jetton vault (${Number(CREATE_VAULT_VALUE) / 1e9} GRAM) ...`);
@@ -363,8 +376,7 @@ async function main() {
     // Sent as ONE wallet transfer with two messages so they cannot interleave
     // with anything else, and so both originate from this address — the LP
     // account DeDust stages them in is derived from the depositor.
-    const myLpWallet = await walletOf(client, pool, me);
-    const lpBefore = await jettonBalance(client, myLpWallet);
+    const lpBefore = lpHeldAtStart;
     console.log('\ndepositing both legs ...');
     await send([
         internal({
@@ -392,8 +404,9 @@ async function main() {
         () => jettonBalance(client, myLpWallet),
         (v) => v > lpBefore
     );
-    const lpMinted = lpAfter - lpBefore;
+    lpMinted = lpAfter - lpBefore;
     console.log(`LP minted: ${lpMinted} units, in ${fmt(myLpWallet)}`);
+    }
 
     // ---- 3. lock the receipt in the LP sink ------------------------------
     const sinkAddr = envValue(env, 'PRIMES_LP_SINK_ADDRESS');

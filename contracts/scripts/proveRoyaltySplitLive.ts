@@ -39,7 +39,7 @@
  *   PRIMES_ROYALTY_TON=2 npx tsx contracts/scripts/proveRoyaltySplitLive.ts
  *
  * Env: `PRIMES_COLLECTION_ADDRESS`, `PRIMES_LEDGER_ADDRESS` (the operator is testnet.yaml's),
- * `KEEPER_WALLET_MNEMONIC`; the sender defaults to the deploy subwallet.
+ * `DEPLOYER_MNEMONIC`; the sender defaults to the deploy subwallet.
  */
 import { Address, SendMode, TonClient, WalletContractV4, beginCell, internal, toNano } from '@ton/ton';
 import { mnemonicToPrivateKey } from '@ton/crypto';
@@ -108,7 +108,7 @@ async function main() {
     const collection = client.open(PrimesCollection.createFromAddress(collectionAddr));
     const ledger = client.open(PrimesLedger.createFromAddress(ledgerAddr));
 
-    const keyPair = await mnemonicToPrivateKey(req('KEEPER_WALLET_MNEMONIC').split(/\s+/));
+    const keyPair = await mnemonicToPrivateKey(req('DEPLOYER_MNEMONIC').split(/\s+/));
     const walletId = process.env.PRIMES_FROM_SUBWALLET_ID
         ? Number(process.env.PRIMES_FROM_SUBWALLET_ID)
         : deploySubwalletId(env);

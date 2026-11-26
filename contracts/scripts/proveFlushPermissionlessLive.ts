@@ -41,7 +41,7 @@
  *
  * This script adds the empirical half: it generates a BRAND NEW wallet (freshly
  * derived mnemonic, never used anywhere in this repo/session before), funds it with
- * the bare minimum from the keeper wallet, and sends `Flush` from it. Because the
+ * the bare minimum from the deployer wallet, and sends `Flush` from it. Because the
  * ratchet's cooldown (`FLUSH_COOLDOWN` = 86400s = 1 day, `shared/params.json`
  * `flush.flush_cooldown_seconds`) was already re-armed by a real flush attempt
  * earlier this same session (see below), this call is EXPECTED to revert — the
@@ -275,7 +275,7 @@ async function main() {
     }
 
     console.log('\n=== Part 2b: sending Flush() from a freshly generated, unprivileged wallet ===');
-    const keeperMnemonic = envFile.match(/^KEEPER_WALLET_MNEMONIC=(.*)$/m)![1].trim().replace(/^"|"$/g, '').split(/\s+/);
+    const keeperMnemonic = envFile.match(/^DEPLOYER_MNEMONIC=(.*)$/m)![1].trim().replace(/^"|"$/g, '').split(/\s+/);
     const keeperKeyPair = await mnemonicToPrivateKey(keeperMnemonic);
     // THE FUNDER IS THE DEPLOY SUBWALLET, NOT THE DEFAULT ONE. This line read
     // `create({ workchain: 0, publicKey })` with no `walletId`, which is the v4
@@ -303,7 +303,7 @@ async function main() {
     // Fund it: D-146 makes the flush CALLER-PAID, so the fresh wallet needs the 0.27 GRAM a
     // flush attaches (0.25 swap gas + compute + margin, most of it the vault's) plus its own
     // deploy. 0.35 covers both; the change comes back as `excesses`.
-    console.log('funding fresh wallet with 0.35 GRAM from the keeper wallet...');
+    console.log('funding fresh wallet with 0.35 GRAM from the deployer wallet...');
     const keeperSeqno = await retry(() => keeperContract.getSeqno(), 'keeper-getSeqno');
     await retry(
         () =>

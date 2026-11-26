@@ -150,6 +150,16 @@ function npvTableToDict(
     return dict;
 }
 
+/** D-218: the rest table is already integer nanoton in params.json. */
+function restTableToDict(
+    table: Record<string, string | number> | null | undefined
+): Dictionary<bigint, bigint> | undefined {
+    if (!table) return undefined;
+    const dict = Dictionary.empty(Dictionary.Keys.BigUint(64), Dictionary.Values.BigVarUint(4));
+    for (const [prime, nano] of Object.entries(table)) dict.set(BigInt(prime), BigInt(nano));
+    return dict;
+}
+
 export const TIMELOCK_DELAY = 2592000; // 30 days, primes_venue_timelock.tolk
 
 export type GenesisCode = {
@@ -340,6 +350,12 @@ export type GenesisParams = {
      * "later" means a fresh deploy, never a setter.
      */
     trophyNpv?: Record<string, string | number> | null;
+    /**
+     * D-218: `trophy_auction.resting_ladder.resting_nanoton_by_prime`. Same rule
+     * as `trophyNpv`: required unless passed `null` on purpose, because a missing
+     * table silently rests every prime at MINT_PRICE and only a fresh genesis fixes it.
+     */
+    trophyRest?: Record<string, string | number> | null;
     /**
      * `minAuctionDistance` is DELETED (D-45). `MarketConfig` no longer has a
      * liveness-gate field — see `PrimesMarket.ts`'s D-45 note and
@@ -846,6 +862,19 @@ export function requireTrophyNpv(params: unknown): Record<string, string | numbe
     return table as Record<string, string | number>;
 }
 
+/** D-218 — `requireTrophyNpv`'s twin for the rest table, for the same reason. */
+export function requireTrophyRest(params: unknown): Record<string, string | number> {
+    const table = (params as any)?.trophy_auction?.resting_ladder?.resting_nanoton_by_prime;
+    if (!table || typeof table !== 'object' || Object.keys(table).length === 0) {
+        throw new Error(
+            'genesis: shared/params.json has no trophy_auction.resting_ladder.resting_nanoton_by_prime. ' +
+                'Regenerate it with `python sim/scripts/run_phase1.py` (DECISIONS.md D-218). ' +
+                'To rest every prime at MINT_PRICE on purpose, pass trophyRest: null explicitly.'
+        );
+    }
+    return table as Record<string, string | number>;
+}
+
 /**
  * The exact init-data shape `deployAndWire` gives `PrimesJettonMaster.createFromConfig`
  * for step 3 — pulled out so the dry-run below (R17) and the real deploy can never drift
@@ -890,6 +919,21 @@ export function dryRunGenesisMasterAddress(
 }
 
 /** Step 1 + 2: deploy everything and run the one-shot bootstrap wiring. */
+/**
+ * A read-back on a live network re-reads before it concludes. `settle` is a fixed wait for
+ * the deploy wallet's external; the internal hop it starts can land after it (2026-11-25:
+ * `ratchet:tston-wallet` read `set=0` and was set seconds later, which stranded a genesis
+ * before its tail). In the sandbox (`env.settle` absent) the first read is final.
+ */
+async function readBack<T>(env: GenesisEnv, read: () => Promise<T>, ok: (v: T) => boolean): Promise<T> {
+    let v = await read();
+    for (let i = 0; i < 12 && !ok(v) && env.settle; i++) {
+        await new Promise((r) => setTimeout(r, 15_000));
+        v = await read();
+    }
+    return v;
+}
+
 export async function deployAndWire(
     env: GenesisEnv,
     code: GenesisCode,
@@ -1204,6 +1248,7 @@ export async function deployAndWire(
                 // shards, and the treasury address existed only for D-32's
                 // release forfeit, which D-90.2 deletes.
                 npvTable: npvTableToDict(params.trophyNpv),
+                restTable: restTableToDict(params.trophyRest), // D-218
                 clockDivisor: params.clockDivisor,
             },
             code.market
@@ -1446,7 +1491,7 @@ export async function deployAndWire(
     for (const [name, read] of wiringChecks) {
         let ok = false;
         try {
-            ok = await read();
+            ok = await readBack(env, read, (v) => v);
         } catch (e) {
             unwired.push(`${name} (get-method threw: ${(e as Error).message})`);
             continue;
@@ -1664,7 +1709,11 @@ export async function completeGenesis(
         value: toNano('0.05'),
     });
     await env.settle?.('ratchet:tston-wallet');
-    const tstonWallet = await d.ratchet.getTstonWallet();
+    const tstonWallet = await readBack(
+        env,
+        () => d.ratchet.getTstonWallet(),
+        (w) => w.walletSet === 1 && w.tstonWalletAddr.equals(params.ratchetTstonWallet)
+    );
     if (tstonWallet.walletSet !== 1 || !tstonWallet.tstonWalletAddr.equals(params.ratchetTstonWallet)) {
         throw new Error(
             `genesis: the ratchet never learned its tsTON wallet — getTstonWallet reads ` +
@@ -1734,14 +1783,18 @@ export async function completeGenesis(
         value: toNano('0.05'),
     });
     await env.settle?.('treasury:wallets');
-    const lpSinkCfg = await d.lpSink.getLpSinkConfig();
+    const lpSinkCfg = await readBack(env, () => d.lpSink.getLpSinkConfig(), (c) => c.walletSet === 1);
     if (lpSinkCfg.walletSet !== 1) {
         throw new Error(
             'genesis: the LP sink never learned its own LP jetton wallet — every deposit would ' +
                 'bounce with 1170. Do not publish the sink address; fix and redeploy.'
         );
     }
-    const treasuryCfg = await d.treasury.getTreasuryConfig();
+    const treasuryCfg = await readBack(
+        env,
+        () => d.treasury.getTreasuryConfig(),
+        (c) => c.walletsSet === 1 && c.tstonJettonWallet.equals(params.treasuryTstonWallet)
+    );
     if (treasuryCfg.walletsSet !== 1) {
         throw new Error(
             'genesis: the treasury never learned its own jetton wallets — every deposit, and the ' +

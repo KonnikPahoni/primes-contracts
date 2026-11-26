@@ -1772,8 +1772,8 @@ export const ERRORS = {
   // deleted), do not reuse.
   // D-88 point 1 — `open_head_lot` computed a resting price ABOVE the opening
   // price, which would make the "descending" lane ascend. Unreachable by
-  // construction (`openingPriceOf` dominates `restingPriceOf` termwise: 1.5·NPV
-  // over 0.5·NPV, the score-ladder price over MINT_PRICE) and asserted anyway, because editing either table is exactly
+  // construction (D-218: `restingPriceOf` clamps its table entry to
+  // `openingPriceOf`) and asserted anyway, because editing either table is exactly
   // the change that would break it silently.
   mkt_floor_above_p0: 1028,
   // THE STAKE MASTER AND ITS POSITION CHILDREN, 1100-1109 (CONCEPT §5.3,

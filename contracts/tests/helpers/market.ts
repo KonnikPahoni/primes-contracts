@@ -1,7 +1,8 @@
-import { Address, OpenedContract, toNano } from "@ton/core";
+import { Address, Dictionary, OpenedContract, toNano } from "@ton/core";
 import { Blockchain, SandboxContract, TreasuryContract } from '@ton/sandbox';
 import { FactorEntry } from "../../wrappers/PrimesLedger";
 import { MarketConfig, PrimesMarket } from '../../wrappers/PrimesMarket';
+import sharedParams from '../../../shared/params.json';
 
 /**
  * ESCROW-CLAIM FIXTURES — composites a lot can be opened on.
@@ -32,8 +33,24 @@ export const RESERVABLE_15 = { n: 15n, factors: [F(3n, 1, 1n), F(5n, 1, 2n)] };
 export const RESERVABLE_20014 = { n: 20_014n, factors: [F(2n, 1, 1n), F(10_007n, 1, 100n)] };
 
 /**
+ * D-218 — the rest table genesis ships (`trophy_auction.resting_ladder`), so a
+ * test market rests every prime exactly where a real deploy would: 3 at ~29
+ * GRAM, every prime past 509 at MINT_PRICE.
+ */
+export function shippedRestTable(): Dictionary<bigint, bigint> {
+    const dict = Dictionary.empty(Dictionary.Keys.BigUint(64), Dictionary.Values.BigVarUint(4));
+    const table = (sharedParams as any).trophy_auction.resting_ladder.resting_nanoton_by_prime as Record<string, number>;
+    for (const [p, nano] of Object.entries(table)) dict.set(BigInt(p), BigInt(nano));
+    return dict;
+}
+
+/**
  * P2.A7 — one place to build a test market's deploy config (D-20/D-90 shrank
- * `MarketConfig` to `ledgerAddr`, `ratchetAddr` and `npvTable`).
+ * `MarketConfig` to `ledgerAddr`, `ratchetAddr`, `npvTable` and, D-218, `restTable`).
+ * Ships NO tables by default — every prime rests at MINT_PRICE and opens at the
+ * ladder — so a fixture's storage rent is the bare contract's, which is what the
+ * per-lane funding tests (D-113) measure against. `shippedRest: true` adds the
+ * genesis rest table for the tests about where a prime comes to rest.
  */
 export function testMarketConfig(opts: {
     ledgerAddr: Address;
@@ -41,11 +58,14 @@ export function testMarketConfig(opts: {
     headHint?: bigint;
     /** D-139 — the test clock. Omitted means 1, which is mainnet. */
     clockDivisor?: number;
+    /** D-218 — deploy with `shippedRestTable()`. */
+    shippedRest?: boolean;
 }): MarketConfig {
     return {
         headHint: opts.headHint ?? OPENING_HEAD,
         ledgerAddr: opts.ledgerAddr,
         ratchetAddr: opts.ratchetAddr,
+        restTable: opts.shippedRest ? shippedRestTable() : undefined,
         clockDivisor: opts.clockDivisor,
     };
 }
@@ -60,8 +80,9 @@ export function testMarketConfig(opts: {
 // the next number anyone can build is 4, and 2 and 3 are already behind the head
 // and therefore already open in the market. Every prime from 2 onward is bought
 // from the market's `MODE_DUTCH_BUYNOW` lane — a descending price that decays to
-// THAT PRIME'S OWN resting price, `max(NPV(p)/2, P0(p)/3, MINT_PRICE)` (D-88 point 1 deleted the universal-1-GRAM
-// floor; D-99 §1.2 replaced the tier lift with the P0/3 term),
+// THAT PRIME'S OWN resting price, `min(P0(p), max(MINT_PRICE, restTable[p]))` (D-88
+// point 1 deleted the universal-1-GRAM floor; D-218 rests p at the tribute of the
+// 5,000 composite mints after its turn),
 // and then sits there forever, where a "bid" IS the purchase and settles in the
 // same transaction. Read the floor with `getPrimeFloor(p)` / `getLotFloor(p)`;
 // `getPrimeDutchTerms().floorMin` is only the lower bound on it.

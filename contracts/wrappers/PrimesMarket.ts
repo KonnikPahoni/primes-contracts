@@ -66,6 +66,12 @@ export type MarketConfig = {
      */
     npvTable?: Dictionary<bigint, bigint>;
     /**
+     * D-218 — where each prime's descending lot comes to rest, in nanoton:
+     * `trophy_auction.resting_ladder.resting_nanoton_by_prime`, only the primes
+     * resting above MINT_PRICE. A miss (and an absent table) rests at MINT_PRICE.
+     */
+    restTable?: Dictionary<bigint, bigint>;
+    /**
      * D-139 — THE TEST CLOCK. Divides every wall-clock constant the market
      * enforces: `AUCTION_WINDOW` (604800), `BID_EXTENSION` (4020) and
      * `PRIME_DUTCH_SECONDS` (604800). **1 is mainnet and the identity.** 168
@@ -132,6 +138,7 @@ function marketConfigToCell(config: MarketConfig): Cell {
         .storeAddress(config.ledgerAddr)
         .storeAddress(config.ratchetAddr)
         .storeDict(config.npvTable)
+        .storeDict(config.restTable)                          // D-218
         .storeUint(clockDivisorOf(config.clockDivisor), 16)   // D-139
         .endCell();
 
@@ -618,15 +625,16 @@ export class PrimesMarket implements Contract {
              *  which is at or above this. */
             floorMin: r.stack.readBigNumber(),
             decaySeconds: r.stack.readNumber(),
-            /** `PRIME_FLOOR_MULT` as a percentage of NPV(n): 50 means the
-             *  resting price is `max(NPV(n) / 2, P0(n) / 3, floorMin)` (D-99 §1.2). */
-            floorPctOfNpv: r.stack.readNumber(),
+            /** D-218 `PRIME_REST_WINDOW_MINTS`: a prime rests at the tribute it
+             *  collects from this many composite mints after its turn, floored
+             *  at `floorMin` and capped at its own P0. */
+            restWindowMints: r.stack.readNumber(),
         };
     }
 
     /**
      * D-88 point 1 — where `n`'s descending lot comes to rest and PARKS until
-     * bought: `max(NPV(n) / 2, P0(n) / 3, MINT_PRICE)` (D-99 §1.2). Answers from `n` alone, so the UI can draw the
+     * bought: `min(P0(n), max(MINT_PRICE, restTable[n]))` (D-218). Answers from `n` alone, so the UI can draw the
      * whole descent before a lot exists; `getLotFloor(n)` answers the same
      * number for a lot that already does.
      */

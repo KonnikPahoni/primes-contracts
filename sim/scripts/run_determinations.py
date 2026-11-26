@@ -207,7 +207,8 @@ def head_velocity_samples(e: Engine) -> list[float]:
 
 
 def q26(census: dict, prime_npv: dict, res_gas_ton: float,
-        mints_per_day: float, lane_floor_ton: float, ladder: dict) -> dict:
+        mints_per_day: float, lane_floor_ton: float, ladder: dict,
+        rest_ton: dict) -> dict:
     """Q26 **as re-scoped by D-30, and by D-45's head-collision retirement**
     (LAUNCH_FIX_PLAN W8.1), launch-blocking.
 
@@ -228,7 +229,7 @@ def q26(census: dict, prime_npv: dict, res_gas_ton: float,
     """
     prem = mk.ObjectivePremises(draws=800, seed=SEED)
     rep = mk.evaluate_lane(census, prime_npv, prem, res_gas_ton=res_gas_ton,
-                           increment_ladder=ladder)
+                           increment_ladder=ladder, rest_ton=rest_ton)
 
     # --- 2. mean lot open life under D-8's EXTENDING close ---------------- #
     # `open_lot_volume` below needs how long a lot stays open; the collision
@@ -250,7 +251,7 @@ def q26(census: dict, prime_npv: dict, res_gas_ton: float,
         p = mk.replace(prem, lam_dutch_per_day=lam)
         r = mk.unsold_prime_forfeit(
             npv_by_prime=prime_npv, census=census, prem=p,
-            head_range=(HEAD_LO, HEAD_HI), draws=200,
+            head_range=(HEAD_LO, HEAD_HI), draws=200, rest_ton=rest_ton,
             mints_per_day=mints_per_day, res_gas_ton=res_gas_ton, seed=SEED)
         r.pop("rows", None)
         r["implied_prime_buyers_per_day"] = lam * lots_open
@@ -264,7 +265,7 @@ def q26(census: dict, prime_npv: dict, res_gas_ton: float,
               f"composite mint")
     forfeit = mk.unsold_prime_forfeit(
         npv_by_prime=prime_npv, census=census, prem=prem,
-        head_range=(HEAD_LO, HEAD_HI), draws=200,
+        head_range=(HEAD_LO, HEAD_HI), draws=200, rest_ton=rest_ton,
         mints_per_day=mints_per_day, res_gas_ton=res_gas_ton, seed=SEED)
     forfeit["premise_sweep"] = forfeit_sweep
 
@@ -459,6 +460,16 @@ def main():
     npv_all = tr.prime_tribute_npv(HEAD_HI, mints_per_year=mints_per_day * 365.0)["npv"]
     prime_npv = {p: v for p, v in npv_all.items() if HEAD_LO <= p < HEAD_HI}
     print(f"  {len(census['cells'])} cells, {len(prime_npv):,} prime lots in range")
+    # D-218: where each prime lot comes to rest -- the table the market ships.
+    # Before D-218 this lane model rested EVERY prime at MINT_PRICE while the
+    # contract rested at max(NPV/2, P0/3, MINT_PRICE); it now reads the shipped
+    # rule. Primes below HEAD_LO (2..97, where the rest moves most) are outside
+    # the head range this model covers.
+    rest_ton = {p: v / ta.NANO for p, v in ta.resting_ladder(
+        npv={p: npv_all[p] for p in sorted(npv_all)[:ta.NPV_LADDER_PRIME_COUNT]}
+    )["table"].items()}
+    print(f"  D-218 rest table: {len(rest_ton)} primes above MINT_PRICE, "
+          f"{sum(1 for p in rest_ton if HEAD_LO <= p < HEAD_HI)} inside the head range")
 
     # D-33's ladder is derived FIRST: every ascending lot below is priced under
     # the step the contract ships, never under the retired `max(1 GRAM, 5%)`.
@@ -479,7 +490,7 @@ def main():
     lane = mk.evaluate_lane(
         census, prime_npv, prem,
         res_gas_ton=fees["res_gas_ton"],
-        increment_ladder=ladder)["by_band"]["prime_dutch"]
+        increment_ladder=ladder, rest_ton=rest_ton)["by_band"]["prime_dutch"]
     prime_lot = {
         "prime_lot_sale_probability": lane["sale_rate"],
         "prime_lot_mean_premium_ton": lane["premium_per_lot_ton"],
@@ -533,7 +544,7 @@ def main():
 
     print("\n=== 4. Q26 -- the auction lane, re-scoped by D-30 ===")
     q26_block = q26(census, prime_npv, fees["res_gas_ton"], mints_per_day,
-                    fees["lane_floor_ton"], ladder)
+                    fees["lane_floor_ton"], ladder, rest_ton)
 
     # D-90.2 DELETES determination 6 (D-32 / W8.2, the release forfeit against
     # the open-and-release gas). There is no release to price: a won lot mints in

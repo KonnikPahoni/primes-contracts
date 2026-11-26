@@ -46,7 +46,7 @@ import { LedgerOpcodes } from '../wrappers/PrimesLedger';
 // D-100 point 2's owner-set donation lives in the pipeline, next to the step
 // that leaves `T = 0` — one definition, so this script and the rehearsal cannot
 // disagree.
-import { genesisDonationTon } from './genesisPipeline';
+import { OPENING_HEAD, genesisDonationTon } from './genesisPipeline';
 import { deploySubwalletId, hydrateProcessEnv, loadEnvFile, readNetworkConfig, scriptNetwork } from './envFile';
 
 // `tsx` loads no `.env`; every `process.env.PRIMES_*` read below depends on this.
@@ -93,7 +93,7 @@ async function main() {
         (process.env[k] ?? envFile.match(new RegExp(`^${k}=(.*)$`, 'm'))?.[1] ?? '').trim().replace(/^"|"$/g, '');
 
     const ledger = Address.parse(readEnv('PRIMES_LEDGER_ADDRESS'));
-    const mnemonic = readEnv('KEEPER_WALLET_MNEMONIC').split(/\s+/);
+    const mnemonic = readEnv('DEPLOYER_MNEMONIC').split(/\s+/);
     const keyPair = await mnemonicToPrivateKey(mnemonic);
     // DEFAULT TO THE DEPLOY SUBWALLET, not the base wallet. This donation does two things
     // at once: it moves T (D-100 point 2) and it MINTS the donor ~1,972,333 PRIMES (X·L less D-156's taper; D-204's 200 GRAM) — which are
@@ -122,6 +122,23 @@ async function main() {
                 'If .env still names the previous set, paste the new addresses first (runbook step 6). ' +
                 'For a deliberate top-up, set PRIMES_DONATE_TOP_UP=1.',
         );
+    }
+    // A genesis donation is irrecoverable (§8: no withdraw path), and `bounce: true` only
+    // saves it from a ledger that REFUSES. A half-finished genesis would accept it. So the
+    // genesis donation also requires the seed to have landed (S = the sealed supply, head
+    // walked to OPENING_HEAD) and the set to be still closed (seed -> donate -> ignite, D-93).
+    if (readEnv('PRIMES_DONATE_TOP_UP') !== '1') {
+        const head = (await client.runMethod(ledger, 'getHead')).stack.readBigNumber();
+        const launched = (await client.runMethod(ledger, 'getLaunch')).stack.readNumber() === 1;
+        const why = [
+            before.s === 0n && 'S = 0: GenesisSeed never landed',
+            head !== OPENING_HEAD && `head = ${head}, not ${OPENING_HEAD}: GenesisSeed never landed`,
+            launched && 'ledger already launched: ignite ran before the donation',
+        ].filter(Boolean);
+        if (why.length) {
+            throw new Error(`refusing the genesis donation — ${why.join('; ')}. Finish deployGenesis.ts first.`);
+        }
+        console.log(`preflight ok: seeded (S=${before.s}, head=${head}), not launched`);
     }
     // D-100 point 1: above 1/L the donation is not refused, it is REPRICED —
     // the contract emits at the floor rate `amount * S / T` instead of the flat

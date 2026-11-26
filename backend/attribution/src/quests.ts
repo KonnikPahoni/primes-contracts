@@ -801,6 +801,50 @@ export interface QuestRewardLock {
   ): Promise<number>;
   /** The frozen figure for this (wallet, quest, instance), or undefined if it never completed. */
   lockedPrimes(wallet: string, questId: string, instance: string): Promise<number | undefined>;
+  /** GAUNTLET.md J14 — locks taken per quest id in this instance (the D-213 headcount's numerator). */
+  lockCounts(instance: string): Promise<Map<string, number>>;
+}
+
+/**
+ * GAUNTLET.md J14 — the quests this wallet can no longer be paid for: the instance has
+ * `QUEST_MAX_WALLETS` locks on it and none of them is this wallet's. `wallet` is the raw form
+ * the locks are keyed on (`/voucher` parses before locking). An instance with no signer
+ * configured is skipped: there is no lock namespace to count.
+ */
+export async function fullQuestIds(
+  lock: QuestRewardLock,
+  rawWallet: string,
+  instances: Partial<Record<VoucherProgram, string>>
+): Promise<Set<string>> {
+  const full = new Set<string>();
+  for (const [program, instance] of Object.entries(instances) as [VoucherProgram, string | undefined][]) {
+    if (!instance) continue;
+    for (const [questId, taken] of await lock.lockCounts(instance)) {
+      if (taken >= QUEST_MAX_WALLETS[program] && (await lock.lockedPrimes(rawWallet, questId, instance)) === undefined) {
+        full.add(questId);
+      }
+    }
+  }
+  return full;
+}
+
+/**
+ * J14 — a full quest reads locked, never complete: past the headcount its voucher pays 0, and a
+ * board advertising what the voucher will not sign is the §9.1 problem. Overrides a prerequisite
+ * label, because "full" is the final answer and an unmet prerequisite is not.
+ */
+export function markFullQuests(states: QuestState[], full: Set<string>): QuestState[] {
+  if (full.size === 0) return states;
+  return states.map((q) =>
+    full.has(q.id)
+      ? {
+          ...q,
+          complete: false,
+          awaitingAttributedMint: undefined,
+          lockedBy: `all ${QUEST_MAX_WALLETS[TRACK_PROGRAM[q.track]].toLocaleString("en-US")} paid`,
+        }
+      : q
+  );
 }
 
 /**
