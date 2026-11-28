@@ -102,11 +102,11 @@ describe('nominal seed override', () => {
         // rehearsal would donate the override and mainnet the real figure.
         const cfg = cfgWith('testnet', 'seed_ton: 10');
         expect(resolveSeedTon(cfg, sink().ui)).toBe(toNano('10'));
-        // Unmoved by the override. D-204 took the donation to 200 GRAM, which is the
-        // nominal seed's figure again (D-154 had it at 132.50, D-100 point 2 at
-        // 4.20) — the same number in two fields, and still two fields: the override
-        // moves one and not the other.
-        expect(params.genesis.genesis_donation_ton).toBe(200);
+        // Unmoved by the override. D-220 set the donation to 100 GRAM (D-204 had it
+        // at 200, the nominal seed's figure; D-154 at 132.50, D-100 point 2 at 4.20)
+        // — two fields that have held the same number and still two fields: the
+        // override moves one and not the other.
+        expect(params.genesis.genesis_donation_ton).toBe(100);
         expect(resolveSeedTon(cfg, sink().ui)).not.toBe(toNano(String(params.genesis.genesis_donation_ton)));
     });
 

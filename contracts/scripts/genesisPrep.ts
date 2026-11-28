@@ -60,7 +60,7 @@ const SEEDING_HOPS_TON = 10;
 
 /**
  * The GRAM `donateFloor.ts` and `seedDedustLiquidity.ts` move by default (G96 follow-up:
- * this was a flat 10 GRAM, against a 200 GRAM mainnet donation, D-204).
+ * this was a flat 10 GRAM, against a 200 GRAM mainnet donation, D-204; 100 since D-220).
  *   donation — `test_overrides.donate_ton` (testnet only), else `genesis_donation_ton`,
  *              the same default `donateFloor.ts` resolves.
  *   pairing  — the seeder's PRIMES side × p_f after the donation. Bounded ABOVE by

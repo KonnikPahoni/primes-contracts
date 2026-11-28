@@ -186,7 +186,11 @@ BASELINE_KWARGS = dict(
     # D-204 (owner, 2026-11-11) takes it to 200 GRAM, the same figure as the nominal
     # seed again, and grows the vault with it (above) so the floor does not move.
     # The pair is then ~21.2 GRAM on top of the donation.
-    genesis_donation_ton=200.0,
+    #
+    # D-220 (owner, 2026-11-28) halves it to 100 GRAM and leaves the vault at
+    # 15,600,000, so the opening floor falls ~1.9x instead (quests stay PRIMES-fixed).
+    # The pair is then ~5.6 GRAM on top of the donation.
+    genesis_donation_ton=100.0,
     horizon_days=3 * 365.0,
     n_max=2_000_000,
     history_every_n_mints=500,
@@ -3189,7 +3193,10 @@ def build_params_json(e, ref_prices, yields, kills, all_passed, up, sizing,
                 "D-204 (owner, 2026-11-11) SUPERSEDES THE FIGURE: the donation is 200 GRAM, "
                 "and the vault grows 10,000,000 -> 15,600,000 with it so the floor it "
                 "buys is the one the game already opened at; every 132.50-era number in "
-                "this note is history. `donate_floor` "
+                "this note is history. D-220 (owner, 2026-11-28) SUPERSEDES IT AGAIN: "
+                "the donation is 100 GRAM and the vault stays at 15,600,000, so the "
+                "opening floor falls ~1.9x and the pair falls to ~5.6 GRAM; every "
+                "200-era number in this note is history too. `donate_floor` "
                 "stays permissionless and incremental for anyone afterwards. The sim "
                 "consumes this figure and re-derives the floor; it does not choose it. "
                 "D-93's `T > 0` ignition guard is what makes a donation this small "

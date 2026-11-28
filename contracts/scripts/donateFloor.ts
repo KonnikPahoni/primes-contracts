@@ -96,10 +96,10 @@ async function main() {
     const mnemonic = readEnv('DEPLOYER_MNEMONIC').split(/\s+/);
     const keyPair = await mnemonicToPrivateKey(mnemonic);
     // DEFAULT TO THE DEPLOY SUBWALLET, not the base wallet. This donation does two things
-    // at once: it moves T (D-100 point 2) and it MINTS the donor ~1,972,333 PRIMES (X·L less D-156's taper; D-204's 200 GRAM) — which are
+    // at once: it moves T (D-100 point 2) and it MINTS the donor ~986,167 PRIMES (X·L less D-156's taper; D-220's 100 GRAM) — which are
     // the PRIMES side `seedDedustLiquidity.ts` then pairs into the pool. That script reads
     // `deploySubwalletId`, so a donation from any other wallet strands the PRIMES where the
-    // seeder cannot see them, and the base wallet is not funded for 200 GRAM anyway.
+    // seeder cannot see them, and the base wallet is not funded for the 100 GRAM donation anyway.
     // `PRIMES_FROM_SUBWALLET_ID` still overrides, for a donation from somewhere else.
     const walletId = process.env.PRIMES_FROM_SUBWALLET_ID
         ? Number(process.env.PRIMES_FROM_SUBWALLET_ID)

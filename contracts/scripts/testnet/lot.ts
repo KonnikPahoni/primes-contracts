@@ -146,16 +146,67 @@ async function openDutch(client: TonClient, n: bigint, handle: string) {
     // The MARKET's head hint, not the ledger's head: the ledger's sync_head reaches the market
     // one hop later, and inside that gap `open_head_lot` throws 1024 (ahead of the head).
     // `getIsOpenable` says yes to the ascending lane too, so it cannot answer this.
-    const hint = await retry(() => m.getHeadHint(), 'getHeadHint');
+    let hint = await retry(() => m.getHeadHint(), 'getHeadHint');
+    // X5: WAIT_HINT=1 polls for the head to pass `n`, so the open can beat the keeper's 60 s cycle.
+    for (let i = 0; process.env.WAIT_HINT && n >= hint && i < 400; i++) {
+        await new Promise((r) => setTimeout(r, 3_000));
+        hint = await retry(() => m.getHeadHint(), 'getHeadHint');
+    }
     if (n >= hint) throw new Error(`${n} is not behind the market's head hint ${hint} yet — nothing sent`);
     const w = await walletFor(client, handle);
     await guardBalance(client, handle, w.wallet.address, OPEN_DUTCH_GAS);
+    // X5: decide on the freshest read — the keeper's prime lane races this open.
+    if ((await retry(() => m.getLot(n), 'getLot(re-read)')).found) throw new Error(`lot ${n} opened meanwhile (keeper) — nothing sent`);
+    const mktBefore = await retry(() => client.getBalance(m.address), 'market balance');
+    const callerBefore = await retry(() => client.getBalance(w.wallet.address), 'caller balance');
+    const sentAt = Math.floor(Date.now() / 1000);
     console.log(`${handle} opens the descending lot on ${n} (gas only, no bid)`);
     await m.sendOpenHeadLot(w.sender, { n, value: OPEN_DUTCH_GAS });
-    await new Promise((r) => setTimeout(r, 25_000));
-    const after = await retry(() => m.getLot(n), 'getLot(after)');
+    let after = await retry(() => m.getLot(n), 'getLot(after)');
+    for (let i = 0; i < 12 && !after.found; i++) {
+        await new Promise((r) => setTimeout(r, 15_000));
+        after = await retry(() => m.getLot(n), 'getLot(after)');
+    }
     if (!after.found) throw new Error(`open-dutch of ${n} did not land`);
     console.log(`landed: mode ${after.mode} p0 ${fromNano(after.p0)} standing ${fromNano(after.standingPrice)} minPayment ${fromNano(after.minPayment)}`);
+    // The refund rides back in the same trace; give it one more poll to land.
+    let callerAfter = await retry(() => client.getBalance(w.wallet.address), 'caller balance after');
+    for (let i = 0; i < 8 && callerBefore - callerAfter > OPEN_DUTCH_GAS / 2n; i++) {
+        await new Promise((r) => setTimeout(r, 15_000));
+        callerAfter = await retry(() => client.getBalance(w.wallet.address), 'caller balance after');
+    }
+    const mktAfter = await retry(() => client.getBalance(m.address), 'market balance after');
+    const spent = callerBefore - callerAfter;
+    const asserts = [
+        {
+            ok: after.mode === 2 && Math.abs(after.openedAt - sentAt) < 300,
+            name: 'DESCENDING_LOT_OPENED_NOW',
+            getMethod: `market.getLot(${n}).{mode,openedAt}`,
+            after: `mode ${after.mode} openedAt ${after.openedAt} (sent ~${sentAt})`,
+            detail: 'D-20/D-88: a prime whose turn has passed opens a descending lot from now, by anyone',
+        },
+        {
+            // The market pays its own storage phase on the inbound (19 nanoGRAM on 71, 2026-11-27):
+            // rent is not the open spending the float, so a microGRAM of it is allowed.
+            ok: mktAfter >= mktBefore - 1000n,
+            name: 'MARKET_FLOAT_NOT_DRAINED',
+            getMethod: 'market balance',
+            before: fromNano(mktBefore),
+            after: fromNano(mktAfter),
+            detail: "the open is caller-funded (2026-11-23): its hop and compute come out of the caller's value, never the float",
+        },
+        {
+            ok: spent > 0n && spent < OPEN_DUTCH_GAS / 2n,
+            name: 'OPENER_REFUNDED_REMAINDER',
+            getMethod: `${handle} wallet balance`,
+            before: fromNano(callerBefore),
+            after: `${fromNano(callerAfter)} (net ${fromNano(spent)} of ${fromNano(OPEN_DUTCH_GAS)} attached)`,
+            detail: 'what the open did not spend returns to the caller in the same trace (e0f8ae26b, 0109aa471)',
+        },
+    ];
+    for (const r of asserts) console.log(`  ${r.ok ? 'OK  ' : 'FAIL'} ${r.name} ${r.after}`);
+    record({ phase: '3', op: `open-head-lot-${n}`, ok: asserts.every((r) => r.ok), asserts: asserts.map((r) => ({ name: r.name, ok: r.ok, getMethod: r.getMethod, detail: `${r.detail} — ${r.before ? r.before + ' → ' : ''}${r.after}` })) });
+    if (!asserts.every((r) => r.ok)) process.exit(1);
 }
 
 async function primesHeld(client: TonClient, owner: Address): Promise<bigint> {

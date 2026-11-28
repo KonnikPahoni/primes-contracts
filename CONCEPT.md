@@ -3642,9 +3642,9 @@ says so, and it is the whole reason to hold the token. Therefore *no price ceili
 PRIMES can ever be an invariant*, and writing one into this document would be exactly the
 uncheckable economic claim §2 forbids. What `L` buys is a **horizon**: at `L = 10,000` the
 floor ~~opens at 1/60,000 GRAM per PRIMES (D-43; up from 1/20,000 under D-42's smaller
-vault)~~ **opens at 1.0761e-05 GRAM/PRIMES: D-100 point 2 cut the genesis donation from
-240 GRAM to 4.20, D-154 raised it to 132.50 and D-204 to 200, against D-204's `S₀` of 16,600,000, to which the
-donation's own mint adds 1,972,333** — 1.55× lower than D-92's floor rather than
+vault)~~ **opens at 5.6863e-06 GRAM/PRIMES: D-100 point 2 cut the genesis donation from
+240 GRAM to 4.20, D-154 raised it to 132.50, D-204 to 200 and D-220 back to 100, against D-204's `S₀` of 16,600,000, to which the
+donation's own mint adds 986,167** — 2.9× lower than D-92's floor rather than
 47.6×, so the horizon below is understated by that factor too and is due the same
 re-derivation.
 The mint count to pass 1/1,000 was last derived against the D-42 opening floor (~6,500 to
@@ -4902,7 +4902,7 @@ Bootstrap sequence, fully scripted on-chain:
    floor-priced, locked pair rather than an empty pool. The **internal floor** `p_f = T/S` is `0`
    at the instant of deploy — no deposit backs `S₀` — and is opened by the **floor donation**
    below rather than by any deploy step (D-91 point 4, D-92, D-100 point 2, D-154): the
-   operator donates **200 GRAM** (D-204; 132.50 under D-154).
+   operator donates **100 GRAM** (D-220; 200 under D-204, 132.50 under D-154).
 
    ~~It is not a chosen figure but the solution of `p_f = X/(S₀ + X·L)` for the declared
    opening floor, `X = S₀/(1/p_f − L) = 12,000,000/(60,000 − 10,000)` = **240 GRAM**, landing
@@ -4914,17 +4914,19 @@ Bootstrap sequence, fully scripted on-chain:
    150 GRAM commitment, front-loaded into genesis instead of dribbled in afterwards, because
    the pair below is pinned at the floor and that makes opening depth *quadratic* in this one
    figure. **D-204 sets it to `200`** and grows the vault by the PRIMES the extra 67.50 GRAM
-   backs at that same floor, so the floor holds (it was 1.0761e-05 at D-154's 132.50). So
-   `p_f0 = 200/(16,600,000 + 1,972,333)` (the second term is what
+   backs at that same floor, so the floor holds (it was 1.0761e-05 at D-154's 132.50). **D-220
+   halves it to `100`** and keeps the vault, so this time the floor moves instead: ~1.9× lower
+   (1.0769e-05 under D-204). So
+   `p_f0 = 100/(16,600,000 + 986,167)` (the second term is what
    `donate_floor` mints to the donor — `X·L` under D-156's taper — since `S` counts it) =
-   `genesis.genesis_floor_price_ton_per_primes` = **1.0769e-05 GRAM/PRIMES** (≈92,862 PRIMES
+   `genesis.genesis_floor_price_ton_per_primes` = **5.6863e-06 GRAM/PRIMES** (≈175,862 PRIMES
    per GRAM at open). The opening floor
    is therefore no longer a declared `1/(6L)` constant — it is
    whatever the donation buys. From
    there it ratchets on real mint injections (`pending`/`swapped`) like any other floor step.
    Note the two numbers are different jobs and neither is stale: `T₀ = 200 GRAM` is the
-   **nominal** that sizes `S₀` and is deposited nowhere; the **200 GRAM donation** — the same
-   figure since D-204, by the owner's choice and not by construction — is the only money
+   **nominal** that sizes `S₀` and is deposited nowhere; the **100 GRAM donation** — the same
+   figure under D-204 and half of it since D-220, by the owner's choice and not by construction — is the only money
    that actually moves at genesis, and `params.json`'s `_donation_vs_modelled_depth` records
    the modelling gap between them rather than burying it — a gap D-154 narrows to the same
    order of magnitude for the first time, without closing it.
@@ -4957,9 +4959,9 @@ Bootstrap sequence, fully scripted on-chain:
    So the pair is posted at `PRIMES × p_f` GRAM instead, and
    `genesis.market_over_floor_at_open` is **1.0 by construction**. The PRIMES side is the
    binding side — at the floor every PRIMES posted buys only `p_f` GRAM of depth — so it is
-   the operator's whole reachable inventory: the **1,972,333 PRIMES** the donation mints
+   the operator's whole reachable inventory: the **986,166 PRIMES** the donation mints
    (`genesis.genesis_donation_primes`: `X·L` tapered by D-156, rounded down to whole PRIMES),
-   **against 21.24 GRAM** (`1,972,333 × 10,768 nanoGRAM`, the floor rounded down to the chain's
+   **against 5.61 GRAM** (`986,166 × 5,686 nanoGRAM`, the floor rounded down to the chain's
    granularity). Until D-166 the operator's first vest tranche (250,000) joined it; the
    operator lock is deleted, so the pair is the donation's PRIMES alone.
    The treasury lock's first 250,000 is *not* available and must not be planned around: its
@@ -4975,8 +4977,9 @@ Bootstrap sequence, fully scripted on-chain:
    the operator's tranche in the pair), which is **14.13 GRAM at D-154's `X = 132.50`**. D-154 chose `X` so the two sides together posted 149.89 GRAM —
    the whole of the operator's 150 GRAM commitment. Without the tranche they post
    **146.63 GRAM**; D-166 leaves the owner-set donation where it is rather than re-solving
-   it for 150. **D-204's `X = 200` against `S₀ = 16,600,000` makes the pair 21.24 GRAM —
-   221.24 GRAM posted in all, 200 of it donated.**
+   it for 150. D-204's `X = 200` made the pair 21.24 GRAM (221.24 posted in all). **D-220's
+   `X = 100` against `S₀ = 16,600,000` makes the pair 5.61 GRAM — 105.61 GRAM posted in all,
+   100 of it donated** — a quarter of the depth for half the donation, the quadratic above.
 
    **That commitment is D-100 point 3's and D-154 spends it here** rather than
    post-genesis and incrementally through the same permissionless `donate_floor`. It is an
@@ -5002,7 +5005,8 @@ Bootstrap sequence, fully scripted on-chain:
    **The vault's share of `S₀` grew 16.7% → 33.3% (D-41) → 50% (D-42) → 83.3% (D-43) →
    90.9% (D-166) → 94.0% (D-204)**, as it went from 20% to 50% to 100% to 500% of the nominal-sized `T₀·L`
    allocation, then D-166 removed the operator's half of that allocation from `S₀`, and
-   D-204 took the fraction to 780% alongside a 200 GRAM donation; the
+   D-204 took the fraction to 780% alongside a 200 GRAM donation (D-220 halved the donation
+   to 100 and left the fraction); the
    D-43 jump was made to fund a puzzle campaign (3 riddles at genesis, then one a week for
    3 years, each worth 1 GRAM at claim time) that D-47 replaced with §9.6's special-number
    rebates; the fraction stayed. That is the whole price of the decision and it
@@ -5023,7 +5027,9 @@ Bootstrap sequence, fully scripted on-chain:
    nominal figure — and why D-42 buys the headcount with time instead. Past 500% the only
    lever left is `T₀`. **D-204 pulled the other one that exists since D-100 unpinned the
    donation from `T₀`:** 500% → 780% *with* 132.50 → 200 GRAM donated, sized so the opening
-   floor did not fall — the larger vault is paid for in GRAM, not in a lower floor.
+   floor did not fall — the larger vault is paid for in GRAM, not in a lower floor. **D-220
+   took half of that GRAM back** (200 → 100 donated, vault unchanged), so since D-220 the
+   larger vault IS paid for in a lower floor: ~1.9× below D-204's.
 
    `T₀` sets `S₀`'s sizing, not price. There is no "day-one depth" any more (D-46): the
    real floor is `0` at deploy regardless of `T₀`'s size, and only becomes nonzero once
@@ -5109,20 +5115,20 @@ Bootstrap sequence, fully scripted on-chain:
    transaction; the DeDust deposit wire format is now verified in the sandbox (`GAUNTLET.md`
    R13), but the owner kept the manual sequence (D-120, signed 2026-09-24), so no contract
    sends a DeDust deposit. **At genesis the
-   donation is 200 GRAM, not 240, not D-100 point 2's 4.20 and no longer D-154's 132.50** (D-204; the
-   derivation method is unchanged and only its input moved, three times). The operator's stated
+   donation is 100 GRAM, not 240, not D-100 point 2's 4.20, not D-154's 132.50 and no longer D-204's 200** (D-220; the
+   derivation method is unchanged and only its input moved, four times). The operator's stated
    sequence: donate
-   200 GRAM, receive 1,972,333 PRIMES, pair all **1,972,333 PRIMES against 21.24 GRAM** of
+   100 GRAM, receive 986,166 PRIMES, pair all **986,166 PRIMES against 5.61 GRAM** of
    their own (D-166: no vest tranche joins the pair any more) — the floor rate, D-140, not
-   the 197.2 GRAM a pairing at `L` would have taken — and send the
+   the 98.6 GRAM a pairing at `L` would have taken — and send the
    LP receipt to the **sink** (§5.5.4) rather than burning it — a sink balance is directly
    readable as locked depth where a burn needs an off-chain baseline somebody maintains.
    **D-154 makes that last step the decided one rather than a choice of two**: the whole
    opening pair goes to the sink, so the depth the game opens with is locked depth and no
    key can pull it.
-   `genesis.genesis_floor_price_ton_per_primes` is re-derived by the sim from 200 GRAM and
-   lands at **1.0769e-05 GRAM/PRIMES** against D-204's `S₀ = 16,600,000` plus the donation's
-   own 1,972,333; the emission curve that
+   `genesis.genesis_floor_price_ton_per_primes` is re-derived by the sim from 100 GRAM (D-220) and
+   lands at **5.6863e-06 GRAM/PRIMES** against D-204's `S₀ = 16,600,000` plus the donation's
+   own 986,167; the emission curve that
    follows from it is published *before* deploy in `docs/audit/genesis-emission-curve.md`
    (see the second honest cost at the end of this section).
 
@@ -5175,7 +5181,7 @@ and point 3 fixes it at **10,000 PRIMES per GRAM**. ~~The floor opens at 60,000,
 between them being the bounty vault rather than slack; `p_f0 = 1/60,000` holds at any seed
 size, so there is nothing for the simulation to solve.~~ **Amended by D-100 point 2:**
 `p_f0` is no longer a declared constant that holds at any seed size. It is
-`genesis_donation_ton / (S₀ + the donation's own mint)` — **200 / 18,572,333 = 1.0769e-05 GRAM/PRIMES** (D-204; 132.50 / 12,312,854 = 1.0761e-05 under D-154/D-166) — because the
+`genesis_donation_ton / (S₀ + the donation's own mint)` — **100 / 17,586,167 = 5.6863e-06 GRAM/PRIMES** (D-220; 200 / 18,572,333 = 1.0769e-05 under D-204, 132.50 / 12,312,854 = 1.0761e-05 under D-154/D-166) — because the
 donation stopped being derived *from* a target floor and became an owner-set figure the sim
 consumes. `L` is unchanged and is still a pure denomination knob; what moved is where the
 ratchet *starts*, never how it climbs (§5). What `T₀` buys is depth, and that is the number the
@@ -5263,14 +5269,15 @@ The honest costs of this format, stated here rather than discovered:
 
   | claim | measured |
   |---|---|
-  | largest single mint's emission | **0.15% of `S₀`** (mint 1 emits 0.07%) |
-  | first ten mints | **16.5% of all emission over the curve**; no later mint exceeds 0.116% of `S₀` |
-  | first hundred mints, cumulative | **4.5% of `S₀`** — `S` grows 1.05×, `T` grows 1.1× |
-  | `p_f` over the same span | **monotone at every step**, ending **1.08×** where it started |
+  | largest single mint's emission | **0.31% of `S₀`** (mint 1 emits 0.13%) |
+  | first ten mints | **17.0% of all emission over the curve**; no later mint exceeds 0.227% of `S₀` |
+  | first hundred mints, cumulative | **8.7% of `S₀`** — `S` grows 1.09×, `T` grows 1.3× |
+  | `p_f` over the same span | **monotone at every step**, ending **1.16×** where it started |
 
-  *(As measured 2026-11-11 from D-204's 200 GRAM donation, with §4.1's invite line on at
+  *(As measured 2026-11-28 from D-220's 100 GRAM donation, with §4.1's invite line on at
   3 × 0.1 GRAM — `DECISIONS.md` D-202.
-  `S₀` here is the audit file's 18,572,333, the donor's own mint included.)*
+  `S₀` here is the audit file's 17,586,167, the donor's own mint included. D-204's 200 GRAM
+  read 0.15% / 16.5% / 4.5% / 1.08× — half the donation roughly doubles early emission.)*
 
   **It decays harmonically, not within ten mints**, and D-100 point 2's drafted phrase
   "self-correcting within ~10 mints" overstated how fast it settles — the correction is
@@ -6573,13 +6580,13 @@ measured outcomes**:
   The track is spent first come, first served, until it is empty.
 
   **The reward is therefore denominated in PRIMES, and its worth is the floor path.**
-  2,450 PRIMES is **0.0264 GRAM** at the opening floor (`p_f0` = 1.0769e-05, D-204); alone it
-  would reach `β · MINT_PRICE` once the floor has risen **~9.5×** (`genesis.quest_rewards.cap_binds_at_floor_multiple`), but
+  2,450 PRIMES is **0.0139 GRAM** at the opening floor (`p_f0` = 5.6863e-06, D-220); alone it
+  would reach `β · MINT_PRICE` once the floor has risen **~17.8×** (`genesis.quest_rewards.cap_binds_at_floor_multiple`), but
   the cap is shared with the contract-fact board below, and the two together — 8,800 PRIMES —
-  reach it at **~2.6×** (`prime_quests.combined_cap_binds_at_floor_multiple`). The clamp above catches it there, and
-  the sim's three-year horizon ends at 428.9× the deploy floor (`final_state.floor_appreciation`).
-  **So since D-204 the nominal PRIMES figure is an opening-weeks figure**: past roughly twice
-  the opening floor a claim pays a fixed worth and a falling count. D-42's bet — a small
+  reach it at **~4.9×** (`prime_quests.combined_cap_binds_at_floor_multiple`; ~2.6× at D-204's 200 GRAM floor). The clamp above catches it there, and
+  the sim's three-year horizon ends at 788.3× the deploy floor (`final_state.floor_appreciation`).
+  **So since D-204 the nominal PRIMES figure is an opening-weeks figure**: past roughly five times
+  the opening floor (twice under D-204) a claim pays a fixed worth and a falling count. D-42's bet — a small
   reward that appreciates for years — is no longer what this board does; D-204 chose a reward
   that reads as one on day one.
 
@@ -9375,7 +9382,7 @@ away; `DECISIONS.md` D-106 deleted both.)*
 - **A minter who names their own wallets gets 0.30 GRAM back.** The owner accepts it
   (D-202): the mint costs them 0.70 GRAM net, the 0.30 comes out of β, and the floor books it
   exactly as an honest invited mint — the sim's three-year run sends all three slots on every
-  mint and still ends at 428.9× the deploy floor (`final_state.floor_appreciation`). §8.1's
+  mint and still ends at 788.3× the deploy floor (`final_state.floor_appreciation`). §8.1's
   mint-and-sell loop gets harder, not easier: with self-referral at n = 10,000 it pays from
   3.56× the floor, up from 3.14×, because the smaller injection shrinks the rebate with it.
 - **A fake recruit costs 0.70 GRAM, not a full 1 GRAM** (D-202 amends D-106). A gift mint to a

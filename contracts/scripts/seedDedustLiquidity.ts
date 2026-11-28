@@ -56,7 +56,7 @@
  * the script refuses until `PRIMES_LP_FLOOR=live|params` says which.
  *
  * Env: PRIMES_LEDGER_ADDRESS, PRIMES_LP_FLOOR (only needed when the floors disagree),
- * PRIMES_LP_PRIMES (default: the ~1,972,333 PRIMES `donate_floor` mints (D-156-tapered), and
+ * PRIMES_LP_PRIMES (default: the ~986,167 PRIMES `donate_floor` mints (D-156-tapered), and
  * nothing else since D-166 deleted the operator's vest tranche — see
  * `genesisPairingPrimes`),
  * PRIMES_LP_SINK_ADDRESS, DEPLOYER_MNEMONIC, PRIMES_DEPLOY_SUBWALLET_ID,
@@ -348,7 +348,7 @@ resume: ${lpHeldAtStart} LP units already in ${fmt(myLpWallet)} — deposit land
         throw new Error(
             `wallet holds ${primesHeld / 1000000000n} PRIMES, needs ${lpPrimes / 1000000000n}. ` +
                 'donateFloor.ts mints the default pairing inventory and must have landed first ' +
-                '(~1,972,333 PRIMES: X·L at T = 0, less D-156\'s supply taper; ' +
+                '(~986,167 PRIMES: X·L at T = 0, less D-156\'s supply taper; ' +
                 'D-166: there is no operator vest tranche to add). Or lower PRIMES_LP_PRIMES — the GRAM side ' +
                 'follows it down at the floor rate, so a smaller pair is still priced at p_f.'
         );

@@ -58,13 +58,13 @@
  * WHAT RUNS AFTER THIS SCRIPT, AND IN THIS ORDER (D-93). The launch is
  * **seed -> donate -> ignite**, and the middle step is not this script's:
  *
- *   a. `scripts/donateFloor.ts` — D-204's **200 GRAM** `donate_floor`
+ *   a. `scripts/donateFloor.ts` — D-220's **100 GRAM** `donate_floor`
  *      (D-92's 240 was re-set by the owner, not re-derived), which is what
  *      creates the floor at all. Permissionless, asserts no launch flag, and
  *      incremental, so a testnet rehearsal may send tranches or a smaller sum.
  *      DO NOT CONFUSE IT WITH `genesis.genesis_seed_ton` (200): that figure
  *      sizes `S₀` and never moves; see `GenesisParams.seedTon`.
- *   a'. the operator pairs the donation's 1,972,333 PRIMES against **~21.24 GRAM**
+ *   a'. the operator pairs the donation's 986,166 PRIMES against **~5.61 GRAM**
  *      on DeDust BY HAND, and sends the receipt to the LP SINK (D-154 closes
  *      D-100 point 4's choice for the genesis pair: opening depth is locked
  *      depth). D-140: the GRAM side is `PRIMES × p_f`, so the book opens AT the
@@ -2132,7 +2132,7 @@ export function pairingInstructions(
  * A NOTE ON THE TWO NUMBERS THIS STEP IS BETWEEN, because they used to be one.
  * `genesis.genesis_seed_ton` (200) is a NOMINAL that sizes `S₀` and the pool
  * depth the sim models — no GRAM ever moves for it. `genesis.genesis_donation_ton`
- * (132.50) is the GRAM that actually lands in `T`, here. Before D-100 point 2 they
+ * (100 since D-220; 132.50 under D-100) is the GRAM that actually lands in `T`, here. Before D-100 point 2 they
  * were made equal by construction (D-92 chose the donation to reproduce
  * `seed/S₀`), so a script could read either and be right; that coincidence is
  * gone and reading the seed here would donate 200 GRAM.

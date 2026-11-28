@@ -5,7 +5,7 @@
 # values (deploy subwallet id, proposer, DeDust pool and jetton vault) stay in /.env too:
 # they change with every run and each has its own preflight assert.
 #
-# There is deliberately no test_overrides block: mainnet's rename fee (200), donation (200),
+# There is deliberately no test_overrides block: mainnet's rename fee (200), donation (100),
 # seed, auction clock (7 days) and stake minimum (50) are shared/params.json's, and the
 # loader refuses the block in this file. A null below is a value genesis still needs —
 # deployGenesis refuses to run until it is filled in.

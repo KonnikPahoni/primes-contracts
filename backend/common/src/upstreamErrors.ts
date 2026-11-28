@@ -83,6 +83,14 @@ export function isNoAccount(err: unknown): boolean {
   );
 }
 
+/** True for an upstream 5xx — e.g. toncenter's `LITE_SERVER_NETWORK(during last block
+ *  synchronization)` 500, a lite-server hiccup that clears in seconds. Retry-safe for reads
+ *  only: toncenter also answers a refused `sendBoc` with a 500, and that one never clears. */
+export function isUpstreamServerError(err: unknown): boolean {
+  const s = httpStatusOf(err);
+  return s !== undefined && s >= 500 && s < 600;
+}
+
 function httpStatusOf(err: unknown): number | undefined {
   const anyErr = err as { response?: { status?: number }; status?: number; statusCode?: number };
   return anyErr?.response?.status ?? anyErr?.status ?? anyErr?.statusCode;

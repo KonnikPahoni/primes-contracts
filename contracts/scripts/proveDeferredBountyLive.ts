@@ -189,7 +189,7 @@ async function main() {
     if (held < amount) {
         throw new Error(
             `this wallet holds ${held} nanoPRIMES but the payout moves ${amount}. Lower ` +
-                'PRIMES_H17_PRIMES, or run donateFloor.ts first (it mints the donor ~1,972,333 PRIMES).'
+                'PRIMES_H17_PRIMES, or run donateFloor.ts first (it mints the donor ~986,167 PRIMES).'
         );
     }
 

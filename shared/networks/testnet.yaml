@@ -32,6 +32,6 @@ presentation:
 # economics.
 test_overrides:
   rename_fee_ton: 2        # spec 200 (params naming.rename_fee_ton)
-  donate_ton: 50           # spec 200 (params genesis.genesis_donation_ton); donateFloor default
+  donate_ton: 50           # spec 100 (params genesis.genesis_donation_ton); donateFloor default
   auction_seconds: 3600    # spec 604800 = divisor 1; 3600 = divisor 168 (D-139 test clock)
   stake_min_ton: 3         # spec 50 (params staked_reserve.stake_min_ton); D-153 test stake floor

@@ -60,7 +60,7 @@ import {
 } from '../dedust';
 import type { DedustAsset } from '../dedust';
 import { loadEnvFile, envValue } from '../envFile';
-import { ERRORS } from '../../../shared/opcodes';
+import { ERRORS, FOREVER_POSITION_ID } from '../../../shared/opcodes';
 import params from '../../../shared/params.json';
 import { makeClient, openDeployWallet, openWallet, retry, Wallet } from './sender';
 import { readCast } from './cast';
@@ -157,6 +157,31 @@ const VOTE_MULTS: readonly number[] = params.treasury.vote_multipliers;
 const voteWeight = (amount: bigint, tier: number) => amount * BigInt(VOTE_MULTS[tier] ?? 0);
 
 type PositionRow = Awaited<ReturnType<PrimesLpPosition['getPosition']>>;
+
+/**
+ * D-214: ONE ROW READER FOR BOTH KINDS OF WEIGHT. A term row is `getPosition(id)`; the
+ * forever total votes and proposes under `FOREVER_POSITION_ID` and is read off
+ * `getForever()` — `since` is its `weightSince`, it never matures, and it weighs
+ * `amount × multiplier`. Every arm that picks a position or sums a weight goes through
+ * this, so a wallet whose only weight is sunk LP is not read as having none.
+ */
+async function rowOf(position: { getPosition(id: number): Promise<PositionRow>; getForever(): Promise<{ amount: bigint; since: number; multiplier: number }> }, id: number) {
+    if (id !== FOREVER_POSITION_ID) {
+        const r = await retry(() => position.getPosition(id), `getPosition(${id})`);
+        return { ...r, weight: voteWeight(r.amount, r.tier) };
+    }
+    const f = await retry(() => position.getForever(), 'getForever');
+    return {
+        amount: f.amount,
+        tier: -1,
+        lockedAt: f.since,
+        expired: 0,
+        inFlight: 0,
+        maturesAt: Number.MAX_SAFE_INTEGER,
+        weightSince: f.since,
+        weight: f.amount * BigInt(f.multiplier),
+    };
+}
 type PositionsRow = Awaited<ReturnType<PrimesLpPosition['getPositions']>>;
 
 /**
@@ -372,6 +397,12 @@ async function deposit(client: TonClient, handle: string, tonSide: string, tier:
     if (lp === 0n) {
         throw new Error('no LP minted yet — the two legs settle asynchronously; re-run in a minute');
     }
+    // X21: stage the LP and stop, so the ONE custody hop can be timed into a proposal's
+    // notice. A re-run without LP_HOLD finds it unforwarded and forwards it.
+    if (process.env.LP_HOLD) {
+        console.log('LP_HOLD set — the LP stays in the wallet; re-run without it to lock it');
+        return;
+    }
 
     console.log(`forwarding the LP receipt to the treasury with TDEP tier ${tier} ...`);
     const position = await positionOf(client, w);
@@ -450,6 +481,8 @@ async function weights(position: Position) {
         if (row.amount === 0n) continue;
         if (row.expired !== 1) vote += voteWeight(row.amount, row.tier);
     }
+    // D-214: the forever total is part of both published aggregates.
+    vote += (await rowOf(position, FOREVER_POSITION_ID)).weight;
     return { ps, vote, read };
 }
 
@@ -705,8 +738,11 @@ async function vote(client: TonClient, handle: string, seq: number, support: boo
     const { noticeDuration } = await retry(() => treasuryOf(client).getGov(), 'getGov(notice)');
     const yesCutoff = prop.opens - noticeDuration;
     const ids: number[] = [];
-    for (const id of await liveTerms(position)) {
-        const row = await retry(() => position.getPosition(id), `getPosition(${id})`);
+    // VOTE_IDS=a,b names the positions to cast with (X21/X15 isolate one row each; the
+    // full sweep's 20 s spacing outran a 514 s window on a rate-limited 2026-11-27).
+    const only = process.env.VOTE_IDS?.split(',').map(Number);
+    for (const id of (await liveTerms(position)).filter((i) => !only || only.includes(i))) {
+        const row = await rowOf(position, id);
         if (row.weightSince >= prop.opens) {
             console.log(`position #${id} took its weight after #${seq} opened — it cannot vote on it`);
         } else if (support && row.weightSince > yesCutoff) {
@@ -729,8 +765,7 @@ async function vote(client: TonClient, handle: string, seq: number, support: boo
     let cast = 0n;
     for (const positionId of ids) {
         console.log(`${handle} voting ${support ? 'YES' : 'NO'} on #${seq} with position #${positionId}`);
-        const row = await retry(() => position.getPosition(positionId), `getPosition(${positionId})`);
-        cast += voteWeight(row.amount, row.tier);
+        cast += (await rowOf(position, positionId)).weight;
         await position.sendVote(w.sender, { seq, support, positionId, value: toNano('0.2') });
         if (ids.length > 1) await new Promise((r) => setTimeout(r, 20_000));
     }
@@ -795,6 +830,7 @@ async function liveTerms(position: ReturnType<TonClient['open']>): Promise<numbe
         if ((VOTE_MULTS[row.tier] ?? 0) === 0) continue;
         out.push(id);
     }
+    if ((await rowOf(p as any, FOREVER_POSITION_ID)).amount > 0n) out.push(FOREVER_POSITION_ID);
     return out;
 }
 
@@ -813,8 +849,7 @@ async function heaviestLiveTerm(position: ReturnType<TonClient['open']>): Promis
     let best = ids[0];
     let bestW = -1n;
     for (const id of ids) {
-        const row = await retry(() => p.getPosition(id), `getPosition(${id})`);
-        const w = voteWeight(row.amount, row.tier);
+        const w = (await rowOf(p as any, id)).weight;
         if (w > bestW) {
             bestW = w;
             best = id;
@@ -1181,10 +1216,22 @@ async function toSink(client: TonClient, handle: string, positionId: number) {
     requirePosition(ps, positionId, row, 'send to the sink');
     console.log(`${handle} forwarding #${positionId} to the LP SINK — this is irreversible`);
     const beforeBal = await retry(() => treasuryOf(client).getTreasuryBalances(), 'getTreasuryBalances-before');
+    const foreverBefore = await retry(() => position.getForever(), 'getForever-before');
+    const vwBefore = await retry(() => position.getVoteWeight(), 'getVoteWeight-before');
+    const sentAt = Math.floor(Date.now() / 1000);
     await position.sendToSink(w.sender, { positionId, value: toNano('0.35') });
-    await new Promise((r) => setTimeout(r, 30_000));
+    // The sink's confirm is what credits the forever total (D-214): poll for it, never a
+    // fixed sleep (MISTAKES.md 2026-11-25).
+    let foreverAfter = foreverBefore;
+    for (let i = 0; i < 20 && foreverAfter.amount === foreverBefore.amount; i++) {
+        await new Promise((r) => setTimeout(r, 15_000));
+        foreverAfter = await retry(() => position.getForever(), 'getForever-after');
+    }
     await positionStatus(client, handle);
     const after = await retry(() => position.getPosition(positionId), 'getPosition-after');
+    const vwAfter = await retry(() => position.getVoteWeight(), 'getVoteWeight-after');
+    const mult = BigInt(foreverAfter.multiplier);
+    const termW = row.expired === 1 ? 0n : voteWeight(row.amount, row.tier);
     const afterBal = await retry(() => treasuryOf(client).getTreasuryBalances(), 'getTreasuryBalances-after');
     const results: A.AssertResult[] = [
         {
@@ -1198,9 +1245,86 @@ async function toSink(client: TonClient, handle: string, positionId: number) {
                 'amount. There is no maturity gate on this arm (D-100 point 4) — giving up LP for ' +
                 'ever is not what the term exists to slow down',
         },
+        {
+            ok: foreverAfter.amount === foreverBefore.amount + row.amount && foreverAfter.multiplier === 100,
+            name: 'FOREVER_TOTAL_GREW_BY_THE_ROW',
+            getMethod: 'positionChild.getForever().{amount,multiplier}',
+            before: `forever ${foreverBefore.amount} ×${foreverBefore.multiplier}`,
+            after: `forever ${foreverAfter.amount} ×${foreverAfter.multiplier} (row ${row.amount})`,
+            detail: 'D-214: sunk LP becomes ONE per-wallet forever total, voting at the deployed ×100',
+        },
+        {
+            ok: foreverAfter.since >= sentAt - 120 && foreverAfter.since > foreverBefore.since,
+            name: 'FOREVER_SINCE_RESTAMPED',
+            getMethod: 'positionChild.getForever().since',
+            before: `since ${foreverBefore.since}`,
+            after: `since ${foreverAfter.since} (sent ~${sentAt})`,
+            detail:
+                'the WHOLE forever total is new weight after a sink, so `since` moves to the sink — ' +
+                'a YES on a proposal opened before it is refused 1202 (D-214, LpCustody.spec.ts:398-485)',
+        },
+        {
+            ok: vwAfter === vwBefore - termW + row.amount * mult,
+            name: 'VOTE_WEIGHT_TERM_TO_FOREVER',
+            getMethod: 'positionChild.getVoteWeight()',
+            before: `${vwBefore}`,
+            after: `${vwAfter} (−term ${termW} +forever ${row.amount * mult})`,
+            detail: 'the row stops weighing at its tier and weighs ×100 in the forever total instead',
+        },
     ];
     record({ phase: '5', op: 'lp-to-sink', ok: results.every((r) => r.ok), asserts: fromAsserts(results) });
     await status(client);
+    A.requireAll(results);
+}
+
+/**
+ * X21 — THE YES RULE, READ (D-173 as amended 2026-11-21, audit R2-H1). Sends nothing.
+ * During a proposal's notice every vote is refused 1206; after it, a position may vote
+ * NO if its weight predates `opens` and YES only if it predates `opens − noticeDuration`
+ * (1202). This classifies each of `<handle>`'s voting rows against the row and journals
+ * the reading, so the refusals are evidence without being sent.
+ */
+async function yesRule(client: TonClient, handle: string, seq: number) {
+    const prop = await requireProposal(client, seq, 'read the yes rule on');
+    const { noticeDuration } = await retry(() => treasuryOf(client).getGov(), 'getGov');
+    const yesCutoff = prop.opens - noticeDuration;
+    const can = await retry(() => treasuryOf(client).getVotable(seq), 'getVotable');
+    const w = await walletFor(client, handle);
+    const position = await positionOf(client, w);
+    const ps = await retry(() => position.getPositions(), 'getPositions');
+    const ids = [...Array(ps.nextId).keys(), FOREVER_POSITION_ID];
+    const rows: string[] = [];
+    let noOnly = 0;
+    for (const id of ids) {
+        const r = await rowOf(position, id);
+        if (r.amount === 0n) continue;
+        const cls =
+            r.weightSince <= yesCutoff ? 'YES+NO' : r.weightSince < prop.opens ? 'NO only (YES → 1202)' : 'neither (1202)';
+        if (cls.startsWith('NO only')) noOnly++;
+        rows.push(`#${id === FOREVER_POSITION_ID ? 'forever' : id} since ${r.weightSince} → ${cls}`);
+    }
+    const results: A.AssertResult[] = [
+        {
+            ok: true,
+            name: 'VOTABLE_READ',
+            getMethod: `treasury.getVotable(${seq})`,
+            after: `votable ${can.votable} reason ${can.reason} ${errName(can.reason)} (opens ${prop.opens})`,
+            detail: 'inside the notice the chain answers 1206 — read, never sent',
+        },
+        {
+            ok: noOnly > 0,
+            name: 'NOTICE_WEIGHT_IS_NO_ONLY',
+            getMethod: `positionChild.getPosition(id).weightSince vs treasury.getProposal(${seq}).opens − getGov().noticeDuration`,
+            before: `yes cutoff ${yesCutoff}, opens ${prop.opens}`,
+            after: rows.join(' · ') || 'no rows',
+            detail:
+                'weight locked DURING the notice sits in (opens − notice, opens): it may vote NO and a YES ' +
+                'from it is refused 1202 (primes_treasury.tolk YES rule) — the reading, not a sent refusal',
+        },
+    ];
+    A.print(results);
+    for (const r of results) r.detail = `${r.detail} — ${r.before ? r.before + ' → ' : ''}${r.after}`;
+    record({ phase: '5', op: `x21-yes-rule-${handle}-${seq}`, ok: results.every((r) => r.ok), asserts: fromAsserts(results) });
     A.requireAll(results);
 }
 
@@ -1242,6 +1366,10 @@ async function main() {
     if (cmd === 'execute') {
         if (!a || !b) throw new Error('usage: lpGovernance.ts execute <handle> <seq | last>');
         return execute(client, a, await seqArg(client, a, b));
+    }
+    if (cmd === 'yes-rule') {
+        if (!a || !b) throw new Error('usage: lpGovernance.ts yes-rule <handle> <seq | last>');
+        return yesRule(client, a, await seqArg(client, a, b));
     }
     if (cmd === 'proposal') {
         if (!a) throw new Error('usage: lpGovernance.ts proposal <seq>');
